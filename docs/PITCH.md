@@ -40,11 +40,23 @@ referee is real. I've already written the referee's full scoring rubric and a st
 battery to prove it's right *before* spending a dollar on scale.
 
 ## Why me
-[Two or three sentences, honest and specific. Who you are, and the thing that makes you
-the person who won't drop this. Include Jerry's story — perCVus exists because of it —
-and why "how you say it matters as much as what you say" is personal to you, not a
-slogan. EV is betting on the founder more than the plan; this is the most important
-paragraph.]
+<!-- Draft in your voice, from your own account of Jerry. Trim freely — if the page runs
+     long, cut the vision section before you cut this. -->
+perCVus is named for me. My friend **Jerry Reynolds** gave me the name — because I couldn't
+get through an argument without insisting that *perception is 9/10ths of understanding*. We
+lived in one-bedroom apartments next door to each other off the UTSA campus in San Antonio:
+two people hungry for knowledge and honesty, spending long nights daring each other to
+prove our positions, often with real psychology experiments. One night Jerry bet me that if
+I stood at a bus stop in a bedsheet toga, no one would ask why — and that no stranger would
+ever write down their name and number to take part in a "study." I told him curiosity would
+win before the third stop, as long as I never spoke first, and as long as I made whoever
+asked feel like they'd *won* — *you're curious enough to engage; you win!* — and then gave
+them as much of the real story as they wanted. Someone did. That bet is the whole thesis of
+perCVus: with the right framing, people *want* to engage honestly, and **how you say it
+matters as much as what you say**. Jerry and I made each other sharper by testing each
+other's assumptions — perCVus is that friendship turned into something strangers can share.
+He died about five years after we left school, and I still feel the gap where his birthday
+call used to be. I've worn the name he gave me ever since. This is in his honor.
 
 ## What I'll do with the money (6 months, concrete)
 1. **Validate the referee** — run the stress-test battery through the model against the
@@ -66,4 +78,5 @@ A reputation layer for good reasoning. A public record of what humanity has actu
 argued its way to. A place where the sincere-but-unskilled are welcomed and *taught*
 rather than shouted down. Not another platform for winning — a commons for understanding.
 
-*[Close with one personal line in your own voice — why this, why you, why now.]*
+*I'm building this because the world is worse off without people like Jerry in it — and
+better with more of the honest, curious argument we had. I want to give that to strangers.*
