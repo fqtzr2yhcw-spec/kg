@@ -136,7 +136,54 @@ off each. That tree *is* the corpus.
 
 ---
 
-## 9. Ranking topics: health, not heat
+## 9. Conversation structure: claim-nodes, tagging, and traceability
+
+A floor needs a shape. Two obvious shapes both fail perCVus specifically, because
+perCVus has a job ordinary discussion threads don't: **score each contribution and
+synthesize the floor.** That job constrains the structure.
+
+- **One flat thread** — everything in a single stream — is rejected. Strong arguments
+  scroll away, timing beats quality (the exact pathology §2 exists to prevent), and the
+  referee can't say "the Against side rests on these three claims" when the floor is an
+  undifferentiated feed. There's also no way to tell what is answering what.
+- **Deeply nested threads** — Reddit-style infinite nesting — are also rejected. They
+  fragment the floor into rabbit holes, bury the strongest counter-argument levels deep,
+  reward whoever replied *first* to a hot comment over whoever argued *best*, and leave
+  no canonical structure for the synthesis engine to read.
+
+perCVus uses the middle path: a **shallow, structured floor built from claim-nodes.**
+
+- **The unit is a claim, not a message.** Each contribution is a node — the thing the
+  referee scores (§3) and the thing the synthesis points at (§7).
+- **Replies attach to a specific claim**, so the floor is traceable: every node records
+  what it answers. But replies **don't nest without bound.** Depth is kept shallow — a
+  claim and the rebuttals/support attached to it.
+- **Growth is by promotion, not nesting.** When a rebuttal spawns its own substantial
+  sub-debate, it's **promoted to its own claim-node** (and, if it keeps recurring, forked
+  into its own floor per §8) rather than sinking another level deeper. Forking is the
+  release valve that lets the floor stay flat.
+
+This keeps the floor flat enough to synthesize and linked enough to trace — the two
+properties the referee needs.
+
+### Tagging is structure, not decoration
+
+Mentions do real structural work here; they aren't just notifications:
+
+- **`@user`** — a traceable link to a person, plus notification. Your name is on your
+  claim; accountability is built in, and it never silences anyone (§2).
+- **`@claim`** — a link to a *specific argument*. This is what makes the floor traceable
+  and what the synthesis engine reads to know which node answers which.
+- **Tagging carries credit.** Bridges and **shared credit** (§6) follow the tag: you tag
+  the claim or person you're building on, and the credit-split attaches to that link. The
+  tag is how the referee knows a bridge move connects two specific contributions.
+
+So tagging is the connective tissue of the structured floor — the mechanism that turns a
+list of claims into a navigable argument map.
+
+---
+
+## 10. Ranking topics: health, not heat
 
 Ranking by engagement is exactly the mechanic that makes conventional feeds toxic —
 outrage travels fastest. perCVus ranks floors by a **progress score** instead:
@@ -152,7 +199,7 @@ noise.
 
 ---
 
-## 10. Open questions (deliberately unresolved)
+## 11. Open questions (deliberately unresolved)
 
 These are known and intentionally left for later:
 
@@ -161,6 +208,9 @@ These are known and intentionally left for later:
 - **How much the AI participates** beyond refereeing — can it argue a position when a
   side is unrepresented, and if so, how is that signaled?
 - **Fork thresholds.** How much recurring sub-debate justifies a new floor.
+- **Promotion depth.** Exactly how shallow replies stay before a sub-debate is promoted
+  to its own claim-node or forked (§9) — tuned so the floor never tangles but genuine
+  back-and-forth isn't cut off prematurely.
 - **Standing decay.** Whether reputation should fade so the forum stays meritocratic and
   current.
 - **Handling genuinely non-binary questions** that don't fit For/Against — likely

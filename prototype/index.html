@@ -129,6 +129,24 @@
   .card.percvus .body{font-family:var(--serif); font-size:16px}
   .bridge-flag{margin-top:10px; font-size:12px; color:var(--for); display:flex; gap:6px; align-items:center}
 
+  /* Threading, mentions, replies */
+  .mention{color:var(--brand-ink); background:var(--brand-soft); border-radius:5px; padding:0 4px; font-weight:600; font-size:.92em; white-space:nowrap}
+  .mention.unknown{color:var(--muted); background:var(--surface-2)}
+  .replyto{display:inline-flex; align-items:center; gap:5px; background:none; border:0; margin:0 0 8px; padding:0; color:var(--faint); font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; cursor:pointer}
+  .replyto:hover{color:var(--brand-ink)}
+  .replyto b{color:var(--muted); font-weight:600}
+  .card-actions{margin-top:11px; display:flex; gap:16px; align-items:center}
+  .reply-btn{background:none; border:0; padding:0; color:var(--faint); font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer}
+  .reply-btn:hover{color:var(--brand-ink)}
+  .card.flash{box-shadow:0 0 0 2px var(--brand),var(--shadow); transition:box-shadow .2s}
+
+  .reply-ctx{display:none; align-items:center; gap:9px; background:var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--brand); border-radius:9px; padding:8px 11px; margin-bottom:9px; font-size:12.5px; color:var(--muted)}
+  .reply-ctx.show{display:flex}
+  .reply-ctx .rtxt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .reply-ctx b{color:var(--brand-ink); font-family:var(--mono); font-weight:600}
+  .reply-ctx .rx{margin-left:auto; flex:none; border:0; background:none; color:var(--faint); cursor:pointer; font-size:16px; line-height:1; padding:0 2px}
+  .reply-ctx .rx:hover{color:var(--against)}
+
   .scores{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
   .chip{font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; padding:3px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); color:var(--muted); font-variant-numeric:tabular-nums}
   .chip b{color:var(--ink); font-weight:600}
@@ -215,16 +233,17 @@
 
   <div class="composer">
     <div class="composer-in">
+      <div class="reply-ctx" id="replyCtx"></div>
       <div class="referee" id="referee" role="status" aria-live="polite"></div>
       <div class="sides" role="group" aria-label="Choose your side">
         <button type="button" class="for-b" data-side="for" aria-pressed="true">For</button>
         <button type="button" class="against-b" data-side="against" aria-pressed="false">Against</button>
       </div>
       <div class="field">
-        <textarea id="input" placeholder="Take the floor — make your argument. State your reasons; the referee scores the reasoning, not the side." aria-label="Your argument"></textarea>
+        <textarea id="input" placeholder="Take the floor — make your argument. Use @handle to tag a claim or person; the referee scores the reasoning, not the side." aria-label="Your argument"></textarea>
         <button class="send" id="send" type="button">Take the floor</button>
       </div>
-      <p class="hint"><b>Prototype:</b> scoring here runs on a local stand-in so you can feel the loop with no setup. In the real perCVus, Claude reads and scores each argument.</p>
+      <p class="hint"><b>Prototype:</b> tap <b>Reply</b> on any claim to answer it directly, or <b>@tag</b> someone inline — both keep the floor traceable. Scoring runs on a local stand-in; in the real perCVus, Claude reads and scores each argument.</p>
     </div>
   </div>
 
@@ -232,42 +251,68 @@
 (function(){
   "use strict";
 
-  /* ---------- seed debate ---------- */
+  /* ---------- seed debate ----------
+     Each contribution is a claim-node: it has an id, an author handle, and may
+     reply to an earlier claim. Replies keep the floor traceable without nesting
+     into a tangle — see docs/CONCEPT.md §9. */
   var args = [
-    { side:"for", name:"Dana R.", ft:32, bridge:false,
+    { id:"c1", side:"for", name:"Dana R.", handle:"danaR", ft:32, bridge:false,
       text:"The readiness potential undercuts the felt sense of choice. Libet (1983), and Soon et al. (2008), found brain activity predicting a decision hundreds of milliseconds — sometimes seconds — before subjects report consciously choosing. If the decision is already underway before you're aware of making it, the conscious 'chooser' is reporting a result, not causing it.",
       s:{rigor:86, novelty:71, bridge:8} },
-    { side:"against", name:"Marcus V.", ft:29, bridge:false,
-      text:"Predicting a coarse motor tendency a moment early isn't the same as fixing a considered decision. The Libet paradigm measures trivial, arbitrary flicks with no reasons behind them. Extending that to 'you chose your career under no freedom' is a leap the data doesn't license.",
+    { id:"c2", side:"against", name:"Marcus V.", handle:"marcusV", ft:29, bridge:false, replyTo:"c1",
+      text:"@danaR — predicting a coarse motor tendency a moment early isn't the same as fixing a considered decision. The Libet paradigm measures trivial, arbitrary flicks with no reasons behind them. Extending that to 'you chose your career under no freedom' is a leap the data doesn't license.",
       s:{rigor:78, novelty:64, bridge:22} },
-    { side:"percvus", name:"perCVus", ft:0, kind:"question",
-      text:"Both sides are using 'free will' differently. The For side means an <em>uncaused</em> choice; the Against side seems to mean an <em>unconstrained</em> one. Which does the motion actually test? Naming that may resolve more than the neuroscience does." },
-    { side:"for", name:"Priya S.", ft:24, bridge:false,
+    { id:"c3", side:"percvus", name:"perCVus", handle:"perCVus", ft:0, kind:"question",
+      text:"Both sides are using 'free will' differently. The For side (@danaR) means an <em>uncaused</em> choice; the Against side (@marcusV) seems to mean an <em>unconstrained</em> one. Which does the motion actually test? Naming that may resolve more than the neuroscience does." },
+    { id:"c4", side:"for", name:"Priya S.", handle:"priyaS", ft:24, bridge:false,
       text:"Take it up a level: every mental event is a physical event, and physical events are fixed by prior causes plus the laws. Given the exact same past, you could not have done otherwise — 'could have done otherwise' has no room to be true. That's not about reaction times; it's about causation itself.",
       s:{rigor:88, novelty:58, bridge:5} },
-    { side:"against", name:"Elena K.", ft:41, bridge:true,
-      text:"I'll grant Priya's point entirely — our choices are caused. But the freedom that matters was never 'uncaused.' It's acting from your own reasons, values, and judgment without coercion. A caused choice that flows from who you are is exactly what we mean by a free one. Determinism doesn't threaten that; it's the mechanism of it.",
+    { id:"c5", side:"against", name:"Elena K.", handle:"elenaK", ft:41, bridge:true, replyTo:"c4",
+      text:"I'll grant @priyaS's point entirely — our choices are caused. But the freedom that matters was never 'uncaused.' It's acting from your own reasons, values, and judgment without coercion. A caused choice that flows from who you are is exactly what we mean by a free one. Determinism doesn't threaten that; it's the mechanism of it.",
       s:{rigor:85, novelty:79, bridge:88} },
-    { side:"for", name:"Dana R.", ft:32, bridge:false,
-      text:"That redefinition is elegant but it changes the subject. If 'free' just means 'uncoerced,' then a sophisticated robot is free too. Most people asserting free will mean they are the true origin of the choice — and that's the part the causal chain rules out.",
+    { id:"c6", side:"for", name:"Dana R.", handle:"danaR", ft:32, bridge:false, replyTo:"c5",
+      text:"@elenaK's redefinition is elegant but it changes the subject. If 'free' just means 'uncoerced,' then a sophisticated robot is free too. Most people asserting free will mean they are the true origin of the choice — and that's the part the causal chain rules out.",
       s:{rigor:80, novelty:66, bridge:34} }
   ];
 
+  /* Known handles → so @mentions render as live pills, unknown ones stay muted. */
+  var handles = {};
+  args.forEach(function(a){ handles[a.handle.toLowerCase()] = true; });
+  handles["you"] = true;
+  var byId = {};
+
   var stream = document.getElementById("stream");
   var esc = function(s){ var d=document.createElement("div"); d.textContent=s; return d.innerHTML; };
+  var strip = function(html){ var d=document.createElement("div"); d.innerHTML=html; return d.textContent||""; };
 
   function chip(k,v){ return '<span class="chip">'+k+' <b>'+v+'</b></span>'; }
 
+  /* Render @handle tokens as mention pills. Runs after escaping, so it never
+     re-injects unescaped user input; our own tags never contain '@'. */
+  function linkifyMentions(html){
+    return html.replace(/@([A-Za-z][A-Za-z0-9_]*)/g, function(m, h){
+      var known = handles[h.toLowerCase()];
+      return '<span class="mention'+(known?"":" unknown")+'">@'+h+'</span>';
+    });
+  }
+  function formatBody(a){
+    return linkifyMentions(a.raw ? esc(a.text) : a.text);
+  }
+
   function cardHTML(a){
     var initials = a.name==="perCVus" ? "P" : a.name.split(" ").map(function(w){return w[0];}).join("").slice(0,2);
-    var html = '<article class="card '+a.side+'">';
+    var html = '<article class="card '+a.side+'" id="claim-'+a.id+'">';
     html += '<div class="who"><span class="avatar">'+esc(initials)+'</span>';
     html += '<span class="name">'+esc(a.name)+'</span>';
     var tag = a.kind==="question" ? "clarifying question" : a.side;
     html += '<span class="side-tag">'+tag+'</span>';
     if(a.side!=="percvus") html += '<span class="ft">'+a.ft+' floor-time</span>';
     html += '</div>';
-    html += '<div class="body">'+(a.raw?esc(a.text):a.text)+'</div>';
+    if(a.replyTo && byId[a.replyTo]){
+      var p = byId[a.replyTo];
+      html += '<button class="replyto" data-goto="claim-'+p.id+'">↳ replying to <b>@'+esc(p.handle)+'</b></button>';
+    }
+    html += '<div class="body">'+formatBody(a)+'</div>';
     if(a.bridge) html += '<div class="bridge-flag">⤳ Bridge — builds on the other side. Credit shared.</div>';
     if(a.kind!=="question" && a.s){
       html += '<div class="scores">';
@@ -276,11 +321,16 @@
       html += '<span class="chip civ'+(bad?" bad":"")+'">'+(bad?"⚠ incivility":"✓ civil")+'</span>';
       html += '</div>';
     }
+    html += '<div class="card-actions">';
+    html += '<button class="reply-btn" data-reply="'+a.id+'">↳ Reply</button>';
+    html += '</div>';
     html += '</article>';
     return html;
   }
 
   function render(){
+    byId = {};
+    args.forEach(function(a){ byId[a.id] = a; });
     stream.innerHTML = args.map(cardHTML).join("");
     document.getElementById("stArgs").textContent = args.filter(function(a){return a.kind!=="question";}).length;
   }
@@ -331,6 +381,43 @@
     });
   });
 
+  /* ---------- reply targeting ---------- */
+  var replyCtx = document.getElementById("replyCtx");
+  var replyTarget = null;
+  var uCount = 0;
+
+  function setReply(id){
+    var a = byId[id];
+    if(!a) return;
+    replyTarget = { id:a.id, handle:a.handle };
+    var excerpt = strip(a.text).slice(0, 64);
+    replyCtx.innerHTML = '<span class="rtxt">↳ Replying to <b>@'+esc(a.handle)+'</b> · '+esc(excerpt)+'…</span>'+
+      '<button class="rx" type="button" aria-label="Cancel reply">✕</button>';
+    replyCtx.classList.add("show");
+    replyCtx.querySelector(".rx").addEventListener("click", clearReply);
+    input.focus();
+  }
+  function clearReply(){
+    replyTarget = null;
+    replyCtx.classList.remove("show");
+    replyCtx.innerHTML = "";
+  }
+
+  // Delegate clicks on the stream: Reply buttons and reply-to jump links.
+  stream.addEventListener("click", function(e){
+    var rb = e.target.closest(".reply-btn");
+    if(rb){ setReply(rb.getAttribute("data-reply")); return; }
+    var rt = e.target.closest(".replyto");
+    if(rt){
+      var el = document.getElementById(rt.getAttribute("data-goto"));
+      if(el){
+        el.scrollIntoView({behavior:"smooth", block:"center"});
+        el.classList.add("flash");
+        setTimeout(function(){ el.classList.remove("flash"); }, 1100);
+      }
+    }
+  });
+
   /* ---------- submit ---------- */
   var input = document.getElementById("input");
   var sendBtn = document.getElementById("send");
@@ -349,9 +436,12 @@
       return;
     }
 
-    var newArg = { side:side, name:"You", ft:r.ft, bridge:r.bridgeMove, raw:true,
-      text:text, s:{rigor:r.rigor, novelty:r.novelty, bridge:r.bridge}, civil:true };
+    var newArg = { id:"u"+(++uCount), side:side, name:"You", handle:"you", ft:r.ft,
+      bridge:r.bridgeMove, raw:true, text:text,
+      s:{rigor:r.rigor, novelty:r.novelty, bridge:r.bridge}, civil:true };
+    if(replyTarget) newArg.replyTo = replyTarget.id;
     args.push(newArg);
+    clearReply();
     render();
 
     var why = r.reasons.length ? " — "+r.reasons.slice(0,2).join("; ") : "";
