@@ -50,6 +50,33 @@ Every score is published **with a plain-language reason**. The referee is transp
 and arguable — you can contest the *referee*, not just your opponent. Contesting a score
 is itself a first-class action on the floor.
 
+### Coherence and relevance come first
+
+Before any axis is scored, a contribution has to clear two preconditions:
+
+1. **It has to be intelligible and on-topic** — a real claim about the motion, not
+   word-salad, keyword-stuffing, copy-paste, or off-topic filler.
+2. **It has to actually reason** — assert something *and* offer support for it.
+
+Fail either and every axis floors near zero. **Nonsense earns nothing.** Being *wrong* is
+always fine (§2); being *empty* is simply not rewarded. This is not a conduct penalty —
+noise is not a strike — it just doesn't score.
+
+### The referee reads for meaning, not markers
+
+This is the whole reason the referee is a language model and not a keyword counter:
+surface signals are trivially gamed. Sprinkling "therefore" and "studies show" across a
+paragraph of nothing must earn *nothing* — so the referee judges whether the premises are
+real, relevant, and actually support the conclusion, not whether the right words appear.
+
+- **Fabrication scores worse than uncertainty.** A made-up statistic or invented citation
+  is penalized *below* an honest "I'm not sure" — confident bullshit is the failure mode
+  to design against, never to reward.
+- **Adversarially tested.** The scorer is checked against deliberate gaming — verbosity,
+  jargon, fake citations, flattery of the referee, keyword-stuffing — and must not be
+  fooled by any of it. Getting this right is the difference between a floor that tracks
+  *truth* and one that tracks *performance*.
+
 ---
 
 ## 4. Floor-time: the incentive economy

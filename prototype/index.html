@@ -358,7 +358,7 @@
         <textarea id="input" placeholder="Take the floor — make your argument. Use @handle to tag a claim or person; the referee scores the reasoning, not the side." aria-label="Your argument"></textarea>
         <button class="send" id="send" type="button">Take the floor</button>
       </div>
-      <p class="hint"><b>Prototype:</b> tap <b>Reply</b> to answer a claim, <b>@tag</b> inline, or post an <b>insult</b> to watch the strike ladder bite — your allowance drops to 256, then climbs back as you argue well. Scoring runs on a local stand-in; in the real perCVus, Claude reads and scores each argument.</p>
+      <p class="hint"><b>Prototype:</b> <b>Reply</b> to a claim, <b>@tag</b> inline, post an <b>insult</b> to trip the strike ladder, or try <b>gibberish / keyword salad</b> to see it earn nothing. Scoring runs on a local stand-in that refuses the obvious cheats; in the real perCVus, Claude reads each argument for meaning.</p>
     </div>
   </div>
 
@@ -474,6 +474,11 @@
     var hedged    = count(t, ["might","maybe","i feel","i think","just because","obviously","everyone knows"]);
     var bridgeSig = count(t, ["grant","granted","concede","you're right","fair point","agree","even if","steelman","building on","i'll accept","to be fair"]);
 
+    // Cap keyword contributions so repeating trigger words can't inflate a score —
+    // the real referee reads meaning; this stand-in at least refuses to be stuffed.
+    reasoning = Math.min(reasoning, 3);
+    evidence  = Math.min(evidence, 3);
+
     var lenScore = len < 8 ? 22 : (len < 20 ? 55 : (len < 90 ? 82 : 74));
     var rigor = Math.round(Math.min(96, 30 + reasoning*13 + evidence*11 + lenScore*0.4 - hedged*6));
     rigor = Math.max(18, rigor);
@@ -491,6 +496,41 @@
     if(len<12) reasons.push("quite short — more room to develop the argument would raise its rigor");
 
     return { rigor:rigor, novelty:novelty, bridge:bridge, ft:ft, civil:!uncivil, bridgeMove:bridgeSig>0, reasons:reasons };
+  }
+
+  /* ---------- coherence gate: nonsense earns nothing ----------
+     A keyword counter can't truly tell sense from noise — only the real referee can —
+     but it can refuse the obvious cheats: gibberish, pure repetition, and keyword-
+     stuffing. These score zero and are held off the floor (no strike; noise isn't
+     misconduct). See docs/CONCEPT.md §3. */
+  function senseCheck(text){
+    var tokens = text.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if(tokens.length < 3) return { ok:false, reason:"there's barely anything here — state a claim and give a reason for it" };
+
+    var words = tokens.map(function(w){ return w.replace(/[^a-z0-9']/g, ""); }).filter(Boolean);
+    var wl = words.length || 1;
+
+    // 1) Gibberish — a real word has a vowel and no absurd consonant run.
+    var wordlike = words.filter(function(w){
+      if(/\d/.test(w)) return true;
+      return /[aeiou]/.test(w) && !/[bcdfghjklmnpqrstvwxyz]{5,}/.test(w) && w.length <= 18;
+    }).length;
+    if(wordlike / wl < 0.6) return { ok:false, reason:"this doesn't read as language — the referee scores meaning, not characters" };
+
+    // 2) Repetition — low variety, or one token dominating.
+    var freq = {}, maxc = 0;
+    words.forEach(function(w){ freq[w] = (freq[w]||0) + 1; if(freq[w] > maxc) maxc = freq[w]; });
+    var uniqueRatio = Object.keys(freq).length / wl;
+    if((wl >= 6 && uniqueRatio < 0.45) || maxc / wl > 0.35)
+      return { ok:false, reason:"this is mostly repetition — repeating words isn't an argument" };
+
+    // 3) Keyword-stuffing — reasoning/evidence trigger words at absurd density.
+    var triggers = ["because","therefore","since","thus","hence","follows","implies","study","studies","data","evidence","research","proof","fact","facts","obviously","clearly"];
+    var trig = words.filter(function(w){ return triggers.indexOf(w) > -1; }).length;
+    if(wl >= 6 && trig / wl > 0.30)
+      return { ok:false, reason:"this is keyword-stuffing — sprinkling ‘because’ and ‘studies show’ over nothing earns nothing" };
+
+    return { ok:true, reason:"" };
   }
 
   /* ---------- side toggle ---------- */
@@ -669,6 +709,15 @@
     var r = score(text, side);
 
     if(!r.civil){ handleViolation(); return; }
+
+    var sense = senseCheck(text);
+    if(!sense.ok){
+      referee.className = "referee show warn";
+      referee.innerHTML = '<div class="rlabel">perCVus · no points</div>'+
+        sense.reason.charAt(0).toUpperCase() + sense.reason.slice(1) +
+        '. This isn\'t a conduct violation — no strike — it simply doesn\'t score. In the real perCVus, the referee reads for meaning, so noise like this earns zero.';
+      return;
+    }
 
     var newArg = { id:"u"+(++uCount), side:side, name:"You", handle:"you", ft:r.ft,
       bridge:r.bridgeMove, raw:true, text:text,
