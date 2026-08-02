@@ -100,13 +100,22 @@ norms. *One carve-out:* content that re-victimizes a target — slurs, threats, 
 harassment, personal information — is **collapsed behind a click** ("hidden for conduct ·
 click to view"). Still auditable, never erased, but not forced onto the person it targets.
 
+### Everyone is told first
+
+Because enforcement bites from the *first* offense, fair notice is a precondition, not an
+afterthought. Before anyone can post, they pass a short **entry walkthrough** — a couple
+of quick click-throughs that explain the rules with concrete examples: what the gate
+catches, what a strike costs, and how to earn your way back. Nobody is ever sanctioned by
+a rule they were never shown. The bargain is explicit and up front: *this is a space
+where how you say it matters — and here is exactly how.*
+
 ### The ladder
 
-**Strike 0 — rephrase.** A heat-of-the-moment jab is met with an offer, not a penalty:
-*strip the insult and the point counts in full.* Only a repeat or a refusal escalates.
-Nobody is taxed for a single hot sentence they're willing to fix.
+Strikes bite from the first offense — there is no warning shot. What escalates is the
+*severity* of the response, never the *side* or the *substance* of what was said.
 
-**Strike 1 — throttle to 256, earn your way back.** The per-post allowance is cut to
+**Strike 1 — throttle to 256, earn your way back.** On a first violation the per-post
+allowance is cut to
 **256 characters** — enough to make a careful point, not enough to hold the floor. From
 there you climb back out by *doing the very thing perCVus values*: each civil,
 well-scored contribution raises the cap along a fixed path —
@@ -116,7 +125,7 @@ well-scored contribution raises the cap along a fixed path —
 How far each post moves you is set by its **quality score** (§3): a genuinely strong,
 civil contribution advances you a full tier, while weak-but-civil ones climb slower. The
 penalty for incivility is, precisely, *demonstrate that you can be rigorous and civil.*
-Re-offending while throttled ends the climb and triggers Strike 2.
+A second violation — during the climb or after it — triggers Strike 2.
 
 **Strike 2 — 24-hour lockout.** Posting is suspended for 24 hours, and a **public
 declaration is posted in the thread** naming how the rule was broken. The original
