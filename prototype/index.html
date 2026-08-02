@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>perCVus — The Floor</title>
+<style>
+  :root {
+    --ground:#EEF1F4; --surface:#FFFFFF; --surface-2:#F5F7F9;
+    --ink:#171B22; --muted:#5B6675; --faint:#8A94A2; --line:#E2E6EC;
+    --brand:#4A47C4; --brand-soft:#ECEBFB; --brand-ink:#3835A8;
+    --for:#0E7C60; --for-soft:#E3F2ED;
+    --against:#B4552F; --against-soft:#F7E9E1;
+    --warn:#B07d14;
+    --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,'Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --mono:'SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    --shadow:0 1px 2px rgba(20,25,35,.04),0 8px 24px rgba(20,25,35,.05);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#0E1218; --surface:#161B23; --surface-2:#1B212B;
+      --ink:#E9ECF2; --muted:#98A2B1; --faint:#6C7686; --line:#262D39;
+      --brand:#928FFF; --brand-soft:#20223A; --brand-ink:#B4B2FF;
+      --for:#46CCA0; --for-soft:#122C24;
+      --against:#E58B63; --against-soft:#2E2019;
+      --warn:#D6A93C;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#EEF1F4; --surface:#FFFFFF; --surface-2:#F5F7F9;
+    --ink:#171B22; --muted:#5B6675; --faint:#8A94A2; --line:#E2E6EC;
+    --brand:#4A47C4; --brand-soft:#ECEBFB; --brand-ink:#3835A8;
+    --for:#0E7C60; --for-soft:#E3F2ED; --against:#B4552F; --against-soft:#F7E9E1;
+    --warn:#B07d14; --shadow:0 1px 2px rgba(20,25,35,.04),0 8px 24px rgba(20,25,35,.05);
+  }
+  :root[data-theme="dark"]{
+    --ground:#0E1218; --surface:#161B23; --surface-2:#1B212B;
+    --ink:#E9ECF2; --muted:#98A2B1; --faint:#6C7686; --line:#262D39;
+    --brand:#928FFF; --brand-soft:#20223A; --brand-ink:#B4B2FF;
+    --for:#46CCA0; --for-soft:#122C24; --against:#E58B63; --against-soft:#2E2019;
+    --warn:#D6A93C; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 20px 140px}
+  a{color:var(--brand-ink)}
+
+  /* Masthead */
+  header.mast{
+    position:sticky; top:0; z-index:20; background:color-mix(in srgb,var(--ground) 88%,transparent);
+    backdrop-filter:saturate(140%) blur(10px); border-bottom:1px solid var(--line);
+  }
+  .mast-in{max-width:760px; margin:0 auto; padding:14px 20px; display:flex; align-items:baseline; gap:14px}
+  .brand{font-family:var(--serif); font-size:23px; letter-spacing:.2px; font-weight:600}
+  .brand b{color:var(--brand)}
+  .tag{font-size:12.5px; color:var(--muted); font-style:italic; font-family:var(--serif)}
+  .mast-spacer{flex:1}
+  .toggle{
+    border:1px solid var(--line); background:var(--surface); color:var(--muted);
+    border-radius:999px; padding:6px 12px; font-family:var(--mono); font-size:11px;
+    letter-spacing:.06em; cursor:pointer;
+  }
+  .toggle:hover{color:var(--ink)}
+  .toggle:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+  .label{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint)}
+
+  /* Proposition */
+  .prop{
+    margin-top:30px; background:var(--surface); border:1px solid var(--line);
+    border-radius:16px; padding:24px 26px; box-shadow:var(--shadow);
+  }
+  .prop .eyebrow{display:flex; gap:8px; align-items:center; margin-bottom:12px}
+  .subject{color:var(--brand); font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase}
+  .motion{font-family:var(--serif); font-size:29px; line-height:1.2; margin:2px 0 0; text-wrap:balance; font-weight:600}
+  .prop-meta{display:flex; flex-wrap:wrap; gap:18px; margin-top:18px; align-items:center}
+  .meta-stat{display:flex; flex-direction:column; gap:2px}
+  .meta-stat .n{font-family:var(--mono); font-size:16px; font-variant-numeric:tabular-nums; color:var(--ink)}
+  .meta-stat .k{font-size:11px; color:var(--muted)}
+  .health{flex:1; min-width:190px}
+  .health-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px}
+  .health-top .v{font-family:var(--mono); font-size:13px; color:var(--for); font-variant-numeric:tabular-nums}
+  .bar{height:7px; border-radius:99px; background:var(--surface-2); overflow:hidden; border:1px solid var(--line)}
+  .bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--brand),var(--for)); border-radius:99px}
+
+  /* Synthesis */
+  .synth{
+    margin-top:20px; background:var(--brand-soft); border:1px solid color-mix(in srgb,var(--brand) 28%,var(--line));
+    border-radius:16px; padding:22px 24px;
+  }
+  .synth h3{margin:0; font-family:var(--serif); font-size:18px; display:flex; align-items:center; gap:9px}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 22%,transparent)}
+  .synth .by{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--brand-ink); margin-left:auto}
+  .synth-grid{display:grid; grid-template-columns:1fr; gap:2px; margin-top:16px}
+  .srow{padding:12px 0; border-top:1px solid color-mix(in srgb,var(--brand) 18%,var(--line))}
+  .srow:first-child{border-top:0}
+  .srow .h{display:block; margin-bottom:4px}
+  .srow p{margin:0; font-size:14.5px; color:var(--ink)}
+  .srow.est .h{color:var(--for)} .srow.con .h{color:var(--against)} .srow.res .h{color:var(--brand-ink)}
+
+  /* Floor stream */
+  .stream-head{display:flex; align-items:center; gap:12px; margin:34px 4px 6px}
+  .stream-head .line{flex:1; height:1px; background:var(--line)}
+  .stream{display:flex; flex-direction:column; gap:16px; margin-top:14px}
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:16px 18px; max-width:86%; box-shadow:var(--shadow); position:relative;
+  }
+  .card.for{align-self:flex-start; border-left:3px solid var(--for)}
+  .card.against{align-self:flex-end; border-left:3px solid var(--against)}
+  .card.percvus{align-self:center; max-width:92%; background:var(--surface-2); border:1px dashed color-mix(in srgb,var(--brand) 40%,var(--line))}
+  .who{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+  .avatar{width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-family:var(--mono); font-size:10px; color:#fff; font-weight:600}
+  .for .avatar{background:var(--for)} .against .avatar{background:var(--against)} .percvus .avatar{background:var(--brand)}
+  .name{font-weight:600; font-size:13.5px}
+  .side-tag{font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; padding:2px 6px; border-radius:5px}
+  .for .side-tag{color:var(--for); background:var(--for-soft)} .against .side-tag{color:var(--against); background:var(--against-soft)}
+  .percvus .side-tag{color:var(--brand-ink); background:var(--brand-soft)}
+  .ft{margin-left:auto; font-family:var(--mono); font-size:10.5px; color:var(--faint); font-variant-numeric:tabular-nums}
+  .body{font-size:15px; color:var(--ink)}
+  .card.percvus .body{font-family:var(--serif); font-size:16px}
+  .bridge-flag{margin-top:10px; font-size:12px; color:var(--for); display:flex; gap:6px; align-items:center}
+
+  .scores{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
+  .chip{font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; padding:3px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); color:var(--muted); font-variant-numeric:tabular-nums}
+  .chip b{color:var(--ink); font-weight:600}
+  .chip.civ{color:var(--for); border-color:color-mix(in srgb,var(--for) 30%,var(--line))}
+  .chip.civ.bad{color:var(--against); border-color:color-mix(in srgb,var(--against) 40%,var(--line))}
+
+  /* Composer */
+  .composer{
+    position:fixed; left:0; right:0; bottom:0; z-index:15;
+    background:color-mix(in srgb,var(--ground) 90%,transparent);
+    backdrop-filter:saturate(140%) blur(10px); border-top:1px solid var(--line);
+  }
+  .composer-in{max-width:760px; margin:0 auto; padding:12px 20px 16px}
+  .referee{
+    display:none; background:var(--brand-soft); border:1px solid color-mix(in srgb,var(--brand) 26%,var(--line));
+    border-radius:11px; padding:11px 14px; margin-bottom:10px; font-size:13px; color:var(--ink);
+  }
+  .referee.show{display:block}
+  .referee .rlabel{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--brand-ink); margin-bottom:4px}
+  .referee.warn{background:var(--against-soft); border-color:color-mix(in srgb,var(--against) 34%,var(--line))}
+  .referee.warn .rlabel{color:var(--against)}
+  .sides{display:inline-flex; gap:4px; padding:3px; background:var(--surface-2); border:1px solid var(--line); border-radius:9px; margin-bottom:9px}
+  .sides button{border:0; background:transparent; color:var(--muted); font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; padding:6px 12px; border-radius:7px; cursor:pointer}
+  .sides button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .sides button.for-b[aria-pressed="true"]{color:var(--for)} .sides button.against-b[aria-pressed="true"]{color:var(--against)}
+  .field{display:flex; gap:10px; align-items:flex-end}
+  textarea{
+    flex:1; resize:none; font-family:var(--sans); font-size:15px; line-height:1.5; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:11px 13px; min-height:46px; max-height:150px;
+  }
+  textarea:focus-visible{outline:2px solid var(--brand); outline-offset:1px; border-color:var(--brand)}
+  .send{
+    border:0; background:var(--brand); color:#fff; font-weight:600; font-size:14px; font-family:var(--sans);
+    padding:12px 18px; border-radius:11px; cursor:pointer; white-space:nowrap;
+  }
+  .send:hover{filter:brightness(1.06)} .send:disabled{opacity:.5; cursor:default}
+  .send:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+  .hint{font-size:11px; color:var(--faint); margin-top:7px}
+  .hint b{color:var(--muted); font-weight:600}
+
+  @media (max-width:560px){
+    .motion{font-size:24px} .card{max-width:94%} .tag{display:none}
+    .wrap{padding-bottom:180px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+</head>
+<body>
+  <header class="mast">
+    <div class="mast-in">
+      <span class="brand">per<b>CV</b>us</span>
+      <span class="tag">Perception is 9/10ths of understanding.</span>
+      <span class="mast-spacer"></span>
+      <button class="toggle" id="themeBtn" type="button" aria-label="Toggle color theme">◐ theme</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="prop" aria-label="Proposition under debate">
+      <div class="eyebrow"><span class="subject">Floor · Philosophy of Mind</span></div>
+      <h1 class="motion">Free will is an illusion.</h1>
+      <div class="prop-meta">
+        <div class="meta-stat"><span class="n" id="stArgs">6</span><span class="k">contributions</span></div>
+        <div class="meta-stat"><span class="n">14</span><span class="k">on the floor</span></div>
+        <div class="health">
+          <div class="health-top"><span class="label">Floor health · progress</span><span class="v" id="healthV">72</span></div>
+          <div class="bar"><i id="healthBar" style="width:72%"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="synth" aria-label="State of the floor, by perCVus">
+      <h3><span class="dot"></span> State of the Floor <span class="by">perCVus · synthesis</span></h3>
+      <div class="synth-grid">
+        <div class="srow est"><span class="label h">Established</span><p>Both sides accept that our choices have prior neural and causal antecedents — deliberation doesn't happen in a vacuum.</p></div>
+        <div class="srow con"><span class="label h">Contested</span><p>Whether "freedom" requires the <em>absence of causes</em>, or merely the absence of <em>coercion</em>. The empirical facts are largely not in dispute — the disagreement is definitional.</p></div>
+        <div class="srow res"><span class="label h">What would resolve it</span><p>Agreeing on a shared definition of "free will" before arguing its existence. Name the definition and half the disagreement dissolves.</p></div>
+      </div>
+    </section>
+
+    <div class="stream-head"><span class="label">The floor</span><span class="line"></span></div>
+    <div class="stream" id="stream"></div>
+  </main>
+
+  <div class="composer">
+    <div class="composer-in">
+      <div class="referee" id="referee" role="status" aria-live="polite"></div>
+      <div class="sides" role="group" aria-label="Choose your side">
+        <button type="button" class="for-b" data-side="for" aria-pressed="true">For</button>
+        <button type="button" class="against-b" data-side="against" aria-pressed="false">Against</button>
+      </div>
+      <div class="field">
+        <textarea id="input" placeholder="Take the floor — make your argument. State your reasons; the referee scores the reasoning, not the side." aria-label="Your argument"></textarea>
+        <button class="send" id="send" type="button">Take the floor</button>
+      </div>
+      <p class="hint"><b>Prototype:</b> scoring here runs on a local stand-in so you can feel the loop with no setup. In the real perCVus, Claude reads and scores each argument.</p>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- seed debate ---------- */
+  var args = [
+    { side:"for", name:"Dana R.", ft:32, bridge:false,
+      text:"The readiness potential undercuts the felt sense of choice. Libet (1983), and Soon et al. (2008), found brain activity predicting a decision hundreds of milliseconds — sometimes seconds — before subjects report consciously choosing. If the decision is already underway before you're aware of making it, the conscious 'chooser' is reporting a result, not causing it.",
+      s:{rigor:86, novelty:71, bridge:8} },
+    { side:"against", name:"Marcus V.", ft:29, bridge:false,
+      text:"Predicting a coarse motor tendency a moment early isn't the same as fixing a considered decision. The Libet paradigm measures trivial, arbitrary flicks with no reasons behind them. Extending that to 'you chose your career under no freedom' is a leap the data doesn't license.",
+      s:{rigor:78, novelty:64, bridge:22} },
+    { side:"percvus", name:"perCVus", ft:0, kind:"question",
+      text:"Both sides are using 'free will' differently. The For side means an <em>uncaused</em> choice; the Against side seems to mean an <em>unconstrained</em> one. Which does the motion actually test? Naming that may resolve more than the neuroscience does." },
+    { side:"for", name:"Priya S.", ft:24, bridge:false,
+      text:"Take it up a level: every mental event is a physical event, and physical events are fixed by prior causes plus the laws. Given the exact same past, you could not have done otherwise — 'could have done otherwise' has no room to be true. That's not about reaction times; it's about causation itself.",
+      s:{rigor:88, novelty:58, bridge:5} },
+    { side:"against", name:"Elena K.", ft:41, bridge:true,
+      text:"I'll grant Priya's point entirely — our choices are caused. But the freedom that matters was never 'uncaused.' It's acting from your own reasons, values, and judgment without coercion. A caused choice that flows from who you are is exactly what we mean by a free one. Determinism doesn't threaten that; it's the mechanism of it.",
+      s:{rigor:85, novelty:79, bridge:88} },
+    { side:"for", name:"Dana R.", ft:32, bridge:false,
+      text:"That redefinition is elegant but it changes the subject. If 'free' just means 'uncoerced,' then a sophisticated robot is free too. Most people asserting free will mean they are the true origin of the choice — and that's the part the causal chain rules out.",
+      s:{rigor:80, novelty:66, bridge:34} }
+  ];
+
+  var stream = document.getElementById("stream");
+  var esc = function(s){ var d=document.createElement("div"); d.textContent=s; return d.innerHTML; };
+
+  function chip(k,v){ return '<span class="chip">'+k+' <b>'+v+'</b></span>'; }
+
+  function cardHTML(a){
+    var initials = a.name==="perCVus" ? "P" : a.name.split(" ").map(function(w){return w[0];}).join("").slice(0,2);
+    var html = '<article class="card '+a.side+'">';
+    html += '<div class="who"><span class="avatar">'+esc(initials)+'</span>';
+    html += '<span class="name">'+esc(a.name)+'</span>';
+    var tag = a.kind==="question" ? "clarifying question" : a.side;
+    html += '<span class="side-tag">'+tag+'</span>';
+    if(a.side!=="percvus") html += '<span class="ft">'+a.ft+' floor-time</span>';
+    html += '</div>';
+    html += '<div class="body">'+(a.raw?esc(a.text):a.text)+'</div>';
+    if(a.bridge) html += '<div class="bridge-flag">⤳ Bridge — builds on the other side. Credit shared.</div>';
+    if(a.kind!=="question" && a.s){
+      html += '<div class="scores">';
+      html += chip("RIGOR", a.s.rigor)+chip("NOVELTY", a.s.novelty)+chip("BRIDGE", a.s.bridge);
+      var bad = a.civil===false;
+      html += '<span class="chip civ'+(bad?" bad":"")+'">'+(bad?"⚠ incivility":"✓ civil")+'</span>';
+      html += '</div>';
+    }
+    html += '</article>';
+    return html;
+  }
+
+  function render(){
+    stream.innerHTML = args.map(cardHTML).join("");
+    document.getElementById("stArgs").textContent = args.filter(function(a){return a.kind!=="question";}).length;
+  }
+  render();
+
+  /* ---------- local stand-in referee ---------- */
+  function count(t, list){ var n=0; for(var i=0;i<list.length;i++){ if(t.indexOf(list[i])>-1) n++; } return n; }
+
+  function score(text, side){
+    var t = " "+text.toLowerCase()+" ";
+    var words = text.trim().split(/\s+/).filter(Boolean);
+    var len = words.length;
+
+    var toxic = ["idiot","stupid","moron","dumb","shut up","fool ","clown","pathetic","loser","shill","liar"];
+    var uncivil = count(t, toxic) > 0;
+
+    var reasoning = count(t, ["because","therefore","since ","thus ","hence","follows","implies","given that","if ","so that","as a result","consequently"]);
+    var evidence  = count(t, ["study","studies","data","evidence","research","experiment","shown","measured","percent","%","found that","according to"]) + (/\d/.test(t)?1:0);
+    var hedged    = count(t, ["might","maybe","i feel","i think","just because","obviously","everyone knows"]);
+    var bridgeSig = count(t, ["grant","granted","concede","you're right","fair point","agree","even if","steelman","building on","i'll accept","to be fair"]);
+
+    var lenScore = len < 8 ? 22 : (len < 20 ? 55 : (len < 90 ? 82 : 74));
+    var rigor = Math.round(Math.min(96, 30 + reasoning*13 + evidence*11 + lenScore*0.4 - hedged*6));
+    rigor = Math.max(18, rigor);
+
+    var novelty = Math.round(Math.max(28, Math.min(92, 46 + (len>25?14:0) + evidence*6 + (reasoning>1?8:0) - hedged*4)));
+    var bridge  = Math.round(Math.max(6, Math.min(95, 14 + bridgeSig*24 + (side==="against"||side==="for"?0:0))));
+    var ft = Math.max(4, Math.round((rigor*0.35 + novelty*0.15 + bridge*0.25)));
+
+    var reasons = [];
+    if(reasoning>1) reasons.push("clear reasoning structure (premises linked to a conclusion)");
+    else if(reasoning===0) reasons.push("no explicit reasoning connectives — the conclusion is asserted more than shown");
+    if(evidence>0) reasons.push("cites evidence rather than bare assertion");
+    if(bridgeSig>0) reasons.push("engages the other side's point directly — a bridge move, credit shared");
+    if(hedged>1) reasons.push("leans on hedges/appeals ('obviously', 'everyone knows') that don't carry weight");
+    if(len<12) reasons.push("quite short — more room to develop the argument would raise its rigor");
+
+    return { rigor:rigor, novelty:novelty, bridge:bridge, ft:ft, civil:!uncivil, bridgeMove:bridgeSig>0, reasons:reasons };
+  }
+
+  /* ---------- side toggle ---------- */
+  var side = "for";
+  var sideBtns = document.querySelectorAll(".sides button");
+  sideBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      side = b.getAttribute("data-side");
+      sideBtns.forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true":"false"); });
+    });
+  });
+
+  /* ---------- submit ---------- */
+  var input = document.getElementById("input");
+  var sendBtn = document.getElementById("send");
+  var referee = document.getElementById("referee");
+  var health = 72;
+
+  function submit(){
+    var text = input.value.trim();
+    if(text.length < 3) return;
+    var r = score(text, side);
+
+    if(!r.civil){
+      referee.className = "referee show warn";
+      referee.innerHTML = '<div class="rlabel">perCVus · held at the gate</div>'+
+        'This contribution reads as uncivil, so its reasoning scores are set aside — on perCVus you can\'t out-argue toxicity. Rephrase the point without the jab and it counts in full.';
+      return;
+    }
+
+    var newArg = { side:side, name:"You", ft:r.ft, bridge:r.bridgeMove, raw:true,
+      text:text, s:{rigor:r.rigor, novelty:r.novelty, bridge:r.bridge}, civil:true };
+    args.push(newArg);
+    render();
+
+    var why = r.reasons.length ? " — "+r.reasons.slice(0,2).join("; ") : "";
+    referee.className = "referee show";
+    referee.innerHTML = '<div class="rlabel">perCVus · referee</div>'+
+      '<b>+'+r.ft+' floor-time earned.</b> Rigor '+r.rigor+' · Novelty '+r.novelty+' · Bridge '+r.bridge+why+'.';
+
+    // nudge floor health by the quality of the contribution
+    var delta = Math.round((r.rigor+r.bridge)/2 - 55)/6;
+    health = Math.max(40, Math.min(96, health + delta));
+    document.getElementById("healthV").textContent = Math.round(health);
+    document.getElementById("healthBar").style.width = Math.round(health)+"%";
+
+    input.value = "";
+    input.style.height = "auto";
+    input.focus();
+    document.querySelector(".stream .card:last-child").scrollIntoView({behavior:"smooth", block:"center"});
+  }
+
+  sendBtn.addEventListener("click", submit);
+  input.addEventListener("keydown", function(e){
+    if((e.metaKey||e.ctrlKey) && e.key==="Enter"){ e.preventDefault(); submit(); }
+  });
+  input.addEventListener("input", function(){
+    input.style.height="auto"; input.style.height=Math.min(150, input.scrollHeight)+"px";
+  });
+
+  /* ---------- theme toggle ---------- */
+  var root = document.documentElement;
+  document.getElementById("themeBtn").addEventListener("click", function(){
+    var cur = root.getAttribute("data-theme");
+    if(!cur){ cur = window.matchMedia("(prefers-color-scheme:dark)").matches ? "dark":"light"; }
+    root.setAttribute("data-theme", cur==="dark" ? "light":"dark");
+  });
+})();
+</script>
+</body>
+</html>
