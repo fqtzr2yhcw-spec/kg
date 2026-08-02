@@ -187,12 +187,39 @@
   .hint{font-size:11px; color:var(--faint); margin-top:7px}
   .hint b{color:var(--muted); font-weight:600}
 
+  /* Enforcement: allowance meter + lockout banner + system cards */
+  .allow{margin-bottom:10px}
+  .allow-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px}
+  .allow-label{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+  .allow.warn .allow-label{color:var(--against)}
+  .allow-count{font-family:var(--mono); font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .allow-bar{height:5px; border-radius:99px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden}
+  .allow-bar > i{display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--brand),var(--for)); border-radius:99px; transition:width .45s ease}
+  .allow.warn .allow-bar > i{background:var(--against)}
+  .allow-note{font-size:11px; color:var(--against); margin-top:5px}
+  .allow-note:empty{margin-top:0}
+
+  .enforce{display:none; align-items:center; gap:10px; background:var(--against-soft); border:1px solid color-mix(in srgb,var(--against) 34%,var(--line)); border-radius:11px; padding:11px 14px; margin-bottom:10px; font-size:13px; color:var(--ink)}
+  .enforce.show{display:flex}
+  .enforce .etext{flex:1}
+  .enforce .etext b{color:var(--against)}
+  .enforce button{border:1px solid color-mix(in srgb,var(--against) 40%,var(--line)); background:var(--surface); color:var(--against); border-radius:8px; padding:7px 12px; font-size:12.5px; font-family:var(--sans); cursor:pointer; white-space:nowrap}
+  .enforce button:hover{filter:brightness(1.04)}
+
+  .card.sys{align-self:center; max-width:92%; background:var(--against-soft); border:1px dashed color-mix(in srgb,var(--against) 45%,var(--line))}
+  .card.sys .avatar{background:var(--against)}
+  .card.sys .side-tag{color:var(--against); background:var(--against-soft)}
+  .card.sys .body{font-size:14px}
+  .card.sys .demo{margin-top:9px; font-family:var(--mono); font-size:10.5px; color:var(--faint); letter-spacing:.04em}
+
   /* Onboarding walkthrough */
   .overlay{position:fixed; inset:0; z-index:40; display:none; align-items:center; justify-content:center; padding:20px; background:color-mix(in srgb,var(--ink) 55%,transparent); backdrop-filter:blur(4px)}
   .overlay.show{display:flex}
   .tut{background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); max-width:444px; width:100%; padding:26px 26px 20px; position:relative}
   .tut .kicker{font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--brand); margin-bottom:10px}
   .tut h2{font-family:var(--serif); font-size:23px; line-height:1.22; margin:0 0 13px; text-wrap:balance; font-weight:600}
+  .tut .lead{font-family:var(--serif); font-style:italic; font-size:16.5px; line-height:1.35; color:var(--brand-ink); margin:0 0 14px; text-wrap:balance}
+  .tut .signoff{font-family:var(--serif); font-size:19px; font-weight:600; color:var(--brand-ink); margin:16px 0 4px}
   .tut .slide{display:none}
   .tut .slide.on{display:block; animation:fade .3s ease}
   @keyframes fade{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
@@ -270,13 +297,14 @@
 
       <div class="slide on" data-slide="0">
         <h2>Welcome to the floor.</h2>
-        <p>perCVus is a place to get <em>closer to the truth</em> by arguing well. Every floor is one motion, two sides, and a neutral referee — perCVus itself — that scores the <b>reasoning</b>, never the side.</p>
+        <p class="lead">perCVus — where what you say matters, and how you say it matters more.</p>
+        <p>It's a place to get <em>closer to the truth</em> by arguing well. Every floor is one motion, two sides, and a neutral referee — perCVus itself — that scores the <b>reasoning</b>, never the side.</p>
         <p>You can be sharp, skeptical, even wrong. Being wrong is the raw material of working things out — it's never what gets punished.</p>
       </div>
 
       <div class="slide" data-slide="1">
-        <h2>What you say matters. How you say it matters more.</h2>
-        <p>Civility is a <b>gate</b>, not a scoreboard you can game. A brilliant point delivered as an insult earns <b>nothing</b> — the reasoning score is zeroed the moment it becomes an attack.</p>
+        <h2>Civility is a gate.</h2>
+        <p>Not a scoreboard you can game. A brilliant point delivered as an insult earns <b>nothing</b> — the reasoning score is zeroed the moment it becomes an attack.</p>
         <div class="ex">
           <span class="bad">✗ “That's an idiotic take and you know it.”</span>
           <span class="good">✓ “That doesn't follow — here's the step it skips.”</span>
@@ -297,7 +325,7 @@
       <div class="slide" data-slide="3">
         <h2>We keep it small on purpose.</h2>
         <p>perCVus isn't for everyone — it's for people who'll <b>contribute</b>. That's a deliberate choice, and it's what keeps the floor worth showing up to.</p>
-        <p><b>Argue hard. Tread lightly.</b></p>
+        <p class="signoff">Argue hard. Tread lightly.</p>
       </div>
 
       <div class="tut-foot">
@@ -313,6 +341,15 @@
     <div class="composer-in">
       <div class="reply-ctx" id="replyCtx"></div>
       <div class="referee" id="referee" role="status" aria-live="polite"></div>
+      <div class="enforce" id="enforce" role="status" aria-live="polite"></div>
+      <div class="allow" id="allow">
+        <div class="allow-top">
+          <span class="allow-label" id="allowLabel">Full floor-time</span>
+          <span class="allow-count" id="allowCount">0 / 2000</span>
+        </div>
+        <div class="allow-bar"><i id="allowBar" style="width:100%"></i></div>
+        <div class="allow-note" id="allowNote"></div>
+      </div>
       <div class="sides" role="group" aria-label="Choose your side">
         <button type="button" class="for-b" data-side="for" aria-pressed="true">For</button>
         <button type="button" class="against-b" data-side="against" aria-pressed="false">Against</button>
@@ -321,7 +358,7 @@
         <textarea id="input" placeholder="Take the floor — make your argument. Use @handle to tag a claim or person; the referee scores the reasoning, not the side." aria-label="Your argument"></textarea>
         <button class="send" id="send" type="button">Take the floor</button>
       </div>
-      <p class="hint"><b>Prototype:</b> tap <b>Reply</b> on any claim to answer it directly, or <b>@tag</b> someone inline — both keep the floor traceable. Scoring runs on a local stand-in; in the real perCVus, Claude reads and scores each argument.</p>
+      <p class="hint"><b>Prototype:</b> tap <b>Reply</b> to answer a claim, <b>@tag</b> inline, or post an <b>insult</b> to watch the strike ladder bite — your allowance drops to 256, then climbs back as you argue well. Scoring runs on a local stand-in; in the real perCVus, Claude reads and scores each argument.</p>
     </div>
   </div>
 
@@ -378,6 +415,13 @@
   }
 
   function cardHTML(a){
+    if(a.kind==="system"){
+      return '<article class="card sys" id="claim-'+a.id+'">'+
+        '<div class="who"><span class="avatar">!</span>'+
+        '<span class="name">perCVus</span>'+
+        '<span class="side-tag">'+esc(a.subtag||"enforcement")+'</span></div>'+
+        '<div class="body">'+a.text+'</div></article>';
+    }
     var initials = a.name==="perCVus" ? "P" : a.name.split(" ").map(function(w){return w[0];}).join("").slice(0,2);
     var html = '<article class="card '+a.side+'" id="claim-'+a.id+'">';
     html += '<div class="who"><span class="avatar">'+esc(initials)+'</span>';
@@ -410,7 +454,7 @@
     byId = {};
     args.forEach(function(a){ byId[a.id] = a; });
     stream.innerHTML = args.map(cardHTML).join("");
-    document.getElementById("stArgs").textContent = args.filter(function(a){return a.kind!=="question";}).length;
+    document.getElementById("stArgs").textContent = args.filter(function(a){return a.kind!=="question" && a.kind!=="system";}).length;
   }
   render();
 
@@ -496,6 +540,122 @@
     }
   });
 
+  /* ---------- enforcement: the strike ladder, live ----------
+     A first violation throttles you to 256 chars; civil, well-scored posts climb
+     you back 256 → 500 → 750 → full. Re-offend while throttled and you're locked
+     out; three lockouts in the window removes you (return by petition). This is a
+     prototype: the 24h lockout offers a demo shortcut. See docs/CONCEPT.md §5. */
+  var FULL = 2000;
+  var TIERS = [256, 500, 750, FULL];
+  var LOCKOUT_LIMIT = 3;
+  var enfState = "ok";   // ok | throttled | locked | removed
+  var tier = 3;          // index into TIERS; 3 = full allowance
+  var lockouts = 0;
+
+  var allowEl = document.getElementById("allow");
+  var allowLabel = document.getElementById("allowLabel");
+  var allowCount = document.getElementById("allowCount");
+  var allowBar = document.getElementById("allowBar");
+  var allowNote = document.getElementById("allowNote");
+  var enforceEl = document.getElementById("enforce");
+
+  function cap(){ return TIERS[Math.min(tier, TIERS.length-1)]; }
+
+  function pushSystem(subtag, text){
+    args.push({ id:"s"+(++uCount), kind:"system", side:"percvus",
+      subtag:subtag, text:text, name:"perCVus", handle:"perCVus" });
+    render();
+    var last = document.querySelector(".stream .card:last-child");
+    if(last) last.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+
+  function updateAllow(){
+    var locked = (enfState==="locked" || enfState==="removed");
+    var c = cap();
+    input.disabled = locked;
+    sendBtn.disabled = locked;
+    sideBtns.forEach(function(b){ b.disabled = locked; });
+    input.maxLength = c;
+    if(input.value.length > c) input.value = input.value.slice(0, c);
+
+    allowBar.style.width = Math.round(c / FULL * 100) + "%";
+    allowCount.textContent = input.value.length + " / " + c;
+
+    if(enfState==="throttled"){
+      allowEl.classList.add("warn");
+      allowLabel.textContent = "Throttled · " + c + " chars";
+      var remain = (TIERS.length-1) - tier;
+      allowNote.textContent = "Strike 1 — earn it back: " + remain + " more strong, civil post" + (remain===1?"":"s") + " to full.";
+    } else {
+      allowEl.classList.remove("warn");
+      allowLabel.textContent = "Full floor-time";
+      allowNote.textContent = "";
+    }
+
+    if(enfState==="locked"){
+      enforceEl.className = "enforce show";
+      enforceEl.innerHTML = '<span class="etext"><b>🔒 Locked out · 24h.</b> A repeat violation before earning back is a lockout, noted openly in the thread — lockout ' + lockouts + ' of ' + LOCKOUT_LIMIT + ' in the window.</span>' +
+        '<button type="button" id="endLock">End lockout (demo)</button>';
+      enforceEl.querySelector("#endLock").onclick = function(){
+        enfState = "throttled"; tier = 0;
+        referee.className = "referee show";
+        referee.innerHTML = '<div class="rlabel">perCVus · lockout lifted</div>Demo shortcut — a real lockout runs the full 24 hours. You\'re back, throttled to 256. Earn your way up.';
+        updateAllow(); input.focus();
+      };
+    } else if(enfState==="removed"){
+      enforceEl.className = "enforce show";
+      enforceEl.innerHTML = '<span class="etext"><b>⛔ Removed from the floor.</b> Three lockouts in the window. perCVus is niche by design — but removal isn\'t exile.</span>' +
+        '<button type="button" id="petition">Petition to return</button>';
+      enforceEl.querySelector("#petition").onclick = function(){
+        lockouts = 0; enfState = "ok"; tier = 3;
+        pushSystem("petition granted", 'Petition granted — <b>@you</b> is reinstated. Taking the time to ask in good faith is the signal we look for; the slate is clear.');
+        referee.className = "referee show";
+        referee.innerHTML = '<div class="rlabel">perCVus · reinstated</div>Welcome back. Full floor-time restored — argue hard, tread lightly.';
+        updateAllow(); input.focus();
+      };
+    } else {
+      enforceEl.className = "enforce";
+      enforceEl.innerHTML = "";
+    }
+  }
+
+  function handleViolation(){
+    if(enfState==="ok"){
+      enfState = "throttled"; tier = 0;
+      referee.className = "referee show warn";
+      referee.innerHTML = '<div class="rlabel">perCVus · held at the gate</div>'+
+        'This reads as a personal attack, so it doesn\'t make the floor — you can\'t out-argue toxicity here. That\'s <b>Strike 1</b>: your allowance is cut to <b>256 characters</b>. Earn it back with civil, well-scored posts.';
+    } else if(enfState==="throttled"){
+      lockouts++;
+      if(lockouts >= LOCKOUT_LIMIT){
+        enfState = "removed";
+        pushSystem("removed", 'Third lockout in the window — <b>@you</b> is removed from the floor. Return is by petition.');
+      } else {
+        enfState = "locked";
+        pushSystem("lockout · " + lockouts + " of " + LOCKOUT_LIMIT, 'Lockout declared for <b>@you</b> — a repeat violation before earning back. Posting suspended 24h; the original stays up, annotated.');
+        referee.className = "referee show warn";
+        referee.innerHTML = '<div class="rlabel">perCVus · locked out</div>You re-offended while throttled — a 24-hour lockout, posted in the thread. ' + (LOCKOUT_LIMIT - lockouts) + ' more in the window and you\'re removed.';
+      }
+    }
+    updateAllow();
+  }
+
+  // Advance the earn-back ladder on a civil post; returns a note for the referee.
+  function handleCivilProgress(r){
+    if(enfState!=="throttled") return "";
+    if(r.rigor >= 50){
+      tier++;
+      if(tier >= TIERS.length-1){
+        tier = TIERS.length-1; enfState = "ok"; updateAllow();
+        return ' <b>Full allowance restored</b> — you argued your way back.';
+      }
+      updateAllow();
+      return ' Allowance up to <b>'+cap()+'</b> — keep climbing.';
+    }
+    updateAllow();
+    return ' Civil, but too thin to move your allowance — sharpen the reasoning to climb.';
+  }
+
   /* ---------- submit ---------- */
   var input = document.getElementById("input");
   var sendBtn = document.getElementById("send");
@@ -503,16 +663,12 @@
   var health = 72;
 
   function submit(){
+    if(input.disabled) return;
     var text = input.value.trim();
     if(text.length < 3) return;
     var r = score(text, side);
 
-    if(!r.civil){
-      referee.className = "referee show warn";
-      referee.innerHTML = '<div class="rlabel">perCVus · held at the gate</div>'+
-        'This reads as a personal attack, so it doesn\'t make the floor — you can\'t out-argue toxicity here. On the real floor this is <b>Strike 1</b>: your allowance would drop to 256 characters until you earn it back. Make the point without the jab.';
-      return;
-    }
+    if(!r.civil){ handleViolation(); return; }
 
     var newArg = { id:"u"+(++uCount), side:side, name:"You", handle:"you", ft:r.ft,
       bridge:r.bridgeMove, raw:true, text:text,
@@ -525,7 +681,8 @@
     var why = r.reasons.length ? " — "+r.reasons.slice(0,2).join("; ") : "";
     referee.className = "referee show";
     referee.innerHTML = '<div class="rlabel">perCVus · referee</div>'+
-      '<b>+'+r.ft+' floor-time earned.</b> Rigor '+r.rigor+' · Novelty '+r.novelty+' · Bridge '+r.bridge+why+'.';
+      '<b>+'+r.ft+' floor-time earned.</b> Rigor '+r.rigor+' · Novelty '+r.novelty+' · Bridge '+r.bridge+why+'.'+
+      handleCivilProgress(r);
 
     // nudge floor health by the quality of the contribution
     var delta = Math.round((r.rigor+r.bridge)/2 - 55)/6;
@@ -535,6 +692,7 @@
 
     input.value = "";
     input.style.height = "auto";
+    updateAllow();
     input.focus();
     document.querySelector(".stream .card:last-child").scrollIntoView({behavior:"smooth", block:"center"});
   }
@@ -545,7 +703,10 @@
   });
   input.addEventListener("input", function(){
     input.style.height="auto"; input.style.height=Math.min(150, input.scrollHeight)+"px";
+    allowCount.textContent = input.value.length + " / " + cap();
   });
+
+  updateAllow();  // initialize the allowance meter
 
   /* ---------- theme toggle ---------- */
   var root = document.documentElement;
