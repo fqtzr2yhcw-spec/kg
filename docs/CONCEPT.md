@@ -59,8 +59,9 @@ good arguments, lose them for bad. The spirit is kept; the failure mode (muzzlin
 sincere-but-unskilled, and newcomers) is designed out by reframing it as **floor-time**,
 scoped to a single debate — like speaking time in a real debate.
 
-- **Everyone always keeps a baseline.** Participation cannot be taken away. The baseline
-  is enough to make a real point.
+- **Everyone always keeps a baseline.** Being *wrong* never costs you participation; only
+  conduct can, and only through the temporary, transparent limits in §5. The baseline is
+  always enough to make a real point.
 - **Sound contributions earn *extra* floor-time within that debate** — more room to
   develop an argument, and more reach. It's a reward for standing you've earned on this
   topic, not permission to speak.
@@ -73,18 +74,83 @@ different tracks is what preserves the open forum.
 
 ---
 
-## 5. Civility is a multiplier, not a currency
+## 5. Decorum & enforcement
 
 You cannot out-argue toxicity. Civility is not a bucket of points you can trade away by
-being clever; it is a **gate on everything else**:
+being clever; it is a **gate on everything else** — an abusive contribution has its other
+scores (§3) **zeroed for that contribution**, so a brilliant point delivered as an insult
+earns nothing.
 
-- An abusive contribution has its other scores **zeroed for that contribution** — a
-  brilliant point delivered as an insult earns nothing.
-- Repeat offenses trigger escalating **cooldowns**.
-- The target is always **conduct**, never being wrong or holding an unpopular view.
+But a gate needs teeth, and this is one of only *two* mechanics that ever restrict anyone
+(§2), so the whole system is built on a single organizing rule:
 
-Civility as a pillar means it constrains the clever as firmly as it constrains everyone
-else.
+> **perCVus only restricts conduct that itself silences others.**
+
+You are never sanctioned for being harsh, wrong, or unpopular — only for the behaviors
+(personal attacks, harassment, slurs, threats) whose actual effect is to drive other
+people off the floor. Limiting *that* is consistent with "never contract what anyone is
+allowed to say" (§2), because the conduct was contracting it first.
+
+### The record stays visible
+
+Every gated violation is **left in place and annotated** — the referee attaches a
+plain-language note explaining exactly which rule broke, visible to everyone. perCVus
+does not memory-hole misconduct; it turns each violation into a public lesson in the
+norms. *One carve-out:* content that re-victimizes a target — slurs, threats, targeted
+harassment, personal information — is **collapsed behind a click** ("hidden for conduct ·
+click to view"). Still auditable, never erased, but not forced onto the person it targets.
+
+### The ladder
+
+**Strike 0 — rephrase.** A heat-of-the-moment jab is met with an offer, not a penalty:
+*strip the insult and the point counts in full.* Only a repeat or a refusal escalates.
+Nobody is taxed for a single hot sentence they're willing to fix.
+
+**Strike 1 — throttle to 256, earn your way back.** The per-post allowance is cut to
+**256 characters** — enough to make a careful point, not enough to hold the floor. From
+there you climb back out by *doing the very thing perCVus values*: each civil,
+well-scored contribution raises the cap along a fixed path —
+
+> 256 → 500 → 750 → full reinstatement (three qualifying posts).
+
+How far each post moves you is set by its **quality score** (§3): a genuinely strong,
+civil contribution advances you a full tier, while weak-but-civil ones climb slower. The
+penalty for incivility is, precisely, *demonstrate that you can be rigorous and civil.*
+Re-offending while throttled ends the climb and triggers Strike 2.
+
+**Strike 2 — 24-hour lockout.** Posting is suspended for 24 hours, and a **public
+declaration is posted in the thread** naming how the rule was broken. The original
+contribution stays up (annotated). This is the one place participation is removed, and it
+is strictly time-boxed and transparent.
+
+**Strike 3 — out, pending petition.** A third strike removes the member from the
+community. This is a **deliberate hard line.** perCVus is a niche space *by design*: it
+does not want everyone, it wants people who will contribute — and it protects that space
+rather than letting those who can't keep decorum pollute it for everyone else. That is a
+choice, made openly.
+
+### The way back
+
+Removal is not exile. Reinstatement is by **petition**, and the petition is
+**deliberately forgiving**: someone who takes the time to ask to return is, in almost
+every case, reinstated — the act of asking is itself the good-faith signal perCVus is
+looking for. Only extreme cases (severe, repeated, or malicious harm) are refused.
+Petitions are heard by a **jury of high-standing members** (§4), with the operators as a
+backstop — the severe end stays human-judged, never decided by the referee alone.
+
+### Guardrails against weaponization
+
+Because this is the one system that can restrict a voice, it is hardened against being
+turned into a weapon:
+
+- **The referee decides, not the crowd.** A pile-on or mass-flag cannot silence anyone;
+  flagging only routes a contribution for a conduct check.
+- **Conduct-only firewall.** The referee must cite the specific behavior. "I disagree" or
+  "this offends me" can never, by construction, trip the gate — disagreement is not a
+  violation.
+- **Rulings are contestable.** A civility call is arguable like any other score (§3); a
+  wrongly-gated contribution can be appealed to the same human jury.
+- **Malicious flagging carries its own cost**, so reporting cannot become the attack.
 
 ---
 
@@ -204,7 +270,8 @@ noise.
 These are known and intentionally left for later:
 
 - **Exact score-to-floor-time curve.** Needs tuning against real behavior so it can't be
-  gamed by verbosity.
+  gamed by verbosity — this includes the Strike 1 earn-back curve (§5): how much each
+  qualifying post advances the 256 → 500 → 750 → full path.
 - **How much the AI participates** beyond refereeing — can it argue a position when a
   side is unrepresented, and if so, how is that signaled?
 - **Fork thresholds.** How much recurring sub-debate justifies a new floor.
