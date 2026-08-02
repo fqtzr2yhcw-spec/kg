@@ -125,18 +125,23 @@ well-scored contribution raises the cap along a fixed path —
 How far each post moves you is set by its **quality score** (§3): a genuinely strong,
 civil contribution advances you a full tier, while weak-but-civil ones climb slower. The
 penalty for incivility is, precisely, *demonstrate that you can be rigorous and civil.*
-A second violation — during the climb or after it — triggers Strike 2.
+Re-offending before you've earned your way back is no longer a throttle — it triggers a
+**lockout** (below).
 
-**Strike 2 — 24-hour lockout.** Posting is suspended for 24 hours, and a **public
-declaration is posted in the thread** naming how the rule was broken. The original
-contribution stays up (annotated). This is the one place participation is removed, and it
-is strictly time-boxed and transparent.
+**Lockout — 24 hours, logged.** A repeat violation before recovery — or a serious
+violation outright — suspends posting for **24 hours**, with a **public declaration in the
+thread** naming how the rule was broken. The original contribution stays up (annotated).
+A lockout is strictly time-boxed and transparent, and each one is **timestamped**, because
+lockouts are the unit that counts toward removal.
 
-**Strike 3 — out, pending petition.** A third strike removes the member from the
-community. This is a **deliberate hard line.** perCVus is a niche space *by design*: it
-does not want everyone, it wants people who will contribute — and it protects that space
-rather than letting those who can't keep decorum pollute it for everyone else. That is a
-choice, made openly.
+**Removal — three lockouts in a window.** Three lockouts within a rolling period removes
+the member from the community; they return only by **petition**. The window matters: older
+lockouts **age out of the count**, so removal is reserved for a genuine *pattern* of
+misconduct in a bounded stretch — not a lifetime tally that everyone eventually trips.
+This threshold is a **deliberate hard line.** perCVus is a niche space *by design*: it does
+not want everyone, it wants people who will contribute — and it protects that space rather
+than letting those who can't keep decorum pollute it for everyone else. That is a choice,
+made openly.
 
 ### The way back
 
@@ -281,6 +286,9 @@ These are known and intentionally left for later:
 - **Exact score-to-floor-time curve.** Needs tuning against real behavior so it can't be
   gamed by verbosity — this includes the Strike 1 earn-back curve (§5): how much each
   qualifying post advances the 256 → 500 → 750 → full path.
+- **Lockout window length (§5).** Over how long a rolling period three lockouts trigger
+  removal, and how fast old lockouts age out of that count — set so a genuine pattern is
+  caught while spaced-out slips are forgiven.
 - **How much the AI participates** beyond refereeing — can it argue a position when a
   side is unrepresented, and if so, how is that signaled?
 - **Fork thresholds.** How much recurring sub-debate justifies a new floor.
