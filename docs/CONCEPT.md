@@ -77,6 +77,11 @@ real, relevant, and actually support the conclusion, not whether the right words
   fooled by any of it. Getting this right is the difference between a floor that tracks
   *truth* and one that tracks *performance*.
 
+The full working rubric — calibration bands, integrity rules, output format, and the
+bias protocol — lives in `REFEREE.md`, with a stress-test battery in `REFEREE-TESTS.md`.
+Those exist so "the scoring is right" can be *tested* cheaply before the referee goes
+live.
+
 ---
 
 ## 4. Floor-time: the incentive economy
