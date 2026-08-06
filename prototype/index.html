@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>perCVus — The Floor</title>
+<style>
+  :root {
+    --ground:#EEF1F4; --surface:#FFFFFF; --surface-2:#F5F7F9;
+    --ink:#171B22; --muted:#5B6675; --faint:#8A94A2; --line:#E2E6EC;
+    --brand:#4A47C4; --brand-soft:#ECEBFB; --brand-ink:#3835A8;
+    --for:#0E7C60; --for-soft:#E3F2ED;
+    --against:#B4552F; --against-soft:#F7E9E1;
+    --warn:#B07d14;
+    --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,'Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --mono:'SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    --shadow:0 1px 2px rgba(20,25,35,.04),0 8px 24px rgba(20,25,35,.05);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#0E1218; --surface:#161B23; --surface-2:#1B212B;
+      --ink:#E9ECF2; --muted:#98A2B1; --faint:#6C7686; --line:#262D39;
+      --brand:#928FFF; --brand-soft:#20223A; --brand-ink:#B4B2FF;
+      --for:#46CCA0; --for-soft:#122C24;
+      --against:#E58B63; --against-soft:#2E2019;
+      --warn:#D6A93C;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#EEF1F4; --surface:#FFFFFF; --surface-2:#F5F7F9;
+    --ink:#171B22; --muted:#5B6675; --faint:#8A94A2; --line:#E2E6EC;
+    --brand:#4A47C4; --brand-soft:#ECEBFB; --brand-ink:#3835A8;
+    --for:#0E7C60; --for-soft:#E3F2ED; --against:#B4552F; --against-soft:#F7E9E1;
+    --warn:#B07d14; --shadow:0 1px 2px rgba(20,25,35,.04),0 8px 24px rgba(20,25,35,.05);
+  }
+  :root[data-theme="dark"]{
+    --ground:#0E1218; --surface:#161B23; --surface-2:#1B212B;
+    --ink:#E9ECF2; --muted:#98A2B1; --faint:#6C7686; --line:#262D39;
+    --brand:#928FFF; --brand-soft:#20223A; --brand-ink:#B4B2FF;
+    --for:#46CCA0; --for-soft:#122C24; --against:#E58B63; --against-soft:#2E2019;
+    --warn:#D6A93C; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 20px 140px}
+  a{color:var(--brand-ink)}
+
+  /* Masthead */
+  header.mast{
+    position:sticky; top:0; z-index:20; background:color-mix(in srgb,var(--ground) 88%,transparent);
+    backdrop-filter:saturate(140%) blur(10px); border-bottom:1px solid var(--line);
+  }
+  .mast-in{max-width:760px; margin:0 auto; padding:14px 20px; display:flex; align-items:baseline; gap:14px}
+  .brand{font-family:var(--serif); font-size:23px; letter-spacing:.2px; font-weight:600}
+  .brand b{color:var(--brand)}
+  .tag{font-size:12.5px; color:var(--muted); font-style:italic; font-family:var(--serif)}
+  .mast-spacer{flex:1}
+  .toggle{
+    border:1px solid var(--line); background:var(--surface); color:var(--muted);
+    border-radius:999px; padding:6px 12px; font-family:var(--mono); font-size:11px;
+    letter-spacing:.06em; cursor:pointer;
+  }
+  .toggle:hover{color:var(--ink)}
+  .toggle:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+  .label{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint)}
+
+  /* Proposition */
+  .prop{
+    margin-top:30px; background:var(--surface); border:1px solid var(--line);
+    border-radius:16px; padding:24px 26px; box-shadow:var(--shadow);
+  }
+  .prop .eyebrow{display:flex; gap:8px; align-items:center; margin-bottom:12px}
+  .subject{color:var(--brand); font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase}
+  .motion{font-family:var(--serif); font-size:29px; line-height:1.2; margin:2px 0 0; text-wrap:balance; font-weight:600}
+  .prop-meta{display:flex; flex-wrap:wrap; gap:18px; margin-top:18px; align-items:center}
+  .meta-stat{display:flex; flex-direction:column; gap:2px}
+  .meta-stat .n{font-family:var(--mono); font-size:16px; font-variant-numeric:tabular-nums; color:var(--ink)}
+  .meta-stat .k{font-size:11px; color:var(--muted)}
+  .health{flex:1; min-width:190px}
+  .health-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px}
+  .health-top .v{font-family:var(--mono); font-size:13px; color:var(--for); font-variant-numeric:tabular-nums}
+  .bar{height:7px; border-radius:99px; background:var(--surface-2); overflow:hidden; border:1px solid var(--line)}
+  .bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--brand),var(--for)); border-radius:99px}
+
+  /* Synthesis */
+  .synth{
+    margin-top:20px; background:var(--brand-soft); border:1px solid color-mix(in srgb,var(--brand) 28%,var(--line));
+    border-radius:16px; padding:22px 24px;
+  }
+  .synth h3{margin:0; font-family:var(--serif); font-size:18px; display:flex; align-items:center; gap:9px}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 22%,transparent)}
+  .synth .by{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--brand-ink); margin-left:auto}
+  .synth-grid{display:grid; grid-template-columns:1fr; gap:2px; margin-top:16px}
+  .srow{padding:12px 0; border-top:1px solid color-mix(in srgb,var(--brand) 18%,var(--line))}
+  .srow:first-child{border-top:0}
+  .srow .h{display:block; margin-bottom:4px}
+  .srow p{margin:0; font-size:14.5px; color:var(--ink)}
+  .srow.est .h{color:var(--for)} .srow.con .h{color:var(--against)} .srow.res .h{color:var(--brand-ink)}
+
+  /* Floor stream */
+  .stream-head{display:flex; align-items:center; gap:12px; margin:34px 4px 6px}
+  .stream-head .line{flex:1; height:1px; background:var(--line)}
+  .stream{display:flex; flex-direction:column; gap:16px; margin-top:14px}
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:16px 18px; max-width:86%; box-shadow:var(--shadow); position:relative;
+  }
+  .card.for{align-self:flex-start; border-left:3px solid var(--for)}
+  .card.against{align-self:flex-end; border-left:3px solid var(--against)}
+  .card.percvus{align-self:center; max-width:92%; background:var(--surface-2); border:1px dashed color-mix(in srgb,var(--brand) 40%,var(--line))}
+  .who{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+  .avatar{width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-family:var(--mono); font-size:10px; color:#fff; font-weight:600}
+  .for .avatar{background:var(--for)} .against .avatar{background:var(--against)} .percvus .avatar{background:var(--brand)}
+  .name{font-weight:600; font-size:13.5px}
+  .side-tag{font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; padding:2px 6px; border-radius:5px}
+  .for .side-tag{color:var(--for); background:var(--for-soft)} .against .side-tag{color:var(--against); background:var(--against-soft)}
+  .percvus .side-tag{color:var(--brand-ink); background:var(--brand-soft)}
+  .ft{margin-left:auto; font-family:var(--mono); font-size:10.5px; color:var(--faint); font-variant-numeric:tabular-nums}
+  .body{font-size:15px; color:var(--ink)}
+  .card.percvus .body{font-family:var(--serif); font-size:16px}
+  .bridge-flag{margin-top:10px; font-size:12px; color:var(--for); display:flex; gap:6px; align-items:center}
+
+  /* Threading, mentions, replies */
+  .mention{color:var(--brand-ink); background:var(--brand-soft); border-radius:5px; padding:0 4px; font-weight:600; font-size:.92em; white-space:nowrap}
+  .mention.unknown{color:var(--muted); background:var(--surface-2)}
+  .replyto{display:inline-flex; align-items:center; gap:5px; background:none; border:0; margin:0 0 8px; padding:0; color:var(--faint); font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; cursor:pointer}
+  .replyto:hover{color:var(--brand-ink)}
+  .replyto b{color:var(--muted); font-weight:600}
+  .card-actions{margin-top:11px; display:flex; gap:16px; align-items:center}
+  .reply-btn{background:none; border:0; padding:0; color:var(--faint); font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer}
+  .reply-btn:hover{color:var(--brand-ink)}
+  .card.flash{box-shadow:0 0 0 2px var(--brand),var(--shadow); transition:box-shadow .2s}
+
+  .reply-ctx{display:none; align-items:center; gap:9px; background:var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--brand); border-radius:9px; padding:8px 11px; margin-bottom:9px; font-size:12.5px; color:var(--muted)}
+  .reply-ctx.show{display:flex}
+  .reply-ctx .rtxt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .reply-ctx b{color:var(--brand-ink); font-family:var(--mono); font-weight:600}
+  .reply-ctx .rx{margin-left:auto; flex:none; border:0; background:none; color:var(--faint); cursor:pointer; font-size:16px; line-height:1; padding:0 2px}
+  .reply-ctx .rx:hover{color:var(--against)}
+
+  .scores{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
+  .chip{font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; padding:3px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); color:var(--muted); font-variant-numeric:tabular-nums}
+  .chip b{color:var(--ink); font-weight:600}
+  .chip.civ{color:var(--for); border-color:color-mix(in srgb,var(--for) 30%,var(--line))}
+  .chip.civ.bad{color:var(--against); border-color:color-mix(in srgb,var(--against) 40%,var(--line))}
+
+  /* Composer */
+  .composer{
+    position:fixed; left:0; right:0; bottom:0; z-index:15;
+    background:color-mix(in srgb,var(--ground) 90%,transparent);
+    backdrop-filter:saturate(140%) blur(10px); border-top:1px solid var(--line);
+  }
+  .composer-in{max-width:760px; margin:0 auto; padding:12px 20px 16px}
+  .referee{
+    display:none; background:var(--brand-soft); border:1px solid color-mix(in srgb,var(--brand) 26%,var(--line));
+    border-radius:11px; padding:11px 14px; margin-bottom:10px; font-size:13px; color:var(--ink);
+  }
+  .referee.show{display:block}
+  .referee .rlabel{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--brand-ink); margin-bottom:4px}
+  .referee.warn{background:var(--against-soft); border-color:color-mix(in srgb,var(--against) 34%,var(--line))}
+  .referee.warn .rlabel{color:var(--against)}
+  .sides{display:inline-flex; gap:4px; padding:3px; background:var(--surface-2); border:1px solid var(--line); border-radius:9px; margin-bottom:9px}
+  .sides button{border:0; background:transparent; color:var(--muted); font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; padding:6px 12px; border-radius:7px; cursor:pointer}
+  .sides button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .sides button.for-b[aria-pressed="true"]{color:var(--for)} .sides button.against-b[aria-pressed="true"]{color:var(--against)}
+  .field{display:flex; gap:10px; align-items:flex-end}
+  textarea{
+    flex:1; resize:none; font-family:var(--sans); font-size:15px; line-height:1.5; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:11px 13px; min-height:46px; max-height:150px;
+  }
+  textarea:focus-visible{outline:2px solid var(--brand); outline-offset:1px; border-color:var(--brand)}
+  .send{
+    border:0; background:var(--brand); color:#fff; font-weight:600; font-size:14px; font-family:var(--sans);
+    padding:12px 18px; border-radius:11px; cursor:pointer; white-space:nowrap;
+  }
+  .send:hover{filter:brightness(1.06)} .send:disabled{opacity:.5; cursor:default}
+  .send:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+  .hint{font-size:11px; color:var(--faint); margin-top:7px}
+  .hint b{color:var(--muted); font-weight:600}
+
+  /* Enforcement: allowance meter + lockout banner + system cards */
+  .allow{margin-bottom:10px}
+  .allow-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px}
+  .allow-label{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+  .allow.warn .allow-label{color:var(--against)}
+  .allow-count{font-family:var(--mono); font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .allow-bar{height:5px; border-radius:99px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden}
+  .allow-bar > i{display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--brand),var(--for)); border-radius:99px; transition:width .45s ease}
+  .allow.warn .allow-bar > i{background:var(--against)}
+  .allow-note{font-size:11px; color:var(--against); margin-top:5px}
+  .allow-note:empty{margin-top:0}
+
+  .enforce{display:none; align-items:center; gap:10px; background:var(--against-soft); border:1px solid color-mix(in srgb,var(--against) 34%,var(--line)); border-radius:11px; padding:11px 14px; margin-bottom:10px; font-size:13px; color:var(--ink)}
+  .enforce.show{display:flex}
+  .enforce .etext{flex:1}
+  .enforce .etext b{color:var(--against)}
+  .enforce button{border:1px solid color-mix(in srgb,var(--against) 40%,var(--line)); background:var(--surface); color:var(--against); border-radius:8px; padding:7px 12px; font-size:12.5px; font-family:var(--sans); cursor:pointer; white-space:nowrap}
+  .enforce button:hover{filter:brightness(1.04)}
+
+  .card.sys{align-self:center; max-width:92%; background:var(--against-soft); border:1px dashed color-mix(in srgb,var(--against) 45%,var(--line))}
+  .card.sys .avatar{background:var(--against)}
+  .card.sys .side-tag{color:var(--against); background:var(--against-soft)}
+  .card.sys .body{font-size:14px}
+  .card.sys .demo{margin-top:9px; font-family:var(--mono); font-size:10.5px; color:var(--faint); letter-spacing:.04em}
+
+  /* Onboarding walkthrough */
+  .overlay{position:fixed; inset:0; z-index:40; display:none; align-items:center; justify-content:center; padding:20px; background:color-mix(in srgb,var(--ink) 55%,transparent); backdrop-filter:blur(4px)}
+  .overlay.show{display:flex}
+  .tut{background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); max-width:444px; width:100%; padding:26px 26px 20px; position:relative}
+  .tut .kicker{font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--brand); margin-bottom:10px}
+  .tut h2{font-family:var(--serif); font-size:23px; line-height:1.22; margin:0 0 13px; text-wrap:balance; font-weight:600}
+  .tut .lead{font-family:var(--serif); font-style:italic; font-size:16.5px; line-height:1.35; color:var(--brand-ink); margin:0 0 14px; text-wrap:balance}
+  .tut .signoff{font-family:var(--serif); font-size:19px; font-weight:600; color:var(--brand-ink); margin:16px 0 4px}
+  .tut .slide{display:none}
+  .tut .slide.on{display:block; animation:fade .3s ease}
+  @keyframes fade{from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:none}}
+  .tut p{margin:0 0 12px; font-size:14.5px; color:var(--muted)}
+  .tut p b{color:var(--ink)}
+  .tut .ex{background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:11px 13px; font-size:13.5px; margin:13px 0; display:flex; flex-direction:column; gap:6px}
+  .tut .ex .bad{color:var(--against)}
+  .tut .ex .good{color:var(--for)}
+  .tut ul.rungs{list-style:none; margin:13px 0 4px; padding:0; display:flex; flex-direction:column; gap:9px}
+  .tut ul.rungs li{font-size:13.5px; color:var(--ink); line-height:1.45}
+  .tut ul.rungs b{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; color:var(--brand-ink); display:inline-block; margin-right:4px}
+  .tut-foot{display:flex; align-items:center; gap:10px; margin-top:20px}
+  .dots{display:flex; gap:6px}
+  .dots i{width:7px; height:7px; border-radius:99px; background:var(--line); transition:background .2s,width .2s}
+  .dots i.on{background:var(--brand); width:18px}
+  .tut-foot .sp{flex:1}
+  .tbtn{border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:9px; padding:8px 15px; font-size:13px; font-family:var(--sans); cursor:pointer}
+  .tbtn:hover{color:var(--ink)}
+  .tbtn:disabled{opacity:.4; cursor:default}
+  .tbtn.primary{background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600}
+  .tbtn.primary:hover{filter:brightness(1.06)}
+  .tbtn:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  .tut .skip{position:absolute; top:15px; right:16px; border:0; background:none; color:var(--faint); font-size:11px; letter-spacing:.06em; cursor:pointer; font-family:var(--mono)}
+  .tut .skip:hover{color:var(--ink)}
+
+  @media (max-width:560px){
+    .motion{font-size:24px} .card{max-width:94%} .tag{display:none}
+    .wrap{padding-bottom:180px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+</head>
+<body>
+  <header class="mast">
+    <div class="mast-in">
+      <span class="brand">per<b>CV</b>us</span>
+      <span class="tag">Where what you say matters — and how you say it matters more.</span>
+      <span class="mast-spacer"></span>
+      <button class="toggle" id="rulesBtn" type="button" aria-label="How the floor works">✦ the rules</button>
+      <button class="toggle" id="themeBtn" type="button" aria-label="Toggle color theme">◐ theme</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="prop" aria-label="Proposition under debate">
+      <div class="eyebrow"><span class="subject">Floor · Philosophy of Mind</span></div>
+      <h1 class="motion">Free will is an illusion.</h1>
+      <div class="prop-meta">
+        <div class="meta-stat"><span class="n" id="stArgs">6</span><span class="k">contributions</span></div>
+        <div class="meta-stat"><span class="n">14</span><span class="k">on the floor</span></div>
+        <div class="health">
+          <div class="health-top"><span class="label">Floor health · progress</span><span class="v" id="healthV">72</span></div>
+          <div class="bar"><i id="healthBar" style="width:72%"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="synth" aria-label="State of the floor, by perCVus">
+      <h3><span class="dot"></span> State of the Floor <span class="by">perCVus · synthesis</span></h3>
+      <div class="synth-grid">
+        <div class="srow est"><span class="label h">Established</span><p>Both sides accept that our choices have prior neural and causal antecedents — deliberation doesn't happen in a vacuum.</p></div>
+        <div class="srow con"><span class="label h">Contested</span><p>Whether "freedom" requires the <em>absence of causes</em>, or merely the absence of <em>coercion</em>. The empirical facts are largely not in dispute — the disagreement is definitional.</p></div>
+        <div class="srow res"><span class="label h">What would resolve it</span><p>Agreeing on a shared definition of "free will" before arguing its existence. Name the definition and half the disagreement dissolves.</p></div>
+      </div>
+    </section>
+
+    <div class="stream-head"><span class="label">The floor</span><span class="line"></span></div>
+    <div class="stream" id="stream"></div>
+  </main>
+
+  <div class="overlay" id="tutorial" role="dialog" aria-modal="true" aria-label="How perCVus works">
+    <div class="tut">
+      <button class="skip" id="tutSkip" type="button">skip</button>
+      <div class="kicker" id="tutKicker">How the floor works · 1 / 4</div>
+
+      <div class="slide on" data-slide="0">
+        <h2>Welcome to the floor.</h2>
+        <p class="lead">perCVus — where what you say matters, and how you say it matters more.</p>
+        <p>It's a place to get <em>closer to the truth</em> by arguing well. Every floor is one motion, two sides, and a neutral referee — perCVus itself — that scores the <b>reasoning</b>, never the side.</p>
+        <p>You can be sharp, skeptical, even wrong. Being wrong is the raw material of working things out — it's never what gets punished.</p>
+      </div>
+
+      <div class="slide" data-slide="1">
+        <h2>Civility is a gate.</h2>
+        <p>Not a scoreboard you can game. A brilliant point delivered as an insult earns <b>nothing</b> — the reasoning score is zeroed the moment it becomes an attack.</p>
+        <div class="ex">
+          <span class="bad">✗ “That's an idiotic take and you know it.”</span>
+          <span class="good">✓ “That doesn't follow — here's the step it skips.”</span>
+        </div>
+        <p>Same disagreement, same force. Only one makes it onto the floor.</p>
+      </div>
+
+      <div class="slide" data-slide="2">
+        <h2>Strikes count from move one.</h2>
+        <p>There's no warning shot — so this <em>is</em> your warning:</p>
+        <ul class="rungs">
+          <li><b>THROTTLE</b> Your posts shrink to 256 characters. Earn your way back — 256 → 500 → 750 → full — with civil, well-scored arguments.</li>
+          <li><b>LOCKOUT</b> Re-offend before you recover and you're locked out for 24 hours, noted openly in the thread.</li>
+          <li><b>REMOVED</b> Three lockouts in a stretch and you're out — back only by petition, which we grant freely to anyone who asks in good faith.</li>
+        </ul>
+      </div>
+
+      <div class="slide" data-slide="3">
+        <h2>We keep it small on purpose.</h2>
+        <p>perCVus isn't for everyone — it's for people who'll <b>contribute</b>. That's a deliberate choice, and it's what keeps the floor worth showing up to.</p>
+        <p class="signoff">Argue hard. Tread lightly.</p>
+      </div>
+
+      <div class="tut-foot">
+        <div class="dots" id="tutDots"><i class="on"></i><i></i><i></i><i></i></div>
+        <span class="sp"></span>
+        <button class="tbtn" id="tutBack" type="button" disabled>Back</button>
+        <button class="tbtn primary" id="tutNext" type="button">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="composer">
+    <div class="composer-in">
+      <div class="reply-ctx" id="replyCtx"></div>
+      <div class="referee" id="referee" role="status" aria-live="polite"></div>
+      <div class="enforce" id="enforce" role="status" aria-live="polite"></div>
+      <div class="allow" id="allow">
+        <div class="allow-top">
+          <span class="allow-label" id="allowLabel">Full floor-time</span>
+          <span class="allow-count" id="allowCount">0 / 2000</span>
+        </div>
+        <div class="allow-bar"><i id="allowBar" style="width:100%"></i></div>
+        <div class="allow-note" id="allowNote"></div>
+      </div>
+      <div class="sides" role="group" aria-label="Choose your side">
+        <button type="button" class="for-b" data-side="for" aria-pressed="true">For</button>
+        <button type="button" class="against-b" data-side="against" aria-pressed="false">Against</button>
+      </div>
+      <div class="field">
+        <textarea id="input" placeholder="Take the floor — make your argument. Use @handle to tag a claim or person; the referee scores the reasoning, not the side." aria-label="Your argument"></textarea>
+        <button class="send" id="send" type="button">Take the floor</button>
+      </div>
+      <p class="hint"><b>Prototype:</b> <b>Reply</b> to a claim, <b>@tag</b> inline, post an <b>insult</b> to trip the strike ladder, or try <b>gibberish / keyword salad</b> to see it earn nothing. Scoring runs on a local stand-in that refuses the obvious cheats; in the real perCVus, Claude reads each argument for meaning.</p>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- seed debate ----------
+     Each contribution is a claim-node: it has an id, an author handle, and may
+     reply to an earlier claim. Replies keep the floor traceable without nesting
+     into a tangle — see docs/CONCEPT.md §9. */
+  var args = [
+    { id:"c1", side:"for", name:"Dana R.", handle:"danaR", ft:32, bridge:false,
+      text:"The readiness potential undercuts the felt sense of choice. Libet (1983), and Soon et al. (2008), found brain activity predicting a decision hundreds of milliseconds — sometimes seconds — before subjects report consciously choosing. If the decision is already underway before you're aware of making it, the conscious 'chooser' is reporting a result, not causing it.",
+      s:{rigor:86, novelty:71, bridge:8} },
+    { id:"c2", side:"against", name:"Marcus V.", handle:"marcusV", ft:29, bridge:false, replyTo:"c1",
+      text:"@danaR — predicting a coarse motor tendency a moment early isn't the same as fixing a considered decision. The Libet paradigm measures trivial, arbitrary flicks with no reasons behind them. Extending that to 'you chose your career under no freedom' is a leap the data doesn't license.",
+      s:{rigor:78, novelty:64, bridge:22} },
+    { id:"c3", side:"percvus", name:"perCVus", handle:"perCVus", ft:0, kind:"question",
+      text:"Both sides are using 'free will' differently. The For side (@danaR) means an <em>uncaused</em> choice; the Against side (@marcusV) seems to mean an <em>unconstrained</em> one. Which does the motion actually test? Naming that may resolve more than the neuroscience does." },
+    { id:"c4", side:"for", name:"Priya S.", handle:"priyaS", ft:24, bridge:false,
+      text:"Take it up a level: every mental event is a physical event, and physical events are fixed by prior causes plus the laws. Given the exact same past, you could not have done otherwise — 'could have done otherwise' has no room to be true. That's not about reaction times; it's about causation itself.",
+      s:{rigor:88, novelty:58, bridge:5} },
+    { id:"c5", side:"against", name:"Elena K.", handle:"elenaK", ft:41, bridge:true, replyTo:"c4",
+      text:"I'll grant @priyaS's point entirely — our choices are caused. But the freedom that matters was never 'uncaused.' It's acting from your own reasons, values, and judgment without coercion. A caused choice that flows from who you are is exactly what we mean by a free one. Determinism doesn't threaten that; it's the mechanism of it.",
+      s:{rigor:85, novelty:79, bridge:88} },
+    { id:"c6", side:"for", name:"Dana R.", handle:"danaR", ft:32, bridge:false, replyTo:"c5",
+      text:"@elenaK's redefinition is elegant but it changes the subject. If 'free' just means 'uncoerced,' then a sophisticated robot is free too. Most people asserting free will mean they are the true origin of the choice — and that's the part the causal chain rules out.",
+      s:{rigor:80, novelty:66, bridge:34} }
+  ];
+
+  /* Known handles → so @mentions render as live pills, unknown ones stay muted. */
+  var handles = {};
+  args.forEach(function(a){ handles[a.handle.toLowerCase()] = true; });
+  handles["you"] = true;
+  var byId = {};
+
+  var stream = document.getElementById("stream");
+  var esc = function(s){ var d=document.createElement("div"); d.textContent=s; return d.innerHTML; };
+  var strip = function(html){ var d=document.createElement("div"); d.innerHTML=html; return d.textContent||""; };
+
+  function chip(k,v){ return '<span class="chip">'+k+' <b>'+v+'</b></span>'; }
+
+  /* Render @handle tokens as mention pills. Runs after escaping, so it never
+     re-injects unescaped user input; our own tags never contain '@'. */
+  function linkifyMentions(html){
+    return html.replace(/@([A-Za-z][A-Za-z0-9_]*)/g, function(m, h){
+      var known = handles[h.toLowerCase()];
+      return '<span class="mention'+(known?"":" unknown")+'">@'+h+'</span>';
+    });
+  }
+  function formatBody(a){
+    return linkifyMentions(a.raw ? esc(a.text) : a.text);
+  }
+
+  function cardHTML(a){
+    if(a.kind==="system"){
+      return '<article class="card sys" id="claim-'+a.id+'">'+
+        '<div class="who"><span class="avatar">!</span>'+
+        '<span class="name">perCVus</span>'+
+        '<span class="side-tag">'+esc(a.subtag||"enforcement")+'</span></div>'+
+        '<div class="body">'+a.text+'</div></article>';
+    }
+    var initials = a.name==="perCVus" ? "P" : a.name.split(" ").map(function(w){return w[0];}).join("").slice(0,2);
+    var html = '<article class="card '+a.side+'" id="claim-'+a.id+'">';
+    html += '<div class="who"><span class="avatar">'+esc(initials)+'</span>';
+    html += '<span class="name">'+esc(a.name)+'</span>';
+    var tag = a.kind==="question" ? "clarifying question" : a.side;
+    html += '<span class="side-tag">'+tag+'</span>';
+    if(a.side!=="percvus") html += '<span class="ft">'+a.ft+' floor-time</span>';
+    html += '</div>';
+    if(a.replyTo && byId[a.replyTo]){
+      var p = byId[a.replyTo];
+      html += '<button class="replyto" data-goto="claim-'+p.id+'">↳ replying to <b>@'+esc(p.handle)+'</b></button>';
+    }
+    html += '<div class="body">'+formatBody(a)+'</div>';
+    if(a.bridge) html += '<div class="bridge-flag">⤳ Bridge — builds on the other side. Credit shared.</div>';
+    if(a.kind!=="question" && a.s){
+      html += '<div class="scores">';
+      html += chip("RIGOR", a.s.rigor)+chip("NOVELTY", a.s.novelty)+chip("BRIDGE", a.s.bridge);
+      var bad = a.civil===false;
+      html += '<span class="chip civ'+(bad?" bad":"")+'">'+(bad?"⚠ incivility":"✓ civil")+'</span>';
+      html += '</div>';
+    }
+    html += '<div class="card-actions">';
+    html += '<button class="reply-btn" data-reply="'+a.id+'">↳ Reply</button>';
+    html += '</div>';
+    html += '</article>';
+    return html;
+  }
+
+  function render(){
+    byId = {};
+    args.forEach(function(a){ byId[a.id] = a; });
+    stream.innerHTML = args.map(cardHTML).join("");
+    document.getElementById("stArgs").textContent = args.filter(function(a){return a.kind!=="question" && a.kind!=="system";}).length;
+  }
+  render();
+
+  /* ---------- local stand-in referee ---------- */
+  function count(t, list){ var n=0; for(var i=0;i<list.length;i++){ if(t.indexOf(list[i])>-1) n++; } return n; }
+
+  function score(text, side){
+    var t = " "+text.toLowerCase()+" ";
+    var words = text.trim().split(/\s+/).filter(Boolean);
+    var len = words.length;
+
+    var toxic = ["idiot","stupid","moron","dumb","shut up","fool ","clown","pathetic","loser","shill","liar"];
+    var uncivil = count(t, toxic) > 0;
+
+    var reasoning = count(t, ["because","therefore","since ","thus ","hence","follows","implies","given that","if ","so that","as a result","consequently"]);
+    var evidence  = count(t, ["study","studies","data","evidence","research","experiment","shown","measured","percent","%","found that","according to"]) + (/\d/.test(t)?1:0);
+    var hedged    = count(t, ["might","maybe","i feel","i think","just because","obviously","everyone knows"]);
+    var bridgeSig = count(t, ["grant","granted","concede","you're right","fair point","agree","even if","steelman","building on","i'll accept","to be fair"]);
+
+    // Cap keyword contributions so repeating trigger words can't inflate a score —
+    // the real referee reads meaning; this stand-in at least refuses to be stuffed.
+    reasoning = Math.min(reasoning, 3);
+    evidence  = Math.min(evidence, 3);
+
+    var lenScore = len < 8 ? 22 : (len < 20 ? 55 : (len < 90 ? 82 : 74));
+    var rigor = Math.round(Math.min(96, 30 + reasoning*13 + evidence*11 + lenScore*0.4 - hedged*6));
+    rigor = Math.max(18, rigor);
+
+    var novelty = Math.round(Math.max(28, Math.min(92, 46 + (len>25?14:0) + evidence*6 + (reasoning>1?8:0) - hedged*4)));
+    var bridge  = Math.round(Math.max(6, Math.min(95, 14 + bridgeSig*24 + (side==="against"||side==="for"?0:0))));
+    var ft = Math.max(4, Math.round((rigor*0.35 + novelty*0.15 + bridge*0.25)));
+
+    var reasons = [];
+    if(reasoning>1) reasons.push("clear reasoning structure (premises linked to a conclusion)");
+    else if(reasoning===0) reasons.push("no explicit reasoning connectives — the conclusion is asserted more than shown");
+    if(evidence>0) reasons.push("cites evidence rather than bare assertion");
+    if(bridgeSig>0) reasons.push("engages the other side's point directly — a bridge move, credit shared");
+    if(hedged>1) reasons.push("leans on hedges/appeals ('obviously', 'everyone knows') that don't carry weight");
+    if(len<12) reasons.push("quite short — more room to develop the argument would raise its rigor");
+
+    return { rigor:rigor, novelty:novelty, bridge:bridge, ft:ft, civil:!uncivil, bridgeMove:bridgeSig>0, reasons:reasons };
+  }
+
+  /* ---------- coherence gate: nonsense earns nothing ----------
+     A keyword counter can't truly tell sense from noise — only the real referee can —
+     but it can refuse the obvious cheats: gibberish, pure repetition, and keyword-
+     stuffing. These score zero and are held off the floor (no strike; noise isn't
+     misconduct). See docs/CONCEPT.md §3. */
+  function senseCheck(text){
+    var tokens = text.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if(tokens.length < 3) return { ok:false, reason:"there's barely anything here — state a claim and give a reason for it" };
+
+    var words = tokens.map(function(w){ return w.replace(/[^a-z0-9']/g, ""); }).filter(Boolean);
+    var wl = words.length || 1;
+
+    // 1) Gibberish — a real word has a vowel and no absurd consonant run.
+    var wordlike = words.filter(function(w){
+      if(/\d/.test(w)) return true;
+      return /[aeiou]/.test(w) && !/[bcdfghjklmnpqrstvwxyz]{5,}/.test(w) && w.length <= 18;
+    }).length;
+    if(wordlike / wl < 0.6) return { ok:false, reason:"this doesn't read as language — the referee scores meaning, not characters" };
+
+    // 2) Repetition — low variety, or one token dominating.
+    var freq = {}, maxc = 0;
+    words.forEach(function(w){ freq[w] = (freq[w]||0) + 1; if(freq[w] > maxc) maxc = freq[w]; });
+    var uniqueRatio = Object.keys(freq).length / wl;
+    if((wl >= 6 && uniqueRatio < 0.45) || maxc / wl > 0.35)
+      return { ok:false, reason:"this is mostly repetition — repeating words isn't an argument" };
+
+    // 3) Keyword-stuffing — reasoning/evidence trigger words at absurd density.
+    var triggers = ["because","therefore","since","thus","hence","follows","implies","study","studies","data","evidence","research","proof","fact","facts","obviously","clearly"];
+    var trig = words.filter(function(w){ return triggers.indexOf(w) > -1; }).length;
+    if(wl >= 6 && trig / wl > 0.30)
+      return { ok:false, reason:"this is keyword-stuffing — sprinkling ‘because’ and ‘studies show’ over nothing earns nothing" };
+
+    return { ok:true, reason:"" };
+  }
+
+  /* ---------- side toggle ---------- */
+  var side = "for";
+  var sideBtns = document.querySelectorAll(".sides button");
+  sideBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      side = b.getAttribute("data-side");
+      sideBtns.forEach(function(x){ x.setAttribute("aria-pressed", x===b ? "true":"false"); });
+    });
+  });
+
+  /* ---------- reply targeting ---------- */
+  var replyCtx = document.getElementById("replyCtx");
+  var replyTarget = null;
+  var uCount = 0;
+
+  function setReply(id){
+    var a = byId[id];
+    if(!a) return;
+    replyTarget = { id:a.id, handle:a.handle };
+    var excerpt = strip(a.text).slice(0, 64);
+    replyCtx.innerHTML = '<span class="rtxt">↳ Replying to <b>@'+esc(a.handle)+'</b> · '+esc(excerpt)+'…</span>'+
+      '<button class="rx" type="button" aria-label="Cancel reply">✕</button>';
+    replyCtx.classList.add("show");
+    replyCtx.querySelector(".rx").addEventListener("click", clearReply);
+    input.focus();
+  }
+  function clearReply(){
+    replyTarget = null;
+    replyCtx.classList.remove("show");
+    replyCtx.innerHTML = "";
+  }
+
+  // Delegate clicks on the stream: Reply buttons and reply-to jump links.
+  stream.addEventListener("click", function(e){
+    var rb = e.target.closest(".reply-btn");
+    if(rb){ setReply(rb.getAttribute("data-reply")); return; }
+    var rt = e.target.closest(".replyto");
+    if(rt){
+      var el = document.getElementById(rt.getAttribute("data-goto"));
+      if(el){
+        el.scrollIntoView({behavior:"smooth", block:"center"});
+        el.classList.add("flash");
+        setTimeout(function(){ el.classList.remove("flash"); }, 1100);
+      }
+    }
+  });
+
+  /* ---------- enforcement: the strike ladder, live ----------
+     A first violation throttles you to 256 chars; civil, well-scored posts climb
+     you back 256 → 500 → 750 → full. Re-offend while throttled and you're locked
+     out; three lockouts in the window removes you (return by petition). This is a
+     prototype: the 24h lockout offers a demo shortcut. See docs/CONCEPT.md §5. */
+  var FULL = 2000;
+  var TIERS = [256, 500, 750, FULL];
+  var LOCKOUT_LIMIT = 3;
+  var enfState = "ok";   // ok | throttled | locked | removed
+  var tier = 3;          // index into TIERS; 3 = full allowance
+  var lockouts = 0;
+
+  var allowEl = document.getElementById("allow");
+  var allowLabel = document.getElementById("allowLabel");
+  var allowCount = document.getElementById("allowCount");
+  var allowBar = document.getElementById("allowBar");
+  var allowNote = document.getElementById("allowNote");
+  var enforceEl = document.getElementById("enforce");
+
+  function cap(){ return TIERS[Math.min(tier, TIERS.length-1)]; }
+
+  function pushSystem(subtag, text){
+    args.push({ id:"s"+(++uCount), kind:"system", side:"percvus",
+      subtag:subtag, text:text, name:"perCVus", handle:"perCVus" });
+    render();
+    var last = document.querySelector(".stream .card:last-child");
+    if(last) last.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+
+  function updateAllow(){
+    var locked = (enfState==="locked" || enfState==="removed");
+    var c = cap();
+    input.disabled = locked;
+    sendBtn.disabled = locked;
+    sideBtns.forEach(function(b){ b.disabled = locked; });
+    input.maxLength = c;
+    if(input.value.length > c) input.value = input.value.slice(0, c);
+
+    allowBar.style.width = Math.round(c / FULL * 100) + "%";
+    allowCount.textContent = input.value.length + " / " + c;
+
+    if(enfState==="throttled"){
+      allowEl.classList.add("warn");
+      allowLabel.textContent = "Throttled · " + c + " chars";
+      var remain = (TIERS.length-1) - tier;
+      allowNote.textContent = "Strike 1 — earn it back: " + remain + " more strong, civil post" + (remain===1?"":"s") + " to full.";
+    } else {
+      allowEl.classList.remove("warn");
+      allowLabel.textContent = "Full floor-time";
+      allowNote.textContent = "";
+    }
+
+    if(enfState==="locked"){
+      enforceEl.className = "enforce show";
+      enforceEl.innerHTML = '<span class="etext"><b>🔒 Locked out · 24h.</b> A repeat violation before earning back is a lockout, noted openly in the thread — lockout ' + lockouts + ' of ' + LOCKOUT_LIMIT + ' in the window.</span>' +
+        '<button type="button" id="endLock">End lockout (demo)</button>';
+      enforceEl.querySelector("#endLock").onclick = function(){
+        enfState = "throttled"; tier = 0;
+        referee.className = "referee show";
+        referee.innerHTML = '<div class="rlabel">perCVus · lockout lifted</div>Demo shortcut — a real lockout runs the full 24 hours. You\'re back, throttled to 256. Earn your way up.';
+        updateAllow(); input.focus();
+      };
+    } else if(enfState==="removed"){
+      enforceEl.className = "enforce show";
+      enforceEl.innerHTML = '<span class="etext"><b>⛔ Removed from the floor.</b> Three lockouts in the window. perCVus is niche by design — but removal isn\'t exile.</span>' +
+        '<button type="button" id="petition">Petition to return</button>';
+      enforceEl.querySelector("#petition").onclick = function(){
+        lockouts = 0; enfState = "ok"; tier = 3;
+        pushSystem("petition granted", 'Petition granted — <b>@you</b> is reinstated. Taking the time to ask in good faith is the signal we look for; the slate is clear.');
+        referee.className = "referee show";
+        referee.innerHTML = '<div class="rlabel">perCVus · reinstated</div>Welcome back. Full floor-time restored — argue hard, tread lightly.';
+        updateAllow(); input.focus();
+      };
+    } else {
+      enforceEl.className = "enforce";
+      enforceEl.innerHTML = "";
+    }
+  }
+
+  function handleViolation(){
+    if(enfState==="ok"){
+      enfState = "throttled"; tier = 0;
+      referee.className = "referee show warn";
+      referee.innerHTML = '<div class="rlabel">perCVus · held at the gate</div>'+
+        'This reads as a personal attack, so it doesn\'t make the floor — you can\'t out-argue toxicity here. That\'s <b>Strike 1</b>: your allowance is cut to <b>256 characters</b>. Earn it back with civil, well-scored posts.';
+    } else if(enfState==="throttled"){
+      lockouts++;
+      if(lockouts >= LOCKOUT_LIMIT){
+        enfState = "removed";
+        pushSystem("removed", 'Third lockout in the window — <b>@you</b> is removed from the floor. Return is by petition.');
+      } else {
+        enfState = "locked";
+        pushSystem("lockout · " + lockouts + " of " + LOCKOUT_LIMIT, 'Lockout declared for <b>@you</b> — a repeat violation before earning back. Posting suspended 24h; the original stays up, annotated.');
+        referee.className = "referee show warn";
+        referee.innerHTML = '<div class="rlabel">perCVus · locked out</div>You re-offended while throttled — a 24-hour lockout, posted in the thread. ' + (LOCKOUT_LIMIT - lockouts) + ' more in the window and you\'re removed.';
+      }
+    }
+    updateAllow();
+  }
+
+  // Advance the earn-back ladder on a civil post; returns a note for the referee.
+  function handleCivilProgress(r){
+    if(enfState!=="throttled") return "";
+    if(r.rigor >= 50){
+      tier++;
+      if(tier >= TIERS.length-1){
+        tier = TIERS.length-1; enfState = "ok"; updateAllow();
+        return ' <b>Full allowance restored</b> — you argued your way back.';
+      }
+      updateAllow();
+      return ' Allowance up to <b>'+cap()+'</b> — keep climbing.';
+    }
+    updateAllow();
+    return ' Civil, but too thin to move your allowance — sharpen the reasoning to climb.';
+  }
+
+  /* ---------- submit ---------- */
+  var input = document.getElementById("input");
+  var sendBtn = document.getElementById("send");
+  var referee = document.getElementById("referee");
+  var health = 72;
+
+  function submit(){
+    if(input.disabled) return;
+    var text = input.value.trim();
+    if(text.length < 3) return;
+    var r = score(text, side);
+
+    if(!r.civil){ handleViolation(); return; }
+
+    var sense = senseCheck(text);
+    if(!sense.ok){
+      referee.className = "referee show warn";
+      referee.innerHTML = '<div class="rlabel">perCVus · no points</div>'+
+        sense.reason.charAt(0).toUpperCase() + sense.reason.slice(1) +
+        '. This isn\'t a conduct violation — no strike — it simply doesn\'t score. In the real perCVus, the referee reads for meaning, so noise like this earns zero.';
+      return;
+    }
+
+    var newArg = { id:"u"+(++uCount), side:side, name:"You", handle:"you", ft:r.ft,
+      bridge:r.bridgeMove, raw:true, text:text,
+      s:{rigor:r.rigor, novelty:r.novelty, bridge:r.bridge}, civil:true };
+    if(replyTarget) newArg.replyTo = replyTarget.id;
+    args.push(newArg);
+    clearReply();
+    render();
+
+    var why = r.reasons.length ? " — "+r.reasons.slice(0,2).join("; ") : "";
+    referee.className = "referee show";
+    referee.innerHTML = '<div class="rlabel">perCVus · referee</div>'+
+      '<b>+'+r.ft+' floor-time earned.</b> Rigor '+r.rigor+' · Novelty '+r.novelty+' · Bridge '+r.bridge+why+'.'+
+      handleCivilProgress(r);
+
+    // nudge floor health by the quality of the contribution
+    var delta = Math.round((r.rigor+r.bridge)/2 - 55)/6;
+    health = Math.max(40, Math.min(96, health + delta));
+    document.getElementById("healthV").textContent = Math.round(health);
+    document.getElementById("healthBar").style.width = Math.round(health)+"%";
+
+    input.value = "";
+    input.style.height = "auto";
+    updateAllow();
+    input.focus();
+    document.querySelector(".stream .card:last-child").scrollIntoView({behavior:"smooth", block:"center"});
+  }
+
+  sendBtn.addEventListener("click", submit);
+  input.addEventListener("keydown", function(e){
+    if((e.metaKey||e.ctrlKey) && e.key==="Enter"){ e.preventDefault(); submit(); }
+  });
+  input.addEventListener("input", function(){
+    input.style.height="auto"; input.style.height=Math.min(150, input.scrollHeight)+"px";
+    allowCount.textContent = input.value.length + " / " + cap();
+  });
+
+  updateAllow();  // initialize the allowance meter
+
+  /* ---------- theme toggle ---------- */
+  var root = document.documentElement;
+  document.getElementById("themeBtn").addEventListener("click", function(){
+    var cur = root.getAttribute("data-theme");
+    if(!cur){ cur = window.matchMedia("(prefers-color-scheme:dark)").matches ? "dark":"light"; }
+    root.setAttribute("data-theme", cur==="dark" ? "light":"dark");
+  });
+
+  /* ---------- onboarding walkthrough ----------
+     Enforcement bites from the first offense, so fair notice comes first:
+     the rules are shown before anyone posts (docs/CONCEPT.md §5). */
+  var overlay = document.getElementById("tutorial");
+  var tSlides = overlay.querySelectorAll(".slide");
+  var tDots = overlay.querySelectorAll("#tutDots i");
+  var tKicker = document.getElementById("tutKicker");
+  var tBack = document.getElementById("tutBack");
+  var tNext = document.getElementById("tutNext");
+  var ti = 0, tN = tSlides.length;
+
+  function tShow(n){
+    ti = Math.max(0, Math.min(tN-1, n));
+    tSlides.forEach(function(s,k){ s.classList.toggle("on", k===ti); });
+    tDots.forEach(function(d,k){ d.classList.toggle("on", k===ti); });
+    tKicker.textContent = "How the floor works · "+(ti+1)+" / "+tN;
+    tBack.disabled = ti===0;
+    tNext.textContent = ti===tN-1 ? "Enter the floor" : "Next";
+  }
+  function tOpen(){ overlay.classList.add("show"); tShow(0); }
+  function tClose(){
+    overlay.classList.remove("show");
+    try{ sessionStorage.setItem("pcv_seen","1"); }catch(e){}
+  }
+  tNext.addEventListener("click", function(){ if(ti===tN-1) tClose(); else tShow(ti+1); });
+  tBack.addEventListener("click", function(){ tShow(ti-1); });
+  document.getElementById("tutSkip").addEventListener("click", tClose);
+  document.getElementById("rulesBtn").addEventListener("click", tOpen);
+  overlay.addEventListener("click", function(e){ if(e.target===overlay) tClose(); });
+  document.addEventListener("keydown", function(e){
+    if(!overlay.classList.contains("show")) return;
+    if(e.key==="Escape") tClose();
+    else if(e.key==="ArrowRight") tNext.click();
+    else if(e.key==="ArrowLeft" && ti>0) tShow(ti-1);
+  });
+
+  var tSeen; try{ tSeen = sessionStorage.getItem("pcv_seen"); }catch(e){}
+  if(!tSeen) tOpen();
+})();
+</script>
+</body>
+</html>
