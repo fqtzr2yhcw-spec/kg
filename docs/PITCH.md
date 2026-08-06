@@ -69,7 +69,7 @@ he gave me ever since, with love and pride. This is in his honor.
 4. **Publish openly** — the rubric, the results, what worked and what didn't.
 
 ## The ask
-**$[20,000].** It covers the model/hosting costs for the pilot, a modest stipend so I can
+**$20,000.** It covers the model/hosting costs for the pilot, a modest stipend so I can
 build this close to full-time for six months, and seeding the founding community. This
 isn't a raise for a big team — it's the smallest amount that turns a thought-out concept
 into a real, tested thing with real people on it.
