@@ -1,0 +1,344 @@
+<title>K3 Online Outlet Growth Plan</title>
+<style>
+  :root{
+    --paper:#FAF6F1; --surface:#FFFDFB; --card:#FFFFFF;
+    --ink:#2A2029; --muted:#7C6F77; --faint:#9C8F97;
+    --line:#EAE0D8; --line-strong:#DCCFC4;
+    --plum:#6E2B52; --plum-ink:#6E2B52; --plum-soft:#F4E7EF;
+    --brass:#A9722B; --brass-soft:#F6ECDD;
+    --good:#37764F; --good-soft:#E7F1EA;
+    --warn:#A65E17; --warn-soft:#F8EAD9;
+    --shadow:0 1px 2px rgba(42,32,41,.04),0 8px 24px rgba(42,32,41,.06);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#141015; --surface:#1C161C; --card:#221A22;
+      --ink:#F1E7EC; --muted:#AC9EA7; --faint:#8B7E88;
+      --line:#332632; --line-strong:#43333F;
+      --plum:#E098BE; --plum-ink:#E098BE; --plum-soft:#2B1E28;
+      --brass:#D8A552; --brass-soft:#2A2016;
+      --good:#79C398; --good-soft:#16241C;
+      --warn:#E2A24C; --warn-soft:#2A2013;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#141015; --surface:#1C161C; --card:#221A22;
+    --ink:#F1E7EC; --muted:#AC9EA7; --faint:#8B7E88;
+    --line:#332632; --line-strong:#43333F;
+    --plum:#E098BE; --plum-ink:#E098BE; --plum-soft:#2B1E28;
+    --brass:#D8A552; --brass-soft:#2A2016;
+    --good:#79C398; --good-soft:#16241C;
+    --warn:#E2A24C; --warn-soft:#2A2013;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:17px; line-height:1.65; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:772px; margin:0 auto; padding:clamp(20px,5vw,52px) clamp(18px,5vw,32px) 72px;}
+  h1,h2,h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif; font-weight:600; text-wrap:balance; letter-spacing:-.01em;}
+
+  .eyebrow{font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--brass); font-weight:700; margin:0 0 14px;}
+  h1{font-size:clamp(2rem,6.4vw,3.05rem); line-height:1.06; margin:0 0 18px;}
+  h1 em{font-style:normal; color:var(--plum-ink);}
+  .lede{font-size:clamp(1.05rem,2.4vw,1.2rem); color:var(--muted); margin:0; max-width:60ch;}
+
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(126px,1fr)); gap:12px; margin:32px 0 8px;}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 16px 14px; box-shadow:var(--shadow);}
+  .stat .n{font-size:1.85rem; line-height:1; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+  .stat .n.plum{color:var(--plum-ink);} .stat .n.brass{color:var(--brass);}
+  .stat .k{font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:var(--faint); margin-top:8px;}
+  .stat .src{font-size:.66rem; color:var(--faint); margin-top:2px; text-transform:uppercase; letter-spacing:.06em;}
+
+  .insight{margin:26px 0 0; background:var(--plum-soft); border:1px solid var(--line-strong); border-radius:16px; padding:22px;}
+  .insight h3{margin:0 0 6px; font-size:1.15rem; color:var(--plum-ink);}
+  .insight p{margin:0; color:var(--ink);}
+  .compare{display:flex; flex-wrap:wrap; gap:10px; margin-top:16px;}
+  .chip{flex:1 1 200px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .chip .big{font-family:"Iowan Old Style",Palatino,Georgia,serif; font-size:1.5rem; font-weight:700; font-variant-numeric:tabular-nums;}
+  .chip.aged .big{color:var(--warn);} .chip.fast .big{color:var(--good);}
+  .chip small{display:block; color:var(--muted); font-size:.82rem; margin-top:2px;}
+
+  section{margin-top:48px;}
+  .sec-label{font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; font-weight:700; margin:0 0 6px;}
+  .sec-label.posh{color:var(--plum-ink);} .sec-label.ebay{color:var(--brass);} .sec-label.etsy{color:var(--good);} .sec-label.plain{color:var(--brass);}
+  h2{font-size:clamp(1.4rem,3.6vw,1.8rem); margin:0 0 6px;}
+  .sec-sub{color:var(--muted); margin:0 0 22px;}
+
+  .move{display:grid; grid-template-columns:auto 1fr; gap:16px; padding:20px 0; border-top:1px solid var(--line);}
+  .move:first-of-type{border-top:0;}
+  .num{font-family:"Iowan Old Style",Palatino,Georgia,serif; font-size:1.4rem; font-weight:700; color:#fff; background:var(--plum); width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);}
+  .num.ebay{background:var(--brass);} .num.etsy{background:var(--good);}
+  .move h3{margin:2px 0 6px; font-size:1.15rem;}
+  .move p{margin:0 0 10px; color:var(--ink);}
+  .move p:last-child{margin-bottom:0;}
+  .why{display:inline-flex; gap:8px; align-items:baseline; background:var(--brass-soft); border-radius:9px; padding:8px 12px; font-size:.9rem; color:var(--ink);}
+  .why b{color:var(--brass); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap;}
+  .do b{color:var(--plum-ink); font-weight:600;}
+
+  .routine{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;}
+  .rcard{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; box-shadow:var(--shadow);}
+  .rcard .cad{font-size:.74rem; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--brass); margin:0 0 12px;}
+  .rcard ul{margin:0; padding:0; list-style:none;}
+  .rcard li{position:relative; padding:6px 0 6px 26px; font-size:.95rem; border-top:1px solid var(--line);}
+  .rcard li:first-child{border-top:0;}
+  .rcard li::before{content:""; position:absolute; left:4px; top:14px; width:8px; height:8px; border-radius:50%; background:var(--plum);}
+
+  .tpl{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px; box-shadow:var(--shadow);}
+  .tpl h3{margin:0 0 10px; font-size:1.05rem;}
+  code,.mono{font-family:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace; font-size:.9em;}
+  .formula{background:var(--plum-soft); border:1px solid var(--line-strong); border-radius:10px; padding:12px 14px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.86rem; line-height:1.7; overflow-x:auto; color:var(--ink);}
+  .ba{display:grid; gap:8px; margin-top:12px;}
+  .ba div{padding:10px 12px; border-radius:9px; font-size:.9rem;}
+  .ba .before{background:var(--warn-soft); border:1px solid var(--line);}
+  .ba .after{background:var(--good-soft); border:1px solid var(--line);}
+  .ba .tag{font-size:.68rem; letter-spacing:.09em; text-transform:uppercase; font-weight:700; display:block; margin-bottom:3px;}
+  .ba .before .tag{color:var(--warn);} .ba .after .tag{color:var(--good);}
+
+  .check{list-style:none; margin:0; padding:0;}
+  .check li{display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:start; padding:15px 0; border-top:1px solid var(--line);}
+  .check li:first-child{border-top:0;}
+  .box{width:26px; height:26px; border-radius:8px; border:2px solid var(--plum); flex:none;}
+  .check li b{color:var(--plum-ink);}
+  .badge{display:inline-block; font-size:.66rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:6px; margin-left:6px; vertical-align:middle;}
+  .badge.p{background:var(--plum-soft); color:var(--plum-ink);} .badge.e{background:var(--brass-soft); color:var(--brass);} .badge.t{background:var(--good-soft); color:var(--good);} .badge.all{background:var(--line); color:var(--muted);}
+
+  .foot{margin-top:52px; padding-top:22px; border-top:1px solid var(--line); color:var(--faint); font-size:.86rem;}
+  a{color:var(--plum-ink);}
+  :focus-visible{outline:2px solid var(--brass); outline-offset:3px; border-radius:4px;}
+  .fade{opacity:0; transform:translateY(10px); animation:rise .6s ease forwards;}
+  .fade:nth-child(2){animation-delay:.05s} .fade:nth-child(3){animation-delay:.1s}
+  @keyframes rise{to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){.fade{animation:none; opacity:1; transform:none}}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow fade">K3 Online Outlet · Growth Plan · Poshmark · eBay · Etsy</p>
+    <h1 class="fade">Your stores already convert. They're just <em>too quiet</em>.</h1>
+    <p class="lede fade">One month of your Poshmark data holds the whole strategy — and it's the same strategy that lifts eBay and Etsy. Everything below is built to manufacture more of one specific sale: the fresh, offered, complete listing that sold the same day it went up, instead of the ones that sat for two years.</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n">4</div><div class="k">Sales</div><div class="src">Poshmark · Apr</div></div>
+    <div class="stat"><div class="n plum">$103</div><div class="k">Gross sold</div><div class="src">Poshmark · Apr</div></div>
+    <div class="stat"><div class="n brass">$82</div><div class="k">You kept · 79%</div><div class="src">Poshmark · Apr</div></div>
+    <div class="stat"><div class="n">$26</div><div class="k">Avg order</div><div class="src">Poshmark · Apr</div></div>
+  </div>
+
+  <div class="insight">
+    <h3>The pattern hiding in your numbers</h3>
+    <p>Three of your last four Poshmark sales were listings that had sat since April 2024. The fourth was listed, offered, and sold on the same day. Speed isn't luck — it's a handful of habits, and you already did them once by accident. The rest of this plan is about doing them on purpose, on all three stores.</p>
+    <div class="compare">
+      <div class="chip aged"><span class="big">691–721</span><small>days to sell — the three aged listings</small></div>
+      <div class="chip fast"><span class="big">0</span><small>days — fresh + offer sent + new-with-tags</small></div>
+    </div>
+  </div>
+
+  <section>
+    <p class="sec-label plain">The lesson that travels</p>
+    <h2>Three levers, every platform</h2>
+    <p class="sec-sub">Poshmark, eBay, and Etsy rank and sell differently, but the same three forces move all of them. Each platform section below is just these three, translated into that platform's buttons.</p>
+    <div class="routine">
+      <div class="rcard"><p class="cad" style="color:var(--plum-ink)">1 · Freshness</p><ul style="list-style:none"><li style="padding-left:0">New and recently-touched listings get surfaced; stale ones sink. Re-share, relist, renew, or "sell similar" to reset the clock.</li></ul></div>
+      <div class="rcard"><p class="cad" style="color:var(--brass)">2 · Offers</p><ul style="list-style:none"><li style="padding-left:0">A like, a watch, or a favorite is a warm buyer. A small proactive offer with a shipping break closes them — it worked in 0 days for you.</li></ul></div>
+      <div class="rcard"><p class="cad" style="color:var(--good)">3 · Complete listings</p><ul style="list-style:none"><li style="padding-left:0">Keyword-rich titles, every attribute filled, every photo slot used. This is what puts you in search and turns browsers into likers.</li></ul></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec-label posh">On Poshmark</p>
+    <h2>Six moves, in order of impact</h2>
+    <p class="sec-sub">The first three are free, take minutes a day, and target exactly the two-year problem your data shows.</p>
+
+    <div class="move"><div class="num">1</div><div>
+      <h3>Share your whole closet, morning and night</h3>
+      <p>The feed is share-driven — a listing sinks until you re-share it. Two self-shares a day (~7am and ~7–9pm) is the single biggest free lever you have. Share your matching items into Posh Parties too.</p>
+      <p class="why"><b>Why #1</b><span>Cheapest fix for buried, aging inventory — no sourcing, ~10 min/day.</span></p>
+    </div></div>
+
+    <div class="move"><div class="num">2</div><div>
+      <h3>Send "Offer to Likers" on everything with a like</h3>
+      <p>Any item with likes but no sale is a warm buyer waiting for a nudge. Send an offer — even 10% off with a shipping discount — and it fires a notification straight to them.</p>
+      <p class="why"><b>Your data</b><span>The one item you offered sold in 0 days. Do it on purpose, weekly.</span></p>
+    </div></div>
+
+    <div class="move"><div class="num">3</div><div>
+      <h3>Relist stale items instead of letting them age</h3>
+      <p>A two-year-old listing is buried no matter how often you share it. <b class="do">Copy Listing → delete the original</b> makes a freshly-dated listing the algorithm surfaces again. Relist anything older than ~45–60 days with zero likes.</p>
+      <p class="why"><b>Aimed at</b><span>Your 700-day listings. The direct antidote.</span></p>
+    </div></div>
+
+    <div class="move"><div class="num">4</div><div>
+      <h3>List a few new items every day</h3>
+      <p>A steady trickle (1–3/day) keeps you in search and gives you more to share. Source <b class="do">new-with-tags</b> when you can — your NWT leggings moved instantly, and tagged items consistently sell faster.</p>
+    </div></div>
+
+    <div class="move"><div class="num">5</div><div>
+      <h3>Rewrite titles and covers for search</h3>
+      <p>Search reads your title. Use the formula further down, shoot a bright straight-on cover on a clean background, and fill every photo slot (tag, flaws, fabric). Better listings earn likes — which feed move #2.</p>
+    </div></div>
+
+    <div class="move"><div class="num">6</div><div>
+      <h3>Price with room, turn on a bundle discount</h3>
+      <p>List ~20–40% above your floor so you can accept offers and still profit. Switch on a closet bundle discount (10–15% off 2+) and offer private bundle deals — that's how you lift your ~$26 average order.</p>
+    </div></div>
+  </section>
+
+  <section>
+    <p class="sec-label ebay">On eBay</p>
+    <h2>Four moves that map to what already works</h2>
+    <p class="sec-sub">eBay's search (Cassini) rewards the same three levers — with its own buttons.</p>
+
+    <div class="move"><div class="num ebay">1</div><div>
+      <h3>Send Offers to Watchers</h3>
+      <p>This is "Offer to Likers," one-for-one. Every listing with watchers has a buyer you can nudge with a direct offer + shipping break. It's the highest-converting free tool eBay gives you.</p>
+      <p class="why"><b>Proven</b><span>The offer lever is exactly what closed your fastest Poshmark sale.</span></p>
+    </div></div>
+
+    <div class="move"><div class="num ebay">2</div><div>
+      <h3>Fill every item specific</h3>
+      <p>Brand, size, type, color, style, department, material, fit — all of them. Buyers filter by these, and a listing missing them is invisible in filtered search no matter how good the title is. This is eBay's version of "complete listings."</p>
+    </div></div>
+
+    <div class="move"><div class="num ebay">3</div><div>
+      <h3>Turn on Promoted Listings + refresh stale ones</h3>
+      <p>Start Promoted Listings at a low ad rate (~2–5%) and raise it on items that sit. For dead stock, use <b class="do">Sell Similar</b> to end and relaunch as a fresh listing — eBay's equivalent of a Poshmark relist.</p>
+    </div></div>
+
+    <div class="move"><div class="num ebay">4</div><div>
+      <h3>Use all 80 title characters + Best Offer</h3>
+      <p>Front-load brand + item + key attributes in the title; every extra keyword is another search you appear in. Enable Best Offer with auto-accept / auto-decline thresholds so negotiation runs itself.</p>
+    </div></div>
+  </section>
+
+  <section>
+    <p class="sec-label etsy">On Etsy</p>
+    <h2>Four moves — Etsy is a search engine first</h2>
+    <p class="sec-sub">Etsy lives and dies by SEO and freshness. (Note: for resale, Etsy only allows <em>vintage</em> — 20+ years — or craft supplies, so keep that store to items that qualify.)</p>
+
+    <div class="move"><div class="num etsy">1</div><div>
+      <h3>Use all 13 tags — every one a phrase</h3>
+      <p>Tags are how buyers find you. Never waste one on a single word; use multi-word, long-tail phrases people actually type ("vintage denim jacket", not "jacket"). Thirteen filled tags &gt; five broad ones, every time.</p>
+      <p class="why"><b>= Complete listings</b><span>On Etsy, tags <i>are</i> the listing's search surface.</span></p>
+    </div></div>
+
+    <div class="move"><div class="num etsy">2</div><div>
+      <h3>Front-load titles + fill all attributes</h3>
+      <p>Put the phrase a buyer would search at the very start of the title. Then fill every attribute and category — Etsy treats them as extra ranking signals, and the first line of your description feeds Google.</p>
+    </div></div>
+
+    <div class="move"><div class="num etsy">3</div><div>
+      <h3>Renew stale listings + run a small Etsy Ads budget</h3>
+      <p>Renewing (~$0.20) gives an aging listing a freshness bump — the Etsy version of a relist. Start Etsy Ads at a low daily budget, then push spend toward the listings that convert and cut the ones that don't.</p>
+    </div></div>
+
+    <div class="move"><div class="num etsy">4</div><div>
+      <h3>Free shipping, 10 photos + a video, and chase reviews</h3>
+      <p>Etsy favors free-shipping listings (bake it into price) and ranks listings with video higher. Reviews are the #1 conversion driver — a short thank-you note after delivery earns them. Hitting <b class="do">Star Seller</b> compounds all of it.</p>
+    </div></div>
+  </section>
+
+  <section>
+    <p class="sec-label plain">One inventory, three storefronts</p>
+    <h2>Cross-list without tripping over yourself</h2>
+    <p class="sec-sub">More storefronts = more shots at the same item — but only if you don't oversell it.</p>
+    <div class="routine">
+      <div class="rcard">
+        <p class="cad">List wider</p>
+        <ul style="list-style:none"><li style="padding-left:0">The same piece can live on Poshmark, eBay, and (if it's vintage) Etsy at once. Your SKUs already look like eBay item numbers — lean into it. A cross-lister (Vendoo, List Perfectly, Crosslist) copies a listing to all three in one pass.</li></ul>
+      </div>
+      <div class="rcard">
+        <p class="cad">Delist fast</p>
+        <ul style="list-style:none"><li style="padding-left:0">The one rule that matters: when an item sells on one platform, pull it from the others immediately so you never sell the same physical thing twice. The cross-listing tools automate this too.</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec-label plain">The habit</p>
+    <h2>Your weekly shift</h2>
+    <p class="sec-sub">The whole plan collapses into a short repeatable routine across all three stores.</p>
+    <div class="routine">
+      <div class="rcard">
+        <p class="cad">Every day · AM &amp; PM</p>
+        <ul>
+          <li>Poshmark: share the whole closet</li>
+          <li>List 1–3 new items (cross-list them)</li>
+          <li>Send offers to new likers / watchers</li>
+          <li>Reply to offers &amp; messages fast</li>
+        </ul>
+      </div>
+      <div class="rcard">
+        <p class="cad">2–3× a week</p>
+        <ul>
+          <li>Join a Posh Party, share matching items in</li>
+          <li>Follow / share to earn reciprocal shares</li>
+          <li>Check eBay &amp; Etsy ad performance</li>
+        </ul>
+      </div>
+      <div class="rcard">
+        <p class="cad">Weekly reset</p>
+        <ul>
+          <li>Relist / Sell Similar / renew the oldest no-interest items</li>
+          <li>Offers to all likers &amp; watchers</li>
+          <li>Skim what sold vs. what's still sitting</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec-label plain">Steal these</p>
+    <h2>Templates you can paste</h2>
+    <p class="sec-sub">Copy, swap in your item, ship it.</p>
+
+    <div class="tpl">
+      <h3>Title formula <span class="badge all">Poshmark &amp; eBay</span></h3>
+      <div class="formula">Brand · Item type · Standout feature · Size · Color · Condition</div>
+      <div class="ba">
+        <div class="before"><span class="tag">Before</span>Tek Gear Adult L Full Zip Hoodie Sweater Jacket Fleece Lined Thumb Holes</div>
+        <div class="after"><span class="tag">After</span>Tek Gear Men's Full-Zip Hoodie · Fleece-Lined · Thumb Holes · Size L · Blue · EUC</div>
+      </div>
+    </div>
+
+    <div class="tpl">
+      <h3>Etsy tag set <span class="badge t">Etsy</span></h3>
+      <p style="margin:0 0 8px; color:var(--muted); font-size:.92rem;">All 13, each a phrase a buyer would type. Example for a vintage denim jacket:</p>
+      <div class="formula">vintage denim jacket · 90s jean jacket · oversized denim coat · unisex jean jacket · vintage outerwear · distressed denim · grunge jacket · gift for her · denim trucker jacket · light wash denim · retro jean jacket · vintage clothing · streetwear jacket</div>
+    </div>
+
+    <div class="tpl">
+      <h3>Description skeleton <span class="badge all">All three</span></h3>
+      <p class="mono" style="white-space:pre-wrap; margin:0; color:var(--muted); font-size:.9rem;">[Keyword phrase up front] — [Brand] [item] in [color], size [size].
+Condition: [NWT / excellent / gently used — name any flaws].
+Material: [fabric]. Measurements: [pit-to-pit / length].
+Smoke-free. Bundle to save — offers welcome!</p>
+    </div>
+
+    <div class="tpl">
+      <h3>Offer message tone <span class="badge p">Posh</span><span class="badge e">eBay</span></h3>
+      <p style="margin:0; color:var(--ink);">A <b>10–20% price drop</b> paired with a <b>shipping discount</b>. The shipping break is what makes the notification convert — most "just liked it / watching" buyers move when shipping shrinks.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec-label plain">Start here</p>
+    <h2>Do these this week</h2>
+    <ol class="check">
+      <li><span class="box"></span><span>Send <b>Offer to Likers</b> (Poshmark) and <b>Offers to Watchers</b> (eBay) on every item with interest.<span class="badge p">Posh</span><span class="badge e">eBay</span></span></li>
+      <li><span class="box"></span><span><b>Relist / Sell Similar / renew</b> your 10 oldest dead listings across all stores.<span class="badge all">All</span></span></li>
+      <li><span class="box"></span><span>Turn on <b>bundle + shipping discounts</b> (Posh), <b>Best Offer</b> (eBay), <b>free shipping</b> (Etsy).<span class="badge all">All</span></span></li>
+      <li><span class="box"></span><span>Fill <b>every item specific / all 13 tags</b> on your ten best listings.<span class="badge e">eBay</span><span class="badge t">Etsy</span></span></li>
+      <li><span class="box"></span><span>Set <b>two daily share alarms</b> and list <b>five fresh items</b> using the title formula.<span class="badge p">Posh</span></span></li>
+    </ol>
+  </section>
+
+  <p class="foot">Built from the Poshmark Sales Report for @kgamer32 (window 03/31–04/29/2026): 4 completed orders, $103.00 gross, $81.85 net earnings. Poshmark fee math assumes the standard 20% commission (flat $2.95 under $15). eBay and Etsy guidance reflects each platform's standard seller tools; add exported eBay/Etsy reports for numbers-driven analysis of those stores. No buyer information is stored here.</p>
+
+</div>
