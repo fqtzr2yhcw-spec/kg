@@ -1,11 +1,12 @@
-# K3 Online Outlet — Poshmark Growth Plan
+# K3 Online Outlet — Multi-Store Growth Plan
 
-A concrete plan to drive up sales in the **K3 online outlet** Poshmark closet
-(@kgamer32), built from the store's own sales data.
+A concrete plan to drive up sales across the **K3 online outlet** stores —
+**Poshmark** (@kgamer32), **eBay**, and **Etsy** — built from the store's own
+Poshmark sales data and each platform's standard seller tools.
 
-> An interactive, mobile-friendly version of this plan lives in
+> An interactive, mobile-friendly version lives in
 > [`poshmark-growth-plan.html`](./poshmark-growth-plan.html) — open it on your
-> phone while you work your closet.
+> phone while you work your stores.
 
 ---
 
@@ -20,6 +21,10 @@ From the Poshmark Sales Report for @kgamer32 (window **03/31–04/29/2026**):
 | Net earnings (you kept) | $81.85 (≈79%) |
 | Average order value | $25.75 |
 
+*(This is the only exported data I have. eBay and Etsy guidance below is
+platform best-practice — add their exported reports for numbers-driven analysis
+of those stores.)*
+
 ### The pattern that matters most
 
 | Item | Listed | Sold | Days to sell |
@@ -29,61 +34,100 @@ From the Poshmark Sales Report for @kgamer32 (window **03/31–04/29/2026**):
 | Lane Bryant women's dress | Apr 2024 | Apr 2026 | **721** |
 | CopperLife leggings (NWT, offer sent) | Apr 2026 | Apr 2026 | **0** |
 
-Three of four sales were listings that sat for **~2 years**. The one that was
-**freshly listed, sent as an offer, and new-with-tags sold the same day.** The
-entire plan below is about manufacturing more of that fourth sale.
+Three of four sales sat **~2 years**. The one that was **freshly listed, sent as
+an offer, and new-with-tags sold the same day.** The whole plan is about
+manufacturing more of that fourth sale — on all three stores.
 
 ---
 
-## Six moves, in order of impact
+## The lesson that travels
 
-Start at the top. The first three are free, take minutes a day, and target
-exactly the two-year problem the data shows.
+Poshmark, eBay, and Etsy rank and sell differently, but the same **three levers**
+move all of them:
 
-1. **Share your whole closet, morning and night.** Poshmark's feed is
-   share-driven — a listing sinks until you re-share it. Two self-shares a day
-   (~7am and ~7–9pm) is the biggest free lever you have. Share into Posh Parties
-   too. *Cheapest fix for buried inventory.*
-2. **Send "Offer to Likers" on everything with a like.** Any item with likes but
-   no sale is a warm buyer. Send an offer (even 10% off) with a shipping discount
-   — it pushes a notification. *Your one offered item sold in 0 days.*
-3. **Relist stale items instead of letting them age.** Copy Listing → delete the
-   original creates a freshly-dated listing the algorithm resurfaces. Relist
-   anything older than ~45–60 days with zero likes. *The direct antidote to your
-   700-day listings.*
-4. **List a few new items every day**, not a pile once a week. A steady trickle
-   (1–3/day) keeps you in search. Prefer **new-with-tags** when sourcing — it
-   moves faster.
-5. **Rewrite titles and covers for search.** Poshmark search reads the title. Use
-   the formula below, shoot a bright straight-on cover, fill every photo slot.
-6. **Price with room, turn on a bundle discount.** List ~20–40% above your floor
-   so you can accept offers and still profit. Bundle discount (10–15% off 2+)
-   lifts your ~$26 average order.
+1. **Freshness** — new and recently-touched listings get surfaced; stale ones
+   sink. Re-share, relist, renew, or "sell similar" to reset the clock.
+2. **Offers** — a like / watch / favorite is a warm buyer. A small proactive
+   offer with a shipping break closes them (this sold your item in 0 days).
+3. **Complete listings** — keyword-rich titles, every attribute filled, every
+   photo slot used. This puts you in search and turns browsers into buyers.
+
+Each platform section is just these three, translated into that platform's
+buttons.
 
 ---
 
-## Your closet shift (the routine)
+## On Poshmark — six moves, in order of impact
 
-**Every day, AM & PM (~10–15 min):**
-- Share your entire closet (both sessions)
-- List 1–3 new items
-- Send offers to any new likers
-- Reply to comments & offers fast
+1. **Share your whole closet, morning and night** (~7am, ~7–9pm). The feed is
+   share-driven; sharing is the biggest free lever. *Cheapest fix for buried
+   inventory.*
+2. **Send "Offer to Likers" on everything with a like** — even 10% off with a
+   shipping discount fires a notification. *Your one offered item sold in 0 days.*
+3. **Relist stale items** — Copy Listing → delete original resurfaces a
+   freshly-dated listing. Relist anything older than ~45–60 days with no likes.
+   *The direct antidote to your 700-day listings.*
+4. **List a few new items every day**; prefer new-with-tags.
+5. **Rewrite titles & covers for search** (formula below; bright cover; fill all
+   photo slots).
+6. **Price with room + bundle discount** (10–15% off 2+) to lift your ~$26
+   average order.
 
-**2–3× a week:**
-- Join a relevant Posh Party, share matching items in
-- Follow 20–30 new users; share a few of others' items (shares get reciprocated)
+## On eBay — four moves that map to what already works
 
-**Weekly reset:**
-- Relist your oldest no-like listings
-- Offer to Likers across the whole closet
-- Skim what sold vs. what's still sitting
+1. **Send Offers to Watchers** — the exact analog of Offer to Likers; highest-
+   converting free tool eBay gives you.
+2. **Fill every item specific** (brand, size, type, color, material, department,
+   fit) — missing specifics make you invisible in filtered search.
+3. **Turn on Promoted Listings** (~2–5% ad rate, raise on stale items) and use
+   **Sell Similar** to refresh dead stock (eBay's relist).
+4. **Use all 80 title characters** (front-load keywords) and enable **Best Offer**
+   with auto-accept / auto-decline.
+
+## On Etsy — four moves (Etsy is a search engine first)
+
+> For resale, Etsy only allows **vintage** (20+ years old) or craft supplies —
+> keep this store to items that qualify.
+
+1. **Use all 13 tags, each a multi-word phrase** buyers actually type. Tags are
+   Etsy's search surface. *This is "complete listings" on Etsy.*
+2. **Front-load titles + fill all attributes/categories**; the first line of the
+   description feeds Google.
+3. **Renew stale listings** (~$0.20, a freshness bump) and run a **small Etsy Ads
+   budget**, pushing spend toward converters.
+4. **Free shipping, 10 photos + a video, and chase reviews.** Etsy favors free
+   shipping and video; reviews are the #1 conversion driver. Aim for **Star
+   Seller**.
+
+---
+
+## One inventory, three storefronts
+
+- **List wider.** The same piece can live on all three at once (Etsy only if
+  vintage). Your SKUs already look like eBay item numbers. A cross-lister
+  (Vendoo, List Perfectly, Crosslist) copies a listing everywhere in one pass.
+- **Delist fast.** When an item sells on one platform, pull it from the others
+  immediately so you never sell the same physical item twice. The cross-listing
+  tools automate this.
+
+---
+
+## Your weekly shift
+
+**Every day, AM & PM:** share the Poshmark closet · list 1–3 new items
+(cross-listed) · send offers to new likers/watchers · reply fast.
+
+**2–3× a week:** join a Posh Party & share in · follow/share for reciprocal
+shares · check eBay & Etsy ad performance.
+
+**Weekly reset:** relist / Sell Similar / renew the oldest no-interest items ·
+offers to all likers & watchers · review what sold vs. what's sitting.
 
 ---
 
 ## Templates
 
-**Title formula**
+**Title formula (Poshmark & eBay)**
 
 ```
 Brand · Item type · Standout feature · Size · Color · Condition
@@ -92,42 +136,41 @@ Brand · Item type · Standout feature · Size · Color · Condition
 - Before: `Tek Gear Adult L Full Zip Hoodie Sweater Jacket Fleece Lined Thumb Holes`
 - After: `Tek Gear Men's Full-Zip Hoodie · Fleece-Lined · Thumb Holes · Size L · Blue · EUC`
 
-**Description skeleton**
+**Etsy tag set** — all 13, each a phrase (example, vintage denim jacket):
 
 ```
-[Brand] [item] in [color], size [size].
+vintage denim jacket, 90s jean jacket, oversized denim coat, unisex jean jacket,
+vintage outerwear, distressed denim, grunge jacket, gift for her,
+denim trucker jacket, light wash denim, retro jean jacket, vintage clothing,
+streetwear jacket
+```
+
+**Description skeleton (all three)**
+
+```
+[Keyword phrase up front] — [Brand] [item] in [color], size [size].
 Condition: [NWT / excellent / gently used — name any flaws].
 Material: [fabric]. Measurements: [pit-to-pit / length].
-Smoke-free closet. Bundle to save — offers welcome!
+Smoke-free. Bundle to save — offers welcome!
 ```
 
-**Offer-to-Likers tone** — a 10–20% price drop paired with a shipping discount.
-The shipping discount is what makes the notification convert.
+**Offer message tone** — a 10–20% price drop paired with a shipping discount; the
+shipping break is what makes the notification convert.
 
 ---
 
-## Do these five things this week
+## Do these this week
 
-- [ ] Turn on a **closet bundle discount** and a **shipping discount** for offers
-- [ ] **Relist your 10 oldest listings** (Copy Listing → delete original)
-- [ ] Send **Offer to Likers** on every item that has a like
-- [ ] Set **two daily share alarms** — one morning, one evening
-- [ ] List **five fresh items**, new-with-tags first, using the title formula
-
----
-
-## When you're ready to scale
-
-- **Cross-list.** Your SKUs look like eBay item numbers — if you're already
-  there, keep it up. Adding **Mercari** and **Depop** gives the same inventory
-  more shots at a buyer for near-zero extra work.
-- **Track more months.** This plan is built on one report window. Export a few
-  more months and the data will show which brands, sizes, and price points
-  actually move — so sourcing stops being a guess.
+- [ ] Send **Offer to Likers** (Poshmark) + **Offers to Watchers** (eBay) on every item with interest
+- [ ] **Relist / Sell Similar / renew** your 10 oldest dead listings across all stores
+- [ ] Turn on **bundle + shipping discounts** (Posh), **Best Offer** (eBay), **free shipping** (Etsy)
+- [ ] Fill **every item specific / all 13 tags** on your ten best listings
+- [ ] Set **two daily share alarms** and list **five fresh items** using the title formula
 
 ---
 
-*Built from the Poshmark Sales Report for @kgamer32 (03/31–04/29/2026):
-4 completed orders, $103.00 gross, $81.85 net. Fee math assumes Poshmark's
-standard 20% commission (flat $2.95 under $15). No buyer information is stored in
-this repository.*
+*Built from the Poshmark Sales Report for @kgamer32 (03/31–04/29/2026): 4
+completed orders, $103.00 gross, $81.85 net. Poshmark fee math assumes the
+standard 20% commission (flat $2.95 under $15). eBay/Etsy guidance reflects each
+platform's standard seller tools. No buyer information is stored in this
+repository.*
