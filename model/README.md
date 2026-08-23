@@ -18,7 +18,8 @@ editable OpenSCAD twin.
 | `empire_state_building.py` | Main generator — solid, sectioned model. Punched-window grid (paired windows + mullions), per-floor spandrel reveals, setback cornices, tiered ribbed crown. Auto-splits the tower to your printer bed height. |
 | `empire_state_building.scad` | Editable **OpenSCAD** twin (massing + piers). `openscad -o esb.stl empire_state_building.scad`. |
 | `wall_panels.py` | **4-wall-plate variant** — each tower band as 4 flat-backed facade plates that interlock at the corners (tab-and-slot) into a hollow ring. |
-| `render.py` | Headless Blender renders (day hero, crown close-up, night, exploded panels). |
+| `facade_detail.py` | **Extreme-detail facade panel** (large scale) — real windows (frame, mullion, divided lights, sill, lintel), Art Deco spandrels, and coursed running-bond masonry. |
+| `render.py` / `facade_render.py` | Headless Blender renders (whole-building set; and the facade panel close-up). |
 | `stl/` | 6 solid sections + full-assembly preview. |
 | `stl_panels/` | 8 wall plates (2 tower bands × 4 walls). |
 
@@ -54,6 +55,19 @@ in translucent** to backlight with an LED. All color management stays on one par
 - **Solid sections** (`stl/`) — robust, simplest, relief on all four faces.
 - **4 wall plates** (`stl_panels/`) — hollow-shell facade panels (N/S/E/W) that
   interlock at the corners; lighter, and each plate lies flat to show its masonry.
+
+## Extreme-detail facade panels (large scale)
+Individual masonry blocks and true window frames are physically smaller than a
+printer can resolve at the whole-building scale (a limestone block is ~0.8 mm at
+1:762). To get real masonry + real windows, model a **section of the elevation at
+large scale**: `facade_detail.py` generates a parametric panel (default 3 bays ×
+4 floors at ~1:95 → ~154 × 157 mm) with recessed windows (frame, central mullion,
+divided lights, projecting sill, lintel), fluted Art Deco spandrels, and coursed
+running-bond limestone. It prints flat (back down, relief up — no supports).
+Raise `N_BAYS`/`N_FLOORS` or tile panels to cover a whole elevation, and set
+`MM_PER_FT` for the scale you want to print.
+
+`render_facade.png` is the Blender close-up.
 
 ## Assembly
 Each section/plate has central alignment pins (peg on top / socket on bottom, and
