@@ -1,52 +1,61 @@
-# Empire State Building — sectioned 3D-print model
+# Empire State Building — high-detail sectioned 3D-print model
 
 A parametric, historically-grounded model of the Empire State Building (Shreve,
-Lamb & Harmon, 1931), built for multi-printer sectioned printing. Generated from
-real massing and Art Deco facade grammar — not a generative guess.
+Lamb & Harmon, 1931), built for multi-printer sectioned printing. Every dimension
+comes from the real building's massing and Art Deco facade grammar — not a
+generative guess. Built with `trimesh`/`manifold3d`, rendered in Blender, with an
+editable OpenSCAD twin.
 
-![render](render.png)
+| | |
+|---|---|
+| ![day](render.png) | ![night](render_night.png) |
+| Day — limestone + lit crown | Night — the glowing mooring-mast crown |
 
-## Files
+## What's in here
 
 | File | What it is |
 |------|-----------|
-| `empire_state_building.py` | The generator. Builds the solid, carves the facade, exports the section STLs + a matplotlib preview. |
-| `render.py` | Headless Blender render (`blender -b -P render.py` → `render.png`). |
-| `stl/*.stl` | The six printable sections + a full-assembly preview. |
+| `empire_state_building.py` | Main generator — solid, sectioned model. Punched-window grid (paired windows + mullions), per-floor spandrel reveals, setback cornices, tiered ribbed crown. Auto-splits the tower to your printer bed height. |
+| `empire_state_building.scad` | Editable **OpenSCAD** twin (massing + piers). `openscad -o esb.stl empire_state_building.scad`. |
+| `wall_panels.py` | **4-wall-plate variant** — each tower band as 4 flat-backed facade plates that interlock at the corners (tab-and-slot) into a hollow ring. |
+| `render.py` | Headless Blender renders (day hero, crown close-up, night, exploded panels). |
+| `stl/` | 6 solid sections + full-assembly preview. |
+| `stl_panels/` | 8 wall plates (2 tower bands × 4 walls). |
 
-Regenerate: `python3 empire_state_building.py` · Render: `blender -b -P render.py`
-(the repo's SessionStart hook installs OpenSCAD, Blender and the Python libs
-automatically in Claude Code on the web sessions).
+Regenerate: `python3 empire_state_building.py` · Panels: `python3 wall_panels.py` ·
+Render: `blender -b -P render.py`. The repo's SessionStart hook installs OpenSCAD,
+Blender and the Python libs automatically in Claude Code on the web.
 
-## Print plan  (scale 0.40 mm/ft → ~582 mm / 23″ assembled)
+## Print plan — solid sections (0.40 mm/ft → ~582 mm / 23″ assembled)
 
 | # | File | W × D × H (mm) | Filament | Notes |
 |---|------|----------------|----------|-------|
-| 1 | `01_base.stl` | 78.8 × 170 × 50.4 | stone grey | street-level arcade + window register; needs a bed ≥180 mm in one axis |
-| 2 | `02_shaft_lower.stl` | 52.8 × 84 × 178.4 | stone grey | vertical piers + per-floor reveals; print upright, **no supports** |
-| 3 | `03_shaft_upper.stl` | 52.8 × 84 × 178.4 | stone grey | print upright |
-| 4 | `04_setbacks.stl` | 47.2 × 72 × 23.2 | stone grey | crown base + 86th-fl deck |
-| 5 | `05_crown.stl` | 36.8 × 36.8 × 82.4 | **translucent** | ribbed mooring mast + 102nd-fl lantern → LED-backlight showpiece |
-| 6 | `06_spire.stl` | 7.2 × 7.2 × 80.8 | grey | fragile needle — add a brim, or swap for a 1 mm rod |
+| 1 | `01_base.stl` | 82.0 × 173.2 × 50.4 | stone grey | arcade + windows + 5th-floor cornice; needs a bed ≥180 mm one axis |
+| 2 | `02_shaft_1of2.stl` | 52.8 × 84 × 178.4 | stone grey | punched window grid; print upright, **no supports** |
+| 3 | `03_shaft_2of2.stl` | 52.8 × 84 × 178.4 | stone grey | print upright |
+| 4 | `04_setbacks.stl` | 56.0 × 87.2 × 27.2 | stone grey | stepped cornices + 86th-fl deck |
+| 5 | `05_crown.stl` | 38.4 × 38.4 × 80.8 | **translucent** | ribbed mast + lantern → LED-backlight showpiece |
+| 6 | `06_spire.stl` | 8.0 × 8.0 × 78.4 | grey | fragile needle — brim it, or swap for a 1 mm rod |
 
-`00_full_assembly_preview.stl` = all sections in place, for viewing only (not one
-manifold body — don't slice it).
+`00_full_assembly_preview.stl` = all sections in place, for viewing only.
+
+### Fit to your printer
+Set `MAX_PART_H_MM` at the top of `empire_state_building.py` to your bed height —
+the tower auto-splits into that many stacked bands. The report flags any section
+whose footprint exceeds the bed.
 
 ## Single- vs multi-color
-
 The real building is essentially one color (Indiana limestone). The only truly
 multi-color element is the illuminated crown at night — so print sections 1–4 + 6
 in one stone filament across as many printers as you like, and print **section 5
-in translucent** filament to backlight. All color management stays on one part.
+in translucent** to backlight with an LED. All color management stays on one part.
+
+## Two ways to build the tower walls
+- **Solid sections** (`stl/`) — robust, simplest, relief on all four faces.
+- **4 wall plates** (`stl_panels/`) — hollow-shell facade panels (N/S/E/W) that
+  interlock at the corners; lighter, and each plate lies flat to show its masonry.
 
 ## Assembly
-
-Each section has a central alignment pin (peg on top / socket on bottom). Dry-fit
-(clearance ≈ 0.6 mm, glue-friendly), then stack base → shaft_lower → shaft_upper →
-setbacks → crown → spire and bond the seams with CA or epoxy.
-
-## Tuning (top of `empire_state_building.py`)
-
-`MM_PER_FT` scale · `PIER_PITCH` / `WIN_FRAC` / `WIN_DEPTH` window density & depth ·
-`FLOOR_FT` / `SPANDREL_*` floor reveals · section z-ranges in `build()` set where
-the print seams fall.
+Each section/plate has central alignment pins (peg on top / socket on bottom, and
+corner splines on the plates). Dry-fit (≈ 0.6 mm clearance, glue-friendly), stack
+base → shaft → setbacks → crown → spire, and bond seams with CA or epoxy.
