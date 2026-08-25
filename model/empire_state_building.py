@@ -29,7 +29,7 @@ import trimesh
 # PARAMETERS
 # --------------------------------------------------------------------------
 MM_PER_FT      = 0.40          # roof->500mm, tip->~582mm
-MAX_PART_H_MM  = 200.0         # printer bed height budget per section
+MAX_PART_H_MM  = 250.0         # printer bed height budget (Bambu P1S/P2S: 256mm)
 OUT            = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stl")
 
 PIER_PITCH     = 16.0          # ft between bay centres
