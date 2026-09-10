@@ -20,9 +20,9 @@ import os
 import numpy as np
 import trimesh
 
-MM_PER_FT = 3.4                       # panel scale (~1:90).  1ft -> 3.4mm
-N_BAYS    = 4                          # fills a Bambu 256x256 bed
-N_FLOORS  = 6
+MM_PER_FT = 304.8 / 87.0              # HO scale, 1:87  (3.5034 mm/ft)
+N_BAYS    = 4                          # fills a Bambu 256x256 bed at HO
+N_FLOORS  = 5
 OUT       = os.path.dirname(os.path.abspath(__file__))
 
 # facade dimensions (feet)
