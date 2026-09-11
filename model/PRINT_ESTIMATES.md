@@ -28,9 +28,14 @@ Keep the sections **solid** (no geometry change) and lighten them in the slicer:
 - **Supports** on (threshold ~50°) — only the cornice undersides need them
 - **Filament** stone-grey PLA; **translucent** crown
 
-~27% less material than 15% infill, with no thin-wall time penalty. (Hollow shells
-were built & verified — −39% material — but rejected: at this detail the
-all-perimeter walls print slower, working against the time goal.)
+**Whole model at 8% grid: ~4.72 kg, ~$118 material** (vs 6.5 kg / $163 at 15%) —
+the trustworthy figure for pricing. ~27% less material, no thin-wall time penalty.
+(Hollow shells were built & verified — −39% material — but rejected: at this detail
+the all-perimeter walls print slower, working against the time goal.)
+
+| At 8% grid | Base half ×2 | Shaft ×4 | Setbacks | Crown | Spire | **Total** |
+|---|---|---|---|---|---|---|
+| g | 494 | 836 | 182 | 194 | 14 | **4722 g** |
 
 ## Optimization levers (data-backed)
 - **Material:** shaft band at **8% infill** → **590 g** (from 1149 g), i.e. **−2.2 kg**
