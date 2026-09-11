@@ -84,6 +84,7 @@ def setup_tower(night=False):
 
 def set_cam(loc, target, fov):
     cd = bpy.data.cameras.new("Cam"); cd.angle = math.radians(fov)
+    cd.clip_start = 1.0; cd.clip_end = 1_000_000       # model can sit far from origin
     c = bpy.data.objects.new("Cam", cd); c.location = Vector(loc)
     c.rotation_euler = (Vector(target) - c.location).to_track_quat('-Z', 'Y').to_euler()
     bpy.context.scene.collection.objects.link(c); bpy.context.scene.camera = c
@@ -109,9 +110,6 @@ def panels():
     render("render_panels.png", 1100, 850, 160)
 
 if __name__ == "__main__":
+    # camera framed for the 1:500 model (~886mm tip). Single hero render to save usage.
     setup_tower(night=False)
-    set_cam((545, -775, 440), (0, 0, 291), 39); render("render.png", 900, 1350, 210)
-    set_cam((250, -350, 520), (0, 0, 470), 32); render("render_crown.png", 900, 1100, 200)
-    setup_tower(night=True)
-    set_cam((545, -775, 440), (0, 0, 291), 39); render("render_night.png", 900, 1350, 230)
-    panels()
+    set_cam((830, -1181, 671), (0, 0, 444), 39); render("render.png", 900, 1350, 170)

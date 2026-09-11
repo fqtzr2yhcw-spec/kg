@@ -27,23 +27,27 @@ Regenerate: `python3 empire_state_building.py` · Panels: `python3 wall_panels.p
 Render: `blender -b -P render.py`. The repo's SessionStart hook installs OpenSCAD,
 Blender and the Python libs automatically in Claude Code on the web.
 
-## Print plan — solid sections (0.40 mm/ft → ~582 mm / 23″ assembled)
+## Print plan — solid sections (1:500 → ~886 mm / 2'11" assembled, Bambu P1S/P2S)
 
 | # | File | W × D × H (mm) | Filament | Notes |
 |---|------|----------------|----------|-------|
-| 1 | `01_base.stl` | 82.0 × 173.2 × 50.4 | stone grey | arcade + windows + 5th-floor cornice; needs a bed ≥180 mm one axis |
-| 2 | `02_shaft_1of2.stl` | 52.8 × 84 × 178.4 | stone grey | punched window grid; print upright, **no supports** |
-| 3 | `03_shaft_2of2.stl` | 52.8 × 84 × 178.4 | stone grey | print upright |
-| 4 | `04_setbacks.stl` | 56.0 × 87.2 × 27.2 | stone grey | stepped cornices + 86th-fl deck |
-| 5 | `05_crown.stl` | 38.4 × 38.4 × 80.8 | **translucent** | ribbed mast + lantern → LED-backlight showpiece |
-| 6 | `06_spire.stl` | 8.0 × 8.0 × 78.4 | grey | fragile needle — brim it, or swap for a 1 mm rod |
+| 1 | `01_base_N.stl` | 125 × 132 × 77 | stone grey | north half of the base (arcade + cornice) |
+| 2 | `01_base_S.stl` | 125 × 132 × 77 | stone grey | south half — joins base_N with dowel pins at the seam |
+| 3 | `02_shaft_1of3.stl` | 80.5 × 128 × 182.5 | stone grey | punched window grid; print upright, **no supports** |
+| 4 | `03_shaft_2of3.stl` | 80.5 × 128 × 182.5 | stone grey | print upright |
+| 5 | `04_shaft_3of3.stl` | 80.5 × 128 × 182.5 | stone grey | print upright |
+| 6 | `05_setbacks.stl` | 85.3 × 132.9 × 41.5 | stone grey | stepped cornices + 86th-fl deck |
+| 7 | `06_crown.stl` | 58.5 × 58.5 × 123.1 | **translucent** | ribbed mast + lantern → LED-backlight showpiece |
+| 8 | `07_spire.stl` | 12.2 × 12.2 × 119.5 | grey | slim antenna — brim it, or swap for a rod |
 
-`00_full_assembly_preview.stl` = all sections in place, for viewing only.
+Every part fits the 256×256×256 bed. `00_full_assembly_preview.stl` = all sections
+in place, for viewing only. The base halves join along the centre with two 3 mm
+dowel pins (holes are built in).
 
-### Fit to your printer
-Set `MAX_PART_H_MM` at the top of `empire_state_building.py` to your bed height —
-the tower auto-splits into that many stacked bands. The report flags any section
-whose footprint exceeds the bed.
+### Change the scale / bed
+`MM_PER_FT` sets the scale (`304.8/500` = 1:500; `0.40` ≈ 1:762 for a 23″ desk model;
+`304.8/87` = HO 1:87). `MAX_PART_H_MM` is the bed height — the tower auto-splits into
+that many bands, the base auto-splits in plan when its footprint exceeds the bed.
 
 ## Single- vs multi-color
 The real building is essentially one color (Indiana limestone). The only truly
