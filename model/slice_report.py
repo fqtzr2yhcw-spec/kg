@@ -22,9 +22,9 @@ def hms(t):
 def slice_one(part):
     gc = f"/tmp/sl_{part}.gcode"
     subprocess.run(["prusa-slicer", "--export-gcode", "--nozzle-diameter", "0.4",
-        "--layer-height", "0.2", "--fill-density", "15%", "--support-material",
-        "--support-material-threshold", "50", "--output", gc,
-        os.path.join(HERE, "stl", part + ".stl")],
+        "--layer-height", "0.2", "--fill-density", "8%", "--fill-pattern", "grid",
+        "--perimeters", "3", "--support-material", "--support-material-threshold", "50",
+        "--output", gc, os.path.join(HERE, "stl", part + ".stl")],
         env={**os.environ, "QT_QPA_PLATFORM": "offscreen"},
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     t = f = 0

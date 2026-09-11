@@ -16,6 +16,22 @@ Studio for final numbers — but accurate enough for planning and pricing.
 - **Material cost** ≈ **$163** @ $25/kg (≈ 6.5 kg).
 - **Wall-clock** across the two printers (P1S + P2S) in parallel ≈ **51 h**.
 
+> **Time caveat:** the headless CLI slicer produced *incoherent* time estimates
+> (13–77 h for near-identical parts) — it has no real Bambu profile. Trust the
+> **material (g)** numbers; **validate print time in Bambu Studio** with a P1S
+> 0.4 mm profile.
+
+## Production recipe (CHOSEN: solid + low infill)
+Keep the sections **solid** (no geometry change) and lighten them in the slicer:
+- **Infill** 8% **grid** (fast — avoid gyroid, it traces slower)
+- **Perimeters** 3 · **Layer** 0.16 mm shaft/base (window detail), 0.20 mm elsewhere
+- **Supports** on (threshold ~50°) — only the cornice undersides need them
+- **Filament** stone-grey PLA; **translucent** crown
+
+~27% less material than 15% infill, with no thin-wall time penalty. (Hollow shells
+were built & verified — −39% material — but rejected: at this detail the
+all-perimeter walls print slower, working against the time goal.)
+
 ## Optimization levers (data-backed)
 - **Material:** shaft band at **8% infill** → **590 g** (from 1149 g), i.e. **−2.2 kg**
   across the four bands. Use a **grid / lightning** pattern at low density — an 8%
