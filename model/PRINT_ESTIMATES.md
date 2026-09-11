@@ -32,3 +32,18 @@ Overhangs are the projecting **cornice undersides** (setbacks, base, crown). Kee
 crisp Art Deco steps and let the slicer add **targeted supports** there (low-visibility
 undersides) rather than chamfering, which would soften the profile. The shaft's window
 sills are < 1 mm — they bridge without support.
+
+## Per-part print orientation & supports
+
+| Part | Orientation on plate | Supports | Notes |
+|------|----------------------|----------|-------|
+| Base N / S | Natural bottom (ground) down | Yes — under the 5th-floor cornice only | Brim for corner adhesion; dowel-hole faces at the seam bridge fine |
+| Shaft ×4 | **Upright** (as modelled) | **None** — facade is vertical; sills < 1 mm bridge | Best-case part: crisp windows, no support scars on the visible facade |
+| Setbacks | Wide base down (as modelled) | Yes — under the stepped cornice tiers | Short part (59 mm); supports are on hidden undersides |
+| Crown | **Upright**, base down | Light — under the cornice rings only | Stepped cap tapers inward (self-supporting); lantern slots are vertical |
+| Spire | **Upright + brim** | None (tapering cone) | Slow the upper layers to avoid wobble; or substitute a tapered metal rod for the very tip |
+
+**Global:** 0.16 mm layers on the shaft & base for sharp window definition, 0.20 mm
+elsewhere. Stone-grey PLA for everything except the **translucent** crown (LED backlight).
+Assemble bottom-up: base halves joined with two 3 mm dowel pins + CA glue, then each
+section onto the tenon below (dry-fit verified at 0.00 mm³ clearance).
