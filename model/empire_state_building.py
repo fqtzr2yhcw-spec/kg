@@ -209,9 +209,10 @@ def build():
     sections[f"{nxt+1:02d}_crown"] = crown
 
     # 06 SPIRE : stepped mast base + antenna needle -------------------------
-    spire = union([poly_frustum(24, 10, 7, 1258, 1300),
-                   poly_frustum(20, 6.5, 4.5, 1300, 1360),
-                   poly_frustum(16, 4.0, 2.4, 1360, 1454)])
+    # sturdier taper for a 170mm-tall needle: base 19mm -> tip ~5.6mm, still slender
+    spire = union([poly_frustum(24, 11, 8.0, 1258, 1300),
+                   poly_frustum(20, 8.0, 5.5, 1300, 1370),
+                   poly_frustum(16, 5.5, 3.2, 1370, 1454)])
     spire = add_mortise(spire, 1258, 6)
     sections[f"{nxt+2:02d}_spire"] = spire
     return sections, meta
