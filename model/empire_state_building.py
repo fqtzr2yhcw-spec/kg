@@ -28,7 +28,7 @@ import trimesh
 # --------------------------------------------------------------------------
 # PARAMETERS
 # --------------------------------------------------------------------------
-MM_PER_FT      = 304.8 / 500.0 # 1:500 scale  (0.6096 mm/ft; tip ~886mm / 2'11")
+MM_PER_FT      = 304.8 / 350.0 # 1:350 scale  (0.8709 mm/ft; tip ~1266mm / 4'2")
 MAX_PART_H_MM  = 250.0         # printer bed height budget (Bambu P1S/P2S: 256mm)
 OUT            = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stl")
 
@@ -191,11 +191,11 @@ def build():
              (37, 35, 1152, 1200), (33, 31, 1200, 1228),
              (30, 18, 1228, 1246), (16, 10, 1246, 1258)]   # last two = stepped cap
     parts = [poly_frustum(N, r0, r1, a, b) for (r0, r1, a, b) in drums]
-    for r, z in [(48, 1110), (43, 1152), (39, 1200)]:      # projecting cornice rings
-        parts.append(poly_frustum(N, r, r, z-1.5, z+1.5))
+    for r, z in [(49, 1110), (44, 1152), (40, 1200)]:      # projecting cornice rings
+        parts.append(poly_frustum(N, r, r, z-2.5, z+2.5))
     crown = union(parts)
-    ribs = [_radial(6, 2.4, 1062, 1150, ang, 44)           # mast mullion grooves
-            for ang in np.linspace(0, 2*np.pi, 32, endpoint=False)]
+    ribs = [_radial(3.5, 3.4, 1062, 1150, ang, 44)         # mast mullion grooves (chunkier ribs)
+            for ang in np.linspace(0, 2*np.pi, 24, endpoint=False)]
     crown = safe_diff(crown, ribs, "crown-ribs")
     # 102nd-floor lantern windows
     try:

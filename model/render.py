@@ -110,6 +110,15 @@ def panels():
     render("render_panels.png", 1100, 850, 160)
 
 if __name__ == "__main__":
-    # camera framed for the 1:500 model (~886mm tip). Single hero render to save usage.
+    # auto-frame the tower (works at any scale)
     setup_tower(night=False)
-    set_cam((830, -1181, 671), (0, 0, 444), 39); render("render.png", 900, 1350, 170)
+    objs = [o for o in bpy.data.objects if o.type == 'MESH' and o.name != 'Plane']
+    mn = Vector((1e18, 1e18, 1e18)); mx = Vector((-1e18, -1e18, -1e18))
+    for o in objs:
+        for v in o.bound_box:
+            w = o.matrix_world @ Vector(v)
+            for i in range(3):
+                mn[i] = min(mn[i], w[i]); mx[i] = max(mx[i], w[i])
+    ctr = (mn + mx) * 0.5; H = mx[2] - mn[2]; d = 1.6 * H
+    set_cam((ctr[0] + 0.5*d, ctr[1] - 0.8*d, ctr[2] + 0.28*d), (ctr[0], ctr[1], ctr[2]), 39)
+    render("render.png", 900, 1350, 175)
