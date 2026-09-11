@@ -28,7 +28,7 @@ import trimesh
 # --------------------------------------------------------------------------
 # PARAMETERS
 # --------------------------------------------------------------------------
-MM_PER_FT      = 0.40          # roof->500mm, tip->~582mm
+MM_PER_FT      = 304.8 / 500.0 # 1:500 scale  (0.6096 mm/ft; tip ~886mm / 2'11")
 MAX_PART_H_MM  = 250.0         # printer bed height budget (Bambu P1S/P2S: 256mm)
 OUT            = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stl")
 
@@ -114,6 +114,20 @@ def _cut(xs, ys, zs, c):
 def add_tenon(m, z_top, size):  return union([m, box_ft(size, size, z_top, z_top + TEN_H)])
 def add_mortise(m, z_bot, size):
     d = TEN_H + 1.0; return diff(m, [box_ft(size+TEN_CLR, size+TEN_CLR, z_bot, z_bot+d)])
+
+def block(x0, x1, y0, y1, z0, z1):
+    b = trimesh.creation.box(extents=(x1-x0, y1-y0, z1-z0))
+    b.apply_translation(((x0+x1)/2, (y0+y1)/2, (z0+z1)/2)); return b
+
+def _dowel_y(r, ylen, x, z):                 # dowel hole along Y for a seam
+    c = trimesh.creation.cylinder(radius=r, height=ylen, sections=20)
+    c.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, (1, 0, 0)))
+    c.apply_translation((x, 0, z)); return c
+
+def split_y_halves(mesh):                    # split an over-wide section into 2 print halves
+    m = diff(mesh, [_dowel_y(3.0, 44, x, z) for x in (-70, 70) for z in (35, 95)])
+    B = 1e5
+    return diff(m, [block(-B, B, -B, 0, -B, B)]), diff(m, [block(-B, B, 0, B, -B, B)])
 
 # --------------------------------------------------------------------------
 # BUILD
@@ -226,6 +240,11 @@ def facade_cutters_custom(xs, ys, z0, z1, pitch, wdepth):
 # --------------------------------------------------------------------------
 def main():
     sections, meta = build()
+    # base long axis exceeds the bed at this scale -> split into 2 dowel-pinned halves
+    if "01_base" in sections and 433*MM_PER_FT > 250:
+        n, s = split_y_halves(sections.pop("01_base"))
+        sections = {"01_base_N": n, "01_base_S": s, **sections}
+        meta["01_base_N"] = meta["01_base_S"] = "base half (dowel-pin seam at centre)"
     print(f"\nScale {MM_PER_FT} mm/ft  bed budget {MAX_PART_H_MM:.0f}mm  "
           f"(roof {1250*MM_PER_FT:.0f}mm, tip {1454*MM_PER_FT:.0f}mm)\n")
     print(f"{'section':22}{'watertight':11}{'W x D x H mm':24}notes")
