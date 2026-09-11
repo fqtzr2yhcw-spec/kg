@@ -16,10 +16,11 @@ log=/tmp/3d-toolchain-setup.log
 # Idempotent: skip the apt work if they're already present (cached containers).
 if ! command -v openscad >/dev/null 2>&1 \
    || ! command -v blender  >/dev/null 2>&1 \
-   || ! command -v xvfb-run >/dev/null 2>&1; then
+   || ! command -v xvfb-run >/dev/null 2>&1 \
+   || ! command -v prusa-slicer >/dev/null 2>&1; then
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -o Acquire::Retries=2 >>"$log" 2>&1 || true
-  apt-get install -y openscad blender xvfb   >>"$log" 2>&1
+  apt-get install -y openscad blender xvfb prusa-slicer >>"$log" 2>&1
 fi
 
 # Python mesh/CAD libraries (the pipeline that generates the STL sections).
