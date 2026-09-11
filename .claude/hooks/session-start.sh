@@ -25,7 +25,7 @@ fi
 # Python mesh/CAD libraries (the pipeline that generates the STL sections).
 if ! python3 -c "import trimesh, manifold3d, scipy, numpy, matplotlib" >/dev/null 2>&1; then
   python3 -m pip install --user --break-system-packages --quiet \
-    trimesh manifold3d scipy numpy matplotlib >>"$log" 2>&1
+    trimesh manifold3d scipy numpy matplotlib rtree >>"$log" 2>&1
 fi
 
 echo "3D toolchain ready: $(openscad --version 2>&1 | head -1) | $(blender --version 2>&1 | head -1)"
