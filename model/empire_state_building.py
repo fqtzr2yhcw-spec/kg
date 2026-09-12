@@ -149,6 +149,7 @@ def build():
     bc, _, _ = facade_cutters_custom(197, 425, 32, 58, pitch=21.0, wdepth=2.2)
     b1 = safe_diff(b1, bc, "base-windows")
     base = union([b1,
+                  slab(207, 435, 0, 4),          # projecting granite water-table course
                   slab(205, 433, 58, 62),        # 5th-floor projecting cornice
                   box_ft(165, 340, 62, 120)])
     base = add_tenon(base, 120, 24)
