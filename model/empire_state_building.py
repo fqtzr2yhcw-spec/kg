@@ -111,6 +111,21 @@ def facade_cutters(xs, ys, z0, z1):
 def _cut(xs, ys, zs, c):
     b = trimesh.creation.box(extents=(xs, ys, zs)); b.apply_translation(c); return b
 
+def masonry_cutters(xs, ys, z0, z1, course=3.0):
+    """Stylized limestone coursing: shallow ~0.5mm horizontal joint grooves.
+    Printable at fine layers on a large model (reads as ashlar, not scale-exact)."""
+    jw = 0.5 / MM_PER_FT          # ~0.5mm printed joint width
+    jd = 0.4 / MM_PER_FT          # ~0.4mm recess depth
+    cutters = []
+    z = z0 + course
+    while z < z1 - 1.0:
+        for sx in (1, -1):
+            cutters.append(_cut(2*jd, ys - 2*CORNER_PIER, jw, (sx*xs/2.0, 0, z)))
+        for sy in (1, -1):
+            cutters.append(_cut(xs - 2*CORNER_PIER, 2*jd, jw, (0, sy*ys/2.0, z)))
+        z += course
+    return cutters
+
 def add_tenon(m, z_top, size):  return union([m, box_ft(size, size, z_top, z_top + TEN_H)])
 def add_mortise(m, z_bot, size):
     d = TEN_H + 1.0; return diff(m, [box_ft(size+TEN_CLR, size+TEN_CLR, z_bot, z_bot+d)])
@@ -166,6 +181,7 @@ def build():
         s = box_ft(132, 210, z0, z1)
         cutters, nx, ny = facade_cutters(132, 210, z0, z1)
         s = safe_diff(s, cutters, name)
+        s = safe_diff(s, masonry_cutters(132, 210, z0, z1), name + "-masonry")
         if i > 0:            s = add_mortise(s, z0, 22)
         else:                s = add_mortise(s, z0, 24)
         s = add_tenon(s, z1, 22)
