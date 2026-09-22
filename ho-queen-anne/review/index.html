@@ -1,0 +1,412 @@
+<title>Beaumont Queen Anne</title>
+<meta name="description" content="HO-scale Queen Anne house concept, revision A, for review.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,700;1,6..96,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #eef0eb;
+    --surface: #f8f9f6;
+    --ink: #1d2320;
+    --muted: #59615b;
+    --rule: #cfd5cc;
+    --accent: #7a2433;
+    --gold: #a77a26;
+    --stage: #dde1da;
+    --chip: #e4e8e0;
+    --display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #141816;
+      --surface: #1b201d;
+      --ink: #e7eae4;
+      --muted: #a2aaa3;
+      --rule: #313833;
+      --accent: #d77483;
+      --gold: #d8b062;
+      --stage: #0f1210;
+      --chip: #252b27;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #141816;
+    --surface: #1b201d;
+    --ink: #e7eae4;
+    --muted: #a2aaa3;
+    --rule: #313833;
+    --accent: #d77483;
+    --gold: #d8b062;
+    --stage: #0f1210;
+    --chip: #252b27;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 15px/1.6 var(--sans);
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 40px; }
+  h1, h2 { font-family: var(--display); font-weight: 500; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(34px, 5.4vw, 58px); line-height: 1.02; letter-spacing: -0.01em; }
+  h1 em { font-style: italic; color: var(--accent); }
+  h2 { font-size: clamp(24px, 3vw, 32px); line-height: 1.15; }
+  p { margin: 0; }
+  .lede { color: var(--muted); max-width: 64ch; margin-top: 12px; }
+
+  /* title block, like the corner of a drawing sheet */
+  header { display: grid; gap: 20px; }
+  .titleblock {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    border: 1.5px solid var(--ink);
+    background: var(--surface);
+  }
+  .titleblock div { padding: 10px 14px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .titleblock dt { font: 500 10.5px/1.2 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .titleblock dd { margin: 4px 0 0; font: 500 15px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
+  .titleblock dd small { color: var(--muted); font-size: 12px; }
+
+  /* stage */
+  .viewer { display: grid; gap: 12px; }
+  .stage {
+    position: relative;
+    background: var(--stage);
+    aspect-ratio: 16 / 11;
+    max-width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+  }
+  .stage img, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+  .stage .cap {
+    position: absolute; left: 12px; bottom: 12px; right: 12px;
+    font: 500 12px/1.4 var(--mono); letter-spacing: 0.04em;
+    color: #1d2320; background: rgba(248, 249, 246, 0.86);
+    padding: 6px 10px; width: fit-content; max-width: calc(100% - 24px);
+  }
+  .stage .status {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font: 500 13px/1.4 var(--mono); color: var(--muted); text-align: center; padding: 16px;
+  }
+  .strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .strip button {
+    flex: 0 0 auto; width: 118px; padding: 0; border: 1.5px solid transparent; background: var(--surface);
+    cursor: pointer; color: var(--ink); text-align: left;
+  }
+  .strip button img { width: 100%; aspect-ratio: 16 / 11; object-fit: cover; display: block; }
+  .strip button span { display: block; font: 500 11px/1.2 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 8px; }
+  .strip button[aria-pressed="true"] { border-color: var(--accent); }
+  .strip button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .strip .spin { display: grid; place-items: center; aspect-ratio: 16 / 11; background: var(--chip); font: 500 22px/1 var(--display); font-style: italic; color: var(--accent); }
+  .hint { font-size: 13px; color: var(--muted); }
+
+  /* review list */
+  .review { display: grid; gap: 22px; }
+  .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px 40px; }
+  .group h3 { font: 600 12px/1.2 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin: 0 0 10px; }
+  .group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-top: 1px solid var(--rule); }
+  .group li { display: grid; grid-template-columns: 44px 1fr; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  .code { font: 500 13px/1.5 var(--mono); color: var(--accent); }
+  .group li b { font-weight: 600; }
+  .group li p { color: var(--muted); font-size: 14px; grid-column: 2; }
+  .group li .alt { font-size: 13px; color: var(--ink); grid-column: 2; }
+  .group li .alt::before { content: "Could also: "; color: var(--muted); }
+
+  /* paint */
+  .paint { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .sw { display: grid; grid-template-columns: 38px 1fr; gap: 10px; align-items: center; }
+  .sw i { display: block; width: 38px; height: 38px; border: 1px solid var(--rule); }
+  .sw b { font-weight: 600; font-size: 14px; display: block; }
+  .sw span { font: 12px/1.3 var(--mono); color: var(--muted); }
+
+  .twocol { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px 48px; align-items: start; }
+  .plan { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+  .plan li::marker { font-family: var(--mono); color: var(--gold); }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  .tablewrap { overflow-x: auto; }
+  th, td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font: 500 11px/1.2 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  td.num { font-family: var(--mono); font-size: 13.5px; white-space: nowrap; }
+  footer.ask {
+    border: 1.5px solid var(--ink); background: var(--surface); padding: 18px 20px; display: grid; gap: 8px;
+  }
+  footer.ask code { font-family: var(--mono); font-size: 13.5px; background: var(--chip); padding: 1px 6px; }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>The Beaumont, <em>a Queen Anne</em> for HO</h1>
+      <p class="lede">An original 2½-storey Victorian with a corner tower, wraparound porch and a front gable wing. Construction follows the same flat-panel kit method as the Victorian #2 reference model. Revision A is the look only: pick it apart before any printable parts are made.</p>
+    </div>
+    <dl class="titleblock" style="margin:0">
+      <div><dt>Scale</dt><dd>HO 1:87.1</dd></div>
+      <div><dt>Footprint</dt><dd>144 × 199 mm <small>with porch</small></dd></div>
+      <div><dt>Height</dt><dd>210 mm <small>to finial</small></dd></div>
+      <div><dt>Prototype</dt><dd>41 × 57 ft</dd></div>
+      <div><dt>Sheet</dt><dd>Concept · Rev A</dd></div>
+      <div><dt>Date</dt><dd>22 Sep 2026</dd></div>
+    </dl>
+  </header>
+
+  <section class="viewer" aria-label="Renders and 3D model">
+    <div class="stage" id="stage">
+      <img id="shot" src="img/hero.jpg" alt="Front-left three-quarter render of the Beaumont Queen Anne on a lawn base">
+      <canvas id="gl" hidden></canvas>
+      <div class="status" id="status" hidden></div>
+      <div class="cap" id="cap">Hero · front-left three-quarter</div>
+    </div>
+    <div class="strip" id="strip" role="group" aria-label="Choose a view"></div>
+    <p class="hint">Renders are Cycles path-traced from the actual model geometry. Every shingle, clapboard, baluster and spindle is modelled, not painted on. <b>3D spin</b> loads the full model (≈6 MB); drag to orbit, scroll or pinch to zoom.</p>
+  </section>
+
+  <section class="review">
+    <div>
+      <h2>What to review</h2>
+      <p class="lede">Each decision has a code. Tell me what to change by code, e.g. <code style="font-family:var(--mono)">A2: shorter tower</code>.</p>
+    </div>
+    <div class="groups">
+      <div class="group">
+        <h3>A · Massing &amp; roof</h3>
+        <ul>
+          <li><span class="code">A1</span><b>Octagonal corner tower, 3 storeys</b><p>11 ft across, spire roof at a 71° pitch, cast finial. Its tip sits about 44 mm above the main ridge.</p><p class="alt">round tower, shorter 2½-storey tower, or bell-cast (flared) spire</p></li>
+          <li><span class="code">A2</span><b>Main block 30 × 38 ft, steep hip roof</b><p>49° pitch, iron cresting on the short ridge, 1½ ft boxed eaves with paired brackets.</p><p class="alt">shallower roof, or a side gable on the right to break up the long wall</p></li>
+          <li><span class="code">A3</span><b>Front gable wing, 13 ft wide, 6 ft projection</b><p>Canted bay window on the first floor, pair of stained-glass windows above, attic window in the gable.</p><p class="alt">wider wing, or a two-storey bay</p></li>
+          <li><span class="code">A4</span><b>Gabled dormer on the left roof</b><p>Fish-scale face, Queen Anne sash, small finial.</p><p class="alt">remove, or add a matching dormer on the right</p></li>
+          <li><span class="code">A5</span><b>Two brick chimneys</b><p>Exterior chimney on the right wall with a stone-capped shoulder; interior chimney at the back. Corbelled caps, clay pots.</p><p class="alt">shorter stacks, or both interior</p></li>
+        </ul>
+      </div>
+      <div class="group">
+        <h3>B · Surfaces</h3>
+        <ul>
+          <li><span class="code">B1</span><b>Clapboard, first floor</b><p>4½″ exposure (1.3 mm on the model): true to scale.</p></li>
+          <li><span class="code">B2</span><b>Fish-scale shingles, second floor &amp; tower</b><p>6½″ wide tabs (1.9 mm), overlapping rows with real relief.</p><p class="alt">clapboard on both floors, with shingles only in the gables</p></li>
+          <li><span class="code">B3</span><b>Diamond-point shingles in the gable &amp; tower top</b><p>A third texture band, typical of Queen Anne.</p></li>
+          <li><span class="code">B4</span><b>Random-width slate roof, fish-scale slate spire</b><p>Hip and ridge caps are modelled separately.</p><p class="alt">uniform asphalt-style courses (prints faster)</p></li>
+          <li><span class="code">B5</span><b>Coursed rubble foundation, running-bond brick chimneys</b><p>Basement hopper windows on the sides and back.</p></li>
+        </ul>
+      </div>
+      <div class="group">
+        <h3>C · Porch &amp; trim</h3>
+        <ul>
+          <li><span class="code">C1</span><b>L-shaped wraparound porch, 8 ft deep</b><p>Chamfered corner around the tower, turned posts, spindle frieze, gingerbread brackets, turned-baluster railing, lattice skirt on piers.</p><p class="alt">full wrap to the right side, or a round gazebo corner</p></li>
+          <li><span class="code">C2</span><b>Windows: 2-over-2 double-hung</b><p>Cornice heads with oxblood panels, sills and aprons. Feature windows get Queen Anne sashes with a coloured-glass border.</p><p class="alt">1-over-1, or add louvered shutters</p></li>
+          <li><span class="code">C3</span><b>Double front door with transom</b><p>Fluted pilasters, open pediment, raised panels, glazed upper halves.</p></li>
+          <li><span class="code">C4</span><b>Gable sunburst &amp; king-post ornament</b><p>Pierced spindle fan with a hanging pendant.</p><p class="alt">stick-style truss, or a simpler bargeboard</p></li>
+          <li><span class="code">C5</span><b>Back stoop with a bracketed hood, downspouts</b><p>The rear side is kept simpler on purpose (less print time where nobody looks).</p><p class="alt">a small back porch</p></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="twocol">
+    <div style="display:grid;gap:16px">
+      <h2>D · Paint scheme</h2>
+      <p class="lede" style="margin:0">A classic “painted lady” palette. Each colour becomes its own set of printed parts, as in the reference kit.</p>
+      <div class="paint">
+        <div class="sw"><i style="background:#7f8f6a"></i><div><b>Sage</b><span>clapboard</span></div></div>
+        <div class="sw"><i style="background:#c79a45"></i><div><b>Harvest gold</b><span>shingled walls</span></div></div>
+        <div class="sw"><i style="background:#efe7d2"></i><div><b>Cream</b><span>all trim, porch</span></div></div>
+        <div class="sw"><i style="background:#6a1f2b"></i><div><b>Oxblood</b><span>sashes, panels</span></div></div>
+        <div class="sw"><i style="background:#43474d"></i><div><b>Slate</b><span>roofs</span></div></div>
+        <div class="sw"><i style="background:#8d877c"></i><div><b>Fieldstone</b><span>foundation</span></div></div>
+        <div class="sw"><i style="background:#8a3b2b"></i><div><b>Brick</b><span>chimneys</span></div></div>
+        <div class="sw"><i style="background:#6b706f"></i><div><b>Porch grey</b><span>floor, steps</span></div></div>
+      </div>
+      <p class="hint">D1: tell me if you want a different scheme (e.g. blue/white, all-white farmhouse, or brick first floor like the reference).</p>
+    </div>
+    <div style="display:grid;gap:16px">
+      <h2>After approval: the kit</h2>
+      <ol class="plan">
+        <li>Split into flat-printing wall panels (texture face-up, 0.2 mm layers), keyed corner posts, and separate window and door inserts, the same system the reference kit uses.</li>
+        <li>Walls, roofs and foundation on the FDM printers. Panels will be sized for a 256 mm bed so the P1S and P2S can share the work; the H2C takes the multi-colour plates.</li>
+        <li>Fine parts on the Saturn 4 Ultra: turned posts, balusters, spindle frieze, brackets, finials, cresting. Balusters and spindles are 0.6 mm thick, too fine for a 0.4 mm nozzle.</li>
+        <li>Plates exported as a Bambu Studio 3MF with colours assigned, plus an assembly sheet.</li>
+      </ol>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Element</th><th>Prototype</th><th>Model</th></tr></thead>
+          <tbody>
+            <tr><td>Storey heights</td><td class="num">11 ft + 11 ft</td><td class="num">38.5 + 38.5 mm</td></tr>
+            <tr><td>Main walls</td><td class="num">30 × 38 ft</td><td class="num">105 × 133 mm</td></tr>
+            <tr><td>Window (1st floor)</td><td class="num">2′10″ × 6′2″</td><td class="num">9.8 × 21.7 mm</td></tr>
+            <tr><td>Porch post</td><td class="num">8′5″ tall</td><td class="num">29.4 mm</td></tr>
+            <tr><td>Baluster spacing</td><td class="num">4¼″</td><td class="num">1.22 mm</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer class="ask">
+    <h2 style="font-size:22px">Your turn</h2>
+    <p>Reply in the chat with codes and changes, like <code>A1 round tower</code>, <code>C1 wrap to the right side</code> or <code>D1 blue and white</code>. I'll revise, re-render and update this page at the same link.</p>
+  </footer>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+const VIEWS = [
+  ["hero", "Hero · front-left three-quarter"],
+  ["front", "Front elevation"],
+  ["right", "Right side · exterior chimney"],
+  ["rear", "Rear · back stoop"],
+  ["aerial", "Aerial · roof layout"],
+  ["porch", "Detail · wraparound porch"],
+  ["tower", "Detail · tower spire & eaves"],
+  ["gable", "Detail · gable ornament & shingles"],
+];
+const strip = document.getElementById("strip");
+const shot = document.getElementById("shot");
+const cap = document.getElementById("cap");
+const canvas = document.getElementById("gl");
+const status = document.getElementById("status");
+let buttons = [];
+
+function select(btn) {
+  buttons.forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+}
+VIEWS.forEach(([key, label], i) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.id = "view-" + key;
+  b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+  b.innerHTML = `<img src="img/${key}_t.jpg" alt=""><span>${key}</span>`;
+  b.addEventListener("click", () => {
+    select(b);
+    stop3d();
+    canvas.hidden = true; status.hidden = true; shot.hidden = false;
+    shot.src = `img/${key}.jpg`;
+    shot.alt = label;
+    cap.textContent = label;
+  });
+  strip.appendChild(b);
+  buttons.push(b);
+});
+const spinBtn = document.createElement("button");
+spinBtn.type = "button";
+spinBtn.id = "view-3d";
+spinBtn.setAttribute("aria-pressed", "false");
+spinBtn.innerHTML = `<div class="spin">3D</div><span>3D spin</span>`;
+spinBtn.addEventListener("click", () => { select(spinBtn); start3d(); });
+strip.appendChild(spinBtn);
+buttons.push(spinBtn);
+
+let three = null;   // {renderer, scene, camera, controls, running}
+async function loadModel() {
+  const res = await fetch("house.bin");
+  if (!res.ok) throw new Error("model file missing (" + res.status + ")");
+  let buf = new Uint8Array(await res.arrayBuffer());
+  if (buf[0] === 0x1f && buf[1] === 0x8b) {
+    const ds = new DecompressionStream("gzip");
+    buf = new Uint8Array(await new Response(new Blob([buf]).stream().pipeThrough(ds)).arrayBuffer());
+  }
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  const hlen = dv.getUint32(0, true);
+  const header = JSON.parse(new TextDecoder().decode(buf.subarray(4, 4 + hlen)));
+  let off = 4 + hlen;
+  const out = [];
+  for (const m of header.materials) {
+    const q = new Int16Array(buf.buffer.slice(buf.byteOffset + off, buf.byteOffset + off + m.nv * 6));
+    off += m.nv * 6;
+    const idx = new Uint32Array(buf.buffer.slice(buf.byteOffset + off, buf.byteOffset + off + m.nt * 12));
+    off += m.nt * 12;
+    const pos = new Float32Array(m.nv * 3);
+    for (let i = 0; i < m.nv; i++) {
+      pos[i * 3] = header.lo[0] + (q[i * 3] - header.offset) * header.scale;
+      pos[i * 3 + 1] = header.lo[1] + (q[i * 3 + 1] - header.offset) * header.scale;
+      pos[i * 3 + 2] = header.lo[2] + (q[i * 3 + 2] - header.offset) * header.scale;
+    }
+    out.push({ m, pos, idx });
+  }
+  return out;
+}
+
+async function start3d() {
+  shot.hidden = true;
+  cap.textContent = "3D spin · drag to orbit, scroll or pinch to zoom";
+  canvas.hidden = false;
+  if (three) { three.running = true; loop(); return; }
+  status.hidden = false;
+  status.textContent = "Loading the full model (≈6 MB, 1 million triangles)…";
+  try {
+    const THREE = await import("three");
+    const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+    const { RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js");
+    const parts = await loadModel();
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--stage").trim() || "#dde1da");
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const sun = new THREE.DirectionalLight(0xfff3e6, 1.6);
+    sun.position.set(-1, 1.6, 1.2);
+    scene.add(sun);
+    const group = new THREE.Group();
+    group.rotation.x = -Math.PI / 2;   // model is z-up
+    for (const { m, pos, idx } of parts) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      g.setIndex(new THREE.BufferAttribute(idx, 1));
+      g.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(m.color), roughness: m.rough, metalness: m.metal, flatShading: true,
+      });
+      group.add(new THREE.Mesh(g, mat));
+    }
+    const lawn = new THREE.Mesh(new THREE.BoxGeometry(235, 4, 290),
+      new THREE.MeshStandardMaterial({ color: 0x5b7a33, roughness: 1 }));
+    lawn.position.set(41, -2, -62);
+    scene.add(lawn);
+    scene.add(group);
+    const camera = new THREE.PerspectiveCamera(32, 16 / 11, 5, 5000);
+    camera.position.set(-260, 190, 330);
+    const controls = new OrbitControls(camera, canvas);
+    controls.target.set(41, 80, -57);
+    controls.enableDamping = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.8;
+    controls.minDistance = 60;
+    controls.maxDistance = 900;
+    controls.addEventListener("start", () => { controls.autoRotate = false; });
+    controls.update();
+    three = { renderer, scene, camera, controls, running: true };
+    status.hidden = true;
+    resize();
+    loop();
+  } catch (e) {
+    status.hidden = false;
+    status.textContent = "The 3D view couldn't load here (" + e.message + "). The renders above show the same model.";
+  }
+}
+function resize() {
+  if (!three) return;
+  const r = canvas.parentElement.getBoundingClientRect();
+  three.renderer.setSize(r.width, r.height, false);
+  three.camera.aspect = r.width / r.height;
+  three.camera.updateProjectionMatrix();
+}
+window.addEventListener("resize", resize);
+function loop() {
+  if (!three || !three.running) return;
+  three.controls.update();
+  three.renderer.render(three.scene, three.camera);
+  requestAnimationFrame(loop);
+}
+function stop3d() { if (three) three.running = false; }
+</script>
