@@ -17,8 +17,8 @@ corners, separate window and door inserts). No geometry was copied from it.
 | `model/palette.py` | Paint scheme (one colour = one set of printed parts) |
 | `model/render.py` | Blender/Cycles renderer (studio backdrop + lawn base) |
 | `model/export_web.py` | Packs the model for the in-browser 3D viewer |
-| `renders/` | Final PNG renders |
-| `review/` | Review page (renders + 3D spin + revision codes) |
+| `renders/` | Full-size PNG renders (local output, not committed) |
+| `review/` | Review page (web-sized renders in `review/img`, 3D spin, revision codes) |
 
 ## Rebuild
 
@@ -27,7 +27,8 @@ pip install numpy manifold3d bpy pillow
 python3 model/house.py                                   # -> out/house_parts.npz (~7 s)
 python3 model/render.py --samples 96 --res 1600x1100 \
   --views hero,front,right,rear,aerial,porch,tower,gable # -> renders/
-python3 model/export_web.py out/house_parts.npz review/house.bin
+python3 model/export_web.py out/house_parts.npz review/house.bin   # also writes review/house.txt
+python3 model/review_assets.py                           # renders -> review/img
 ```
 
 Units are millimetres at HO scale; `ft()` / `inch()` convert prototype sizes.

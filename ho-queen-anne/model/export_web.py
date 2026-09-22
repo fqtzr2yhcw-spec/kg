@@ -5,6 +5,7 @@ Layout (little endian), after gunzip:
   int16[n_vert*3] quantised positions, uint32[n_tri*3] indices.
 Positions are quantised to the global bounding box (z-up, millimetres).
 """
+import base64
 import gzip
 import json
 import os
@@ -45,6 +46,8 @@ def main(src, dst):
     raw = struct.pack("<I", len(header)) + header + b"".join(blobs)
     with gzip.open(dst, "wb", compresslevel=9) as fh:
         fh.write(raw)
+    with open(os.path.splitext(dst)[0] + ".txt", "w") as fh:   # served form for the review page
+        fh.write(base64.b64encode(open(dst, "rb").read()).decode())
     print("materials", len(mats), "tris", sum(m["nt"] for m in mats), "raw MB", round(len(raw) / 1e6, 2),
           "gz MB", round(os.path.getsize(dst) / 1e6, 2))
 

@@ -164,7 +164,7 @@
       <div class="cap" id="cap">Hero · front-left three-quarter</div>
     </div>
     <div class="strip" id="strip" role="group" aria-label="Choose a view"></div>
-    <p class="hint">Renders are Cycles path-traced from the actual model geometry. Every shingle, clapboard, baluster and spindle is modelled, not painted on. <b>3D spin</b> loads the full model (≈6 MB); drag to orbit, scroll or pinch to zoom.</p>
+    <p class="hint">Renders are Cycles path-traced from the actual model geometry. Every shingle, clapboard, baluster and spindle is modelled, not painted on. <b>3D spin</b> loads the full model (≈9 MB); drag to orbit, scroll or pinch to zoom.</p>
   </section>
 
   <section class="review">
@@ -306,9 +306,17 @@ buttons.push(spinBtn);
 
 let three = null;   // {renderer, scene, camera, controls, running}
 async function loadModel() {
-  const res = await fetch("house.bin");
+  const res = await fetch("house.txt");
   if (!res.ok) throw new Error("model file missing (" + res.status + ")");
-  let buf = new Uint8Array(await res.arrayBuffer());
+  const b64 = (await res.text()).trim();
+  let buf;
+  if (Uint8Array.fromBase64) {
+    buf = Uint8Array.fromBase64(b64);
+  } else {
+    const bin = atob(b64);
+    buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  }
   if (buf[0] === 0x1f && buf[1] === 0x8b) {
     const ds = new DecompressionStream("gzip");
     buf = new Uint8Array(await new Response(new Blob([buf]).stream().pipeThrough(ds)).arrayBuffer());
@@ -340,7 +348,7 @@ async function start3d() {
   canvas.hidden = false;
   if (three) { three.running = true; loop(); return; }
   status.hidden = false;
-  status.textContent = "Loading the full model (≈6 MB, 1 million triangles)…";
+  status.textContent = "Loading the full model (≈9 MB, 1 million triangles)…";
   try {
     const THREE = await import("three");
     const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
@@ -375,9 +383,9 @@ async function start3d() {
     scene.add(lawn);
     scene.add(group);
     const camera = new THREE.PerspectiveCamera(32, 16 / 11, 5, 5000);
-    camera.position.set(-260, 190, 330);
+    camera.position.set(-310, 300, 430);
     const controls = new OrbitControls(camera, canvas);
-    controls.target.set(41, 80, -57);
+    controls.target.set(41, 92, -57);
     controls.enableDamping = true;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.8;
