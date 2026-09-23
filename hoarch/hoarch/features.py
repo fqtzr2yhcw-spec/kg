@@ -85,9 +85,10 @@ def tower_cap_solid(path, z0, h=16.0, d_flare=0.4, d_top=-7.0, bands=4):
 
 
 # ------------------------------------------------------------------ chimney
-def chimney(w=10.5, dpt=10.5, h=20.5, cap=1.6, pots=2, peg=(5.8, 5.8, 2.0)):
+def chimney(w=10.5, dpt=10.5, h=20.5, cap=1.6, pots=2, peg=(5.8, 5.8, 2.0), panel=(1.4, 6.0)):
     """Brick chimney standing on a flat deck (z = 0 at the deck), with a corbelled
-    cap, pots and a locating peg below."""
+    cap, pots and a locating peg below. ``panel`` = (gap under the cap, height) of a sunk
+    panel on every face, its top edge bevelled 45 degrees so it prints upright."""
     core = box([-w / 2, -dpt / 2, 0], [w / 2, dpt / 2, h - 3 * cap])
     parts = [core]
     prev = 0.25                                   # the brick relief
@@ -117,25 +118,58 @@ def chimney(w=10.5, dpt=10.5, h=20.5, cap=1.6, pots=2, peg=(5.8, 5.8, 2.0)):
         parts.append(chimney_pot(1.5, 3.2).translate([x, 0, h]))
     if peg:
         parts.append(box([-peg[0] / 2, -peg[1] / 2, -peg[2]], [peg[0] / 2, peg[1] / 2, 0.01]))
-    return union(parts)
+    out = union(parts)
+    if panel:
+        dep, ins = 0.5, 1.6
+        v1 = shaft_h - panel[0]
+        v0 = max(0.5, v1 - panel[1])
+        pockets = []
+        for f in fac:
+            u0, u1 = ins, f.L - ins
+            pts = [(u, v, ww) for u in (u0, u1) for (v, ww) in ((v0, -dep), (v1 - dep, -dep), (v0, 1.0), (v1, 0.0), (v1, 1.0))]
+            pockets.append(f.place(M.hull_points(pts)))
+        out = out - union(pockets)
+    return out
 
 
 # ------------------------------------------------------------------ porch
-def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True, style="arcade"):
+def baluster_cs(u, v0, v1, wmax=1.0, wmin=0.6):
+    """Turned baluster silhouette (u centred, v0..v1): base and top blocks, a belly and
+    two necks. Never narrower than ``wmin`` so it prints as a shape, not a hairline."""
+    prof = [(0.0, 1.0), (0.12, 1.0), (0.14, 0.72), (0.22, 0.66), (0.34, 0.9), (0.46, 1.04), (0.58, 0.92),
+            (0.72, 0.64), (0.78, 0.6), (0.82, 0.8), (0.86, 0.62), (0.88, 1.0), (1.0, 1.0)]
+    h = v1 - v0
+    right = [(u + max(wmin, f * wmax) / 2, v0 + t * h) for t, f in prof]
+    left = [(2 * u - x, v) for x, v in reversed(right)]
+    return poly(right + left)
+
+
+def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True, style="arcade", rail=None):
     """Flat post panel (prints front-face down, t thick).
 
     style "arcade": quarter-round spandrels meet at mid-span (Second Empire arcade);
     style "bracket": a pierced scroll bracket each side of every post (Italianate).
+    Posts stand on panelled pedestals and carry capital blocks with a sunk rosette
+    (cut into the front face, which is the bed face when printed).
+    ``rail`` = dict(h, skip=[(u0, u1), ...]): a turned-baluster railing between posts,
+    left out of the skipped spans (the steps).
     Local frame: u along the porch edge (0..L), v up from the porch floor, w out
     (panel from w = -t/2 to t/2). posts_u = post centre positions."""
     parts = [ext(rect(0, H - beam, L, H), -t / 2, t / 2)]                     # beam
+    cuts = []
+    ped_h, cap_h = 3.4, 2.4
     for pu in posts_u:
         shaft = rect(pu - pw / 2 + 0.25, 0.0, pu + pw / 2 - 0.25, H - beam)
         parts.append(ext(shaft, -t / 2 + 0.25, t / 2))
-        # chamfer-look: full-width blocks at base, mid-collar and capital
-        for (v0, v1) in ((0.0, 2.6), (H * 0.36, H * 0.36 + 0.7), (H - beam - 1.6, H - beam)):
+        # pedestal, mid collar and capital block, full width
+        for (v0, v1) in ((0.0, ped_h), (H * 0.4, H * 0.4 + 0.8), (H - beam - cap_h, H - beam)):
             parts.append(ext(rect(pu - pw / 2, v0, pu + pw / 2, v1), -t / 2, t / 2))
+        parts.append(ext(rect(pu - pw / 2 - 0.3, ped_h - 0.4, pu + pw / 2 + 0.3, ped_h), -t / 2, t / 2))
         parts.append(ext(rect(pu - pw / 2 - 0.35, H - beam - 0.8, pu + pw / 2 + 0.35, H - beam), -t / 2, t / 2))
+        # sunk panel in the pedestal, sunk rosette (ring and boss) in the capital
+        cuts.append(ext(rect(pu - pw / 2 + 0.5, 0.6, pu + pw / 2 - 0.5, ped_h - 0.9), t / 2 - 0.4, t / 2 + 1))
+        cc = (pu, H - beam - cap_h / 2 - 0.2)
+        cuts.append(ext(circle(cc, 0.85, 20) - circle(cc, 0.35, 16), t / 2 - 0.4, t / 2 + 1))
     # arcade spandrels between posts
     for a, b in zip(posts_u[:-1], posts_u[1:]):
         span = b - a - pw
@@ -144,8 +178,6 @@ def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True, styl
         vt = H - beam
         for s in (-1, 1):
             u_post = a + pw / 2 - 0.25 if s < 0 else b - pw / 2 + 0.25
-            u_mid = (a + b) / 2
-            u0, u1 = (u_post, u_mid) if s < 0 else (u_mid, u_post)
             sp = spandrel(0.0, half, 0.0, drop_, 0.0, 1.0, bar=0.55)
             # spandrel() draws the corner at u=0: mirror for the right-hand post
             if s < 0:
@@ -157,28 +189,52 @@ def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True, styl
         for a, b in zip(posts_u[:-1], posts_u[1:]):
             um = (a + b) / 2
             parts.append(ext(rect(um - 0.5, H - beam - 1.5, um + 0.5, H - beam), t / 2 - 1.2, t / 2))
-    else:                   # a thin frieze board with a bead under the beam
+    else:                   # a frieze board with a row of drops under the beam
         parts.append(ext(rect(0, H - beam - 0.6, L, H - beam), t / 2 - 0.8, t / 2))
-    return union(parts)
+        for a, b in zip(posts_u[:-1], posts_u[1:]):
+            for um in np.arange(a + pw / 2 + 6.0, b - pw / 2 - 5.9, 2.4):
+                parts.append(ext(rect(um - 0.3, H - beam - 1.2, um + 0.3, H - beam - 0.6), t / 2 - 0.8, t / 2))
+    if rail:
+        rh = rail.get("h", 8.6)
+        skip = rail.get("skip", [])
+        for a, b in zip(posts_u[:-1], posts_u[1:]):
+            if any(not (b <= s0 or a >= s1) for s0, s1 in skip):
+                continue
+            u0, u1 = a + pw / 2 - 0.1, b - pw / 2 + 0.1
+            parts.append(ext(rect(u0, 0.8, u1, 1.6), t / 2 - 1.2, t / 2))                  # bottom rail
+            parts.append(ext(rect(u0, rh - 0.9, u1, rh), t / 2 - 1.4, t / 2))               # hand rail
+            parts.append(ext(rect(u0, rh - 0.5, u1, rh), t / 2 - 1.6, t / 2))               # its cap
+            n = int((u1 - u0 - 0.9) / 1.8)
+            if n >= 1:
+                pitch = (u1 - u0) / (n + 1)
+                bal = cs_union([baluster_cs(u0 + pitch * (j + 1), 1.55, rh - 0.85) for j in range(n)])
+                parts.append(ext(bal, t / 2 - 1.0, t / 2))
+    out = union(parts)
+    return out - union(cuts) if cuts else out
 
 
-def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.4, skirt=1.4):
-    """Porch deck: floor slab + brick piers + lattice skirt along outer edges.
+def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.4, skirt=1.4, floor=True):
+    """Porch deck: brick piers, lattice skirt and fascia along the outer edges, a ledger on
+    the house side, and (``floor=True``) the floor slab. With floor=False the floor is left
+    to porch_floor() as its own part (its own colour, boards on its bed face).
 
-    Prints upside down (floor on the bed). outer_edges: list of edge indices of
+    Prints upside down (top on the bed). outer_edges: list of edge indices of
     the CCW polygon that face the yard; piers_u: {edge: [u, ...]}."""
     pts = ccw(poly_pts)
     base = poly(pts)
-    parts = [slab(base, H - floor_t, H)]
-    # floor board grooves on top: shallow cuts along the depth direction are hard on a
-    # bed face, so boards are drawn as tiny ridges on the edges only (nosing)
-    for i in outer_edges:
+    parts = [slab(base, H - floor_t, H)] if floor else []
+    ztop = H - floor_t + (0.01 if floor else -0.02)      # a separate floor rests on this
+    for i in range(len(pts)):
         f = Facade(pts[i], pts[(i + 1) % len(pts)], 0.0)
         L = f.L
-        # skirt fascia board under the floor edge
-        parts.append(f.place(box([0, H - floor_t - skirt, -0.9], [L, H - floor_t + 0.01, 0.0])))
-        # nosing lip
-        parts.append(f.place(box([-0.3, H - 0.6, -0.2], [L + 0.3, H, 0.35])))
+        if i not in outer_edges:   # ledger along the house: the floor rests on it
+            parts.append(f.place(box([0, H - floor_t - skirt, -1.6], [L, ztop, 0.0])))
+            continue
+        # skirt fascia board under the floor edge, deep enough to carry the lattice, its
+        # backing web and the piers when the deck prints upside down without its floor
+        parts.append(f.place(box([0, H - floor_t - skirt, -0.9 if floor else -(pier - 0.2)], [L, ztop, 0.0])))
+        if floor:  # nosing lip
+            parts.append(f.place(box([-0.3, H - 0.6, -0.2], [L + 0.3, H, 0.35])))
         pu = (piers_u or {}).get(i, [])
         # lattice between piers, recessed
         lat_reg = rect(0.2, 0.0, L - 0.2, H - floor_t - skirt)
@@ -193,6 +249,44 @@ def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.
                         d=0.2).translate([0, 0, -0.01])
             parts.append(f.place(pr + tex))
     return union(parts)
+
+
+def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT, depth=0.4, border=1.6,
+                along=None):
+    """Tongue-and-groove porch floor as its own part: boards run ``along`` (a unit plan
+    vector; default perpendicular to the longest yard edge, as porch boards run away from
+    the house), a border board frames the yard edges, and a rounded nosing overhangs them.
+    Boards are slots on the top face, which prints on the bed (upside down)."""
+    pts = ccw(poly_pts)
+    base = poly(pts)
+    floor = slab(base, H - floor_t, H)
+    edges = [(i, Facade(pts[i], pts[(i + 1) % len(pts)], 0.0)) for i in outer_edges]
+    if along is None:
+        f_long = max(edges, key=lambda e: e[1].L)[1]
+        along = -f_long.n
+    along = np.asarray(along, float) / np.linalg.norm(along)
+    ang = np.degrees(np.arctan2(along[1], along[0]))
+    # field of boards inside the border, grooves every pitch across ``along``
+    b = base.bounds()
+    R = np.hypot(b[2] - b[0], b[3] - b[1]) + 10
+    cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+    grooves = cs_union([rect(k - slot / 2, -R, k + slot / 2, R) for k in np.arange(-R, R, pitch)])
+    grooves = grooves.rotate(ang - 90).translate((cx, cy))
+    inner = base
+    for i, f in edges:
+        strip = poly([tuple(f.p0 + f.u * -50 + f.n * 0.01), tuple(f.p1 + f.u * 50 + f.n * 0.01),
+                      tuple(f.p1 + f.u * 50 - f.n * border), tuple(f.p0 + f.u * -50 - f.n * border)])
+        inner = inner - strip
+    cut = (grooves ^ inner)
+    # the joint between the border boards and the field
+    for i, f in edges:
+        seam = poly([tuple(f.p0 + f.u * -50 - f.n * (border - slot)), tuple(f.p1 + f.u * 50 - f.n * (border - slot)),
+                     tuple(f.p1 + f.u * 50 - f.n * border), tuple(f.p0 + f.u * -50 - f.n * border)])
+        cut = cut + (seam ^ offset(base, -0.3))
+    floor = floor - slab(cut, H - depth, H + 1)
+    for i, f in edges:   # nosing
+        floor = floor + f.place(box([-0.3, H - 0.6, -0.2], [f.L + 0.3, H, 0.35]))
+    return floor
 
 
 def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None):
@@ -233,12 +327,14 @@ def steps(width, rise_total, n, tread=2.6, cheek=1.8):
 
 # ------------------------------------------------------------------ porch assembly
 def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=None, steps_at=(),
-          pier=3.4, pw=2.6, t=2.6, style="arcade"):
+          pier=3.4, pw=2.6, t=2.6, style="arcade", rail=None, boards=None):
     """A complete porch from its plan polygon (CCW) and its yard-facing *runs*.
 
     runs: list of dict(a=(x,y), b=(x,y), posts=[u,...]) in CCW order, u measured from a.
     steps_at: list of (run_index, u, width).
-    Returns dict(deck, panels=[(name, solid_local, A)], roof, steps=[(solid_local, A)])."""
+    rail: dict(h=...) for a baluster railing between the posts (left open at the steps).
+    boards: dict for porch_floor() to make the floor its own part (slotted boards), or None.
+    Returns dict(deck, floor, panels=[(name, solid_local, A)], roof, steps=[(solid_local, A)])."""
     pts = ccw(poly_pts)
     # deck: outer edges are the polygon edges that coincide with runs
     edges = []
@@ -250,7 +346,9 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
     piers = {}
     for i, r in edges:
         piers[i] = list(r["posts"])
-    deck = porch_deck(pts, [i for i, _ in edges], H=H_floor, piers_u=piers, pier=pier)
+    outer = [i for i, _ in edges]
+    deck = porch_deck(pts, outer, H=H_floor, piers_u=piers, pier=pier, floor=boards is None)
+    floor = porch_floor(pts, outer, H=H_floor, **boards) if boards is not None else None
     panels = []
     for k, r in enumerate(runs):
         f = Facade(r["a"], r["b"], H_floor)
@@ -259,7 +357,11 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
         # a run that starts where the previous one ended leaves the corner to that panel
         s0 = t + 0.45 if k > 0 and np.allclose(runs[k - 1]["b"], r["a"], atol=0.05) else 0.0
         posts = [u - s0 for u in r["posts"] if u - s0 >= pw / 2 - 1e-6]
-        panel = porch_posts(f.L - s0, post_h, posts, pw=pw, t=t, style=style).translate([s0, 0, 0])
+        rl = None
+        if rail:
+            rl = dict(rail)
+            rl["skip"] = [(u - wd / 2 - s0, u + wd / 2 - s0) for (ri, u, wd) in steps_at if ri == k]
+        panel = porch_posts(f.L - s0, post_h, posts, pw=pw, t=t, style=style, rail=rl).translate([s0, 0, 0])
         panels.append((f"run{k}", panel, A))
     # roof: polygon grown outward, cut back from the building later by the caller
     base = poly(pts)
@@ -297,7 +399,7 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
         A = f.A.copy()
         A[:, 3] = f.world(u, 0.0, 0.45)
         st.append((steps(wdt, H_floor, 4), A))
-    return dict(deck=deck, panels=panels, roof=roof, steps=st)
+    return dict(deck=deck, floor=floor, panels=panels, roof=roof, steps=st)
 
 
 # ------------------------------------------------------------------ shutters

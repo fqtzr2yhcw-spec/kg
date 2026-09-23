@@ -16,7 +16,7 @@ import math
 from manifold3d import JoinType
 
 from .core import RIB, SLOT, arch_cs, cs_union, poly, rect, union
-from .ornament import console, dentils, ext, fan_crest, keystone, rosette_block, stepped
+from .ornament import chamfer_box, console, dentils, ext, fan_crest, keystone, rosette_block, stepped
 
 CLR = 0.15      # plug clearance per side
 PLUG = 1.6      # plug depth into a 3.0 mm wall (8 x 0.2 mm layers)
@@ -60,9 +60,12 @@ def _arc_band(w_in, spring, rise, r_in_extra, thick, u_ext=0.0, seg=32):
     return band, cy, r0
 
 
-def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare=False, ends=0.9, sill_ext=0.6, clip=False):
+def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare=False, ends=0.9, sill_ext=0.6,
+                  clip=False, apron=False, consoles=None):
     """Italianate window: segmental- or round-arched head, eared casing,
     bracketed sill, moulded hood with keystone; ``style`` in {"crest", "key", "flat"}.
+    ``apron``: a panelled apron under the sill instead of the two sill brackets.
+    ``consoles``: scroll consoles carrying a flat cap (default on for "flat").
 
     Returns dict(insert=Manifold, cut=CrossSection, landing=CrossSection, top=v, bottom=v)."""
     rise = w / 2 if rise is None else rise
@@ -100,9 +103,10 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     parts.append(ext(cas, 0.0, CAS))
     bead = (op.offset(RIB, JoinType.Round) - op) ^ rect(-w, 0.0, w, h + 1)
     parts.append(ext(bead, CAS, BEAD))
-    # ears: small outward steps at the spring line
+    # ears: small outward steps at the spring line (a flat cap on consoles has none)
+    consoles = (style == "flat") if consoles is None else consoles
     ear_h = 1.1
-    for s in (-1, 1):
+    for s in (() if (style == "flat" and consoles) else (-1, 1)):
         u0 = s * (w / 2 + casing)
         parts.append(ext(rect(min(u0, u0 + s * 0.5), spring - ear_h, max(u0, u0 + s * 0.5), spring + 0.2), 0.0, CAS))
     # --- sill with two small brackets -------------------------------------------------
@@ -110,9 +114,18 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     sill = rect(-sw, -0.9, sw, 0.0)
     parts.append(ext(sill, 0.0, 1.2))
     parts.append(ext(rect(-sw - 0.2, -SLOT, sw + 0.2, 0.0), 1.2, 1.4))      # drip nose
-    for s in (-1, 1):
-        parts.append(ext(rect(s * (w / 2 + 0.2) - 0.45, -1.9, s * (w / 2 + 0.2) + 0.45, -0.9), 0.0, 0.8))
-        parts.append(ext(rect(s * (w / 2 + 0.2) - 0.35, -2.25, s * (w / 2 + 0.2) + 0.35, -1.9), 0.0, 0.55))
+    bottom = -2.25
+    if apron:
+        # panelled apron: a raised field with a sunken-bevel inner panel and a bead at its foot
+        aw = w / 2 + casing - 0.1
+        parts.append(ext(rect(-aw, -2.9, aw, -0.9), 0.0, 0.4))
+        parts.append(chamfer_box(-aw + 0.7, -2.5, aw - 0.7, -1.3, 0.4, 0.4, c=0.25))
+        parts.append(ext(rect(-aw - 0.2, -3.1, aw + 0.2, -2.7), 0.0, 0.6))
+        bottom = -3.1
+    else:
+        for s in (-1, 1):
+            parts.append(ext(rect(s * (w / 2 + 0.2) - 0.45, -1.9, s * (w / 2 + 0.2) + 0.45, -0.9), 0.0, 0.8))
+            parts.append(ext(rect(s * (w / 2 + 0.2) - 0.35, -2.25, s * (w / 2 + 0.2) + 0.35, -1.9), 0.0, 0.6))
     top = h + casing
     # --- hood --------------------------------------------------------------------------
     if style in ("crest", "key"):
@@ -155,6 +168,9 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
         parts.append(ext(rect(-cw, h + casing - 0.2, cw, h + casing + 0.9), 0.0, 1.2))
         parts.append(ext(rect(-cw - 0.3, h + casing + 0.9, cw + 0.3, h + casing + 1.5), 0.0, 1.6))
         parts.append(dentils(-cw + 0.2, cw - 0.2, h + casing - 0.9, 0.7, 0.0, 0.8))
+        if consoles:   # scroll consoles on the casing carry the cap
+            for s in (-1, 1):
+                parts.append(console(2.6, 1.2, 0.8, u=s * (w / 2 + casing / 2), v_top=h + casing - 0.9, w0=CAS))
         top = h + casing + 1.5
     parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))      # lip over the sash frame
     sur = union(parts)
@@ -162,8 +178,8 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     lw = w / 2 + casing + ends + 0.6
     if style not in ("crest", "key"):
         lw = max(lw, w / 2 + casing + 0.8 + 0.3 + 0.2)          # the flat cap's drip reaches past the ends
-    land = cs_union([cas_out, rect(-sw - 0.3, -2.4, sw + 0.3, 0.1), rect(-lw, spring - 1.6, lw, top)])
-    return dict(insert=sash + sur, sash=sash, surround=sur, cut=op, landing=land, top=top, bottom=-2.25)
+    land = cs_union([cas_out, rect(-sw - 0.3, bottom - 0.15, sw + 0.3, 0.1), rect(-lw, spring - 1.6, lw, top)])
+    return dict(insert=sash + sur, sash=sash, surround=sur, cut=op, landing=land, top=top, bottom=bottom)
 
 
 def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=True):

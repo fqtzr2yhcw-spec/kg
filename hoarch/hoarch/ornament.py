@@ -35,6 +35,33 @@ def side_profile(profile_wv, u0, u1):
     return m.transform(np.array([[0, 0, 1.0, u0], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
 
 
+def chamfer_box(u0, v0, u1, v1, w0, d, c=None, square=()):
+    """Rectangular block raised ``d`` from w0, its edges chamfered at 45 degrees by ``c``
+    (default 0.6 d), except the edges named in ``square`` ("u0", "u1", "v0", "v1").
+
+    The workhorse of the "square blocks" vocabulary: quoins, belt-course blocks, frieze
+    panels, pedestal and capital blocks. With the chamfer, no edge overhangs more than
+    d - c whichever way the part prints."""
+    c = 0.6 * d if c is None else min(c, d)
+    c = max(0.0, min(c, (u1 - u0) / 2 - 0.25, (v1 - v0) / 2 - 0.25))
+    base = d - c
+    iu0 = u0 + (0.0 if "u0" in square else c)
+    iu1 = u1 - (0.0 if "u1" in square else c)
+    iv0 = v0 + (0.0 if "v0" in square else c)
+    iv1 = v1 - (0.0 if "v1" in square else c)
+    pts = [(u, v, w0 + base) for u in (u0, u1) for v in (v0, v1)] + \
+          [(u, v, w0 + d) for u in (iu0, iu1) for v in (iv0, iv1)]
+    top = M.hull_points(pts)
+    if base > 1e-6:
+        top = top + ext(rect(u0, v0, u1, v1), w0, w0 + base + 0.01)
+    return top
+
+
+def lozenge(u, v, w_, h_, w0, d):
+    """Diamond boss (45-degree sides print cleanly on an upright face)."""
+    return ext(poly([(u, v - h_ / 2), (u + w_ / 2, v), (u, v + h_ / 2), (u - w_ / 2, v)]), w0, w0 + d)
+
+
 def dentils(u0, u1, v0, h, w0, d, tooth=0.6, gap=SLOT):
     """Row of dentil blocks between u0..u1 (centred), bottom at v0, height h, depth d."""
     n = max(1, int((u1 - u0 + gap) / (tooth + gap)))

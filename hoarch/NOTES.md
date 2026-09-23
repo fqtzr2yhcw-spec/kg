@@ -55,6 +55,24 @@ cornice and deck. The seams fall on shadow lines, where a real building has join
 5. **Massing from a real building.** Offset blocks, a bay, a one-storey wing and a tower
    that rises through the roof line.
 
+## Detail vocabulary (what makes it look great, not just good)
+
+Rich HO detail comes from a few devices repeated at every scale, each shaped to print:
+
+- **Chamfered square blocks** (`ornament.chamfer_box`): quoins that wrap the corners,
+  the modillion blocks on the belt ring, pedestal and capital blocks on porch posts. The
+  45° chamfer catches light like the real thing, and no edge overhangs more than
+  depth − chamfer, whichever way the part prints.
+- **Raised and sunk panels**: frieze panels with a diamond boss between the eave's
+  bracket pairs, panelled aprons under first-floor sills, sunk panels on chimney faces
+  (45° top edge), sunk panels and rosettes cut into the bed face of porch posts.
+- **Consoles under every cap**: the flat window caps sit on scroll consoles; the eaves
+  carry paired brackets.
+- **Porch**: gray tongue-and-groove floor as its own part (0.5 mm slots every 1.8 mm on
+  its bed face, a border board framing the yard edges, a nosing), a turned-baluster
+  railing (never narrower than 0.6 mm) left open at the steps, and a frieze of drops.
+- Corners where a wing meets the main house get no quoins (they are inside corners).
+
 ## Printability rules (checked by slicing every plate)
 
 - Anything that would overhang goes in its own part, printed with that face down.

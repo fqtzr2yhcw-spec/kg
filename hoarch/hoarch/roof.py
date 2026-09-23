@@ -16,7 +16,7 @@ from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
 from .core import (Facade, box, ccw, cs_union, frame, miters, offset, poly, rect, scallop_rows, slab,
                    sweep_ring, union)
-from .ornament import console, dentils
+from .ornament import chamfer_box, console, dentils, lozenge
 
 
 def _edges(path):
@@ -47,6 +47,35 @@ def edge_brackets(path, z_top, h, d0, d, t, pitch, margin=2.5, pair=0.0, corner=
                 A = f.A.copy()
                 A[:, 3] = f.world(0.0, 0.0, d0) + np.array([0, 0, z_top])
                 out.append(c.transform(A))
+    return union(out)
+
+
+def edge_panels(path, z0, h, d0, d, pitch, margin=2.5, pair=0.0, t=0.8, clear=0.6, boss=True):
+    """Raised frieze panels between the bracket positions of edge_brackets (same pitch,
+    margin and pair), each with a diamond boss. z0 = panel bottom; d0 = frieze face."""
+    P, Mi = _edges(path)
+    out = []
+    for i in range(len(P)):
+        a, b = P[i], P[(i + 1) % len(P)]
+        f = Facade(a, b, 0.0)
+        L = f.L
+        if L < 2 * margin + t:
+            continue
+        k = max(1, int(round((L - 2 * margin) / pitch)))
+        us = [margin + (L - 2 * margin) * j / k for j in range(k + 1)]
+        half = (pair / 2 if pair > 0 else 0.0) + t / 2 + clear
+        loc = []
+        for ua, ub in zip(us[:-1], us[1:]):
+            u0, u1 = ua + half, ub - half
+            if u1 - u0 < 2.0:
+                continue
+            loc.append(chamfer_box(u0, 0.0, u1, h, d0 - 0.05, d + 0.05, c=min(0.3, d)))
+            if boss and u1 - u0 > 3.0 and h > 2.0:
+                loc.append(lozenge((u0 + u1) / 2, h / 2, min(1.6, (u1 - u0) * 0.3), min(1.8, h - 1.0), d0 + d, 0.3))
+        if loc:
+            A = f.A.copy()
+            A[:, 3] = f.world(0.0, 0.0, 0.0) + np.array([0, 0, z0])
+            out.append(union(loc).transform(A))
     return union(out)
 
 
@@ -238,11 +267,12 @@ CORNICE_SMALL = [(-3.7, 0), (0.8, 0), (0.8, 4.0), (1.2, 4.2), (1.3, 4.6), (3.2, 
                  (4.2, 6.8), (4.7, 7.4), (4.8, 8.0), (-3.7, 8.0)]
 
 
-def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_h=1.5, deck=None):
+def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_h=1.5, deck=None, panels=None):
     """A cornice ring swept along ``path`` with brackets and dentils (prints upside down).
 
     brackets = dict(z_top, h, d0, d, t, pitch, pair=0, margin=2.5) (z_top relative to z0)
     dents    = dict(z, h, d0, d, tooth=0.6, gap=0.5) (z relative to z0)
+    panels   = dict(z, h, d) raised frieze panels with a boss between the bracket pairs
     lip_t    = wall thickness: a locating lip drops just inside the wall's inner face
     deck     = (z_bottom, z_top) relative to z0 for a solid roof deck filling the ring, or None."""
     parts = [sweep_ring(path, shift_profile(prof, z0))]
@@ -251,6 +281,11 @@ def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_
         b.update(brackets)
         parts.append(edge_brackets(path, z0 + b["z_top"], b["h"], b["d0"], b["d"], b["t"], b["pitch"],
                                    margin=b["margin"], pair=b["pair"]))
+    if brackets and panels:
+        b = dict(pair=0.0, margin=2.5)
+        b.update(brackets)
+        parts.append(edge_panels(path, z0 + panels["z"], panels["h"], b["d0"], panels["d"], b["pitch"],
+                                 margin=b["margin"], pair=b["pair"], t=b["t"]))
     if dents:
         dn = dict(tooth=0.6, gap=0.5)
         dn.update(dents)

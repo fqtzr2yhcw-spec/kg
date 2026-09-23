@@ -8,6 +8,7 @@ import numpy as np
 from manifold3d import JoinType, Manifold as M
 
 from .core import (Facade, ashlar, box, ccw, clapboard, cs_union, offset, poly, rect, slab, sweep_ring, union)
+from .ornament import chamfer_box
 
 
 class Block:
@@ -71,24 +72,6 @@ class Opening:
         return cs.translate((self.u, self.v0))
 
 
-def _quoin_cs(L_long, L_short, h, gap, v0, v1, leg_u, flip):
-    """Alternating quoin blocks on one leg of a corner, (u, v) with the corner at u = 0
-    and the leg extending in +u (or -u if flip)."""
-    cells = []
-    v = v0
-    k = 0
-    while v < v1 - 0.3:
-        L = L_long if k % 2 == 0 else L_short
-        top = min(v + h - gap, v1)
-        cells.append(rect(0.0, v, L, top))
-        v += h
-        k += 1
-    cs = cs_union(cells)
-    if flip:
-        cs = cs.mirror((1, 0))
-    return cs
-
-
 def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=True,
                water_table=True, partitions=(), extra_cut=None, hide_extra=None, corners=None,
                belt_trim=True):
@@ -120,10 +103,17 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     shell = shell - union(cuts)
     # dressing per facade
     dress = []
-    QL, QS, QH, QG, QT = 3.4, 2.3, 2.306, 0.28, 0.75
+    QL, QS, QH, QG, QT, QC = 3.6, 2.4, 2.4, 0.4, 0.8, 0.45   # long, short, course, joint, depth, chamfer
     for b in blocks:
         facs = b.facades()
         conv = b.convex_corners(min_turn=70.0)
+        # a corner where this block meets another (a wing against the main house) is an
+        # inside corner of the whole building: no quoins or corner boards there
+        others = [offset(o.cs, 0.2) for o in blocks if o is not b]
+        for k, p in enumerate(b.pts):
+            dot = rect(p[0] - 0.01, p[1] - 0.01, p[0] + 0.01, p[1] + 0.01)
+            if conv[k] and any(not (o ^ dot).is_empty() for o in others):
+                conv[k] = False
         bead = [c and not q for c, q in zip(b.convex_corners(), conv)]
         H = b.z1 - b.z0
         for i, f in enumerate(facs):
@@ -156,20 +146,26 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
             reg = reg.offset(-0.45, JoinType.Miter, 4.0).offset(0.45, JoinType.Miter, 4.0) ^ region
             if not reg.is_empty():
                 dress.append(f.place(clapboard(reg, pitch=pitch, d=sid_d, dmin=0.05, datum=1.8)))
-            # quoins
+            # quoins: chamfered blocks, long and short legs alternating, wrapping the corner
+            # (each leg runs QT past the corner so the two faces' blocks meet solid)
             if quoins:
                 for at_start, on in ((True, cstart), (False, cend)):
                     if not on:
                         continue
                     zones = [(0.0, H)] if belt is None or H <= belt[1] else [(0.0, belt[0]), (belt[1], H)]
                     for (qa, qb) in zones:
-                        qa2 = max(qa, 1.8) if water_table and qa == 0 else qa
-                        qcs = _quoin_cs(QL, QS, QH, QG, qa2, qb, QL, flip=not at_start)
-                        if not at_start:
-                            qcs = qcs.translate((f.L, 0))
-                        # bevelled blocks: two layers
-                        q = M.extrude(qcs, QT * 0.6) + M.extrude(qcs.offset(-0.18, JoinType.Miter), QT * 0.4).translate([0, 0, QT * 0.6])
-                        dress.append(f.place(q))
+                        v = max(qa, 1.8) if water_table and qa == 0 else qa
+                        k = 0 if at_start else 1
+                        while v < qb - 0.6:
+                            top = min(v + QH - QG, qb)
+                            leg = QL if k % 2 == 0 else QS
+                            if at_start:
+                                blk = chamfer_box(-QT, v, leg, top, 0.0, QT, QC, square=("u0",))
+                            else:
+                                blk = chamfer_box(f.L - leg, v, f.L + QT, top, 0.0, QT, QC, square=("u1",))
+                            dress.append(f.place(blk))
+                            v += QH
+                            k += 1
             # plain corner boards (Italianate / Gothic houses), with a small cap under the belt/eave
             if boards:
                 zones = [(1.8, H)] if belt is None or H <= belt[1] else [(1.8, belt[0]), (belt[1], H)]
@@ -271,13 +267,33 @@ def lip_keep(base, t, z0, h=LIP_H, inner=LIP_IN, reach=LIP_W, clr=0.15):
     return slab(cs, z0 - clr, z0 + h + clr)
 
 
-def belt_ring(outline_pts, z0, t=3.0, prof=BELT_PROF, lip=True):
+BELT_BLOCKS = dict(w=0.9, z=1.4, h=1.2, d0=0.8, d=0.5, c=0.35, pitch=3.0, margin=1.8)
+
+
+def belt_ring(outline_pts, z0, t=3.0, prof=BELT_PROF, lip=True, blocks=BELT_BLOCKS):
     """Belt course between two storey shells, the full wall thickness plus a moulded band.
 
     It sits on the lower shell (located by that shell's lip) and carries the lip for the
-    upper shell on an inside corbel that starts above the lower lip. Prints upright."""
+    upper shell on an inside corbel that starts above the lower lip. Prints upright.
+    ``blocks``: a row of small chamfered blocks on the fascia band (modillion blocks)."""
     h = prof[-1][1]
     ring = sweep_ring(outline_pts, [(-t, z0)] + [(d, z0 + z) for d, z in prof] + [(-t, z0 + h)])
+    if blocks:
+        bk = dict(BELT_BLOCKS)
+        bk.update(blocks)
+        pts = ccw(outline_pts)
+        row = []
+        for i in range(len(pts)):
+            f = Facade(pts[i], pts[(i + 1) % len(pts)], z0)
+            span = f.L - 2 * bk["margin"]
+            if span < bk["w"]:
+                continue
+            n = max(1, int(round(span / bk["pitch"])))
+            for j in range(n + 1):
+                u = bk["margin"] + span * j / n
+                row.append(f.place(chamfer_box(u - bk["w"] / 2, bk["z"], u + bk["w"] / 2, bk["z"] + bk["h"],
+                                               bk["d0"] - 0.05, bk["d"] + 0.05, bk["c"])))
+        ring = ring + union(row)
     base = poly(ccw(outline_pts))
     if lip:
         assert h - LIP_W >= LIP_H + 0.2, "belt ring too short for its corbel"

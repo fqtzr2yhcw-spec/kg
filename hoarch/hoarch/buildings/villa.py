@@ -48,11 +48,12 @@ CUP_C = (67.0, 59.0)
 # ------------------------------------------------------------------ openings
 def _openings():
     L = []
-    lo = O.window_insert(10.0, 24.0, rise=0, style="flat")
+    lo = O.window_insert(10.0, 24.0, rise=0, style="flat", apron=True)
     up = O.window_insert(10.0, 21.0, rise=None, style="key")
-    bay_lo = O.window_insert(9.0, 24.0, rise=0, style="flat", casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
+    bay_lo = O.window_insert(9.0, 24.0, rise=0, style="flat", casing=0.8, ends=0.2, sill_ext=0.3, clip=True,
+                             apron=True)
     bay_up = O.window_insert(9.0, 21.0, rise=None, style="key", casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
-    ell_w = O.window_insert(9.0, 21.0, rise=0, style="flat")
+    ell_w = O.window_insert(9.0, 21.0, rise=0, style="flat", apron=True)
     twin = O.twin_arch_window(14.0, 21.0)
     front = O.door_insert(16.0, 30.0, leaves=2, transom=5.0)
     back = O.door_insert(11.0, 26.0, leaves=1, glass_top=True)
@@ -83,10 +84,10 @@ def _openings():
         add(MAIN, x, 118, V1, lo, f"N{x:.0f}-1", shutters=True)
         add(MAIN, x, 118, V2, up, f"N{x:.0f}-2", shutters=True)
     # kitchen ell
-    for y in (131.6, 156.5):
+    for y in (131.6, 155.5):
         add(ELL, 128, y, V1 + 1, ell_w, f"ellE{y:.0f}", shutters=True)
     add(ELL, 74, 150.0, V1 + 1, ell_w, "ellW150", shutters=True)
-    add(ELL, 88.0, 170, V1 + 1, ell_w, "ellN88", shutters=True)
+    add(ELL, 89.0, 170, V1 + 1, ell_w, "ellN89", shutters=True)
     add(ELL, 114.0, 170, 0.3, back, "back-door", "door")
     return L
 
@@ -103,7 +104,7 @@ def build(kit=None):
     # one shell per storey with a White belt ring between (the ring is the joint)
     clear = [lip_keep(poly(MAIN.pts) + poly(ELL.pts), 3.0, ZF, 1.2),                 # foundation lip
              lip_keep(poly(MAIN.pts), 3.0, ZW - 1.5, 1.5, inner=0.15, reach=1.2)]    # eave lip
-    S = storey_shells(BLOCKS, OPENINGS, ZF + BELT[0], t=3.0, corners="board", clear=clear,
+    S = storey_shells(BLOCKS, OPENINGS, ZF + BELT[0], t=3.0, corners="quoin", clear=clear,
                       partitions=[((67.0, 3.0), (67.0, 115.0), 2.0, ZF, ZW)])
     kit.add("WALLS-1", "Sand", S["lower"], group="walls")
     kit.add("BELT", "White", S["ring"], group="walls")
@@ -136,7 +137,7 @@ def build(kit=None):
     # main eave + roof
     eave = R.bracketed_cornice(MAIN.pts, ZW, EAVE,
                                brackets=dict(z_top=5.3, h=5.0, d0=0.9, d=5.6, t=0.8, pitch=12.0, pair=1.9, margin=4.5),
-                               dents=dict(z=4.2, h=0.8, d0=0.9, d=0.7))
+                               dents=dict(z=4.2, h=0.8, d0=0.9, d=0.7), panels=dict(z=0.6, h=3.0, d=0.4))
     kit.add("EAVE-main", "White", eave, P=print_flip(), group="roof")
     rect_p = [(0, 0), (134, 0), (134, 118), (0, 118)]
     bay_p = [(120, 34), (134, 34), (146, 46), (146, 72), (134, 84), (120, 84)]
@@ -178,7 +179,8 @@ def build(kit=None):
     cz = flat + CUP_H
     cup_eave = R.bracketed_cornice(cup.pts, cz, R.CORNICE_SMALL,
                                    brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=7.0, pair=1.5, margin=3.0),
-                                   dents=dict(z=3.6, h=0.9, d0=0.8, d=0.7), lip_t=2.4, deck=(6.0, 8.0))
+                                   dents=dict(z=3.6, h=0.8, d0=0.8, d=0.7), lip_t=2.4, deck=(6.0, 8.0),
+                                   panels=dict(z=0.6, h=2.4, d=0.4))
     kit.add("CUPOLA-eave", "White", cup_eave, P=print_flip(), group="cupola")
     croof, ctex = R.hip_roof([(cup.pts, [0, 1, 2, 3])], cz + 8.0, 0.62, 4.5, texture="seam",
                              tex_kw=dict(seam_pitch=3.6))
@@ -192,7 +194,8 @@ def build(kit=None):
     main_keep = MAIN.solid(grow=2.0, dz0=-1, dz1=200)         # clear of the belt ring (1.8 proud)
     ell_eave = R.bracketed_cornice(ELL.pts, ELL.z1, R.CORNICE_SMALL,
                                    brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=8.0, margin=2.4),
-                                   dents=dict(z=3.6, h=0.9, d0=0.8, d=0.7)) - main_keep
+                                   dents=dict(z=3.6, h=0.8, d0=0.8, d=0.7),
+                                   panels=dict(z=0.6, h=2.4, d=0.4)) - main_keep
     kit.add("EAVE-ell", "White", ell_eave, P=print_flip(), group="roof")
     eroof, etex = R.hip_roof([(ELL.pts, [1, 2, 3])], ELL.z1 + 8.0, ROOF_SLOPE, 4.5, texture="seam")
     kit.add("ROOF-ell", "Charcoal", (eroof + etex) - main_keep, group="roof")
@@ -204,11 +207,12 @@ def build(kit=None):
             dict(a=(0.0, y1), b=(134.0, y1), posts=[4.75, 28.0, 54.5, 79.5, 106.0, 132.7]),
             dict(a=(134.0, y1), b=(134.0, y0), posts=[4.75, (y0 - y1) - 1.3])]
     P = FT.porch([(0.0, y0), (0.0, y1), (134.0, y1), (134.0, y0)], runs, H_floor=H_floor, post_h=post_h,
-                 steps_at=[(1, 67.0, 16.0)], style="bracket")
+                 steps_at=[(1, 67.0, 16.0)], style="bracket", rail=dict(h=8.6), boards=dict(pitch=1.8))
     fkeep = slab(offset(poly(MAIN.pts), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     kit.add("PORCH-deck", "White", P["deck"] - fkeep, P=print_flip(), group="porch")
+    kit.add("PORCH-floor", "Stone", P["floor"] - fkeep, P=print_flip(), group="porch")      # gray boards
     for (rn, panel, A) in P["panels"]:
         BACK_DOWN = np.array([[1.0, 0, 0, 0], [0, -1.0, 0, 0], [0, 0, -1.0, 0]])
         kit.add(f"PORCH-posts-{rn}", "White", panel.transform(A), P=compose(BACK_DOWN, inv34(A)), group="porch")
@@ -224,7 +228,7 @@ def build(kit=None):
     kit.add("PORCH-roof", "White", below, P=print_flip(), group="porch")
     kit.add("PORCH-roof-tin", "Charcoal", cap + ribs, group="porch")
     for k, (sm, A) in enumerate(P["steps"]):
-        kit.add(f"PORCH-steps-{k}", "White", sm.transform(A) - fkeep, group="porch")
+        kit.add(f"PORCH-steps-{k}", "Stone", sm.transform(A) - fkeep, group="porch")
     # back stoop
     e, u = ELL.locate(114.0, 170)
     f = ELL.facades()[e]
