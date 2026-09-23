@@ -464,9 +464,10 @@ def shutters_for(opening_w, opening_h, casing=1.1, gap=0.6, t=0.8, h=None):
 
 def _clamp_45(prof):
     """Make a revolved (r, z) profile printable upright: wherever r grows going up, it may
-    grow no faster than z (45 degrees); the z of such points is pushed up as needed."""
-    out = [prof[0]]
-    for r, z in prof[1:]:
+    grow no faster than z (45 degrees); the z of such points is pushed up as needed. The
+    first segment (out from the axis) is the flat bottom, which stands on its support."""
+    out = [prof[0], prof[1]]
+    for r, z in prof[2:]:
         r0, z0 = out[-1]
         if r > r0 and r - r0 > z - z0:
             z = z0 + (r - r0)
@@ -542,37 +543,55 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8):
     return union(parts)
 
 
-def _spandrel_cs(u0, u1, v_bot, v_top, band=0.8):
+def _largest_hole(region, near, min_r=0.45, max_r=1.6):
+    """Biggest circle that fits inside ``region`` (already shrunk by the wood to keep),
+    centred as close as possible to ``near``. Returns (centre, r) or None."""
+    best = None
+    r = max_r
+    while r >= min_r - 1e-9:
+        core = region.offset(-r, JoinType.Round)
+        if not core.is_empty():
+            pts = [p for poly_ in core.to_polygons() for p in poly_]
+            c = min(pts, key=lambda p: (p[0] - near[0]) ** 2 + (p[1] - near[1]) ** 2)
+            best = ((float(c[0]), float(c[1])), r)
+            break
+        r -= 0.1
+    return best
+
+
+def _spandrel_cs(u0, u1, v_bot, v_top, band=0.8, wood=0.7):
     """Sawn-work spandrel between two posts (u0..u1) under a beam at v_top, springing at
-    v_bot: an elliptical arch with a raised band, a roundel near each post, a teardrop
-    reaching for the crown, and a turned drop hanging from the crown. (u, v) CrossSection."""
+    v_bot: an elliptical arch with a band, then in each half the biggest roundel that fits
+    by the post and a curved piercing following the arch toward the crown, with a turned
+    drop hanging from the crown. Every bar of wood is at least ``wood`` wide. (u, v)."""
     mid, half = (u0 + u1) / 2, (u1 - u0) / 2
     rise = (v_top - v_bot) - 0.9
 
-    def ell(a, b, seg=64):
+    def ell(a, b, seg=72):
         return poly([(mid + a * math.cos(t), v_bot + b * math.sin(t)) for t in np.linspace(0, math.pi, seg)] +
                     [(mid - a, v_bot - 5), (mid + a, v_bot - 5)])
     region = rect(u0, v_bot, u1, v_top + 0.05)
     solid = region - ell(half - band, rise - band)
+    free = (rect(u0, v_bot, u1, v_top) - ell(half, rise)).offset(-wood, JoinType.Round)
     holes = []
     for s in (-1, 1):
-        # roundel near the post, as big as fits with 0.7 mm of wood around it
-        cu = mid + s * (half - 2.3)
-        cv = v_top - 2.3
-        for r in (1.3, 1.1, 0.9, 0.7):
-            c = circle((cu, cv), r, 28)
-            if ((c.offset(0.7) - (region - ell(half, rise))).is_empty()):
-                holes.append(c)
-                break
-        # teardrop from beside the roundel toward the crown, tucked above the arch
-        for k in (1.0, 0.8, 0.6):
-            a0 = (mid + s * (half - 4.6), v_top - 1.35, 0.55 * k)
-            a1 = (mid + s * (half * 0.35), v_top - 0.95, 0.3 * k)
-            td = cs_union([circle(a0[:2], a0[2], 16), circle(a1[:2], a1[2], 12)]).hull()
-            if ((td.offset(0.7) - (region - ell(half, rise))).is_empty() and
-                    all((td ^ h_.offset(0.7)).is_empty() for h_ in holes)):
-                holes.append(td)
-                break
+        side = free ^ (rect(mid, v_bot - 1, u1 + 1, v_top + 1) if s > 0 else rect(u0 - 1, v_bot - 1, mid, v_top + 1))
+        if side.is_empty():
+            continue
+        hole = _largest_hole(side, (mid + s * half, v_top))
+        if hole is None:
+            continue
+        c = circle(hole[0], hole[1], 28)
+        holes.append(c)
+        # the rest of this half, clear of the roundel: a curved piercing along the arch,
+        # kept only where it is at least a nozzle-and-a-half wide
+        rest = side - c.offset(wood, JoinType.Round)
+        rest = rest ^ (rect(mid + 0.8, v_bot - 1, hole[0][0], v_top + 1) if s > 0 else
+                       rect(hole[0][0], v_bot - 1, mid - 0.8, v_top + 1))
+        rest = rest.offset(-0.3, JoinType.Round).offset(0.3, JoinType.Round)
+        for piece in rest.decompose():
+            if piece.area() > 0.8:
+                holes.append(piece)
     if holes:
         solid = solid - cs_union(holes)
     # turned drop under the crown
