@@ -10,7 +10,8 @@ that kit is in the repo.
 
 | Part family | How it is made | Print orientation |
 |---|---|---|
-| Wall shell | One piece per building: every storey and wing together, 3.0 mm walls, plain openings | Upright |
+| Wall shell | **One piece per storey**: the whole first floor (with one-storey wings), then the whole second floor; 3.0 mm walls, plain openings | Upright |
+| Belt ring | The string course between the storey shells, full wall thickness plus the moulding; it is the joint | Upright |
 | Foundation | Ring the shape of the plan, stone faces, locating lip for the shell | Upright |
 | Window / door | **Two parts:** a sash/plug that fits the opening, and a surround with casing, sill, hood and crest | Both face-up |
 | Cornice | Ring swept along the plan with a real moulding profile; brackets and dentils added | Upside down |
@@ -27,11 +28,11 @@ cornice and deck. The seams fall on shadow lines, where a real building has join
 
 ## Numbers that work at 1:87.1
 
-- Wall core: **3.0 mm**. Clapboard: **1.15 mm pitch** (4" exposure), relief 0.1–0.3 mm.
+- Wall core: **3.0 mm**. Clapboard: **1.2 mm pitch** (six 0.2 mm layers), relief 0.05–0.3 mm.
   Anything deeper looks toy-like.
-- Window plug: **1.7 mm deep**, **0.15 mm clearance per side**. Glass is the plug's back
+- Window plug: **1.6 mm deep**, **0.15 mm clearance per side**. Glass is the plug's back
   face, **0.4 mm** thick (two 0.2 mm layers), so it glows if the building is ever lit.
-- Casing 0.7 mm proud; hood mouldings 1.0 → 1.45 → 1.8 mm in three steps; keystone 2.0 mm.
+- Casing 0.6 mm proud with a 0.5 mm bead to 1.0; hood mouldings 1.0 → 1.4 → 1.8 mm; keystone 2.0 mm.
   Three stepped layers read as a moulded profile at this scale.
 - Cornice: about 11 mm tall, frieze 1 mm proud, soffit about 4.4 mm, crown about 6.6 mm.
   Brackets are paired every 10 mm.
@@ -64,6 +65,44 @@ cornice and deck. The seams fall on shadow lines, where a real building has join
   chimney.
 - Long bridges over flat door heads in the wall shell are acceptable in PLA.
 
+## FDM detail standard (after the Beaumont Rev B test prints)
+
+The first printed parts of the Beaumont (Rev B) came out poorly, and each failure had
+one clear cause:
+
+- **Fish-scale wall panels printed flat, face up**: 1.9 mm scales with **0.16 mm**
+  joints. The top-skin lines are 0.4–0.45 mm wide, so the joints fused and the scales
+  turned into "popcorn".
+- **Slate roof**: the same 0.16 mm joints. The slates merged into noisy ridges.
+- **Tower spire**: the finial (0.3–1.4 mm radius) was the only thing printing on the top
+  16 mm of the plate. Each layer was a dot with no time to cool, and it came out as a
+  squiggle.
+- **Porch panels**: spindles of 0.6–0.9 mm, right at the nozzle limit. The best of the
+  batch, but the junctions blobbed.
+
+The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers**,
+**0.16 mm** at the finest):
+
+1. **Walls are upright shells, one per storey**, with the belt ring as the joint and
+   locating lips on 45° corbels (`shell.storey_shells`). Texture on vertical faces with
+   horizontal features (clapboards, shingle and brick courses) is resolved by the layers
+   and prints crisp. That is why the reference kit prints its walls standing.
+2. **In the layer plane, nothing is narrower than 0.5 mm (`RIB`) and no slot is narrower
+   than 0.5 mm (`SLOT`).** This covers dentils (0.6 teeth, 0.5 gaps), mortar head
+   joints, shingle joints, muntins, beads, louvers, cresting bars and pot walls.
+3. **Along print z, steps and pitches sit on the 0.2 mm grid**: clapboard 1.2, brick
+   course 0.8 (a 0.2 bed joint), plug 1.6, glass 0.4, casing 0.6 / 1.0, and profile
+   heights of rings printed upside down, measured from their top.
+4. **Upward-facing texture only as ribs** (0.5 mm wide, 0.5 mm apart, two layers or more
+   deep): standing seams, louvers, panel mouldings. Never scales or slates on a top skin.
+5. **Upright mouldings have 45° undersides**, and corbels step out at most 0.25 mm per
+   0.2 mm layer (belt ring, chimney cap).
+6. **Slender tips are separate parts** printed beside taller parts (finials, 0.8 mm
+   minimum section); they must never be the lone top of a plate.
+7. Before export, run `hoarch.lint` (sub-nozzle ribs and slots per layer, in print
+   orientation), the fit check and the slicer. Then print the **detail test plate**
+   (`buildings/sampler.py`, about 1.5 h) before a full kit.
+
 ## Library map
 
 - `core.py`: units, primitives, mitred profile sweeps (`sweep_ring`, `sweep_run`),
@@ -71,10 +110,11 @@ cornice and deck. The seams fall on shadow lines, where a real building has join
 - `openings.py`: window, door and twin-arch inserts (sash + surround), balcony.
 - `ornament.py`: console brackets, dentils, keystones, fan crest, rosettes, finials,
   spandrels, chimney pots.
-- `shell.py`: wall shell from plan blocks (openings, siding, quoins, belt course, water
-  table), foundation.
+- `shell.py`: wall shell from plan blocks (openings, siding, quoins or corner boards, belt
+  course, water table), per-storey shells with belt ring and lips, foundation.
 - `roof.py`: bracket and dentil runs, slope textures, hip roofs by planes, cresting.
 - `features.py`: dormer, tower cap, chimney, porch (deck, arcade panels, roof, steps).
 - `kit.py`: parts with colour and print orientation, fit check, single-colour plate
-  packing, 3MF/STL export.
+  packing, 3MF/STL export, slice check, flat-lay and exploded render data.
+- `lint.py`: sub-nozzle detail check of every part in its print orientation.
 - `render.py`: Cycles renders driven by a palette/views JSON.

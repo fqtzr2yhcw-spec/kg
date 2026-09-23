@@ -50,7 +50,7 @@ def edge_brackets(path, z_top, h, d0, d, t, pitch, margin=2.5, pair=0.0, corner=
     return union(out)
 
 
-def edge_dentils(path, z0, h, d0, d, tooth=0.45, gap=0.4, margin=0.8, skip=None):
+def edge_dentils(path, z0, h, d0, d, tooth=0.6, gap=0.5, margin=0.8, skip=None):
     P, Mi = _edges(path)
     out = []
     n = len(P)
@@ -145,7 +145,7 @@ def hip_solid(path, z_eave, slope, zlo, zhi=500.0, d_eave=0.0, exposed=None):
 
 
 def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, shape="fish", zmax=None,
-                seam_pitch=5.2, seam_w=0.4):
+                seam_pitch=5.2, seam_w=0.5):
     """Texture on each hip face (region = the face's plan triangle/trapezoid):
     shape "fish"/"square"/"diamond" slate rows, or "seam" for a standing-seam metal roof."""
     P, Mi = _edges(path)
@@ -199,7 +199,7 @@ def _halfplane(a, b, c, big=3000.0):
     return poly([p0 + tv * big, p0 - tv * big, p0 - tv * big - nv * big, p0 + tv * big - nv * big])
 
 
-def cresting(path, z0, h=2.2, pitch=1.4, bar=0.3, t=0.45, d_off=0.0, finials=True):
+def cresting(path, z0, h=2.4, pitch=1.6, bar=0.5, t=0.6, d_off=0.0, finials=True):
     """Iron roof cresting (a pierced fence of loops and spikes) along a closed path."""
     P, Mi = _edges(path)
     out = []
@@ -216,7 +216,7 @@ def cresting(path, z0, h=2.2, pitch=1.4, bar=0.3, t=0.45, d_off=0.0, finials=Tru
             if j < k:
                 cx = u + L / k / 2
                 r = min(L / k, h * 0.5) * 0.36
-                ring = CS.circle(r, 12).translate((cx, h * 0.3)) - CS.circle(r - bar * 0.7, 12).translate((cx, h * 0.3))
+                ring = CS.circle(r, 12).translate((cx, h * 0.3)) - CS.circle(max(0.0, r - bar), 12).translate((cx, h * 0.3))
                 cells.append(ring)
         fence = M.extrude(cs_union(cells) ^ rect(0, 0, L, h + 1), t).translate([0, 0, -t / 2])
         A = f.A.copy()
@@ -231,9 +231,10 @@ def shift_profile(prof, z0):
 
 
 # Italianate deep eave: frieze board, bed moulding, wide soffit, fascia and crown fillet.
-EAVE_DEEP = [(-3.7, 0), (0.9, 0), (0.9, 5.0), (1.4, 5.3), (6.8, 5.3), (6.8, 6.6), (7.3, 6.9), (7.3, 7.6), (-3.7, 7.6)]
+# Heights sit on the 0.2 mm grid measured from the top (the ring prints upside down).
+EAVE_DEEP = [(-3.7, 0), (0.9, 0), (0.9, 5.0), (1.4, 5.2), (6.8, 5.2), (6.8, 6.6), (7.3, 6.8), (7.3, 7.6), (-3.7, 7.6)]
 # Compact bracketed cornice (one-storey wings, towers, cupolas).
-CORNICE_SMALL = [(-3.7, 0), (0.8, 0), (0.8, 4.0), (1.2, 4.2), (1.3, 4.6), (3.2, 4.6), (3.2, 5.6), (3.6, 5.9),
+CORNICE_SMALL = [(-3.7, 0), (0.8, 0), (0.8, 4.0), (1.2, 4.2), (1.3, 4.6), (3.2, 4.6), (3.2, 5.6), (3.6, 6.0),
                  (4.2, 6.8), (4.7, 7.4), (4.8, 8.0), (-3.7, 8.0)]
 
 
@@ -241,7 +242,7 @@ def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_
     """A cornice ring swept along ``path`` with brackets and dentils (prints upside down).
 
     brackets = dict(z_top, h, d0, d, t, pitch, pair=0, margin=2.5) (z_top relative to z0)
-    dents    = dict(z, h, d0, d, tooth=0.42, gap=0.38) (z relative to z0)
+    dents    = dict(z, h, d0, d, tooth=0.6, gap=0.5) (z relative to z0)
     lip_t    = wall thickness: a locating lip drops just inside the wall's inner face
     deck     = (z_bottom, z_top) relative to z0 for a solid roof deck filling the ring, or None."""
     parts = [sweep_ring(path, shift_profile(prof, z0))]
@@ -251,7 +252,7 @@ def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_
         parts.append(edge_brackets(path, z0 + b["z_top"], b["h"], b["d0"], b["d"], b["t"], b["pitch"],
                                    margin=b["margin"], pair=b["pair"]))
     if dents:
-        dn = dict(tooth=0.42, gap=0.38)
+        dn = dict(tooth=0.6, gap=0.5)
         dn.update(dents)
         parts.append(edge_dentils(path, z0 + dn["z"], dn["h"], dn["d0"], dn["d"], tooth=dn["tooth"], gap=dn["gap"]))
     base = poly(ccw(path))
@@ -268,7 +269,7 @@ def flat_roof(block, keep=None, prof=CORNICE_SMALL, pitch=8.0):
     h = prof[-1][1]
     m = bracketed_cornice(block.pts, block.z1, prof,
                           brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=pitch, margin=2.4),
-                          dents=dict(z=3.6, h=0.9, d0=0.8, d=0.7, tooth=0.4, gap=0.36), lip_h=1.2,
+                          dents=dict(z=3.6, h=0.8, d0=0.8, d=0.7), lip_h=1.2,
                           deck=(h - 2.0, h))
     return m - keep if keep is not None else m
 

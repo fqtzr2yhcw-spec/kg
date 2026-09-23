@@ -16,6 +16,7 @@ import json
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PALETTE = {"glass": ("#1b2228", 0.06, 0.0), "shadow": ("#1a1a1a", 1.0, 0.0)}
+WALK = None          # (x centre, y of the step front, width) of a front walk on the lawn
 
 VIEWS = {
     # name: (azimuth deg (0 = front, +ve = to the viewer's right), elevation deg, lens mm, margin, target offset)
@@ -128,19 +129,19 @@ def build_scene(npz_path, lawn=True, bbox=None):
         bump.inputs["Strength"].default_value = 0.6
         nt.links.new(bump.outputs["Normal"], bs.inputs["Normal"])
         base.data.materials.append(gm)
-        # walkway from front steps
-        sx = 13.0 * 304.8 / 87.1
-        y_front = -8.0 * 304.8 / 87.1
-        walk_len = (y_front - 3.5 * 3.5) - (cy + 5 - D / 2)
+    if lawn and WALK:
+        # walkway from the front steps: WALK = (x centre, y of the step front, width)
+        sx, y_front, ww = WALK
+        walk_len = y_front - (cy + 5 - D / 2)
         bpy.ops.mesh.primitive_cube_add(size=1, location=(sx, (cy + 5 - D / 2) + walk_len / 2, 0.15))
         wk = bpy.context.active_object
-        wk.scale = (5 * 3.5, walk_len, 0.3)
+        wk.scale = (ww, walk_len, 0.3)
         wm = bpy.data.materials.new("walk")
         wm.use_nodes = True
         wm.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = srgb_to_lin("#a39f95")
         wm.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.9
         wk.data.materials.append(wm)
-    bpy.ops.mesh.primitive_plane_add(size=6000, location=(cx, cy, -4.0))
+    bpy.ops.mesh.primitive_plane_add(size=6000, location=(cx, cy, -4.0 if lawn else lo[2] - 0.01))
     fl = bpy.context.active_object
     fm = bpy.data.materials.new("floor")
     fm.use_nodes = True
@@ -219,10 +220,14 @@ def main():
     ap.add_argument("--npz", default=os.path.join(HERE, "..", "out", "house_parts.npz"))
     ap.add_argument("--out", default=os.path.join(HERE, "..", "renders"))
     ap.add_argument("--bbox", default=None, help="x0,y0,z0,x1,y1,z1 to fix framing")
-    ap.add_argument("--palette", default=None, help="JSON: {materials: {name: [hex, rough, metal]}, views: {...}}")
+    ap.add_argument("--palette", default=None,
+                    help="JSON: {materials: {name: [hex, rough, metal]}, views: {...}, walk: [x, y_front, width]}")
+    ap.add_argument("--ground", default="lawn", choices=["lawn", "none"])
     args = ap.parse_args()
+    global WALK
     if args.palette:
         cfg = json.load(open(args.palette))
+        WALK = cfg.get("walk", WALK)
         for k, v in cfg.get("materials", {}).items():
             PALETTE[k] = tuple(v)
         for k, v in cfg.get("views", {}).items():
@@ -231,7 +236,7 @@ def main():
             VIEWS[k] = tuple(v)
     os.makedirs(args.out, exist_ok=True)
     bbox = [float(v) for v in args.bbox.split(",")] if args.bbox else None
-    lo, hi = build_scene(args.npz, bbox=bbox)
+    lo, hi = build_scene(args.npz, lawn=args.ground == "lawn", bbox=bbox)
     sc = bpy.context.scene
     sc.render.engine = "CYCLES"
     sc.cycles.device = "CPU"

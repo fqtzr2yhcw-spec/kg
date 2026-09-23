@@ -7,7 +7,7 @@ import math
 import numpy as np
 from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
-from .core import circle, cs_union, poly, rect, union
+from .core import RIB, SLOT, circle, cs_union, poly, rect, union
 
 
 def ext(cs, w0, w1):
@@ -22,6 +22,8 @@ def stepped(cs, steps):
     out = []
     for inset, w0, w1 in steps:
         c = cs if inset == 0 else cs.offset(-inset, JoinType.Miter, 4.0)
+        if inset:   # drop what the inset thinned below a nozzle width (it prints as loose specks)
+            c = c.offset(-RIB / 2 + 0.05, JoinType.Miter, 4.0).offset(RIB / 2 - 0.05, JoinType.Miter, 4.0)
         out.append(ext(c, w0, w1))
     return union(out)
 
@@ -33,7 +35,7 @@ def side_profile(profile_wv, u0, u1):
     return m.transform(np.array([[0, 0, 1.0, u0], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
 
 
-def dentils(u0, u1, v0, h, w0, d, tooth=0.45, gap=0.4):
+def dentils(u0, u1, v0, h, w0, d, tooth=0.6, gap=SLOT):
     """Row of dentil blocks between u0..u1 (centred), bottom at v0, height h, depth d."""
     n = max(1, int((u1 - u0 + gap) / (tooth + gap)))
     span = n * tooth + (n - 1) * gap
@@ -69,7 +71,7 @@ def keystone(u, v0, h, wb, wt, w0, d, bevel=0.15):
     return stepped(cs, [(0, w0, w0 + d - bevel), (bevel, w0 + d - bevel, w0 + d)])
 
 
-def fan_crest(u, v0, r, w0, d, rays=5, seg=24):
+def fan_crest(u, v0, r, w0, d, rays=3, seg=24):
     """Half-round sunburst crest (my 'shell' cap) sitting on v0."""
     half = poly([(u - r, v0)] + [(u + r * math.cos(math.pi - k * math.pi / seg), v0 + r * math.sin(k * math.pi / seg))
                                  for k in range(seg + 1)] + [(u + r, v0)])
@@ -78,9 +80,9 @@ def fan_crest(u, v0, r, w0, d, rays=5, seg=24):
     for k in range(rays):
         a = math.pi * (k + 0.5) / rays
         ca, sa = math.cos(a), math.sin(a)
-        ridges.append(poly([(u + 0.12 * sa, v0), (u - 0.12 * sa, v0),
-                            (u + (r - 0.1) * ca - 0.22 * sa, v0 + (r - 0.1) * sa + 0.22 * ca),
-                            (u + (r - 0.1) * ca + 0.22 * sa, v0 + (r - 0.1) * sa - 0.22 * ca)]))
+        ridges.append(poly([(u + 0.25 * sa, v0), (u - 0.25 * sa, v0),
+                            (u + (r - 0.1) * ca - 0.3 * sa, v0 + (r - 0.1) * sa + 0.3 * ca),
+                            (u + (r - 0.1) * ca + 0.3 * sa, v0 + (r - 0.1) * sa - 0.3 * ca)]))
     body = body + ext(cs_union(ridges) ^ half, w0 + d * 0.55, w0 + d)
     bead = ext(circle((u, v0 + 0.05), r * 0.3, 16) ^ half, w0, w0 + d * 1.05)
     return body + bead
@@ -91,10 +93,17 @@ def rosette_block(u, v, s, w0, d):
     return ext(sq, w0, w0 + d * 0.7) + ext(circle((u, v), s * 0.3, 12), w0 + d * 0.7, w0 + d)
 
 
-def finial(r, h, seg=20):
-    """Turned finial (revolved), base at z=0, tip at z=h."""
-    prof = [(0, 0), (r, 0), (r, h * 0.12), (r * 0.55, h * 0.18), (r * 0.9, h * 0.35), (r * 0.95, h * 0.45),
-            (r * 0.4, h * 0.62), (r * 0.55, h * 0.72), (r * 0.18, h * 0.85), (0.05, h), (0, h)]
+def finial(r, h, seg=24):
+    """Turned finial (revolved): plinth, urn, collared neck, ball and a short rounded spike.
+    Base at z=0, top at z=h. Nothing below 0.8 mm across except the last rounding, so it
+    prints as turned work rather than a squiggle; print it as its own part next to taller
+    parts (never as the lone top of a plate, where tiny layers get no time to cool)."""
+    k = r / 1.2
+    prof = [(0, 0), (1.2, 0), (1.2, 0.6), (0.75, 1.0), (1.05, 1.6), (1.1, 2.2), (0.8, 2.8), (0.45, 3.2),
+            (0.45, 3.6), (0.75, 3.8), (0.75, 4.1), (0.42, 4.4), (0.6, 4.9), (0.62, 5.2), (0.42, 5.6),
+            (0.4, 6.2), (0.5, 6.5), (0.35, 6.85), (0, 7.0)]
+    prof = [(max(x * k, 0.0) if x > 0 else 0.0, z * h / 7.0) for x, z in prof]
+    prof = [(max(x, 0.4) if 0 < x < 0.4 and z < h * 0.97 else x, z) for x, z in prof]
     return M.revolve(poly(prof), seg)
 
 
@@ -114,11 +123,13 @@ def spandrel(u0, u1, v_top, drop, w0, d, bar=0.55, seg=20):
     # small inner ring ornament
     ring_c = (u0 + L * 0.3, v_top - drop * 0.3)
     r = min(L, drop) * 0.16
-    orn = ext(circle(ring_c, r, 16) - circle(ring_c, r - bar * 0.7, 16), w0, w0 + d)
+    orn = ext(circle(ring_c, r, 16) - circle(ring_c, r - max(RIB, bar * 0.7), 16), w0, w0 + d) if r > RIB + 0.3 else M()
     return plate + orn
 
 
 def chimney_pot(r, h, seg=24):
+    # solid body with a 0.8 mm bore at the top only: each layer is a disc, not a hairline ring
+    ri = min(r * 0.62, r - RIB)
     prof = [(0, 0), (r * 1.1, 0), (r * 1.1, h * 0.12), (r * 0.9, h * 0.18), (r * 0.8, h * 0.7), (r, h * 0.85),
-            (r, h), (r * 0.62, h), (r * 0.62, h * 0.2), (0, h * 0.2)]
+            (r, h), (ri, h), (ri, h - 0.8), (0, h - 0.8)]
     return M.revolve(poly(prof), seg)

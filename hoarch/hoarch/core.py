@@ -272,11 +272,27 @@ def facades_of(path, zb=0.0):
     return [Facade(P[i], P[(i + 1) % len(P)], zb) for i in range(len(P))]
 
 
+# ------------------------------------------------------------------ FDM detail standard
+# 0.4 mm nozzle, 0.20 mm layers (0.16 mm the finest we plan for). In the layer plane nothing
+# is narrower than RIB and no slot narrower than SLOT; along the print z axis, steps and
+# pitches sit on the LAYER grid. hoarch.lint checks built parts against this.
+NOZZLE = 0.4
+LAYER = 0.2
+RIB = 0.5
+SLOT = 0.5
+
+
+def zq(z, grid=LAYER):
+    """Snap a print-z height to the layer grid."""
+    return round(z / grid) * grid
+
+
 # ------------------------------------------------------------------ textures
-def clapboard(region, pitch=inch(4.0) * 1.0, d=0.3, dmin=0.05, datum=0.0):
+def clapboard(region, pitch=1.2, d=0.3, dmin=0.05, datum=0.0):
     """Bevel-lap siding in facade (u, v): each course thickens toward its bottom edge.
 
-    The bottom edge is a short horizontal step, so it prints cleanly upright."""
+    The bottom edge is a short horizontal step, so it prints cleanly upright. The 1.2 mm
+    pitch (a 4.1" exposure) is six 0.20 mm layers, so every course prints identically."""
     if region.is_empty():
         return M()
     u0, v0, u1, v1 = region.bounds()
@@ -291,8 +307,11 @@ def clapboard(region, pitch=inch(4.0) * 1.0, d=0.3, dmin=0.05, datum=0.0):
     return strip ^ M.extrude(region, d + 0.2).translate([0, 0, -0.1])
 
 
-def scallop_rows(region, pitch, wtab, d=0.35, gap=0.14, datum=0.0, lap=1.5, seg=12, shape="fish", taper=0.75):
-    """Fish-scale (or square) slate rows over a flat (u, v) region; v = up-slope."""
+def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=16, shape="fish", taper=0.75):
+    """Fish-scale, diamond or square shingle rows over a flat (u, v) region; v = up-slope.
+
+    ``gap`` is the joint between neighbours in a course: at least one nozzle width, or it
+    fuses shut and the course prints as a lumpy band."""
     if region.is_empty():
         return M()
     u0, v0, u1, v1 = region.bounds()
@@ -334,8 +353,8 @@ def scallop_rows(region, pitch, wtab, d=0.35, gap=0.14, datum=0.0, lap=1.5, seg=
     return union(rows)
 
 
-def ashlar(region, course=(ft(1.0), ft(1.6)), length=(ft(1.2), ft(3.2)), d=0.5, gap=0.3,
-           seed=1, datum=0.0, rough=0.12, bevel=0.2):
+def ashlar(region, course=(ft(1.0), ft(1.6)), length=(ft(1.2), ft(3.2)), d=0.5, gap=SLOT,
+           seed=1, datum=0.0, rough=0.12, bevel=0.2, bed=0.4):
     """Coursed rubble / ashlar stone: random course heights and stone lengths,
     each stone a bevelled block with a slightly irregular face depth."""
     if region.is_empty():
@@ -349,7 +368,7 @@ def ashlar(region, course=(ft(1.0), ft(1.6)), length=(ft(1.2), ft(3.2)), d=0.5, 
         u = u0 - rng.uniform(0, length[1])
         while u < u1:
             L = rng.uniform(*length)
-            s = rect(u + gap / 2, v + gap / 2, u + L - gap / 2, v + h - gap / 2) ^ region
+            s = rect(u + gap / 2, v + bed / 2, u + L - gap / 2, v + h - bed / 2) ^ region
             if not s.is_empty() and s.area() > 0.3:
                 dd = d * rng.uniform(0.75, 1.15)
                 core = M.extrude(s, dd * 0.6)
@@ -375,7 +394,9 @@ def ashlar(region, course=(ft(1.0), ft(1.6)), length=(ft(1.2), ft(3.2)), d=0.5, 
     return union(stones)
 
 
-def brick(region, bl=inch(8), bh=inch(2.67), mortar=0.14, d=0.18, datum=0.0, uoff=0.0):
+def brick(region, bl=2.4, bh=0.8, mortar=SLOT, d=0.25, datum=0.0, uoff=0.0, bed=0.2):
+    """Running-bond brick. ``mortar`` = head joints (across the layers, >= a nozzle width);
+    ``bed`` = bed joints (one 0.20 layer when printed upright). 0.8 mm courses = 4 layers."""
     if region.is_empty():
         return M()
     u0, v0, u1, v1 = region.bounds()
@@ -385,13 +406,13 @@ def brick(region, bl=inch(8), bh=inch(2.67), mortar=0.14, d=0.18, datum=0.0, uof
         v = datum + k * bh
         u = u0 - bl + (k % 2) * bl / 2 + uoff
         while u < u1:
-            cells.append(rect(u + mortar / 2, v + mortar / 2, u + bl - mortar / 2, v + bh - mortar / 2))
+            cells.append(rect(u + mortar / 2, v + bed / 2, u + bl - mortar / 2, v + bh - bed / 2))
             u += bl
         k += 1
     return M.extrude(cs_union(cells) ^ region, d)
 
 
-def lattice(region, pitch=1.6, bar=0.45, d=0.5, angle=45):
+def lattice(region, pitch=1.6, bar=RIB, d=0.5, angle=45):
     """Diagonal lattice (two layers of slats) filling a (u, v) region."""
     if region.is_empty():
         return M()

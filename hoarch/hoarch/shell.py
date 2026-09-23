@@ -7,7 +7,7 @@ the belt course and the water table are added per exposed facade.
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from .core import (Facade, ashlar, box, ccw, clapboard, cs_union, offset, poly, rect, slab, union)
+from .core import (Facade, ashlar, box, ccw, clapboard, cs_union, offset, poly, rect, slab, sweep_ring, union)
 
 
 class Block:
@@ -89,13 +89,15 @@ def _quoin_cs(L_long, L_short, h, gap, v0, v1, leg_u, flip):
     return cs
 
 
-def wall_shell(blocks, openings, t=3.0, pitch=1.153, sid_d=0.3, belt=None, quoins=True,
-               water_table=True, partitions=(), extra_cut=None, hide_extra=None, corners=None):
+def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=True,
+               water_table=True, partitions=(), extra_cut=None, hide_extra=None, corners=None,
+               belt_trim=True):
     """Build the one-piece shell with its siding and trim.
 
     ``belt`` = (v_bottom, v_top) of the belt course above each block's base (None for none).
     ``corners`` = "quoin" (alternating blocks), "board" (plain corner boards) or "none";
-    default follows the legacy ``quoins`` flag."""
+    default follows the legacy ``quoins`` flag. ``belt_trim=False`` leaves the belt zone
+    bare (storey_shells puts a separate belt ring there)."""
     corners = corners or ("quoin" if quoins else "none")
     quoins = corners == "quoin"
     boards = corners == "board"
@@ -180,7 +182,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.153, sid_d=0.3, belt=None, quoin
                         dress.append(f.place(box([u0 - (0.2 if not at_start else 0), qb - 0.9, 0],
                                                  [u1 + (0.2 if at_start else 0), qb, CBT + 0.3])))
             # belt course: frieze band + drip cap
-            if belt is not None and H > belt[1]:
+            if belt_trim and belt is not None and H > belt[1]:
                 e0 = -1.0 if cstart else 0.0
                 e1 = f.L + 1.0 if cend else f.L
                 band = box([e0, belt[0], 0], [e1, belt[1] - 0.8, 0.9])
@@ -226,7 +228,7 @@ def foundation(blocks, z0, z1, t=3.0, proud=0.8, stone_d=0.55, seed=4, openings=
         if f.L < 0.8:
             continue
         reg = rect(0.0, 0.3, f.L, z1 - z0 - 0.3)
-        s = ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=stone_d, gap=0.32, seed=seed + i)
+        s = ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=stone_d, seed=seed + i)
         tex.append(f.place(s))
     ring = ring + union(tex)
     # clip stone at corners so neighbours don't stack up outside the miter
@@ -236,3 +238,76 @@ def foundation(blocks, z0, z1, t=3.0, proud=0.8, stone_d=0.55, seed=4, openings=
     for (f, u, v0, w, h) in openings:
         cuts.append(f.place(box([u - w / 2, v0, -t - 2], [u + w / 2, v0 + h, 3])))
     return ring - union(cuts)
+
+
+# ------------------------------------------------------------------ storeys
+# Italianate string course, printed upright: every outward step has a 45 degree underside,
+# heights on the 0.2 mm grid. (d outward from the wall face, z up from the ring bottom.)
+BELT_PROF = [(0.0, 0.0), (0.4, 0.4), (0.4, 0.8), (0.8, 1.2), (0.8, 2.8), (1.4, 3.4), (1.4, 3.6),
+             (1.8, 4.0), (1.8, 4.4)]
+LIP_H, LIP_IN, LIP_W = 1.2, 0.12, 1.3     # locating lip: height, clearance to the wall, reach
+
+
+def _corbel(base, t, z_top, reach=LIP_W, step=0.2):
+    """Inward shelf under a lip: grows 45 degrees from nothing to ``reach`` at z_top."""
+    n = int(round(reach / step))
+    out = []
+    for k in range(n):
+        e = min(reach, (k + 1) * step)
+        out.append(slab(offset(base, -t + 0.05) - offset(base, -t - e), z_top - reach + k * step,
+                        z_top - reach + (k + 1) * step))
+    return union(out)
+
+
+def lip_ring(base, t, z0, h=LIP_H):
+    """Locating lip just inside the wall's inner face, standing on z0."""
+    return slab(offset(base, -t - LIP_IN) - offset(base, -t - LIP_W), z0 - 0.01, z0 + h)
+
+
+def lip_keep(base, t, z0, h=LIP_H, inner=LIP_IN, reach=LIP_W, clr=0.15):
+    """Keep-out around a locating lip, limited to the building's interior, for cutting the
+    partitions of the parts the lip reaches into."""
+    cs = (offset(base, -t - inner + clr) - offset(base, -t - reach - clr)) ^ offset(base, -t + 0.02)
+    return slab(cs, z0 - clr, z0 + h + clr)
+
+
+def belt_ring(outline_pts, z0, t=3.0, prof=BELT_PROF, lip=True):
+    """Belt course between two storey shells, the full wall thickness plus a moulded band.
+
+    It sits on the lower shell (located by that shell's lip) and carries the lip for the
+    upper shell on an inside corbel that starts above the lower lip. Prints upright."""
+    h = prof[-1][1]
+    ring = sweep_ring(outline_pts, [(-t, z0)] + [(d, z0 + z) for d, z in prof] + [(-t, z0 + h)])
+    base = poly(ccw(outline_pts))
+    if lip:
+        assert h - LIP_W >= LIP_H + 0.2, "belt ring too short for its corbel"
+        ring = ring + _corbel(base, t, z0 + h) + lip_ring(base, t, z0 + h)
+    return ring
+
+
+def storey_shells(blocks, openings, z_split, t=3.0, prof=BELT_PROF, clear=(), **kw):
+    """One-piece shells per storey with a belt ring between, like the reference's stacks.
+
+    Builds the full shell (siding, trim, openings) with the belt zone bare, then cuts it
+    at ``z_split`` and at the top of the belt ring. Blocks that end at or below z_split (a
+    one-storey wing) stay whole in the lower shell. The lower shell gets a corbelled
+    locating lip for the ring, the ring one for the upper shell. ``clear`` = keep-out
+    solids for interior partitions (other parts' lips, see lip_keep).
+
+    Returns dict(lower, ring, upper, ring_h, outline)."""
+    h = prof[-1][1]
+    zb = min(b.z0 for b in blocks)
+    belt = (z_split - zb, z_split - zb + h)
+    shell = wall_shell(blocks, openings, t=t, belt=belt, belt_trim=False, **kw)
+    upper_blocks = [b for b in blocks if b.z1 > z_split + h + 1.0]
+    base = cs_union([b.cs for b in upper_blocks])
+    outline = max(base.to_polygons(), key=lambda L: abs(poly(L).area()))
+    lower = shell.trim_by_plane([0, 0, -1.0], -z_split)
+    lower = lower + _corbel(base, t, z_split) + lip_ring(base, t, z_split)
+    upper = shell.trim_by_plane([0, 0, 1.0], z_split + h)
+    ring = belt_ring(outline, z_split, t=t, prof=prof)
+    upper = upper - lip_keep(base, t, z_split + h)
+    for kp in clear:
+        upper = upper - kp
+        lower = lower - kp
+    return dict(lower=lower, ring=ring, upper=upper, ring_h=h, outline=outline)

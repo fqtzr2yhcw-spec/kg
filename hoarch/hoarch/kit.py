@@ -7,6 +7,7 @@ import zipfile
 from collections import OrderedDict, defaultdict
 
 import numpy as np
+from manifold3d import Manifold as M, OpType
 
 from .core import I34, inv34, mesh_arrays
 
@@ -59,6 +60,10 @@ class Kit:
             print("  (empty part skipped)", name)
             return None
         assert color in self.colors, color
+        comps = solid.decompose()
+        if len(comps) > 1 and any(c.volume() < 1e-3 for c in comps):
+            # boolean leftovers with no volume would set the print's bed height
+            solid = M.batch_boolean([c for c in comps if c.volume() >= 1e-3], OpType.Add)
         p = Part(name, color, solid, I34 if P is None else P, key or name, group)
         self.parts.append(p)
         return p
@@ -101,6 +106,42 @@ class Kit:
                 continue
             off = (offsets or {}).get(p.name, (0, 0, 0))
             groups[self.render_mat[p.color]].append(p.solid.translate(list(off)))
+        data = {}
+        for mat, ms in groups.items():
+            vs, fs, o = [], [], 0
+            for m in ms:
+                v, f = mesh_arrays(m)
+                vs.append(v)
+                fs.append(f + o)
+                o += len(v)
+            data[mat + "__v"] = np.concatenate(vs).astype(np.float32)
+            data[mat + "__f"] = np.concatenate(fs).astype(np.int32)
+        np.savez_compressed(path, **data)
+
+    def flatlay_npz(self, path, only=None, width=420.0, gap=5.0):
+        """Every part in its print orientation, shelf-packed on a table ``width`` wide
+        (a 'box contents' view of the kit), written like render_npz."""
+        items = []
+        for p in self.parts:
+            if only and not only(p):
+                continue
+            m = p.printed()
+            b = m.bounding_box()
+            if b[4] - b[1] > b[3] - b[0]:
+                m = m.rotate([0, 0, 90])
+                b = m.bounding_box()
+            items.append((p, m.translate([-b[0], -b[1], 0]), b[3] - b[0], b[4] - b[1]))
+        # group by colour, then tallest (in plan) first, so each colour reads as a block
+        order = {c: i for i, c in enumerate(self.colors)}
+        items.sort(key=lambda t: (order[t[0].color], -t[3], -t[2]))
+        groups = defaultdict(list)
+        x = y = shelf = 0.0
+        for (p, m, w, h) in items:
+            if x > 0 and x + w > width:
+                x, y, shelf = 0.0, y + shelf + gap, 0.0
+            groups[self.render_mat[p.color]].append(m.translate([x, -y - h, 0]))
+            x += w + gap
+            shelf = max(shelf, h)
         data = {}
         for mat, ms in groups.items():
             vs, fs, o = [], [], 0
@@ -314,9 +355,9 @@ def slice_check(outdir, ini, layer=0.16, manifest=None):
         t, g = "FAILED", None
         if os.path.exists(gc):
             tail = open(gc, errors="ignore").read()[-40000:]
-            m = re.search(r"estimated printing time \\(normal mode\\) = (.+)", tail)
+            m = re.search(r"estimated printing time \(normal mode\) = (.+)", tail)
             t = m.group(1).strip() if m else "?"
-            m = re.search(r"filament used \\[g\\] = ([\\d.]+)", tail)
+            m = re.search(r"filament used \[g\] = ([\d.]+)", tail)
             g = float(m.group(1)) if m else None
             os.remove(gc)
         pl["slice"] = {"time": t, "grams": g, "warnings": warn}

@@ -7,7 +7,7 @@ the building script places them with a 3x4 frame matrix.
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from .core import (Facade, box, brick, ccw, circle, cs_union, lattice, miters, offset, poly, rect, slab,
+from .core import (RIB, SLOT, Facade, box, brick, ccw, circle, cs_union, lattice, miters, offset, poly, rect, slab,
                    sweep_run, union)
 from .ornament import chimney_pot, dentils, ext, keystone, spandrel
 from . import openings as O
@@ -90,15 +90,27 @@ def chimney(w=10.5, dpt=10.5, h=20.5, cap=1.6, pots=2, peg=(5.8, 5.8, 2.0)):
     cap, pots and a locating peg below."""
     core = box([-w / 2, -dpt / 2, 0], [w / 2, dpt / 2, h - 3 * cap])
     parts = [core]
+    prev = 0.25                                   # the brick relief
     for k, grow in enumerate((0.5, 1.0, 0.6)):
         z = h - 3 * cap + k * cap
         parts.append(box([-w / 2 - grow, -dpt / 2 - grow, z], [w / 2 + grow, dpt / 2 + grow, z + cap]))
+        # corbel out at most 0.25 per 0.2 mm layer so no course hangs in the air
+        g, zz = prev, z
+        while grow - g > 0.3:
+            g += 0.25
+            zz -= 0.2
+        g2, z2 = prev, zz
+        while g2 < grow - 0.3 + 1e-9 and z2 < z:
+            g2 += 0.25
+            parts.append(box([-w / 2 - g2, -dpt / 2 - g2, z2], [w / 2 + g2, dpt / 2 + g2, z2 + 0.2]))
+            z2 += 0.2
+        prev = grow
     # brick texture on the 4 shaft faces
     shaft_h = h - 3 * cap
     fac = [Facade((-w / 2, -dpt / 2), (w / 2, -dpt / 2)), Facade((w / 2, -dpt / 2), (w / 2, dpt / 2)),
            Facade((w / 2, dpt / 2), (-w / 2, dpt / 2)), Facade((-w / 2, dpt / 2), (-w / 2, -dpt / 2))]
     for i, f in enumerate(fac):
-        parts.append(f.place(brick(rect(0.1, 0.0, f.L - 0.1, shaft_h), bl=2.1, bh=0.78, mortar=0.16, d=0.2,
+        parts.append(f.place(brick(rect(0.1, 0.0, f.L - 0.1, shaft_h), d=0.25,
                                    uoff=0.5 * (i % 2))))
     for k in range(pots):
         x = (k - (pots - 1) / 2) * (w * 0.45)
@@ -131,7 +143,7 @@ def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True, styl
         drop_ = drop if style == "arcade" else min(drop, 4.4)
         vt = H - beam
         for s in (-1, 1):
-            u_post = a + pw / 2 if s < 0 else b - pw / 2
+            u_post = a + pw / 2 - 0.25 if s < 0 else b - pw / 2 + 0.25
             u_mid = (a + b) / 2
             u0, u1 = (u_post, u_mid) if s < 0 else (u_mid, u_post)
             sp = spandrel(0.0, half, 0.0, drop_, 0.0, 1.0, bar=0.55)
@@ -172,13 +184,13 @@ def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.
         lat_reg = rect(0.2, 0.0, L - 0.2, H - floor_t - skirt)
         for u in pu:
             lat_reg = lat_reg - rect(u - pier / 2, -1, u + pier / 2, H)
-        lat = lattice(lat_reg, pitch=1.7, bar=0.5, d=0.9)
-        parts.append(f.place(lat.translate([0, 0, -1.6])))
-        parts.append(f.place(box([0.0, 0.0, -2.2], [L, H - floor_t - skirt, -1.5])))      # backing web
+        lat = lattice(lat_reg, pitch=1.8, bar=0.5, d=1.2)          # two 0.6 layers: no fused slot
+        parts.append(f.place(lat.translate([0, 0, -1.9])))
+        parts.append(f.place(box([0.0, 0.0, -2.5], [L, H - floor_t - skirt, -1.8])))      # backing web
         for u in pu:
-            pr = box([u - pier / 2, 0.0, -pier + 0.2], [u + pier / 2, H - floor_t - skirt + 0.01, 0.2])
-            tex = brick(rect(u - pier / 2 + 0.05, 0.0, u + pier / 2 - 0.05, H - floor_t - skirt), bl=2.0, bh=0.75,
-                        mortar=0.15, d=0.15).translate([0, 0, 0.2])
+            pr = box([u - pier / 2, 0.0, -pier + 0.2], [u + pier / 2, H - floor_t - skirt + 0.01, 0.0])
+            tex = brick(rect(u - pier / 2 + 0.05, 0.0, u + pier / 2 - 0.05, H - floor_t - skirt), bl=2.0,
+                        d=0.2).translate([0, 0, -0.01])
             parts.append(f.place(pr + tex))
     return union(parts)
 
@@ -199,7 +211,7 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
         P = np.asarray(outer_path, float)
         for a, b in zip(P[:-1], P[1:]):
             f = Facade(a, b, 0.0)
-            den = dentils(0.6, f.L - 0.6, z0 + fascia - 1.3, 0.8, 0.0, 0.7, tooth=0.42, gap=0.38)
+            den = dentils(0.6, f.L - 0.6, z0 + fascia - 1.4, 0.8, 0.0, 0.7)
             parts.append(f.place(den))
     return union(parts)
 
@@ -289,36 +301,40 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
 
 
 # ------------------------------------------------------------------ shutters
-def shutter(w, h, t=0.55, stile=0.45, louver=0.5, mid=True):
+def shutter(w, h, t=0.8, stile=0.6, louver=1.0, mid=True):
     """Louvered shutter panel. Local frame: u across (0..w), v up (0..h), back at w = 0.
 
-    Prints face-up (back on the bed). Louvers are a sawtooth of slats that step out at
-    their bottom edge, like the real thing seen from outside."""
+    Prints face-up (back on the bed). Each louver is a slat one nozzle wide (RIB) standing
+    two layers proud of a 0.4 mm back web, with a SLOT between slats, so the slats print as
+    separate lines instead of a textured smear. Stiles and rails are full thickness."""
+    web = 0.4
     frame_cs = rect(0, 0, w, h) - rect(stile, stile, w - stile, h - stile)
     parts = [ext(frame_cs, 0.0, t)]
     rails = [(h / 2 - stile / 2, h / 2 + stile / 2)] if mid else []
     for v0, v1 in rails:
         parts.append(ext(rect(stile, v0, w - stile, v1), 0.0, t))
-    # louvers: sawtooth ridges between the stiles (thickest at each slat's bottom edge)
     inner = rect(stile, stile, w - stile, h - stile)
     for v0, v1 in rails:
         inner = inner - rect(0, v0, w, v1)
-    pts = [(0.0, 0.0)]
-    v = stile
-    while v < h - stile:
-        pts += [(v, t * 0.85), (min(v + louver, h), t * 0.35)]
-        v += louver
-    pts.append((h, 0.0))
-    prof = poly([(0.0, 0.0)] + [(z, vv) for (vv, z) in pts[1:]] + [(0.0, h)])
-    slats = M.extrude(prof, w + 2).transform(np.array([[0, 0, 1.0, -1.0], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
-    parts.append(slats ^ ext(inner, 0.0, t))
-    parts.append(ext(inner, 0.0, 0.25))               # back web so the slats are tied together
+    parts.append(ext(inner, 0.0, web))
+    # slats: fit a whole number into each open field, a slot at both ends
+    slats = []
+    for fld in inner.decompose():
+        b = fld.bounds()
+        n = max(1, int((b[3] - b[1] - SLOT) / louver))
+        pitch = (b[3] - b[1] - SLOT) / n
+        for k in range(n):
+            v = b[1] + SLOT + k * pitch
+            slats.append(rect(b[0] - 0.1, v, b[2] + 0.1, v + min(RIB + 0.05, pitch - SLOT)))
+    if slats:
+        parts.append(ext(cs_union(slats) ^ inner.offset(0.05), web, t - 0.2))
     return union(parts)
 
 
-def shutters_for(opening_w, opening_h, casing=1.1, gap=0.15, t=0.55, h=None):
+def shutters_for(opening_w, opening_h, casing=1.1, gap=0.6, t=0.8, h=None):
     """A pair of shutters (left, right) framing an opening, in insert-local coordinates
-    (u centred on the opening, v from the opening bottom, mounted at w = stand_off)."""
+    (u centred on the opening, v from the opening bottom, mounted at w = stand_off).
+    The default gap clears the casing's ears (0.5 past the casing at the head)."""
     sw = opening_w / 2
     hh = opening_h if h is None else h
     left = shutter(sw, hh, t=t).translate([-(opening_w / 2 + casing + gap + sw), 0, 0])

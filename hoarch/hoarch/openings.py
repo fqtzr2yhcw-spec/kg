@@ -15,13 +15,16 @@ import math
 
 from manifold3d import JoinType
 
-from .core import arch_cs, cs_union, poly, rect, union
+from .core import RIB, SLOT, arch_cs, cs_union, poly, rect, union
 from .ornament import console, dentils, ext, fan_crest, keystone, rosette_block, stepped
 
 CLR = 0.15      # plug clearance per side
-PLUG = 1.7      # plug depth into a 3.0 mm wall
+PLUG = 1.6      # plug depth into a 3.0 mm wall (8 x 0.2 mm layers)
 GLASS = 0.4     # glazing thickness (2 x 0.2 mm layers)
-SASH_REC = 0.5  # sash face sits this far behind the casing face
+SASH_REC = 0.4  # sash face sits this far behind the wall face
+# face-up relief heights above the wall face sit on the 0.2 mm layer grid:
+CAS = 0.6       # flat casing band
+BEAD = 1.0      # raised back-band / bead on the casing
 
 
 def opening_cs(w, h, rise=None, arch=True):
@@ -80,11 +83,11 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     for n, v0, v1 in ((lo, 0, mr), (up, mr, h)):
         for i in range(1, n):
             u = -w / 2 + w * i / n
-            bars.append(rect(u - 0.17, v0, u + 0.17, v1))
+            bars.append(rect(u - RIB / 2, v0, u + RIB / 2, v1))
     sash = cs_union(bars) ^ inner
     parts.append(ext(sash, -PLUG + GLASS, -SASH_REC))
     # upper sash frame (a second frame line just inside the ring reads as the sash stile)
-    parts.append(ext(inner - inner.offset(-0.35, JoinType.Miter, 4.0), -PLUG + GLASS, -SASH_REC))
+    parts.append(ext(inner - inner.offset(-RIB, JoinType.Miter, 4.0), -PLUG + GLASS, -SASH_REC))
     if bare:
         ins = union(parts)
         return dict(insert=ins, sash=ins, surround=None, cut=op, landing=op.offset(0.2, JoinType.Miter, 4.0),
@@ -94,19 +97,19 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     cas_out = op.offset(casing, JoinType.Round)
     cas = cas_out - op.offset(0.0, JoinType.Miter, 4.0)
     cas = cas ^ rect(-w, 0.0, w, h + casing + 1)         # no casing under the sill
-    parts.append(ext(cas, 0.0, 0.7))
-    bead = (op.offset(0.35, JoinType.Round) - op) ^ rect(-w, 0.0, w, h + 1)
-    parts.append(ext(bead, 0.7, 0.95))
+    parts.append(ext(cas, 0.0, CAS))
+    bead = (op.offset(RIB, JoinType.Round) - op) ^ rect(-w, 0.0, w, h + 1)
+    parts.append(ext(bead, CAS, BEAD))
     # ears: small outward steps at the spring line
     ear_h = 1.1
     for s in (-1, 1):
         u0 = s * (w / 2 + casing)
-        parts.append(ext(rect(min(u0, u0 + s * 0.5), spring - ear_h, max(u0, u0 + s * 0.5), spring + 0.2), 0.0, 0.7))
+        parts.append(ext(rect(min(u0, u0 + s * 0.5), spring - ear_h, max(u0, u0 + s * 0.5), spring + 0.2), 0.0, CAS))
     # --- sill with two small brackets -------------------------------------------------
     sw = w / 2 + casing + sill_ext
     sill = rect(-sw, -0.9, sw, 0.0)
-    parts.append(ext(sill, 0.0, 1.1))
-    parts.append(ext(rect(-sw - 0.2, -0.35, sw + 0.2, 0.0), 1.1, 1.45))     # drip nose
+    parts.append(ext(sill, 0.0, 1.2))
+    parts.append(ext(rect(-sw - 0.2, -SLOT, sw + 0.2, 0.0), 1.2, 1.4))      # drip nose
     for s in (-1, 1):
         parts.append(ext(rect(s * (w / 2 + 0.2) - 0.45, -1.9, s * (w / 2 + 0.2) + 0.45, -0.9), 0.0, 0.8))
         parts.append(ext(rect(s * (w / 2 + 0.2) - 0.35, -2.25, s * (w / 2 + 0.2) + 0.35, -1.9), 0.0, 0.55))
@@ -123,41 +126,43 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
         if clip:   # keep the hood within the casing + ends width (narrow piers, bays)
             hood = hood ^ rect(-endw, -1, endw, h + 20)
         # stepped crown: three stacked layers, each smaller, for a moulded section
-        parts.append(stepped(hood, [(0.0, 0.0, 1.0), (0.22, 1.0, 1.45), (0.45, 1.45, 1.8)]))
-        # a fine dentil-bead line under the crown
-        rim = (band.offset(0.0, JoinType.Round) - band.offset(-0.3, JoinType.Round)) ^ rect(-w, spring, w, h + 20)
-        parts.append(ext(rim, 1.0, 1.25))
+        parts.append(stepped(hood, [(0.0, 0.0, 1.0), (0.25, 1.0, 1.4), (0.5, 1.4, 1.8)]))
+        # a bead line on the inner edge of the crown
+        rim = (band.offset(0.0, JoinType.Round) - band.offset(-RIB, JoinType.Round)) ^ rect(-w, spring, w, h + 20)
+        parts.append(ext(rim, 1.0, 1.2))
         # corbel blocks under the hood ends
         for s in (-1, 1):
             if ends >= 0.6:
                 parts.append(rosette_block(s * (endw - 0.55), spring - 1.0, 1.0, 0.0, 1.1))
         # keystone
         ktop = cy + r0 + 1.5 + 0.6
-        parts.append(keystone(0.0, h - 0.2, ktop - h + 0.2, 1.2, 1.7, 0.0, 2.05))
+        parts.append(keystone(0.0, h - 0.2, ktop - h + 0.2, 1.2, 1.7, 0.0, 2.0))
         top = ktop
         if style == "crest":
             parts.append(fan_crest(0.0, ktop - 0.05, 1.6, 0.0, 1.6))
             top = ktop + 1.6
         # tympanum fan (radiating flutes between the opening arch and the hood)
-        if rise > 1.2:
+        if rise > 1.2 and casing >= 1.0:          # on slim casings the flutes print as loose specks
             fl = []
-            for k in range(7):
-                a = -0.9 + 1.8 * k / 6
-                fl.append(poly([(0, spring - 0.1), ((r0 + 0.2) * math.sin(a) - 0.12 * math.cos(a), cy + (r0 + 0.2) * math.cos(a) + 0.12 * math.sin(a)),
-                                ((r0 + 0.2) * math.sin(a) + 0.12 * math.cos(a), cy + (r0 + 0.2) * math.cos(a) - 0.12 * math.sin(a))]))
-            fan = cs_union(fl) ^ (cas_out - op) ^ rect(-w, spring + 0.3, w, h + 20)
-            parts.append(ext(fan, 0.7, 0.95))
+            for k in range(5):
+                a = -0.9 + 1.8 * k / 4
+                fl.append(poly([(0, spring - 0.1), ((r0 + 0.2) * math.sin(a) - 0.3 * math.cos(a), cy + (r0 + 0.2) * math.cos(a) + 0.3 * math.sin(a)),
+                                ((r0 + 0.2) * math.sin(a) + 0.3 * math.cos(a), cy + (r0 + 0.2) * math.cos(a) - 0.3 * math.sin(a))]))
+            fan = (cs_union(fl) ^ (cas_out - op) ^ rect(-w, spring + 0.3, w, h + 20)).offset(-0.2).offset(0.2)
+            parts.append(ext(fan, CAS, BEAD))
     else:  # flat cornice cap
         cw = w / 2 + casing + 0.8
         parts.append(ext(rect(-cw, h + casing - 0.2, cw, h + casing + 0.9), 0.0, 1.2))
         parts.append(ext(rect(-cw - 0.3, h + casing + 0.9, cw + 0.3, h + casing + 1.5), 0.0, 1.6))
-        parts.append(dentils(-cw + 0.2, cw - 0.2, h + casing - 0.9, 0.7, 0.0, 0.9, tooth=0.4, gap=0.35))
+        parts.append(dentils(-cw + 0.2, cw - 0.2, h + casing - 0.9, 0.7, 0.0, 0.8))
         top = h + casing + 1.5
-    parts.append(ext(op - op.offset(-0.3, JoinType.Miter, 4.0), 0.0, 0.7))      # lip over the sash frame
+    parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))      # lip over the sash frame
     sur = union(parts)
     sash = union(sash_parts)
-    land = cs_union([cas_out, rect(-sw - 0.3, -2.4, sw + 0.3, 0.1),
-                     rect(-(w / 2 + casing + ends + 0.6), spring - 1.6, w / 2 + casing + ends + 0.6, top)])
+    lw = w / 2 + casing + ends + 0.6
+    if style not in ("crest", "key"):
+        lw = max(lw, w / 2 + casing + 0.8 + 0.3 + 0.2)          # the flat cap's drip reaches past the ends
+    land = cs_union([cas_out, rect(-sw - 0.3, -2.4, sw + 0.3, 0.1), rect(-lw, spring - 1.6, lw, top)])
     return dict(insert=sash + sur, sash=sash, surround=sur, cut=op, landing=land, top=top, bottom=-2.25)
 
 
@@ -167,17 +172,18 @@ def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=T
     transom > 0 adds a glazed transom of that height at the top of the opening."""
     op = rect(-w / 2, 0, w / 2, h)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
-    parts = [ext(plug_cs, -PLUG, -PLUG + 0.8)]                      # door slab back
+    parts = [ext(plug_cs, -PLUG, -1.0)]                             # door slab back
     ring = plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0)
     parts.append(ext(ring, -PLUG, 0.0))
     dh = h - transom
-    lw = (w - 2 * CLR - 1.0) / leaves
+    mid = SLOT if leaves > 1 else 0.0              # the meeting gap between leaves
+    lw = (w - 2 * CLR - 1.0 - mid * (leaves - 1)) / leaves
     u = -w / 2 + CLR + 0.5
     for i in range(leaves):
-        leaf = rect(u, 0.5, u + lw - (0.25 if leaves > 1 else 0), dh - 0.3)
-        parts.append(ext(leaf, -PLUG + 0.8, -0.6))
+        leaf = rect(u, 0.5, u + lw, dh - 0.3)
+        parts.append(ext(leaf, -1.0, -0.8))
         # panels: a tall upper and a short lower, raised with a bevel
-        pu0, pu1 = u + 0.55, u + lw - 0.55 - (0.25 if leaves > 1 else 0)
+        pu0, pu1 = u + 0.6, u + lw - 0.6
         pv = [(0.5 + 0.6, 0.5 + dh * 0.28), (0.5 + dh * 0.28 + 0.6, dh - 0.9)]
         for k, (v0, v1) in enumerate(pv):
             pc = rect(pu0, v0, pu1, v1)
@@ -185,17 +191,17 @@ def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=T
                 parts[-1] = parts[-1] - ext(pc.offset(-0.25, JoinType.Miter), -PLUG + 0.4, 0.5)
                 parts.append(ext(pc.offset(-0.25, JoinType.Miter), -PLUG, -PLUG + GLASS))
                 continue
-            parts.append(stepped(pc, [(0.0, -0.6, -0.45), (0.3, -0.45, -0.3)]))
-        u += lw + 0.25
+            parts.append(stepped(pc, [(0.0, -0.8, -0.6), (0.3, -0.6, -0.4)]))
+        u += lw + mid
     if transom > 0:
         tcs = rect(-w / 2 + CLR + 0.5, dh + 0.2, w / 2 - CLR - 0.5, h - 0.5)
         parts.append(ext(tcs, -PLUG, -PLUG + GLASS))
-        parts.append(ext(rect(-w / 2, dh - 0.3, w / 2, dh + 0.2), -PLUG, -0.5))
+        parts.append(ext(rect(-w / 2, dh - 0.3, w / 2, dh + 0.3), -PLUG, -0.4))
     sash_parts, parts = parts, []
     cas_out = op.offset(casing, JoinType.Miter, 4.0) ^ rect(-w, 0.0, w, h + casing + 1)
-    parts.append(ext(cas_out - op, 0.0, 0.7))
-    parts.append(ext((op - op.offset(-0.3, JoinType.Miter, 4.0)) ^ rect(-w, 0.3, w, h + 1), 0.0, 0.7))
-    parts.append(ext((op.offset(0.35, JoinType.Miter, 4.0) - op) ^ rect(-w, 0, w, h + 1), 0.7, 0.95))
+    parts.append(ext(cas_out - op, 0.0, CAS))
+    parts.append(ext((op - op.offset(-RIB, JoinType.Miter, 4.0)) ^ rect(-w, 0.3, w, h + 1), 0.0, CAS))
+    parts.append(ext((op.offset(RIB, JoinType.Miter, 4.0) - op) ^ rect(-w, 0, w, h + 1), CAS, BEAD))
     # plinth blocks at the casing foot
     for s in (-1, 1):
         parts.append(ext(rect(s * (w / 2) - (casing + 0.15) * (s < 0), 0.0, s * (w / 2) + (casing + 0.15) * (s > 0), 2.2), 0.0, 1.0))
@@ -204,7 +210,7 @@ def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=T
         cw = w / 2 + casing + 1.1
         v0 = h + casing
         parts.append(ext(rect(-cw + 0.5, v0 - 0.2, cw - 0.5, v0 + 1.6), 0.0, 0.8))          # frieze
-        parts.append(dentils(-cw + 0.8, cw - 0.8, v0 + 1.6, 0.6, 0.0, 1.2, tooth=0.4, gap=0.35))
+        parts.append(dentils(-cw + 0.8, cw - 0.8, v0 + 1.6, 0.6, 0.0, 1.2))
         parts.append(ext(rect(-cw, v0 + 2.2, cw, v0 + 2.8), 0.0, 1.9))                      # cap
         parts.append(ext(rect(-cw - 0.3, v0 + 2.8, cw + 0.3, v0 + 3.3), 0.0, 2.2))
         for s in (-1, 1):
@@ -238,11 +244,11 @@ def twin_arch_window(w, h, balcony=5.0, casing=1.0):
     parts.append(ext(rect(-0.55, spring - 0.2, 0.55, spring + 0.25), -PLUG + GLASS, 0.0))   # capital
     sash_parts, parts = parts, []
     cas_out = op.offset(casing, JoinType.Round)
-    parts.append(ext(op - op.offset(-0.3, JoinType.Miter, 4.0), 0.0, 0.7))
+    parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))
     parts.append(ext((cas_out - op) ^ rect(-w, 0, w, h + 5), 0.0, 0.8))
     band, cy, r0 = _arc_band(w, spring, w / 2, casing - 0.1, 1.3)
     parts.append(stepped(band ^ rect(-w, spring - 0.1, w, h + 10), [(0.0, 0.0, 1.0), (0.25, 1.0, 1.4)]))
-    parts.append(keystone(0.0, h - 0.2, 2.6, 1.1, 1.6, 0.0, 1.9))
+    parts.append(keystone(0.0, h - 0.2, 2.6, 1.1, 1.6, 0.0, 1.8))
     # no sill: the separate balcony floor is the sill; keep the wall bare behind it
     bw = w / 2 + casing + 2.0
     sur = union(parts)
@@ -261,12 +267,13 @@ def balcony(width, depth, rail_h=3.4, drop=3.0):
     parts = [ext(rect(-bw, -0.9, bw, 0.0), 0.0, depth)]                           # floor
     parts.append(ext(rect(-bw, -0.9, bw, rail_h), depth - 0.5, depth))            # railing panel back
     n = 9
-    posts = [rect(-bw + 0.35 + i * (2 * bw - 0.7) / (n - 1) - 0.2, 0.0,
-                  -bw + 0.35 + i * (2 * bw - 0.7) / (n - 1) + 0.2, rail_h) for i in range(n)]
+    n = max(3, min(n, int((2 * bw - 0.7) / (RIB + SLOT)) + 1))
+    posts = [rect(-bw + 0.35 + i * (2 * bw - 0.7) / (n - 1) - RIB / 2, 0.0,
+                  -bw + 0.35 + i * (2 * bw - 0.7) / (n - 1) + RIB / 2, rail_h) for i in range(n)]
     parts[-1] = ext(cs_union(posts + [rect(-bw, rail_h - 0.55, bw, rail_h), rect(-bw, 0.0, bw, 0.5)]),
                     depth - 0.5, depth)
     for s in (-1, 1):                                                             # side rails
-        parts.append(ext(rect(s * bw - 0.4 * (s > 0), 0.0, s * bw + 0.4 * (s < 0), rail_h), 0.3, depth))
+        parts.append(ext(rect(s * bw - RIB * (s > 0), 0.0, s * bw + RIB * (s < 0), rail_h), 0.3, depth))
     for s in (-1, 0, 1):
         parts.append(console(drop, depth - 0.4, 0.7, u=s * (bw - 0.8), v_top=-0.9, w0=0.0))
     return union(parts)
