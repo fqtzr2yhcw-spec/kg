@@ -3,3 +3,5 @@ review/house.bin
 review/house.txt
 __pycache__/
 renders/
+kit/parts/
+kit/renders/_tmp_*/

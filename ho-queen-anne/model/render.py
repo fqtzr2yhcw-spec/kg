@@ -65,7 +65,7 @@ def make_mat(name, hexcol, rough, metal):
     return m
 
 
-def build_scene(npz_path, lawn=True):
+def build_scene(npz_path, lawn=True, bbox=None):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
     data = np.load(npz_path)
@@ -96,6 +96,8 @@ def build_scene(npz_path, lawn=True):
         sc.collection.objects.link(ob)
         hexcol, r, mt = PALETTE.get(name, ("#ff00ff", 0.5, 0.0))
         me.materials.append(make_mat(name, hexcol, r, mt))
+    if bbox is not None:
+        lo, hi = np.array(bbox[:3]), np.array(bbox[3:])
     center = (lo + hi) / 2
     # ---- diorama base + studio floor
     cx, cy = center[0], center[1]
@@ -215,9 +217,11 @@ def main():
     ap.add_argument("--views", default="hero")
     ap.add_argument("--npz", default=os.path.join(HERE, "..", "out", "house_parts.npz"))
     ap.add_argument("--out", default=os.path.join(HERE, "..", "renders"))
+    ap.add_argument("--bbox", default=None, help="x0,y0,z0,x1,y1,z1 to fix framing")
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
-    lo, hi = build_scene(args.npz)
+    bbox = [float(v) for v in args.bbox.split(",")] if args.bbox else None
+    lo, hi = build_scene(args.npz, bbox=bbox)
     sc = bpy.context.scene
     sc.render.engine = "CYCLES"
     sc.cycles.device = "CPU"

@@ -340,7 +340,8 @@ def build_chimney():
     for yy in ((sy0 + sy1) / 2 - ft(0.8), (sy0 + sy1) / 2 + ft(0.8)):
         parts.append(revolve([(0, 0), (1.2, 0), (1.25, 1.0), (0.9, 2.5), (1.0, 3.2), (0.7, 3.2), (0.7, 0.5), (0, 0.5)], 16)
                      .translate([(sx0 + sx1) / 2, yy, CH_TOP + 0.6]))
-    add("Brick__CHIMNEY-exterior", "Brick", union(parts), group="chimneys")
+    add("Brick__CHIMNEY-exterior", "Brick", union(parts), rows_print([0, 1, 0], [0, 0, 1], [1, 0, 0]),
+        group="chimneys")
     k = union([box([X1 - 0.2, CH_Y0 - 0.35, -1], [X1 + CH_D + 2, CH_Y1 + 0.35, CH_ZSH + ft(2)]),
                box([X1 - 0.2, sy0 - 0.35, CH_ZSH], [sx1 + 2, sy1 + 0.35, CH_TOP])])
     KEEP_MAIN.append(k)
@@ -794,8 +795,8 @@ def build_bay():
           roof_texture(fp, planes, kind="random", e=inch(6), wtab=inch(9), d=0.3, faces=faces),
           roof_caps(fp, planes, width=0.9, height=0.7, faces=faces)]
     outer = roof_solid(fp, planes, zr0)
-    rp.append(slab(fpcs - off(fpcs, -1.5) - off(poly([(-1000, WY0 - 3.5), (1000, WY0 - 3.5), (1000, 1000), (-1000, 1000)]), 0),
-                   zr0, zr0 + 0.55) ^ outer)
+    rp.append(slab(fpcs - off(fpcs, -2.5) - off(poly([(-1000, WY0 - 3.5), (1000, WY0 - 3.5), (1000, 1000), (-1000, 1000)]), 0),
+                   zr0, zr0 + 0.9) ^ outer)
     add("Slate__ROOF-bay", "Slate", union(rp), group="roofs")
 
 
@@ -837,6 +838,9 @@ def build_dormer():
           segment_bar([x_face - ovd, yc, zr + 0.2], [x_face + depth, yc, zr + 0.2], 1.1, 0.8),
           revolve([(0, 0), (0.7, 0), (0.7, 0.4), (0.35, 0.9), (0.5, 1.6), (0.25, 4.0), (0, 4.0)], 10)
           .translate([x_face - ovd + 0.3, yc, zr + 0.4])]
+    dout = roof_solid(fp, planes, z_eave - 1.2)
+    for yy in (yc - hw - ovd, yc + hw + ovd - 2.0):
+        rp.append(box([x_face - ovd, yy, z_eave - 1.2], [x_face + depth, yy + 2.0, z_eave - 1.2 + 0.6]) ^ dout)
     droof = union(rp)
     droof = droof - roof_solid([(x_face - 20, yc - 40), (x_face + 80, yc - 40), (x_face + 80, yc + 40), (x_face - 20, yc + 40)],
                                [main_left.shifted(0.65)], -100)
@@ -1109,9 +1113,10 @@ def build_back():
     pl = [Plane((0, Y1 + ft(3.2)), (0, -1), zh, 0.55)]
     faces = plane_faces(fp, pl)
     hood = union([roof_slab(fp, pl, 1.0, zh - 1.0),
-                  roof_texture(fp, pl, kind="random", e=inch(6), wtab=inch(9), d=0.3, seed=31, faces=faces),
-                  box([bx - ft(3.3), Y1 + ft(3.2) - 0.8, zh - 1.6], [bx + ft(3.3), Y1 + ft(3.2), zh - 0.9])])
-    add("Slate__ROOF-back-door-hood", "Slate", hood, group="back")
+                  roof_texture(fp, pl, kind="random", e=inch(6), wtab=inch(9), d=0.3, seed=31, faces=faces)])
+    from geom import plane_frame
+    A_h, _ = plane_frame(pl[0])
+    add("Slate__ROOF-back-door-hood", "Slate", hood, inv34(A_h), group="back")
     z_under = zh + 0.55 * (ft(3.2) - 1.3) - 1.0 - 0.05
     for sx in (-1, 1):
         sh = scroll_2d((0, 0), ft(2.4), ft(2.4), 1).transform(np.array([[1.0, 0, 0], [-0.55, 1.0, 0]]))
