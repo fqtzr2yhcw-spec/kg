@@ -209,16 +209,16 @@ def main():
     for col in kit.COLORS:
         if col not in by_col:
             continue
-        for placed in pack(by_col[col]):
+        packed = pack(by_col[col])
+        for k, placed in enumerate(packed, start=1):
             n += 1
             groups = sorted({p.group for (_, p, _) in placed})
-            tag = "-".join(groups)[:40]
-            base = f"{n:02d}_{col}_{tag}"
+            base = f"{n:02d}_{col}" + (f"_{k}of{len(packed)}" if len(packed) > 1 else "")
             write_3mf(os.path.join(OUTDIR, "plates", base + ".3mf"), [(nm, m) for (nm, _, m) in placed], base)
             preview(os.path.join(OUTDIR, "previews", base + ".png"), placed, kit.COLORS[col], base)
             lh = min(LAYER.get(g, 0.16) for g in groups)
             hmax = max(m.bounding_box()[5] for (_, _, m) in placed)
-            manifest["plates"].append({"file": f"plates/{base}.3mf", "colour": col, "hex": kit.COLORS[col],
+            manifest["plates"].append({"file": f"plates/{base}.3mf", "preview": f"previews/{base}.png", "colour": col, "hex": kit.COLORS[col],
                                        "groups": groups, "objects": len(placed),
                                        "parts": sorted({nm for (nm, _, _) in placed}),
                                        "layer_mm": lh, "max_height_mm": round(hmax, 1),

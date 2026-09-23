@@ -90,7 +90,7 @@ def main():
     allb = np.array([p.solid.bounding_box() for p in kit.PARTS])
     full = list(allb[:, :3].min(0)) + list(allb[:, 3:].max(0))
     for npz, name, view in jobs:
-        extra = [] if name == "exploded" else ["--bbox", ",".join(f"{v:.2f}" for v in full)]
+        extra = [] if name == "exploded" else ["--bbox=" + ",".join(f"{v:.2f}" for v in full)]
         sub = os.path.join(args.out, "_tmp_" + name)
         subprocess.run([sys.executable, os.path.join(HERE, "render.py"), "--npz", npz, "--samples", str(args.samples),
                         "--res", args.res, "--views", view, "--out", sub] + extra, check=True,

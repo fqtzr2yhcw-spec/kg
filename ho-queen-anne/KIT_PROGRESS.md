@@ -31,9 +31,10 @@ Joints: cream trim sits in 0.4 mm pockets so it self-aligns; the belt band cover
 - [x] 3. Fit checks: interference between parts, min feature size, bed-size check (256 mm)
 - [x] 4. Plate layout per colour; export STL per part + 3MF per plate, colour in file names
 - [x] 5. Slice check with a CLI slicer (print time, filament grams per plate, 1-layer glazing present)
-- [ ] 6. Assembly guide page (steps, parts list, plate list) + update review artifact
-- [ ] 7. Commit, push, update PR
+- [x] 6. Assembly guide page (steps, parts list, plate list) + update review artifact
+- [x] 7. Commit, push, update PR
 
 ### Log
 - Steps 1-3 done: `python3 model/kit.py` builds 149 parts in ~9 s; `python3 model/kit_check.py` reports 0 interfering part pairs and no part over the 250 mm bed.
 - Steps 4-5 done: `python3 model/kit_export.py` writes 12 single-colour plates (kit/plates/*.3mf), 80 unique STLs (kit/parts/, not committed; regenerate), previews and manifest.json. `python3 model/kit_slice.py` (PrusaSlicer 2.7 CLI, Bambu-like profile in model/slicer/) slices all 12 plates: ~19 h 54 m, ~262 g per house. First layer of the sash plate is solid glass; from layer 2 only frames print.
+- Steps 6-7 done: kit/guide/index.html (model/kit_guide.py), step + exploded renders (model/kit_render.py), bundle zip (model/kit_bundle.py) sent to the owner.

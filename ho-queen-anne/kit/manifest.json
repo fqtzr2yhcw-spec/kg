@@ -1353,7 +1353,7 @@
  ],
  "plates": [
   {
-   "file": "plates/01_Sage_bay-tower-walls.3mf",
+   "file": "plates/01_Sage.3mf",
    "colour": "Sage",
    "hex": "#7f8f6a",
    "groups": [
@@ -1388,10 +1388,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/01_Sage.png"
   },
   {
-   "file": "plates/02_Harvest-Gold_dormer-tower-walls.3mf",
+   "file": "plates/02_Harvest-Gold.3mf",
    "colour": "Harvest-Gold",
    "hex": "#c79a45",
    "groups": [
@@ -1426,10 +1427,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/02_Harvest-Gold.png"
   },
   {
-   "file": "plates/03_Cream_cornice-doors-porch-tower-trim-windows.3mf",
+   "file": "plates/03_Cream_1of3.3mf",
    "colour": "Cream",
    "hex": "#efe7d2",
    "groups": [
@@ -1469,10 +1471,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/03_Cream_1of3.png"
   },
   {
-   "file": "plates/04_Cream_back-doors-dormer-porch-tower-trim-windo.3mf",
+   "file": "plates/04_Cream_2of3.3mf",
    "colour": "Cream",
    "hex": "#efe7d2",
    "groups": [
@@ -1520,10 +1523,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/04_Cream_2of3.png"
   },
   {
-   "file": "plates/05_Cream_bay-trim-windows.3mf",
+   "file": "plates/05_Cream_3of3.3mf",
    "colour": "Cream",
    "hex": "#efe7d2",
    "groups": [
@@ -1559,10 +1563,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/05_Cream_3of3.png"
   },
   {
-   "file": "plates/06_Oxblood_windows.3mf",
+   "file": "plates/06_Oxblood.3mf",
    "colour": "Oxblood",
    "hex": "#6a1f2b",
    "groups": [
@@ -1600,10 +1605,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/06_Oxblood.png"
   },
   {
-   "file": "plates/07_Walnut_doors.3mf",
+   "file": "plates/07_Walnut.3mf",
    "colour": "Walnut",
    "hex": "#4a2616",
    "groups": [
@@ -1626,10 +1632,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/07_Walnut.png"
   },
   {
-   "file": "plates/08_Slate_back-roofs.3mf",
+   "file": "plates/08_Slate.3mf",
    "colour": "Slate",
    "hex": "#43474d",
    "groups": [
@@ -1661,10 +1668,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/08_Slate.png"
   },
   {
-   "file": "plates/09_Fieldstone_foundation-porch.3mf",
+   "file": "plates/09_Fieldstone.3mf",
    "colour": "Fieldstone",
    "hex": "#8d877c",
    "groups": [
@@ -1693,10 +1701,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/09_Fieldstone.png"
   },
   {
-   "file": "plates/10_Brick_chimneys.3mf",
+   "file": "plates/10_Brick.3mf",
    "colour": "Brick",
    "hex": "#8a3b2b",
    "groups": [
@@ -1720,10 +1729,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/10_Brick.png"
   },
   {
-   "file": "plates/11_Porch-Gray_back-porch.3mf",
+   "file": "plates/11_Porch-Gray.3mf",
    "colour": "Porch-Gray",
    "hex": "#6b706f",
    "groups": [
@@ -1749,10 +1759,11 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/11_Porch-Gray.png"
   },
   {
-   "file": "plates/12_Black-Iron_roofs-small.3mf",
+   "file": "plates/12_Black-Iron.3mf",
    "colour": "Black-Iron",
    "hex": "#2b2b2d",
    "groups": [
@@ -1779,7 +1790,8 @@
      "89 => Calculating overhanging perimeters",
      "89 => Calculating overhanging perimeters"
     ]
-   }
+   },
+   "preview": "previews/12_Black-Iron.png"
   }
  ],
  "totals": {
