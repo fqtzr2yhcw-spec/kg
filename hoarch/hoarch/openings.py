@@ -27,6 +27,12 @@ CAS = 0.6       # flat casing band
 BEAD = 1.0      # raised back-band / bead on the casing
 
 
+def footprint(surround, op, grow=0.15):
+    """Where the siding must stop for an insert: the surround's own outline seen from the
+    front (plus a hair), so the clapboards run right up to the trim with no bare patches."""
+    return cs_union([surround.project().offset(grow, JoinType.Miter, 4.0), op.offset(grow, JoinType.Miter, 4.0)])
+
+
 def opening_cs(w, h, rise=None, arch=True):
     """Opening outline in local coords (u centred, v from 0)."""
     if not arch or rise == 0:
@@ -175,10 +181,7 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))      # lip over the sash frame
     sur = union(parts)
     sash = union(sash_parts)
-    lw = w / 2 + casing + ends + 0.6
-    if style not in ("crest", "key"):
-        lw = max(lw, w / 2 + casing + 0.8 + 0.3 + 0.2)          # the flat cap's drip reaches past the ends
-    land = cs_union([cas_out, rect(-sw - 0.3, bottom - 0.15, sw + 0.3, 0.1), rect(-lw, spring - 1.6, lw, top)])
+    land = footprint(sur, op)
     return dict(insert=sash + sur, sash=sash, surround=sur, cut=op, landing=land, top=top, bottom=bottom)
 
 
@@ -234,8 +237,7 @@ def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=T
         top = v0 + 3.3
     sur = union(parts)
     sash = union(sash_parts)
-    land = cs_union([cas_out, rect(-(w / 2 + casing + 1.5), h, w / 2 + casing + 1.5, top),
-                     rect(-(w / 2 + casing + 0.4), 0.0, w / 2 + casing + 0.4, 2.4)])
+    land = footprint(sur, op)
     return dict(insert=sash + sur, sash=sash, surround=sur, cut=op, landing=land, top=top, bottom=0.0)
 
 
@@ -265,13 +267,20 @@ def twin_arch_window(w, h, balcony=5.0, casing=1.0):
     band, cy, r0 = _arc_band(w, spring, w / 2, casing - 0.1, 1.3)
     parts.append(stepped(band ^ rect(-w, spring - 0.1, w, h + 10), [(0.0, 0.0, 1.0), (0.25, 1.0, 1.4)]))
     parts.append(keystone(0.0, h - 0.2, 2.6, 1.1, 1.6, 0.0, 1.8))
-    # no sill: the separate balcony floor is the sill; keep the wall bare behind it
     bw = w / 2 + casing + 2.0
+    if not balcony:   # its own bracketed sill (with a balcony, the balcony floor is the sill)
+        sw = w / 2 + casing + 0.6
+        parts.append(ext(rect(-sw, -0.9, sw, 0.0), 0.0, 1.2))
+        parts.append(ext(rect(-sw - 0.2, -SLOT, sw + 0.2, 0.0), 1.2, 1.4))
+        for s_ in (-1, 0, 1):
+            parts.append(ext(rect(s_ * (w / 2 - 0.6) - 0.45, -1.9, s_ * (w / 2 - 0.6) + 0.45, -0.9), 0.0, 0.8))
     sur = union(parts)
     sash = union(sash_parts)
-    land = cs_union([cas_out, rect(-bw - 0.3, -4.2, bw + 0.3, 0.2),
-                     rect(-(w / 2 + casing + 1.6), 0.0, w / 2 + casing + 1.6, cy + r0 + 1.6 + 2.6)])
-    return dict(insert=sash + sur, sash=sash, surround=sur, cut=op, landing=land, top=cy + r0 + 1.3, bottom=-0.9)
+    land = footprint(sur, op)
+    if balcony:       # keep the wall bare where the balcony's floor and brackets land
+        land = land + rect(-bw - 0.3, -4.2, bw + 0.3, 0.2)
+    return dict(insert=sash + sur, sash=sash, surround=sur, cut=op, landing=land, top=cy + r0 + 1.3,
+                bottom=-0.9 if balcony else -1.9)
 
 
 def balcony(width, depth, rail_h=3.4, drop=3.0):

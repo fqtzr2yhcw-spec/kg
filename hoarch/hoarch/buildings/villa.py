@@ -54,7 +54,7 @@ def _openings():
                              apron=True)
     bay_up = O.window_insert(9.0, 21.0, rise=None, style="key", casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
     ell_w = O.window_insert(9.0, 21.0, rise=0, style="flat", apron=True)
-    twin = O.twin_arch_window(14.0, 21.0)
+    twin = O.twin_arch_window(14.0, 21.0, balcony=0)
     front = O.door_insert(16.0, 30.0, leaves=2, transom=5.0)
     back = O.door_insert(11.0, 26.0, leaves=1, glass_top=True)
 
@@ -163,7 +163,7 @@ def build(kit=None):
     hs = CUP_SIZE / 2
     cup = Block("cupola", [(cx - hs, cy - hs), (cx + hs, cy - hs), (cx + hs, cy + hs), (cx - hs, cy + hs)],
                 flat, flat + CUP_H)
-    twin = O.twin_arch_window(10.0, 14.0, casing=0.9)
+    twin = O.twin_arch_window(10.0, 14.0, casing=0.9, balcony=0)
     cup_ops = []
     for (x, y, nm) in ((cx, cy - hs, "S"), (cx + hs, cy, "E"), (cx, cy + hs, "N"), (cx - hs, cy, "W")):
         e, u = cup.locate(x, y)
