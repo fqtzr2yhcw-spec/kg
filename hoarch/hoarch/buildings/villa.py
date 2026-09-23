@@ -236,14 +236,18 @@ def build(kit=None):
 
 
 def exploded_offsets(kit):
-    """Per-part (dx, dy, dz) that pull the kit apart along its assembly directions."""
+    """Per-part (dx, dy, dz) that pull the kit apart along its assembly directions:
+    foundation, first-floor shell, belt ring and second-floor shell apart, inserts out
+    of their openings, roof and cupola up, porch forward."""
     normal = {}
     for o, _ in OPENINGS_S:
         normal[o.name] = o.facade.n
     for nm, n in (("S", (0, -1)), ("E", (1, 0)), ("N", (0, 1)), ("W", (-1, 0))):
         normal[f"cupola-{nm}"] = np.array(n, float)
-    lift = {"EAVE-main": 34, "ROOF-main": 62, "CHIMNEY": 96, "CUPOLA": 96, "CUPOLA-eave": 116, "CUPOLA-roof": 132,
-            "EAVE-ell": 22, "ROOF-ell": 42, "FOUNDATION": -26}
+    UP = 30.0                                    # second storey lift
+    lift = {"FOUNDATION": -24, "WALLS-1": 0, "BELT": UP / 2, "WALLS-2": UP, "EAVE-main": UP + 26,
+            "ROOF-main": UP + 50, "CHIMNEY": UP + 84, "CUPOLA": UP + 84, "CUPOLA-eave": UP + 104,
+            "CUPOLA-roof": UP + 120, "CUPOLA-finial": UP + 136, "EAVE-ell": 20, "ROOF-ell": 38}
     out = {}
     for p in kit.parts:
         nm = p.name
@@ -251,11 +255,12 @@ def exploded_offsets(kit):
         if nm.startswith(("WIN-", "DOOR-", "SHUTTER-")):
             oname = nm.split("-", 1)[1].rsplit("-", 1)[0]
             n = normal.get(oname, np.zeros(2))
-            k = 9.0 if nm.endswith("-sash") else 17.0
-            d[:2] = n * k
+            d[:2] = n * (9.0 if nm.endswith("-sash") else 17.0)
             if "cupola" in oname:
                 d[2] = lift["CUPOLA"]
-            if oname.startswith(("S", "front")) and not oname.startswith("S67-2"):
+            elif oname.endswith("-2"):
+                d[2] = UP
+            if oname.startswith(("S", "front")) and not oname.endswith("-2"):
                 d[:2] += n * 36          # clear of the porch
         elif nm.startswith("PORCH-"):
             d[1] = -46
