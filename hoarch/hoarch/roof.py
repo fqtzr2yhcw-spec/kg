@@ -12,9 +12,9 @@ Profiles are closed polygons in (d, z): d = outward offset from the plan path
 import math
 
 import numpy as np
-from manifold3d import CrossSection as CS, Manifold as M
+from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
-from .core import (Facade, ccw, cs_union, frame, miters, offset, poly, rect, scallop_rows, slab,
+from .core import (Facade, box, ccw, cs_union, frame, miters, offset, poly, rect, scallop_rows, slab,
                    sweep_ring, union)
 from .ornament import console, dentils
 
@@ -144,8 +144,10 @@ def hip_solid(path, z_eave, slope, zlo, zhi=500.0, d_eave=0.0, exposed=None):
     return s, planes
 
 
-def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, shape="fish", zmax=None):
-    """Scallops on each hip face (region = the face's plan triangle/trapezoid)."""
+def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, shape="fish", zmax=None,
+                seam_pitch=5.2, seam_w=0.4):
+    """Texture on each hip face (region = the face's plan triangle/trapezoid):
+    shape "fish"/"square"/"diamond" slate rows, or "seam" for a standing-seam metal roof."""
     P, Mi = _edges(path)
     fp = poly([tuple(p + d_eave * m) for p, m in zip(P, Mi)])
     out = []
@@ -168,7 +170,14 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
         q = pi.q
         A2 = np.array([[e[0], e[1], -(e @ q)], [t[0] / cth, t[1] / cth, -(t @ q) / cth]])
         loc = reg.transform(A2)
-        tex = scallop_rows(loc, pitch, wtab, d=d, shape=shape, datum=loc.bounds()[1])
+        if shape == "seam":
+            b = loc.bounds()
+            n0 = int(np.floor(b[0] / seam_pitch))
+            ribs = [rect(k * seam_pitch - seam_w / 2, b[1] - 1, k * seam_pitch + seam_w / 2, b[3] + 1)
+                    for k in range(n0, int(np.ceil(b[2] / seam_pitch)) + 1)]
+            tex = M.extrude(cs_union(ribs) ^ loc.offset(-0.3, JoinType.Miter, 4.0), d)
+        else:
+            tex = scallop_rows(loc, pitch, wtab, d=d, shape=shape, datum=loc.bounds()[1])
         vdir = np.array([t[0] * cth, t[1] * cth, s * cth])
         ndir = np.array([-t[0] * s * cth, -t[1] * s * cth, cth])
         out.append(tex.transform(frame([q[0], q[1], pi.z0], [e[0], e[1], 0.0], vdir, ndir)))
@@ -214,3 +223,96 @@ def cresting(path, z0, h=2.2, pitch=1.4, bar=0.3, t=0.45, d_off=0.0, finials=Tru
         A[:, 3] = f.world(0, 0, 0) + np.array([0, 0, z0])
         out.append(fence.transform(A))
     return union(out)
+
+
+# ------------------------------------------------------------------ assembled roof pieces
+def shift_profile(prof, z0):
+    return [(d, z + z0) for d, z in prof]
+
+
+# Italianate deep eave: frieze board, bed moulding, wide soffit, fascia and crown fillet.
+EAVE_DEEP = [(-3.7, 0), (0.9, 0), (0.9, 5.0), (1.4, 5.3), (6.8, 5.3), (6.8, 6.6), (7.3, 6.9), (7.3, 7.6), (-3.7, 7.6)]
+# Compact bracketed cornice (one-storey wings, towers, cupolas).
+CORNICE_SMALL = [(-3.7, 0), (0.8, 0), (0.8, 4.0), (1.2, 4.2), (1.3, 4.6), (3.2, 4.6), (3.2, 5.6), (3.6, 5.9),
+                 (4.2, 6.8), (4.7, 7.4), (4.8, 8.0), (-3.7, 8.0)]
+
+
+def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_h=1.5, deck=None):
+    """A cornice ring swept along ``path`` with brackets and dentils (prints upside down).
+
+    brackets = dict(z_top, h, d0, d, t, pitch, pair=0, margin=2.5) (z_top relative to z0)
+    dents    = dict(z, h, d0, d, tooth=0.42, gap=0.38) (z relative to z0)
+    lip_t    = wall thickness: a locating lip drops just inside the wall's inner face
+    deck     = (z_bottom, z_top) relative to z0 for a solid roof deck filling the ring, or None."""
+    parts = [sweep_ring(path, shift_profile(prof, z0))]
+    if brackets:
+        b = dict(pair=0.0, margin=2.5)
+        b.update(brackets)
+        parts.append(edge_brackets(path, z0 + b["z_top"], b["h"], b["d0"], b["d"], b["t"], b["pitch"],
+                                   margin=b["margin"], pair=b["pair"]))
+    if dents:
+        dn = dict(tooth=0.42, gap=0.38)
+        dn.update(dents)
+        parts.append(edge_dentils(path, z0 + dn["z"], dn["h"], dn["d0"], dn["d"], tooth=dn["tooth"], gap=dn["gap"]))
+    base = poly(ccw(path))
+    if lip_t:
+        lip = offset(base, -lip_t - 0.15) - offset(base, -lip_t - 1.2)
+        parts.append(slab(lip, z0 - lip_h, z0 + 0.01))
+    if deck:
+        parts.append(slab(offset(base, -lip_t - 0.15), z0 + deck[0], z0 + deck[1]))
+    return union(parts)
+
+
+def flat_roof(block, keep=None, prof=CORNICE_SMALL, pitch=8.0):
+    """Cornice ring + flat deck for a one-storey block (prints upside down)."""
+    h = prof[-1][1]
+    m = bracketed_cornice(block.pts, block.z1, prof,
+                          brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=pitch, margin=2.4),
+                          dents=dict(z=3.6, h=0.9, d0=0.8, d=0.7, tooth=0.4, gap=0.36), lip_h=1.2,
+                          deck=(h - 2.0, h))
+    return m - keep if keep is not None else m
+
+
+def hip_roof(pieces, z_eave, slope, d_eave, texture="seam", flat_top=None, tex_kw=None):
+    """Hipped roof over the union of convex ``pieces`` = [(path, exposed_edges), ...].
+
+    Each piece's planes rise from its exposed edges (offset d_eave) at z_eave. Concave
+    outlines (bays, ells) are roofed as several convex pieces whose planes meet in
+    valleys. flat_top = z to truncate at (deck for a cupola), or None.
+    Returns (solid, texture)."""
+    solids, planes = [], []
+    for path, exposed in pieces:
+        s, pl = hip_solid(path, z_eave, slope, z_eave, d_eave=d_eave, exposed=exposed)
+        solids.append(s)
+        planes.append(pl)
+    texs = []
+    for k, (path, exposed) in enumerate(pieces):
+        if texture is None:
+            break
+        t = hip_texture(path, planes[k], z_eave, d_eave=d_eave, shape=texture, **(tex_kw or {}))
+        others = [solids[j] for j in range(len(pieces)) if j != k]
+        if others:
+            t = t - union(others)
+        texs.append(t)
+    solid = union(solids)
+    tex = union(texs)
+    if flat_top is not None:
+        solid = solid.trim_by_plane([0, 0, -1.0], -flat_top)
+        tex = tex.trim_by_plane([0, 0, -1.0], -(flat_top - 0.2))
+    return solid, tex
+
+
+def cresting_strips(crest, path, z, d_off):
+    """Split a cresting loop (from ``cresting``) into one flat-printable strip per edge.
+    Returns [(edge_index, solid, frame 3x4)] -- print each with inv34(frame)."""
+    P, Mi = _edges(path)
+    out = []
+    n = len(P)
+    for i in range(n):
+        a, b = P[i] + d_off * Mi[i], P[(i + 1) % n] + d_off * Mi[(i + 1) % n]
+        f = Facade(a, b, z)
+        clip = f.place(box([0.25, -1, -0.6], [f.L - 0.25, 5, 0.6]))
+        seg = crest ^ clip
+        if not seg.is_empty():
+            out.append((i, seg, f.A.copy(), f.L))
+    return out

@@ -284,3 +284,47 @@ def preview(path, placed, color, title):
     ax.set_title(title, fontsize=8)
     fig.savefig(path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
+
+
+# ------------------------------------------------------------------ slicing check
+def slice_check(outdir, ini, layer=0.16, manifest=None):
+    """Slice every plate in ``outdir`` with the PrusaSlicer CLI and record time, grams and
+    stability warnings into manifest.json. Returns the manifest."""
+    import re
+    import subprocess
+    man = manifest or json.load(open(os.path.join(outdir, "manifest.json")))
+    tmp = os.path.join(outdir, "_gcode")
+    os.makedirs(tmp, exist_ok=True)
+
+    def minutes(t):
+        return round(sum(int(v) * {"d": 1440, "h": 60, "m": 1, "s": 1 / 60}[u] for v, u in re.findall(r"(\d+)([dhms])", t)))
+
+    tot_m = tot_g = 0
+    for pl in man["plates"]:
+        src = os.path.join(outdir, pl["file"])
+        gc = os.path.join(tmp, os.path.basename(src).replace(".3mf", ".gcode"))
+        r = subprocess.run(["prusa-slicer", "--export-gcode", "--load", ini, "--dont-arrange", "--layer-height",
+                            str(layer), "--output", gc, src], capture_output=True, text=True, timeout=3600)
+        log = (r.stdout + r.stderr).splitlines()
+        warn = []
+        for i, line in enumerate(log):
+            if "stability" in line.lower():
+                warn = [x.strip() for x in log[i + 1:i + 14] if x.strip() and "=>" not in x and "Consider" not in x]
+                break
+        t, g = "FAILED", None
+        if os.path.exists(gc):
+            tail = open(gc, errors="ignore").read()[-40000:]
+            m = re.search(r"estimated printing time \\(normal mode\\) = (.+)", tail)
+            t = m.group(1).strip() if m else "?"
+            m = re.search(r"filament used \\[g\\] = ([\\d.]+)", tail)
+            g = float(m.group(1)) if m else None
+            os.remove(gc)
+        pl["slice"] = {"time": t, "grams": g, "warnings": warn}
+        if t not in ("FAILED", "?"):
+            tot_m += minutes(t)
+        tot_g += g or 0
+        print(f"{os.path.basename(src):34s} {t:>12s} {g} g", flush=True)
+    man["totals"] = {"print_minutes": tot_m, "filament_g": round(tot_g, 1)}
+    json.dump(man, open(os.path.join(outdir, "manifest.json"), "w"), indent=1)
+    print(f"TOTAL {tot_m // 60} h {tot_m % 60} m, {tot_g:.0f} g")
+    return man

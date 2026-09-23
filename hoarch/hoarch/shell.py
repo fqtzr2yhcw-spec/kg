@@ -23,6 +23,17 @@ class Block:
         P = self.pts
         return [Facade(P[i], P[(i + 1) % len(P)], self.z0) for i in range(len(P))]
 
+    def locate(self, x, y):
+        """(edge index, u) of the plan point (x, y) on this block's outline."""
+        best = None
+        for i, f in enumerate(self.facades()):
+            d = np.array([x, y], float) - f.p0
+            u = float(d @ f.u)
+            off = abs(float(d @ f.n))
+            if -0.5 <= u <= f.L + 0.5 and (best is None or off < best[2]):
+                best = (i, u, off)
+        return best[0], best[1]
+
     def convex_corners(self, min_turn=0.0):
         """Convex corners whose turning angle (deg) is at least min_turn."""
         P = np.asarray(self.pts)
@@ -79,9 +90,16 @@ def _quoin_cs(L_long, L_short, h, gap, v0, v1, leg_u, flip):
 
 
 def wall_shell(blocks, openings, t=3.0, pitch=1.153, sid_d=0.3, belt=None, quoins=True,
-               water_table=True, partitions=(), extra_cut=None, hide_extra=None):
-    """Build the shell. ``belt`` = (v_bottom, v_top) of the belt course above the
-    tallest block's base (None for no belt). Returns (shell, info)."""
+               water_table=True, partitions=(), extra_cut=None, hide_extra=None, corners=None):
+    """Build the one-piece shell with its siding and trim.
+
+    ``belt`` = (v_bottom, v_top) of the belt course above each block's base (None for none).
+    ``corners`` = "quoin" (alternating blocks), "board" (plain corner boards) or "none";
+    default follows the legacy ``quoins`` flag."""
+    corners = corners or ("quoin" if quoins else "none")
+    quoins = corners == "quoin"
+    boards = corners == "board"
+    CBW, CBT = 2.4, 0.65
     solids = [b.solid() for b in blocks]
     outer_all = union(solids)
     voids = union([slab(offset(b.cs, -t), b.z0 - 1, b.z1 + 1) for b in blocks])
@@ -114,8 +132,8 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.153, sid_d=0.3, belt=None, quoin
                 if o.block is b and o.edge == i:
                     keep.append(o.cs_on_facade(o.spec["landing"]))
             cstart, cend = conv[i], conv[(i + 1) % len(facs)]
-            qw = QL + 0.05
-            if quoins:
+            qw = (QL if quoins else CBW) + 0.05
+            if quoins or boards:
                 if cstart:
                     keep.append(rect(-1, -1, qw, H + 1))
                 if cend:
@@ -132,6 +150,8 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.153, sid_d=0.3, belt=None, quoin
             if water_table:
                 keep.append(rect(-1, -1, f.L + 1, 1.8))
             reg = region - cs_union(keep)
+            # drop slivers narrower than ~0.9 mm (they print as hairlines and render as cracks)
+            reg = reg.offset(-0.45, JoinType.Miter, 4.0).offset(0.45, JoinType.Miter, 4.0) ^ region
             if not reg.is_empty():
                 dress.append(f.place(clapboard(reg, pitch=pitch, d=sid_d, dmin=0.05, datum=1.8)))
             # quoins
@@ -148,6 +168,17 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.153, sid_d=0.3, belt=None, quoin
                         # bevelled blocks: two layers
                         q = M.extrude(qcs, QT * 0.6) + M.extrude(qcs.offset(-0.18, JoinType.Miter), QT * 0.4).translate([0, 0, QT * 0.6])
                         dress.append(f.place(q))
+            # plain corner boards (Italianate / Gothic houses), with a small cap under the belt/eave
+            if boards:
+                zones = [(1.8, H)] if belt is None or H <= belt[1] else [(1.8, belt[0]), (belt[1], H)]
+                for at_start, on in ((True, cstart), (False, cend)):
+                    if not on:
+                        continue
+                    u0, u1 = (0.0, CBW) if at_start else (f.L - CBW, f.L)
+                    for (qa, qb) in zones:
+                        dress.append(f.place(box([u0, qa, 0], [u1, qb, CBT])))
+                        dress.append(f.place(box([u0 - (0.2 if not at_start else 0), qb - 0.9, 0],
+                                                 [u1 + (0.2 if at_start else 0), qb, CBT + 0.3])))
             # belt course: frieze band + drip cap
             if belt is not None and H > belt[1]:
                 e0 = -1.0 if cstart else 0.0

@@ -103,14 +103,17 @@ def chimney(w=10.5, dpt=10.5, h=20.5, cap=1.6, pots=2, peg=(5.8, 5.8, 2.0)):
     for k in range(pots):
         x = (k - (pots - 1) / 2) * (w * 0.45)
         parts.append(chimney_pot(1.5, 3.2).translate([x, 0, h]))
-    parts.append(box([-peg[0] / 2, -peg[1] / 2, -peg[2]], [peg[0] / 2, peg[1] / 2, 0.01]))
+    if peg:
+        parts.append(box([-peg[0] / 2, -peg[1] / 2, -peg[2]], [peg[0] / 2, peg[1] / 2, 0.01]))
     return union(parts)
 
 
 # ------------------------------------------------------------------ porch
-def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True):
-    """Flat post-and-arcade panel (prints lying on its back, t thick).
+def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True, style="arcade"):
+    """Flat post panel (prints front-face down, t thick).
 
+    style "arcade": quarter-round spandrels meet at mid-span (Second Empire arcade);
+    style "bracket": a pierced scroll bracket each side of every post (Italianate).
     Local frame: u along the porch edge (0..L), v up from the porch floor, w out
     (panel from w = -t/2 to t/2). posts_u = post centre positions."""
     parts = [ext(rect(0, H - beam, L, H), -t / 2, t / 2)]                     # beam
@@ -124,23 +127,26 @@ def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True):
     # arcade spandrels between posts
     for a, b in zip(posts_u[:-1], posts_u[1:]):
         span = b - a - pw
-        half = span / 2
+        half = span / 2 if style == "arcade" else min(span / 2 - 0.5, 4.6)
+        drop_ = drop if style == "arcade" else min(drop, 4.4)
         vt = H - beam
         for s in (-1, 1):
             u_post = a + pw / 2 if s < 0 else b - pw / 2
             u_mid = (a + b) / 2
             u0, u1 = (u_post, u_mid) if s < 0 else (u_mid, u_post)
-            sp = spandrel(0.0, half, 0.0, drop, 0.0, 1.0, bar=0.55)
+            sp = spandrel(0.0, half, 0.0, drop_, 0.0, 1.0, bar=0.55)
             # spandrel() draws the corner at u=0: mirror for the right-hand post
             if s < 0:
                 sp = sp.translate([u_post, vt, 0])
             else:
                 sp = sp.mirror([1, 0, 0]).translate([u_post, vt, 0])
             parts.append(sp.translate([0, 0, t / 2 - 1.0]))
-    # pendant drops at the arch crowns
-    for a, b in zip(posts_u[:-1], posts_u[1:]):
-        um = (a + b) / 2
-        parts.append(ext(rect(um - 0.5, H - beam - 1.5, um + 0.5, H - beam), t / 2 - 1.2, t / 2))
+    if style == "arcade":   # pendant drops at the arch crowns
+        for a, b in zip(posts_u[:-1], posts_u[1:]):
+            um = (a + b) / 2
+            parts.append(ext(rect(um - 0.5, H - beam - 1.5, um + 0.5, H - beam), t / 2 - 1.2, t / 2))
+    else:                   # a thin frieze board with a bead under the beam
+        parts.append(ext(rect(0, H - beam - 0.6, L, H - beam), t / 2 - 0.8, t / 2))
     return union(parts)
 
 
@@ -215,7 +221,7 @@ def steps(width, rise_total, n, tread=2.6, cheek=1.8):
 
 # ------------------------------------------------------------------ porch assembly
 def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=None, steps_at=(),
-          pier=3.4, pw=2.6, t=2.6):
+          pier=3.4, pw=2.6, t=2.6, style="arcade"):
     """A complete porch from its plan polygon (CCW) and its yard-facing *runs*.
 
     runs: list of dict(a=(x,y), b=(x,y), posts=[u,...]) in CCW order, u measured from a.
@@ -241,7 +247,7 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
         # a run that starts where the previous one ended leaves the corner to that panel
         s0 = t + 0.45 if k > 0 and np.allclose(runs[k - 1]["b"], r["a"], atol=0.05) else 0.0
         posts = [u - s0 for u in r["posts"] if u - s0 >= pw / 2 - 1e-6]
-        panel = porch_posts(f.L - s0, post_h, posts, pw=pw, t=t).translate([s0, 0, 0])
+        panel = porch_posts(f.L - s0, post_h, posts, pw=pw, t=t, style=style).translate([s0, 0, 0])
         panels.append((f"run{k}", panel, A))
     # roof: polygon grown outward, cut back from the building later by the caller
     base = poly(pts)
@@ -280,3 +286,41 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
         A[:, 3] = f.world(u, 0.0, 0.45)
         st.append((steps(wdt, H_floor, 4), A))
     return dict(deck=deck, panels=panels, roof=roof, steps=st)
+
+
+# ------------------------------------------------------------------ shutters
+def shutter(w, h, t=0.55, stile=0.45, louver=0.5, mid=True):
+    """Louvered shutter panel. Local frame: u across (0..w), v up (0..h), back at w = 0.
+
+    Prints face-up (back on the bed). Louvers are a sawtooth of slats that step out at
+    their bottom edge, like the real thing seen from outside."""
+    frame_cs = rect(0, 0, w, h) - rect(stile, stile, w - stile, h - stile)
+    parts = [ext(frame_cs, 0.0, t)]
+    rails = [(h / 2 - stile / 2, h / 2 + stile / 2)] if mid else []
+    for v0, v1 in rails:
+        parts.append(ext(rect(stile, v0, w - stile, v1), 0.0, t))
+    # louvers: sawtooth ridges between the stiles (thickest at each slat's bottom edge)
+    inner = rect(stile, stile, w - stile, h - stile)
+    for v0, v1 in rails:
+        inner = inner - rect(0, v0, w, v1)
+    pts = [(0.0, 0.0)]
+    v = stile
+    while v < h - stile:
+        pts += [(v, t * 0.85), (min(v + louver, h), t * 0.35)]
+        v += louver
+    pts.append((h, 0.0))
+    prof = poly([(0.0, 0.0)] + [(z, vv) for (vv, z) in pts[1:]] + [(0.0, h)])
+    slats = M.extrude(prof, w + 2).transform(np.array([[0, 0, 1.0, -1.0], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
+    parts.append(slats ^ ext(inner, 0.0, t))
+    parts.append(ext(inner, 0.0, 0.25))               # back web so the slats are tied together
+    return union(parts)
+
+
+def shutters_for(opening_w, opening_h, casing=1.1, gap=0.15, t=0.55, h=None):
+    """A pair of shutters (left, right) framing an opening, in insert-local coordinates
+    (u centred on the opening, v from the opening bottom, mounted at w = stand_off)."""
+    sw = opening_w / 2
+    hh = opening_h if h is None else h
+    left = shutter(sw, hh, t=t).translate([-(opening_w / 2 + casing + gap + sw), 0, 0])
+    right = shutter(sw, hh, t=t).translate([opening_w / 2 + casing + gap, 0, 0])
+    return left, right
