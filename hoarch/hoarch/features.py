@@ -4,12 +4,14 @@ Local frames follow the insert convention where it applies: u along the wall,
 v up, w out of the wall. Each builder returns manifolds in its local frame;
 the building script places them with a 3x4 frame matrix.
 """
+import math
+
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
 from .core import (RIB, SLOT, Facade, box, brick, ccw, circle, cs_union, lattice, miters, offset, poly, rect, slab,
                    sweep_run, union)
-from .ornament import chimney_pot, dentils, ext, keystone, spandrel
+from .ornament import chamfer_box, chimney_pot, dentils, ext, keystone, spandrel
 from . import openings as O
 
 
@@ -317,12 +319,13 @@ def steps(width, rise_total, n, tread=2.6, cheek=1.8):
     r = rise_total / n
     parts = []
     for k in range(n):
-        parts.append(box([-width / 2, 0, 0], [width / 2, rise_total - k * r, (k + 1) * tread]))
+        top = round((rise_total - k * r) / 0.2) * 0.2          # tread tops on the 0.2 mm layer grid
+        parts.append(box([-width / 2, 0, 0], [width / 2, top, (k + 1) * tread]))
     for s in (-1, 1):
         u0 = s * width / 2
         parts.append(box([min(u0, u0 + s * cheek), 0, 0], [max(u0, u0 + s * cheek), rise_total + 0.8, n * tread + 0.4]))
-        parts.append(box([min(u0, u0 + s * cheek) - 0.2, rise_total + 0.3, -0.0],
-                         [max(u0, u0 + s * cheek) + 0.2, rise_total + 1.1, n * tread + 0.6]))
+        parts.append(box([min(u0, u0 + s * cheek) - 0.2, rise_total + 0.4, -0.0],
+                         [max(u0, u0 + s * cheek) + 0.2, rise_total + 1.2, n * tread + 0.6]))
     return union(parts)
 
 
@@ -364,7 +367,13 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
             rl["skip"] = [(u - wd / 2 - s0, u + wd / 2 - s0) for (ri, u, wd) in steps_at if ri == k]
         panel = porch_posts(f.L - s0, post_h, posts, pw=pw, t=t, style=style, rail=rl).translate([s0, 0, 0])
         panels.append((f"run{k}", panel, A))
-    # roof: polygon grown outward, cut back from the building later by the caller
+    roof = _porch_roof(pts, runs, H_floor + post_h, over)
+    st = _porch_steps(runs, steps_at, H_floor)
+    return dict(deck=deck, floor=floor, panels=panels, roof=roof, steps=st)
+
+
+def _porch_roof(pts, runs, z0, over):
+    """Roof over the porch polygon grown by ``over``, with its fascia along the runs."""
     base = poly(pts)
     roof_cs = offset(base, over)
     chain = []
@@ -392,7 +401,10 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
         path[0] = path[0] + e0 / np.linalg.norm(e0) * over
         e1 = path[-1] - path[-2]
         path[-1] = path[-1] + e1 / np.linalg.norm(e1) * over
-    roof = porch_roof(None, [tuple(p) for p in path], H_floor + post_h, over=over, roof_cs=roof_cs)
+    return porch_roof(None, [tuple(p) for p in path], z0, over=over, roof_cs=roof_cs)
+
+
+def _porch_steps(runs, steps_at, H_floor):
     st = []
     for (ri, u, wdt) in steps_at:
         r = runs[ri]
@@ -400,7 +412,7 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
         A = f.A.copy()
         A[:, 3] = f.world(u, 0.0, 0.45)
         st.append((steps(wdt, H_floor, 4), A))
-    return dict(deck=deck, floor=floor, panels=panels, roof=roof, steps=st)
+    return st
 
 
 # ------------------------------------------------------------------ shutters
@@ -443,3 +455,228 @@ def shutters_for(opening_w, opening_h, casing=1.1, gap=0.6, t=0.8, h=None):
     left = shutter(sw, hh, t=t).translate([-(opening_w / 2 + casing + gap + sw), 0, 0])
     right = shutter(sw, hh, t=t).translate([opening_w / 2 + casing + gap, 0, 0])
     return left, right
+
+
+# ------------------------------------------------------------------ turned porch
+# Posts and railings print standing up, so they are round all the way round with one finish;
+# the arcade (beam, sawn-work spandrels, drops) prints on its top edge, so front and back
+# match too. Nothing here is a flat panel with a glossy bed face on one side.
+
+def _clamp_45(prof):
+    """Make a revolved (r, z) profile printable upright: wherever r grows going up, it may
+    grow no faster than z (45 degrees); the z of such points is pushed up as needed."""
+    out = [prof[0]]
+    for r, z in prof[1:]:
+        r0, z0 = out[-1]
+        if r > r0 and r - r0 > z - z0:
+            z = z0 + (r - r0)
+        out.append((r, max(z, z0)))
+    return out
+
+
+def turned_post(h, plinth=3.2, abacus=3.0, seg=36, slot=(1.2, 1.0)):
+    """Victorian turned porch post, printed upright, floor at z=0, top of the abacus at h.
+
+    Square plinth, torus base, tapered lower shaft, a ringed collar, a vase with a belly,
+    a necked ring, the upper shaft, and a bell capital flaring at 45 degrees into a square
+    abacus. Never thinner than 1.9 mm. A slot across the abacus takes the arcade's tab."""
+    ph, ah = 1.2, 1.0
+    z0, z1 = ph, h - ah - 1.4                 # turned zone (the capital bell sits above z1)
+    L = z1 - z0
+
+    def Z(t):
+        return z0 + t * L
+    prof = [(0.0, z0 - 0.01), (1.5, z0 - 0.01), (1.5, z0 + 0.35), (1.25, z0 + 0.7), (1.15, Z(0.04)),
+            (1.05, Z(0.20)), (1.35, Z(0.20) + 0.3), (1.35, Z(0.23)), (1.0, Z(0.23) + 0.35),
+            (1.0, Z(0.30)), (1.25, Z(0.36)), (1.42, Z(0.45)), (1.25, Z(0.56)), (0.95, Z(0.64)),
+            (1.3, Z(0.64) + 0.35), (1.3, Z(0.67)), (0.95, Z(0.67) + 0.35), (1.05, Z(0.76)), (1.0, z1),
+            (1.1, z1 + 0.1), (1.45, z1 + 0.45), (1.45, z1 + 0.8), (0.0, z1 + 0.8)]
+    prof = _clamp_45(prof[:-1]) + [(0.0, prof[-2][1])]
+    body = M.revolve(poly([(r, z) for r, z in prof]), seg)
+    body = body + box([-plinth / 2, -plinth / 2, 0.0], [plinth / 2, plinth / 2, ph])
+    # bell -> square abacus at 45 degrees (hull of the bell's top ring and the abacus)
+    zb = z1 + 0.8
+    ring = [(1.45 * math.cos(a), 1.45 * math.sin(a), zb - 0.01) for a in np.linspace(0, 2 * math.pi, 24, endpoint=False)]
+    sq = abacus / 2
+    rise = max(0.2, (sq * math.sqrt(2) - 1.45))
+    corners = [(x, y, zb + rise) for x in (-sq, sq) for y in (-sq, sq)]
+    body = body + M.hull_points(ring + corners)
+    body = body + box([-sq, -sq, zb + rise - 0.01], [sq, sq, h])
+    if slot:
+        body = body - box([-slot[0] / 2, -sq - 1, h - slot[1]], [slot[0] / 2, sq + 1, h + 1])
+    return body
+
+
+def baluster(h, rmax=0.55, rmin=0.36, seg=20):
+    """Turned baluster (revolved), printed upright; z = 0..h."""
+    t = [(0.0, 0.5), (0.1, 0.5), (0.14, 0.38), (0.22, 0.4), (0.36, 0.52), (0.46, 0.55), (0.58, 0.46),
+         (0.72, 0.36), (0.78, 0.36), (0.82, 0.46), (0.86, 0.38), (0.9, 0.5), (1.0, 0.5)]
+    prof = [(max(rmin, min(rmax, r)), f * h) for f, r in t]
+    prof = _clamp_45([(0.0, 0.0)] + prof)
+    prof.append((0.0, prof[-1][1]))
+    return M.revolve(poly(prof), seg)
+
+
+def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8):
+    """Baluster railing between two posts, printed upright. Local frame: u along 0..L, v up
+    from the porch floor (= print z), w across, centred. Feet carry the bottom rail
+    ``foot`` above the floor; turned balusters; a hand rail with a rounded top."""
+    parts = []
+    nf = max(2, int(L / 8.0) + 1)
+    for j in range(nf):
+        u = 0.5 + (L - 1.0) * j / (nf - 1)
+        parts.append(box([u - 0.5, -0.6, 0.0], [u + 0.5, 0.6, foot + 0.01]))
+    parts.append(box([0.0, -0.6, foot], [L, 0.6, foot + 0.8]))                        # bottom rail
+    vb, vt = foot + 0.8, h - 1.0                   # every flat face on the 0.2 mm layer grid
+    for u in (0.0, L - 0.7):                                                          # end stiles
+        parts.append(box([u, -0.5, foot], [u + 0.7, 0.5, vt + 0.01]))
+    n = max(1, int(round((L - 1.4) / pitch)))
+    for j in range(n):
+        u = 0.7 + (L - 1.4) * (j + 0.5) / n
+        parts.append(baluster(vt - vb + 0.02).translate([u, 0.0, vb - 0.01]))
+    # hand rail: square under-rail, rounded cap (in (w, v), extruded along u)
+    cap = poly([(-rail_w / 2, vt), (rail_w / 2, vt), (rail_w / 2, h - 0.4), (rail_w / 2 - 0.2, h - 0.2),
+                (rail_w / 2 - 0.4, h), (-rail_w / 2 + 0.4, h), (-rail_w / 2 + 0.2, h - 0.2), (-rail_w / 2, h - 0.4)])
+    rail = M.extrude(cap, L).transform(np.array([[0, 0, 1.0, 0], [1.0, 0, 0, 0], [0, 1.0, 0, 0]]))
+    parts.append(rail)
+    return union(parts)
+
+
+def _spandrel_cs(u0, u1, v_bot, v_top, band=0.8):
+    """Sawn-work spandrel between two posts (u0..u1) under a beam at v_top, springing at
+    v_bot: an elliptical arch with a raised band, a roundel near each post, a teardrop
+    reaching for the crown, and a turned drop hanging from the crown. (u, v) CrossSection."""
+    mid, half = (u0 + u1) / 2, (u1 - u0) / 2
+    rise = (v_top - v_bot) - 0.9
+
+    def ell(a, b, seg=64):
+        return poly([(mid + a * math.cos(t), v_bot + b * math.sin(t)) for t in np.linspace(0, math.pi, seg)] +
+                    [(mid - a, v_bot - 5), (mid + a, v_bot - 5)])
+    region = rect(u0, v_bot, u1, v_top + 0.05)
+    solid = region - ell(half - band, rise - band)
+    holes = []
+    for s in (-1, 1):
+        # roundel near the post, as big as fits with 0.7 mm of wood around it
+        cu = mid + s * (half - 2.3)
+        cv = v_top - 2.3
+        for r in (1.3, 1.1, 0.9, 0.7):
+            c = circle((cu, cv), r, 28)
+            if ((c.offset(0.7) - (region - ell(half, rise))).is_empty()):
+                holes.append(c)
+                break
+        # teardrop from beside the roundel toward the crown, tucked above the arch
+        for k in (1.0, 0.8, 0.6):
+            a0 = (mid + s * (half - 4.6), v_top - 1.35, 0.55 * k)
+            a1 = (mid + s * (half * 0.35), v_top - 0.95, 0.3 * k)
+            td = cs_union([circle(a0[:2], a0[2], 16), circle(a1[:2], a1[2], 12)]).hull()
+            if ((td.offset(0.7) - (region - ell(half, rise))).is_empty() and
+                    all((td ^ h_.offset(0.7)).is_empty() for h_ in holes)):
+                holes.append(td)
+                break
+    if holes:
+        solid = solid - cs_union(holes)
+    # turned drop under the crown
+    cvb = v_bot + rise - band
+    drop = cs_union([rect(mid - 0.35, cvb - 1.0, mid + 0.35, cvb + 0.1), circle((mid, cvb - 1.4), 0.6, 20),
+                     poly([(mid - 0.4, cvb - 1.9), (mid + 0.4, cvb - 1.9), (mid, cvb - 2.6)])])
+    return solid + drop
+
+
+def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0, cap=3.0):
+    """Upper porch work for one run: beam with moulded edges, a square block with a rosette
+    over every post, a tab into each post's slot, and a sawn-work spandrel (arch, roundels,
+    teardrops, crown drop) in every bay. Local: u along, v up from the floor, w out (front at
+    +tb/2). Prints on its top edge, upside down, so both faces print alike."""
+    vb = H - beam
+    parts = [box([u_start, vb, -tb / 2], [u_end, H, tb / 2])]
+    parts.append(box([u_start, vb, tb / 2 - 0.01], [u_end, vb + 0.45, tb / 2 + 0.3]))       # bead
+    parts.append(box([u_start, H - 0.45, tb / 2 - 0.01], [u_end, H, tb / 2 + 0.3]))         # fillet
+    for u in [u for u in posts_u if u_start + 1.0 <= u <= u_end - 1.0]:
+        parts.append(box([u - 0.5, vb - 0.8, -0.5], [u + 0.5, vb + 0.01, 0.5]))              # tab
+        blk = chamfer_box(u - 1.2, vb + 0.55, u + 1.2, H - 0.55, tb / 2 - 0.01, 0.45, c=0.25)
+        ros = ext(circle((u, (vb + H) / 2), 0.42, 16), tb / 2 + 0.4, tb / 2 + 0.7)
+        parts.append(blk + ros)
+    for a, b in zip(posts_u[:-1], posts_u[1:]):
+        u0, u1 = a + cap / 2 + 0.1, b - cap / 2 - 0.1
+        if u1 - u0 < 6.0:
+            continue
+        sp = _spandrel_cs(u0, u1, vb - drop, vb)
+        body = ext(sp, tb / 2 - ts, tb / 2)
+        rim = ext(sp.offset(-0.55, JoinType.Round).offset(0.05, JoinType.Round), tb / 2 - 0.3, tb / 2 + 1)
+        parts.append(body - rim)
+    return union(parts)
+
+
+# (x, y, z) z-up part -> facade local (u, v, w) = (x, z, -y)
+Z_UP_TO_FACADE = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
+# print transform for arcades: local (u, v, w) -> (u, w, -v): upside down on the beam's top edge
+ARCADE_PRINT = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
+
+
+def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
+                 boards=None, beam=2.2, pier=3.4):
+    """Porch with turned posts, upright railings and edge-printed arcades.
+
+    runs: list of dict(a, b, posts=[u, ...]) in CCW order (u from a along the yard edge);
+    posts stand ``inset`` inside the yard edge, and a post at a corner is shared by the two
+    runs (give it at u = L - inset on one run and u = inset on the next). The longer run's
+    arcade covers a shared corner post; the shorter one stops against it.
+    Returns dict(deck, floor, posts=[world solid], rails=[world solid], arcades=[(world solid,
+    A)], roof, steps=[(local, A)], sockets=[(x, y)])."""
+    pts = ccw(poly_pts)
+    edges = []
+    for i in range(len(pts)):
+        a, b = np.array(pts[i]), np.array(pts[(i + 1) % len(pts)])
+        for r in runs:
+            if np.allclose(a, r["a"], atol=0.05) and np.allclose(b, r["b"], atol=0.05):
+                edges.append((i, r))
+    outer = [i for i, _ in edges]
+    piers = {i: list(r["posts"]) for i, r in edges}
+    deck = porch_deck(pts, outer, H=H_floor, piers_u=piers, pier=pier, floor=boards is None)
+    # post positions (deduplicated at shared corners)
+    where = []
+    for r in runs:
+        f = Facade(r["a"], r["b"], 0.0)
+        for u in r["posts"]:
+            p = f.p0 + f.u * u - f.n * inset
+            if not any(np.allclose(p, q, atol=0.05) for q in where):
+                where.append(p)
+    ph = post_h - beam + 0.4                    # plinth sits 0.4 down in a floor socket
+    post = turned_post(ph)
+    posts = [post.translate([p[0], p[1], H_floor - 0.4]) for p in where]
+    floor = None
+    if boards is not None:
+        floor = porch_floor(pts, outer, H=H_floor, **boards)
+        socks = union([box([p[0] - 1.68, p[1] - 1.68, H_floor - 0.4], [p[0] + 1.68, p[1] + 1.68, H_floor + 1])
+                       for p in where])
+        floor = floor - socks
+    # railings and arcades per run
+    rails, arcades = [], []
+    lens = [Facade(r["a"], r["b"]).L for r in runs]
+    for k, r in enumerate(runs):
+        f = Facade(r["a"], r["b"], 0.0)
+        us = sorted(r["posts"])
+        A = f.A.copy()
+        A[:, 3] = np.r_[f.p0 - f.n * inset, H_floor]
+        skip = [(u - w / 2, u + w / 2) for (ri, u, w) in steps_at if ri == k]
+        for a_, b_ in zip(us[:-1], us[1:]):
+            if any(not (b_ <= s0 or a_ >= s1) for s0, s1 in skip):
+                continue
+            L = (b_ - a_) - 3.5
+            if L < 3.0:
+                continue
+            # railing_section is built z-up; facade frames are (u, v up, w out)
+            rails.append(railing_section(L, rail_h).translate([a_ + 1.75, 0, 0]).transform(Z_UP_TO_FACADE).transform(A))
+        # arcade ends: stop against a corner post covered by a longer neighbour's arcade
+        u0, u1 = us[0] - 1.5, us[-1] + 1.5
+        prev, nxt = runs[k - 1] if k > 0 else None, runs[k + 1] if k + 1 < len(runs) else None
+        if prev is not None and np.allclose(prev["b"], r["a"], atol=0.05) and lens[k - 1] > lens[k]:
+            u0 = us[0] + beam / 2 + 0.1
+        if nxt is not None and np.allclose(nxt["a"], r["b"], atol=0.05) and lens[k + 1] > lens[k]:
+            u1 = us[-1] - beam / 2 - 0.1
+        arc = porch_arcade(u0, u1, us, post_h, beam=beam)
+        arcades.append((arc.transform(A), A))
+    roof = _porch_roof(pts, runs, H_floor + post_h, over)
+    st = _porch_steps(runs, steps_at, H_floor)
+    return dict(deck=deck, floor=floor, posts=posts, rails=rails, arcades=arcades, roof=roof, steps=st,
+                sockets=[tuple(p) for p in where])

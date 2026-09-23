@@ -177,7 +177,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
                     u0, u1 = (0.0, CBW) if at_start else (f.L - CBW, f.L)
                     for (qa, qb) in zones:
                         dress.append(f.place(box([u0, qa, 0], [u1, qb, CBT])))
-                        dress.append(f.place(box([u0 - (0.2 if not at_start else 0), qb - 0.9, 0],
+                        dress.append(f.place(box([u0 - (0.2 if not at_start else 0), qb - 0.8, 0],
                                                  [u1 + (0.2 if at_start else 0), qb, CBT + 0.3])))
             # belt course: frieze band + drip cap
             if belt_trim and belt is not None and H > belt[1]:
@@ -189,7 +189,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
             if water_table:
                 e0 = -1.2 if cstart else 0.0
                 e1 = f.L + 1.2 if cend else f.L
-                wt = box([e0, 0, 0], [e1, 1.3, 1.0]) + box([e0 - 0.2, 1.3, 0], [e1 + 0.2, 1.8, 1.2])
+                wt = box([e0, 0, 0], [e1, 1.2, 1.0]) + box([e0 - 0.2, 1.2, 0], [e1 + 0.2, 1.8, 1.2])
                 dress.append(f.place(wt))
     dress = union(dress)
     # hide dressing that falls inside another block or into an opening
@@ -225,7 +225,7 @@ def foundation(blocks, z0, z1, t=3.0, proud=0.8, stone_d=0.55, seed=4, openings=
         f = Facade(pts[i], pts[(i + 1) % len(pts)], z0)
         if f.L < 0.8:
             continue
-        reg = rect(0.0, 0.3, f.L, z1 - z0 - 0.3)
+        reg = rect(0.0, 0.4, f.L, z1 - z0 - 0.4)
         s = ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=stone_d, seed=seed + i)
         tex.append(f.place(s))
     ring = ring + union(tex)

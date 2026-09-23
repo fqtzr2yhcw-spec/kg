@@ -68,9 +68,19 @@ Rich HO detail comes from a few devices repeated at every scale, each shaped to 
   (45° top edge), sunk panels and rosettes cut into the bed face of porch posts.
 - **Consoles under every cap**: the flat window caps sit on scroll consoles; the eaves
   carry paired brackets.
-- **Porch**: gray tongue-and-groove floor as its own part (0.5 mm slots every 1.8 mm on
-  its bed face, a border board framing the yard edges, a nosing), a turned-baluster
-  railing (never narrower than 0.6 mm) left open at the steps, and a frieze of drops.
+- **Porch** (`features.porch_turned`):
+  - A gray tongue-and-groove floor as its own part: 0.5 mm slots every 1.8 mm on its bed
+    face, a border board framing the yard edges, a nosing, and a square socket for each
+    post.
+  - **Round turned posts printed standing up.** Rings, a vase, a necked ring and a bell
+    capital flaring at 45° into a square abacus, never thinner than 1.9 mm. A post at a
+    corner is shared by both runs.
+  - **Railings printed standing up**, so every baluster is a real round spindle. End
+    stiles carry the rounded hand rail; small feet lift the bottom rail off the floor.
+  - **The arcade** (beam, a square rosette block over each post, sawn-work spandrels with
+    an elliptical arch, roundels, teardrops and a crown drop) **prints on its top edge**,
+    so front and back come out alike. Flat panels printed face-down were glossy on the
+    bed side and stepped on the other, and read as boxy.
 - Corners where a wing meets the main house get no quoins (they are inside corners).
 
 ## Printability rules (checked by slicing every plate)
@@ -110,7 +120,10 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
    joints, shingle joints, muntins, beads, louvers, cresting bars and pot walls.
 3. **Along print z, steps and pitches sit on the 0.2 mm grid**: clapboard 1.2, brick
    course 0.8 (a 0.2 bed joint), plug 1.6, glass 0.4, casing 0.6 / 1.0, and profile
-   heights of rings printed upside down, measured from their top.
+   heights of rings printed upside down, measured from their top. A flat face must never
+   sit on a slicing plane (0.1 + 0.2 k): the slicer then gets a zero-thickness sliver.
+   PrusaSlicer failed a whole plate over a railing whose hand rail sat at 7.7 mm.
+   `lint.midlayer_faces` finds these.
 4. **Upward-facing texture only as ribs** (0.5 mm wide, 0.5 mm apart, two layers or more
    deep): standing seams, louvers, panel mouldings. Never scales or slates on a top skin.
 5. **Upright mouldings have 45° undersides**, and corbels step out at most 0.25 mm per

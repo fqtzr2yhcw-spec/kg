@@ -5,7 +5,8 @@ clapboards and corner boards on an upright shell, the belt ring joint between th
 shells, the locating lips, window/door inserts and their fit in the openings, louvered
 shutters, quoins, the belt ring's blocks, the bracketed eave with frieze panels printed
 upside down, the standing-seam hip roof, a panelled brick chimney and a separate turned
-finial, plus a short run of porch posts with brackets and railing and a piece of floor.
+finial, plus a run of the porch: turned posts and railings printed upright, the sawn-work
+arcade printed on edge, and a piece of the board floor with post sockets.
 
 usage: python3 -m hoarch.buildings.sampler [check] [export] [colour]
        (``colour`` exports in the villa's colours instead of one test colour)
@@ -18,7 +19,7 @@ from manifold3d import Manifold as M
 
 from hoarch import features as FT, openings as O, roof as R
 from hoarch.buildings import villa as V
-from hoarch.core import box, inv34, poly
+from hoarch.core import Facade, box, compose, inv34, poly, union
 from hoarch.kit import Kit, print_flip
 from hoarch.ornament import finial
 from hoarch.shell import Block, Opening, foundation, lip_keep, storey_shells
@@ -41,7 +42,7 @@ def _openings():
 
     add(SX / 2, 0, V.V1, lo, "S-1", shutters=True)
     add(SX / 2, 0, V.V2, up, "S-2", shutters=True)
-    add(SX, S / 2, 0.3, door, "E-door", "door")
+    add(SX, S / 2, 0.4, door, "E-door", "door")
     add(SX, S / 2, V.V2, up, "E-2")
     return L
 
@@ -59,7 +60,7 @@ def build(single=True):
 
     ops = [o for o, _ in OPENINGS_S]
     clear = [lip_keep(poly(BLOCK.pts), 3.0, ZF, 1.2),
-             lip_keep(poly(BLOCK.pts), 3.0, ZW - 1.5, 1.5, inner=0.15, reach=1.2)]
+             lip_keep(poly(BLOCK.pts), 3.0, ZW - 1.6, 1.6, inner=0.15, reach=1.2)]
     st = storey_shells([BLOCK], ops, ZF + BELT[0], t=3.0, corners="quoin", clear=clear)
     kit.add("WALLS-1", C("Sand"), st["lower"])
     kit.add("BELT", C("White"), st["ring"])
@@ -96,19 +97,29 @@ def build(single=True):
     kit.add("FINIAL", C("Charcoal"), finial(1.2, 7.4).translate([cx, cy, zseat - 0.4]))
     ch = FT.chimney(w=10.5, dpt=10.5, h=ztip + 6.0 - chim_z0, peg=None).translate([chx, chy, chim_z0])
     kit.add("CHIMNEY", C("Brick"), ch)
-    # a short run of the villa's porch posts (front face down), set in front of the house
+    # a free-standing run of the villa's porch in front of the house: floor piece with post
+    # sockets, three turned posts (upright), two railings (upright) and the arcade (on edge)
     H_floor = ZF - 1.0
     post_h = (ZF + BELT[0] - 0.2) - (H_floor + 5.2)
-    panel = FT.porch_posts(SX, post_h, [1.3, SX / 2, SX - 1.3], style="bracket", rail=dict(h=8.6))
-    f = BLOCK.facades()[0]
+    y_run = -40.0
+    us = [1.6, SX / 2, SX - 1.6]
+    f = Facade((0.0, y_run), (SX, y_run), 0.0)
     A = f.A.copy()
-    A[:, 3] = f.world(0.0, 0.0, 30.0) + np.array([0, 0, H_floor])
-    back_down = np.array([[1.0, 0, 0, 0], [0, -1.0, 0, 0], [0, 0, -1.0, 0]])
-    from hoarch.core import compose
-    kit.add("PORCH-posts", C("White"), panel.transform(A), P=compose(back_down, inv34(A)))
-    # a piece of the slotted porch floor (boards, border board, nosing), printed top down
-    fl = FT.porch_floor([(0, -46), (SX, -46), (SX, -34), (0, -34)], [0, 1, 3], H=H_floor)
-    kit.add("PORCH-floor", C("Stone"), fl, P=print_flip())
+    A[:, 3] = np.r_[f.p0, H_floor]
+    post = FT.turned_post(post_h - 2.2 + 0.4)
+    socks = []
+    for k, u in enumerate(us):
+        p = f.p0 + f.u * u
+        kit.add(f"PORCH-post-{k}", C("White"), post.translate([p[0], p[1], H_floor - 0.4]), key="PORCH-post")
+        socks.append(box([p[0] - 1.68, p[1] - 1.68, H_floor - 0.4], [p[0] + 1.68, p[1] + 1.68, H_floor + 1]))
+    for k, (a, b) in enumerate(zip(us[:-1], us[1:])):
+        rail = FT.railing_section((b - a) - 3.5).translate([a + 1.75, 0, 0])
+        kit.add(f"PORCH-rail-{k}", C("White"), rail.transform(FT.Z_UP_TO_FACADE).transform(A), key="PORCH-rail")
+    arc = FT.porch_arcade(us[0] - 1.5, us[-1] + 1.5, us, post_h)
+    kit.add("PORCH-arcade", C("White"), arc.transform(A), P=compose(FT.ARCADE_PRINT, inv34(A)))
+    fl = FT.porch_floor([(0.0, y_run - 1.6), (SX, y_run - 1.6), (SX, y_run + 8.0), (0.0, y_run + 8.0)], [0, 1, 3],
+                        H=H_floor)
+    kit.add("PORCH-floor", C("Stone"), fl - union(socks), P=print_flip())
     return kit
 
 

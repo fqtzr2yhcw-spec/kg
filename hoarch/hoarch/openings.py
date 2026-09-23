@@ -152,7 +152,7 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
         # corbel blocks under the hood ends
         for s in (-1, 1):
             if ends >= 0.6:
-                parts.append(rosette_block(s * (endw - 0.55), spring - 1.0, 1.0, 0.0, 1.1))
+                parts.append(rosette_block(s * (endw - 0.55), spring - 1.0, 1.0, 0.0, 1.2))
         # keystone
         ktop = cy + r0 + 1.5 + 0.6
         parts.append(keystone(0.0, h - 0.2, ktop - h + 0.2, 1.2, 1.7, 0.0, 2.0))
@@ -230,7 +230,7 @@ def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=T
         v0 = h + casing
         parts.append(ext(rect(-cw + 0.5, v0 - 0.2, cw - 0.5, v0 + 1.6), 0.0, 0.8))          # frieze
         parts.append(dentils(-cw + 0.8, cw - 0.8, v0 + 1.6, 0.6, 0.0, 1.2))
-        parts.append(ext(rect(-cw, v0 + 2.2, cw, v0 + 2.8), 0.0, 1.9))                      # cap
+        parts.append(ext(rect(-cw, v0 + 2.2, cw, v0 + 2.8), 0.0, 2.0))                      # cap
         parts.append(ext(rect(-cw - 0.3, v0 + 2.8, cw + 0.3, v0 + 3.3), 0.0, 2.2))
         for s in (-1, 1):
             parts.append(console(3.2, 1.6, 0.8, u=s * (cw - 0.6), v_top=v0 + 2.2, w0=0.0))

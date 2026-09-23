@@ -15,7 +15,7 @@ import numpy as np
 from manifold3d import JoinType
 
 NOZZLE = 0.4
-LAYER = 0.16
+LAYER = 0.2
 
 
 def layer_detail(cs, nozzle=NOZZLE):
@@ -105,3 +105,22 @@ def overhang_kit(kit, layer=LAYER, allow=0.35, limit=1.0, only=None):
     for a, key, r in bad:
         print(f"  {key:44s} {a:8.1f} mm^2   e.g. {r['spots'][:2]}")
     return rows
+
+
+def midlayer_faces(m, layer=LAYER, tol=0.01):
+    """Area of flat (horizontal) faces lying on a slicing plane (a layer centre, 0.1 + 0.2 k
+    at 0.2 mm layers) in print orientation. A face exactly where the slicer cuts gives it a
+    zero-thickness sliver; PrusaSlicer then fails with "negative spacing" depending on where
+    the part sits on the plate. Flat faces belong on layer boundaries (multiples of 0.2)."""
+    b = m.bounding_box()
+    mesh = m.to_mesh()
+    v = np.asarray(mesh.vert_properties)[:, :3]
+    t = np.asarray(mesh.tri_verts)
+    p0, p1, p2 = v[t[:, 0]], v[t[:, 1]], v[t[:, 2]]
+    n = np.cross(p1 - p0, p2 - p0)
+    area = np.linalg.norm(n, axis=1) / 2
+    flat = np.abs(n[:, 2]) > 0.999 * np.linalg.norm(n, axis=1)
+    z = (p0[:, 2] - b[2])
+    phase = np.abs(((z - layer / 2) / layer) - np.round((z - layer / 2) / layer)) * layer
+    bad = flat & (phase < tol) & (area > 1e-6)
+    return round(float(area[bad].sum()), 3), sorted({round(float(x), 3) for x in z[bad]})[:8]

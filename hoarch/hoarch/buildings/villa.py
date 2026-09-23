@@ -35,7 +35,7 @@ BELT = (41.0, 45.4)              # first-floor shell top / belt ring top, above 
 MAIN = Block("main", [(0, 0), (134, 0), (134, 34), (146, 46), (146, 72), (134, 84), (134, 118), (0, 118)], ZF, ZW)
 ELL = Block("ell", [(74, 118), (128, 118), (128, 170), (74, 170)], ZF, ZF + BELT[0])
 BLOCKS = [MAIN, ELL]
-V1, V2 = 5.0, 48.5               # sill heights above the wall base
+V1, V2 = 5.0, 48.6               # sill heights above the wall base
 
 EAVE = R.EAVE_DEEP
 Z_EAVE_TOP = ZW + EAVE[-1][1]
@@ -66,7 +66,7 @@ def _openings():
     for x in (27.0, 107.0):
         add(MAIN, x, 0, V1, lo, f"S{x:.0f}-1", shutters=True)
         add(MAIN, x, 0, V2, up, f"S{x:.0f}-2", shutters=True)
-    add(MAIN, 67.0, 0, 0.3, front, "front-door", "door")
+    add(MAIN, 67.0, 0, 0.4, front, "front-door", "door")
     add(MAIN, 67.0, 0, V2, twin, "S67-2")
     # east, with the canted bay
     for y in (17.0, 101.0):
@@ -88,7 +88,7 @@ def _openings():
         add(ELL, 128, y, V1 + 1, ell_w, f"ellE{y:.0f}", shutters=True)
     add(ELL, 74, 150.0, V1 + 1, ell_w, "ellW150", shutters=True)
     add(ELL, 89.0, 170, V1 + 1, ell_w, "ellN89", shutters=True)
-    add(ELL, 114.0, 170, 0.3, back, "back-door", "door")
+    add(ELL, 114.0, 170, 0.4, back, "back-door", "door")
     return L
 
 
@@ -103,7 +103,7 @@ def build(kit=None):
     t0 = time.time()
     # one shell per storey with a White belt ring between (the ring is the joint)
     clear = [lip_keep(poly(MAIN.pts) + poly(ELL.pts), 3.0, ZF, 1.2),                 # foundation lip
-             lip_keep(poly(MAIN.pts), 3.0, ZW - 1.5, 1.5, inner=0.15, reach=1.2)]    # eave lip
+             lip_keep(poly(MAIN.pts), 3.0, ZW - 1.6, 1.6, inner=0.15, reach=1.2)]    # eave lip
     S = storey_shells(BLOCKS, OPENINGS, ZF + BELT[0], t=3.0, corners="quoin", clear=clear,
                       partitions=[((67.0, 3.0), (67.0, 115.0), 2.0, ZF, ZW)])
     kit.add("WALLS-1", "Sand", S["lower"], group="walls")
@@ -136,13 +136,13 @@ def build(kit=None):
     print("walls + inserts", round(time.time() - t0, 1))
     # main eave + roof
     eave = R.bracketed_cornice(MAIN.pts, ZW, EAVE,
-                               brackets=dict(z_top=5.3, h=5.0, d0=0.9, d=5.6, t=0.8, pitch=12.0, pair=1.9, margin=4.5),
+                               brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, t=0.8, pitch=12.0, pair=1.9, margin=4.5),
                                dents=dict(z=4.4, h=0.8, d0=0.9, d=0.7), panels=dict(z=0.6, h=3.0, d=0.4))
     kit.add("EAVE-main", "White", eave, P=print_flip(), group="roof")
     rect_p = [(0, 0), (134, 0), (134, 118), (0, 118)]
     bay_p = [(120, 34), (134, 34), (146, 46), (146, 72), (134, 84), (120, 84)]
     z_eave = Z_EAVE_TOP
-    i_top = 43.0
+    i_top = 43.2                          # flat deck at +21.6: a layer line
     flat = z_eave + ROOF_SLOPE * i_top
     roof, tex = R.hip_roof([(rect_p, [0, 1, 2, 3]), (bay_p, [1, 2, 3])], z_eave, ROOF_SLOPE, D_EAVE,
                            texture="seam", flat_top=flat)
@@ -199,30 +199,33 @@ def build(kit=None):
     kit.add("EAVE-ell", "White", ell_eave, P=print_flip(), group="roof")
     eroof, etex = R.hip_roof([(ELL.pts, [1, 2, 3])], ELL.z1 + 8.0, ROOF_SLOPE, 4.5, texture="seam")
     kit.add("ROOF-ell", "Charcoal", (eroof + etex) - main_keep, group="roof")
-    # front porch: full width, bracketed posts, steps at the door
+    # front porch: full width, turned posts, upright railings, sawn-work arcades, steps at the door
     H_floor = ZF - 1.0
     post_h = (ZF + BELT[0] - 0.2) - (H_floor + 5.2)          # roof tucks under the belt ring
     y0, y1 = -1.4, -27.0
-    runs = [dict(a=(0.0, y0), b=(0.0, y1), posts=[1.3, (y0 - y1) - 1.3]),
-            dict(a=(0.0, y1), b=(134.0, y1), posts=[4.75, 28.0, 54.5, 79.5, 106.0, 132.7]),
-            dict(a=(134.0, y1), b=(134.0, y0), posts=[4.75, (y0 - y1) - 1.3])]
-    P = FT.porch([(0.0, y0), (0.0, y1), (134.0, y1), (134.0, y0)], runs, H_floor=H_floor, post_h=post_h,
-                 steps_at=[(1, 67.0, 16.0)], style="bracket", rail=dict(h=8.6), boards=dict(pitch=1.8))
+    runs = [dict(a=(0.0, y0), b=(0.0, y1), posts=[1.7, 24.0]),
+            dict(a=(0.0, y1), b=(134.0, y1), posts=[1.6, 28.0, 54.5, 79.5, 106.0, 132.4]),
+            dict(a=(134.0, y1), b=(134.0, y0), posts=[1.6, 23.9])]
+    P = FT.porch_turned([(0.0, y0), (0.0, y1), (134.0, y1), (134.0, y0)], runs, H_floor, post_h,
+                        steps_at=[(1, 67.0, 16.0)], boards=dict(pitch=1.8))
     fkeep = slab(offset(poly(MAIN.pts), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     kit.add("PORCH-deck", "White", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "Stone", P["floor"] - fkeep, P=print_flip(), group="porch")      # gray boards
-    for (rn, panel, A) in P["panels"]:
-        BACK_DOWN = np.array([[1.0, 0, 0, 0], [0, -1.0, 0, 0], [0, 0, -1.0, 0]])
-        kit.add(f"PORCH-posts-{rn}", "White", panel.transform(A), P=compose(BACK_DOWN, inv34(A)), group="porch")
+    for k, post in enumerate(P["posts"]):
+        kit.add(f"PORCH-post-{k}", "White", post, key="PORCH-post", group="porch")         # upright, round
+    for k, rail in enumerate(P["rails"]):
+        kit.add(f"PORCH-rail-{k}", "White", rail, group="porch")                           # upright
+    for k, (arc, A) in enumerate(P["arcades"]):
+        kit.add(f"PORCH-arcade-{k}", "White", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = union([b.solid(grow=1.45, dz0=-20, dz1=0) for b in BLOCKS])
     proof = P["roof"] - bld_keep - ins_keep
     ptop = proof.bounding_box()[5]
     cap = proof.trim_by_plane([0, 0, 1.0], ptop - 0.8)          # standing-seam tin cap, its own colour
     bx = proof.bounding_box()
     cap_cs = cap.slice(ptop - 0.4)
-    ribs = union([box([x - 0.2, -1000, ptop - 0.01], [x + 0.2, 1000, ptop + 0.3])
+    ribs = union([box([x - 0.25, -1000, ptop - 0.01], [x + 0.25, 1000, ptop + 0.4])
                   for x in np.arange(bx[0] + 2.6, bx[3] - 1.0, 5.2)]) ^ M.extrude(cap_cs.offset(-0.5), 5).translate([0, 0, ptop - 1])
     below = proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8))
     kit.add("PORCH-roof", "White", below, P=print_flip(), group="porch")
@@ -234,7 +237,7 @@ def build(kit=None):
     f = ELL.facades()[e]
     A = f.A.copy()
     A[:, 3] = f.world(u, -ZF, 1.4)
-    kit.add("STOOP-back", "Stone", FT.steps(14.0, ZF - 0.5, 3).transform(A), group="porch")
+    kit.add("STOOP-back", "Stone", FT.steps(14.0, ZF - 0.6, 3).transform(A), group="porch")
     print("ell + porch", round(time.time() - t0, 1))
     return kit
 

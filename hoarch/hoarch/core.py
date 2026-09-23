@@ -362,9 +362,9 @@ def ashlar(region, course=(ft(1.0), ft(1.6)), length=(ft(1.2), ft(3.2)), d=0.5, 
     rng = np.random.default_rng(seed)
     u0, v0, u1, v1 = region.bounds()
     stones = []
-    v = datum + math.floor((v0 - datum) / course[1]) * course[1]
+    v = zq(datum + math.floor((v0 - datum) / course[1]) * course[1])
     while v < v1:
-        h = rng.uniform(*course)
+        h = max(1.2, zq(rng.uniform(*course)))          # course heights on the layer grid
         u = u0 - rng.uniform(0, length[1])
         while u < u1:
             L = rng.uniform(*length)
@@ -406,7 +406,7 @@ def brick(region, bl=2.4, bh=0.8, mortar=SLOT, d=0.25, datum=0.0, uoff=0.0, bed=
         v = datum + k * bh
         u = u0 - bl + (k % 2) * bl / 2 + uoff
         while u < u1:
-            cells.append(rect(u + mortar / 2, v + bed / 2, u + bl - mortar / 2, v + bh - bed / 2))
+            cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, v + bh - bed))   # joints on layer lines
             u += bl
         k += 1
     return M.extrude(cs_union(cells) ^ region, d)

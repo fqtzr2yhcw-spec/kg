@@ -268,7 +268,7 @@ CORNICE_SMALL = [(-4.4, 0), (0.8, 0), (0.8, 4.0), (1.2, 4.2), (1.3, 4.6), (3.2, 
                  (4.2, 6.8), (4.7, 7.4), (4.8, 8.0), (-4.4, 8.0)]
 
 
-def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_h=1.5, deck=None, panels=None):
+def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_h=1.6, deck=None, panels=None):
     """A cornice ring swept along ``path`` with brackets and dentils (prints upside down).
 
     brackets = dict(z_top, h, d0, d, t, pitch, pair=0, margin=2.5) (z_top relative to z0)
