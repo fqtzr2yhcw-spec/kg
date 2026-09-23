@@ -4,6 +4,8 @@ A building is a set of *blocks*: plan polygons (outer wall face) with a base and
 top height. The shell is the union of the blocks' walls; siding, corner quoins,
 the belt course and the water table are added per exposed facade.
 """
+import math
+
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
@@ -103,18 +105,17 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     shell = shell - union(cuts)
     # dressing per facade
     dress = []
-    QL, QS, QH, QG, QT, QC = 3.6, 2.4, 2.4, 0.4, 0.8, 0.45   # long, short, course, joint, depth, chamfer
+    QL, QS, QH, QG, QT, QC = 3.6, 2.4, 2.4, 0.4, 0.7, 0.4    # long, short, course, joint, depth, chamfer
     for b in blocks:
         facs = b.facades()
         conv = b.convex_corners(min_turn=70.0)
         # a corner where this block meets another (a wing against the main house) is an
         # inside corner of the whole building: no quoins or corner boards there
         others = [offset(o.cs, 0.2) for o in blocks if o is not b]
-        for k, p in enumerate(b.pts):
-            dot = rect(p[0] - 0.01, p[1] - 0.01, p[0] + 0.01, p[1] + 0.01)
-            if conv[k] and any(not (o ^ dot).is_empty() for o in others):
-                conv[k] = False
-        bead = [c and not q for c, q in zip(b.convex_corners(), conv)]
+        touch = [any(not (o ^ rect(p[0] - 0.01, p[1] - 0.01, p[0] + 0.01, p[1] + 0.01)).is_empty() for o in others)
+                 for p in b.pts]
+        conv = [c and not tc for c, tc in zip(conv, touch)]
+        bead = [c and not q and not tc for c, q, tc in zip(b.convex_corners(), conv, touch)]
         H = b.z1 - b.z0
         for i, f in enumerate(facs):
             region = rect(0.0, 0.0, f.L, H)
@@ -156,13 +157,14 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
                     for (qa, qb) in zones:
                         v = max(qa, 1.8) if water_table and qa == 0 else qa
                         k = 0 if at_start else 1
-                        while v < qb - 0.6:
+                        while v < qb - 1.6:            # no stub blocks (they can't take the bevel)
                             top = min(v + QH - QG, qb)
                             leg = QL if k % 2 == 0 else QS
                             if at_start:
-                                blk = chamfer_box(-QT, v, leg, top, 0.0, QT, QC, square=("u0",))
+                                blk = chamfer_box(-QT, v, leg, top, 0.0, QT, QC, square=("u0",), bottom=QT)
                             else:
-                                blk = chamfer_box(f.L - leg, v, f.L + QT, top, 0.0, QT, QC, square=("u1",))
+                                blk = chamfer_box(f.L - leg, v, f.L + QT, top, 0.0, QT, QC, square=("u1",),
+                                                  bottom=QT)
                             dress.append(f.place(blk))
                             v += QH
                             k += 1
@@ -245,13 +247,14 @@ LIP_H, LIP_IN, LIP_W = 1.2, 0.12, 1.3     # locating lip: height, clearance to t
 
 
 def _corbel(base, t, z_top, reach=LIP_W, step=0.2):
-    """Inward shelf under a lip: grows 45 degrees from nothing to ``reach`` at z_top."""
-    n = int(round(reach / step))
+    """Inward shelf under a lip: grows 45 degrees from nothing to ``reach`` at z_top.
+    Steps are one layer tall and end exactly at z_top at the full reach."""
+    n = int(math.ceil(reach / step - 1e-9))
     out = []
     for k in range(n):
         e = min(reach, (k + 1) * step)
-        out.append(slab(offset(base, -t + 0.05) - offset(base, -t - e), z_top - reach + k * step,
-                        z_top - reach + (k + 1) * step))
+        out.append(slab(offset(base, -t + 0.05) - offset(base, -t - e), z_top - (n - k) * step,
+                        z_top - (n - k - 1) * step))
     return union(out)
 
 

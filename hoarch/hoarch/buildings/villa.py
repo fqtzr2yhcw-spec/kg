@@ -137,7 +137,7 @@ def build(kit=None):
     # main eave + roof
     eave = R.bracketed_cornice(MAIN.pts, ZW, EAVE,
                                brackets=dict(z_top=5.3, h=5.0, d0=0.9, d=5.6, t=0.8, pitch=12.0, pair=1.9, margin=4.5),
-                               dents=dict(z=4.2, h=0.8, d0=0.9, d=0.7), panels=dict(z=0.6, h=3.0, d=0.4))
+                               dents=dict(z=4.4, h=0.8, d0=0.9, d=0.7), panels=dict(z=0.6, h=3.0, d=0.4))
     kit.add("EAVE-main", "White", eave, P=print_flip(), group="roof")
     rect_p = [(0, 0), (134, 0), (134, 118), (0, 118)]
     bay_p = [(120, 34), (134, 34), (146, 46), (146, 72), (134, 84), (120, 84)]
@@ -179,7 +179,7 @@ def build(kit=None):
     cz = flat + CUP_H
     cup_eave = R.bracketed_cornice(cup.pts, cz, R.CORNICE_SMALL,
                                    brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=7.0, pair=1.5, margin=3.0),
-                                   dents=dict(z=3.6, h=0.8, d0=0.8, d=0.7), lip_t=2.4, deck=(6.0, 8.0),
+                                   dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7), lip_t=2.4, deck=(6.0, 8.0),
                                    panels=dict(z=0.6, h=2.4, d=0.4))
     kit.add("CUPOLA-eave", "White", cup_eave, P=print_flip(), group="cupola")
     croof, ctex = R.hip_roof([(cup.pts, [0, 1, 2, 3])], cz + 8.0, 0.62, 4.5, texture="seam",
@@ -194,7 +194,7 @@ def build(kit=None):
     main_keep = MAIN.solid(grow=2.0, dz0=-1, dz1=200)         # clear of the belt ring (1.8 proud)
     ell_eave = R.bracketed_cornice(ELL.pts, ELL.z1, R.CORNICE_SMALL,
                                    brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=8.0, margin=2.4),
-                                   dents=dict(z=3.6, h=0.8, d0=0.8, d=0.7),
+                                   dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7),
                                    panels=dict(z=0.6, h=2.4, d=0.4)) - main_keep
     kit.add("EAVE-ell", "White", ell_eave, P=print_flip(), group="roof")
     eroof, etex = R.hip_roof([(ELL.pts, [1, 2, 3])], ELL.z1 + 8.0, ROOF_SLOPE, 4.5, texture="seam")

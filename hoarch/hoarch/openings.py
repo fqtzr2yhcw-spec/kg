@@ -147,7 +147,7 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
         # stepped crown: three stacked layers, each smaller, for a moulded section
         parts.append(stepped(hood, [(0.0, 0.0, 1.0), (0.25, 1.0, 1.4), (0.5, 1.4, 1.8)]))
         # a bead line on the inner edge of the crown
-        rim = (band.offset(0.0, JoinType.Round) - band.offset(-RIB, JoinType.Round)) ^ rect(-w, spring, w, h + 20)
+        rim = (band.offset(0.0, JoinType.Round) - band.offset(-RIB, JoinType.Round)) ^ rect(-w, spring, w, h + 20) ^ hood
         parts.append(ext(rim, 1.0, 1.2))
         # corbel blocks under the hood ends
         for s in (-1, 1):

@@ -261,17 +261,20 @@ def shift_profile(prof, z0):
 
 # Italianate deep eave: frieze board, bed moulding, wide soffit, fascia and crown fillet.
 # Heights sit on the 0.2 mm grid measured from the top (the ring prints upside down).
-EAVE_DEEP = [(-3.7, 0), (0.9, 0), (0.9, 5.0), (1.4, 5.2), (6.8, 5.2), (6.8, 6.6), (7.3, 6.8), (7.3, 7.6), (-3.7, 7.6)]
+# The ring reaches 4.4 inside the wall face so the locating lip (to 4.2) stands on it upside down.
+EAVE_DEEP = [(-4.4, 0), (0.9, 0), (0.9, 5.0), (1.4, 5.2), (6.8, 5.2), (6.8, 6.6), (7.3, 6.8), (7.3, 7.6), (-4.4, 7.6)]
 # Compact bracketed cornice (one-storey wings, towers, cupolas).
-CORNICE_SMALL = [(-3.7, 0), (0.8, 0), (0.8, 4.0), (1.2, 4.2), (1.3, 4.6), (3.2, 4.6), (3.2, 5.6), (3.6, 6.0),
-                 (4.2, 6.8), (4.7, 7.4), (4.8, 8.0), (-3.7, 8.0)]
+CORNICE_SMALL = [(-4.4, 0), (0.8, 0), (0.8, 4.0), (1.2, 4.2), (1.3, 4.6), (3.2, 4.6), (3.2, 5.6), (3.6, 6.0),
+                 (4.2, 6.8), (4.7, 7.4), (4.8, 8.0), (-4.4, 8.0)]
 
 
 def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_h=1.5, deck=None, panels=None):
     """A cornice ring swept along ``path`` with brackets and dentils (prints upside down).
 
     brackets = dict(z_top, h, d0, d, t, pitch, pair=0, margin=2.5) (z_top relative to z0)
-    dents    = dict(z, h, d0, d, tooth=0.6, gap=0.5) (z relative to z0)
+    dents    = dict(z, h, d0, d, tooth=0.6, gap=0.5) (z relative to z0). Put their top at the
+               soffit (z + h = soffit height): the ring prints upside down, and dentils that stop
+               short of the soffit hang over a gap and get support.
     panels   = dict(z, h, d) raised frieze panels with a boss between the bracket pairs
     lip_t    = wall thickness: a locating lip drops just inside the wall's inner face
     deck     = (z_bottom, z_top) relative to z0 for a solid roof deck filling the ring, or None."""
@@ -304,7 +307,7 @@ def flat_roof(block, keep=None, prof=CORNICE_SMALL, pitch=8.0):
     h = prof[-1][1]
     m = bracketed_cornice(block.pts, block.z1, prof,
                           brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=pitch, margin=2.4),
-                          dents=dict(z=3.6, h=0.8, d0=0.8, d=0.7), lip_h=1.2,
+                          dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7), lip_h=1.2,
                           deck=(h - 2.0, h))
     return m - keep if keep is not None else m
 

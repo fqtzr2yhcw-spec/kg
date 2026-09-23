@@ -81,7 +81,7 @@ def build(single=True):
     # eave (upside down) and a pyramid hip roof with a chimney and a separate finial
     eave = R.bracketed_cornice(BLOCK.pts, ZW, R.EAVE_DEEP,
                                brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, t=0.8, pitch=12.0, pair=1.9, margin=4.5),
-                               dents=dict(z=4.2, h=0.8, d0=0.9, d=0.7), panels=dict(z=0.6, h=3.0, d=0.4))
+                               dents=dict(z=4.4, h=0.8, d0=0.9, d=0.7), panels=dict(z=0.6, h=3.0, d=0.4))
     kit.add("EAVE", C("White"), eave, P=print_flip())
     z_eave = V.Z_EAVE_TOP
     roof, tex = R.hip_roof([(BLOCK.pts, [0, 1, 2, 3])], z_eave, V.ROOF_SLOPE, V.D_EAVE, texture="seam")

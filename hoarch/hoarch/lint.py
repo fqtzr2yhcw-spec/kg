@@ -65,3 +65,43 @@ def lint_kit(kit, nozzle=NOZZLE, layer=LAYER, limit=0.5, only=None):
     for s, key, r in bad:
         print(f"  {key:44s} thin {r['thin']:7.2f}  gaps {r['gaps']:7.2f}  of {r['volume']:8.1f} mm^3   worst z {r['worst'][0]}")
     return out
+
+
+def overhangs(m, layer=LAYER, allow=0.35, min_area=0.05):
+    """Area printed over air, layer by layer, in print orientation: each layer minus the
+    previous layer grown by ``allow`` (0.35 mm at 0.2 mm layers is Bambu Studio's default
+    30 degree support threshold). Bridges between two supports show up here too; the
+    rest is what a slicer would put support under.
+    Returns dict(area=mm^2 total, spots=[(z, area, bounds), ...] largest first)."""
+    b = m.bounding_box()
+    prev = None
+    spots = []
+    for z in np.arange(b[2] + layer / 2, b[5], layer):
+        cs = m.slice(float(z))
+        if prev is not None and not cs.is_empty():
+            hang = cs - prev.offset(allow, JoinType.Miter, 2.0)
+            for d in hang.decompose():
+                a = d.area()
+                if a >= min_area:
+                    spots.append((round(float(z - b[2]), 2), round(a, 2), [round(v, 1) for v in d.bounds()]))
+        prev = cs
+    spots.sort(key=lambda s: -s[1])
+    return dict(area=round(sum(s[1] for s in spots), 1), spots=spots)
+
+
+def overhang_kit(kit, layer=LAYER, allow=0.35, limit=1.0, only=None):
+    """Print the unique parts that would need support (or bridge) at Bambu's default angle."""
+    seen = set()
+    rows = []
+    for p in kit.parts:
+        if p.key in seen or (only and not only(p)):
+            continue
+        seen.add(p.key)
+        r = overhangs(p.printed(), layer, allow)
+        rows.append((r["area"], p.key, r))
+    rows.sort(key=lambda t: -t[0])
+    bad = [r for r in rows if r[0] > limit]
+    print(f"overhangs over {allow} mm per {layer} mm layer: {len(bad)} of {len(rows)} designs over {limit} mm^2")
+    for a, key, r in bad:
+        print(f"  {key:44s} {a:8.1f} mm^2   e.g. {r['spots'][:2]}")
+    return rows

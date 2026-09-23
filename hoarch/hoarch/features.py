@@ -91,7 +91,7 @@ def chimney(w=10.5, dpt=10.5, h=20.5, cap=1.6, pots=2, peg=(5.8, 5.8, 2.0), pane
     panel on every face, its top edge bevelled 45 degrees so it prints upright."""
     core = box([-w / 2, -dpt / 2, 0], [w / 2, dpt / 2, h - 3 * cap])
     parts = [core]
-    prev = 0.25                                   # the brick relief
+    prev = 0.0                                    # the core (the top brick course may be a joint)
     for k, grow in enumerate((0.5, 1.0, 0.6)):
         z = h - 3 * cap + k * cap
         parts.append(box([-w / 2 - grow, -dpt / 2 - grow, z], [w / 2 + grow, dpt / 2 + grow, z + cap]))
@@ -305,7 +305,8 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
         P = np.asarray(outer_path, float)
         for a, b in zip(P[:-1], P[1:]):
             f = Facade(a, b, 0.0)
-            den = dentils(0.6, f.L - 0.6, z0 + fascia - 1.4, 0.8, 0.0, 0.7)
+            # dentils run up into the crown moulding so, upside down, they stand on it
+            den = dentils(0.6, f.L - 0.6, z0 + fascia - 1.2, 1.0, 0.0, 0.7)
             parts.append(f.place(den))
     return union(parts)
 

@@ -114,11 +114,15 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
 4. **Upward-facing texture only as ribs** (0.5 mm wide, 0.5 mm apart, two layers or more
    deep): standing seams, louvers, panel mouldings. Never scales or slates on a top skin.
 5. **Upright mouldings have 45° undersides**, and corbels step out at most 0.25 mm per
-   0.2 mm layer (belt ring, chimney cap).
+   0.2 mm layer (belt ring, chimney cap). Blocks on upright faces (quoins) get a full 45°
+   bottom bevel. Dentils under an upside-down cornice run up to the soffit, and the ring
+   reaches past its own locating lip, so nothing hangs over a gap. The first test
+   plate got support under the dentils in Bambu Studio because they stopped 0.2 mm short.
 6. **Slender tips are separate parts** printed beside taller parts (finials, 0.8 mm
    minimum section); they must never be the lone top of a plate.
 7. Before export, run `hoarch.lint` (sub-nozzle ribs and slots per layer, in print
-   orientation), the fit check and the slicer. Then print the **detail test plate**
+   orientation), `lint.overhang_kit` (area printed over air at Bambu Studio's default 30°
+   support threshold: only opening heads, which bridge, may remain), the fit check and the slicer. Then print the **detail test plate**
    (`buildings/sampler.py`, about 1.5 h) before a full kit.
 
 ## Library map
