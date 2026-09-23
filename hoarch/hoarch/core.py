@@ -326,12 +326,13 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
             continue
         tabs = []
         u = u0 - wtab * 1.5 + (k % 2) * wtab * 0.5
+        shp = shape[k % len(shape)] if isinstance(shape, (list, tuple)) else shape   # banded courses
         while u < u1 + wtab:
             r = (wtab - gap) / 2
-            if shape == "fish":
+            if shp == "fish":
                 tabs.append(circle((u + wtab / 2, vk + r), r, seg))
                 tabs.append(rect(u + gap / 2, vk + r, u + wtab - gap / 2, top))
-            elif shape == "diamond":
+            elif shp == "diamond":
                 c = u + wtab / 2
                 tabs.append(poly([(c, vk), (c + r, vk + r), (c + r, top), (c - r, top), (c - r, vk + r)]))
             else:

@@ -228,6 +228,21 @@ def _halfplane(a, b, c, big=3000.0):
     return poly([p0 + tv * big, p0 - tv * big, p0 - tv * big - nv * big, p0 + tv * big - nv * big])
 
 
+def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6):
+    """One straight run of cresting in its own frame: u = 0..L along, v up, centred across."""
+    k = max(1, int(L / pitch))
+    cells = [rect(0, 0, L, bar), rect(0, h * 0.55, L, h * 0.55 + bar * 0.8)]
+    for j in range(k + 1):
+        u = L * j / k
+        cells.append(rect(u - bar / 2, 0, u + bar / 2, h * (1.0 if j % 2 == 0 else 0.75)))
+        if j < k:
+            cx = u + L / k / 2
+            r = min(L / k, h * 0.5) * 0.36
+            ring = CS.circle(r, 12).translate((cx, h * 0.3)) - CS.circle(max(0.0, r - bar), 12).translate((cx, h * 0.3))
+            cells.append(ring)
+    return M.extrude(cs_union(cells) ^ rect(0, 0, L, h + 1), t).translate([0, 0, -t / 2])
+
+
 def cresting(path, z0, h=2.4, pitch=1.6, bar=0.5, t=0.6, d_off=0.0, finials=True):
     """Iron roof cresting (a pierced fence of loops and spikes) along a closed path."""
     P, Mi = _edges(path)
@@ -236,25 +251,13 @@ def cresting(path, z0, h=2.4, pitch=1.6, bar=0.5, t=0.6, d_off=0.0, finials=True
     for i in range(n):
         a, b = P[i] + d_off * Mi[i], P[(i + 1) % n] + d_off * Mi[(i + 1) % n]
         f = Facade(a, b, 0.0)
-        L = f.L
-        k = max(1, int(L / pitch))
-        cells = [rect(0, 0, L, bar), rect(0, h * 0.55, L, h * 0.55 + bar * 0.8)]
-        for j in range(k + 1):
-            u = L * j / k
-            cells.append(rect(u - bar / 2, 0, u + bar / 2, h * (1.0 if j % 2 == 0 else 0.75)))
-            if j < k:
-                cx = u + L / k / 2
-                r = min(L / k, h * 0.5) * 0.36
-                ring = CS.circle(r, 12).translate((cx, h * 0.3)) - CS.circle(max(0.0, r - bar), 12).translate((cx, h * 0.3))
-                cells.append(ring)
-        fence = M.extrude(cs_union(cells) ^ rect(0, 0, L, h + 1), t).translate([0, 0, -t / 2])
+        fence = crest_fence(f.L, h, pitch, bar, t)
         A = f.A.copy()
         A[:, 3] = f.world(0, 0, 0) + np.array([0, 0, z0])
         out.append(fence.transform(A))
     return union(out)
 
 
-# ------------------------------------------------------------------ assembled roof pieces
 def shift_profile(prof, z0):
     return [(d, z + z0) for d, z in prof]
 
@@ -312,20 +315,24 @@ def flat_roof(block, keep=None, prof=CORNICE_SMALL, pitch=8.0):
     return m - keep if keep is not None else m
 
 
-def hip_roof(pieces, z_eave, slope, d_eave, texture="seam", flat_top=None, tex_kw=None):
+def hip_roof(pieces, z_eave, slope, d_eave, texture="seam", flat_top=None, tex_kw=None, zlo=None):
     """Hipped roof over the union of convex ``pieces`` = [(path, exposed_edges), ...].
 
     Each piece's planes rise from its exposed edges (offset d_eave) at z_eave. Concave
     outlines (bays, ells) are roofed as several convex pieces whose planes meet in
-    valleys. flat_top = z to truncate at (deck for a cupola), or None.
+    valleys. flat_top = z to truncate at (deck for a cupola), or None. A piece may carry its
+    own slope as a third item. ``zlo`` extends the solid down (a flat underside to print on).
     Returns (solid, texture)."""
     solids, planes = [], []
-    for path, exposed in pieces:
-        s, pl = hip_solid(path, z_eave, slope, z_eave, d_eave=d_eave, exposed=exposed)
+    for pc in pieces:                       # (path, exposed) or (path, exposed, own slope)
+        path, exposed = pc[0], pc[1]
+        s, pl = hip_solid(path, z_eave, pc[2] if len(pc) > 2 else slope, zlo if zlo is not None else z_eave,
+                          d_eave=d_eave, exposed=exposed)
         solids.append(s)
         planes.append(pl)
     texs = []
-    for k, (path, exposed) in enumerate(pieces):
+    for k, pc in enumerate(pieces):
+        path = pc[0]
         if texture is None:
             break
         t = hip_texture(path, planes[k], z_eave, d_eave=d_eave, shape=texture, **(tex_kw or {}))

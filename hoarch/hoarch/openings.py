@@ -67,11 +67,12 @@ def _arc_band(w_in, spring, rise, r_in_extra, thick, u_ext=0.0, seg=32):
 
 
 def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare=False, ends=0.9, sill_ext=0.6,
-                  clip=False, apron=False, consoles=None):
+                  clip=False, apron=False, consoles=None, qa=False):
     """Italianate window: segmental- or round-arched head, eared casing,
     bracketed sill, moulded hood with keystone; ``style`` in {"crest", "key", "flat"}.
     ``apron``: a panelled apron under the sill instead of the two sill brackets.
     ``consoles``: scroll consoles carrying a flat cap (default on for "flat").
+    ``qa``: Queen Anne upper sash, a big centre light ringed by small border lights.
 
     Returns dict(insert=Manifold, cut=CrossSection, landing=CrossSection, top=v, bottom=v)."""
     rise = w / 2 if rise is None else rise
@@ -93,6 +94,26 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
         for i in range(1, n):
             u = -w / 2 + w * i / n
             bars.append(rect(u - RIB / 2, v0, u + RIB / 2, v1))
+    if qa:   # border lights: an inner frame line and short bars across the border
+        top = inner ^ rect(-w, mr + 0.3, w, h + 5)
+        b = 1.2 if w >= 8 else 1.0
+        core = top.offset(-b, JoinType.Miter, 4.0)
+        if not core.is_empty():   # borders on the top and sides only; the core sits on the meeting rail
+            c0 = core.bounds()
+            core = (core + rect(c0[0], mr, c0[2], c0[1] + 0.1)) ^ top
+            bars.append(core.offset(RIB / 2, JoinType.Miter, 4.0) - core.offset(-RIB / 2, JoinType.Miter, 4.0))
+            ring = top - core
+            cb = core.bounds()
+            n_top = max(1, int(round((cb[2] - cb[0]) / 1.9)))
+            for i in range(1, n_top):
+                u = cb[0] + (cb[2] - cb[0]) * i / n_top
+                bars.append(rect(u - RIB / 2, cb[3] - 0.2, u + RIB / 2, h + 5) ^ ring)
+            n_side = max(1, int(round((cb[3] - cb[1]) / 1.9)))
+            for i in range(1, n_side):
+                v = cb[1] + (cb[3] - cb[1]) * i / n_side
+                bars.append(rect(-w, v - RIB / 2, w, v + RIB / 2) ^ ring)
+            for u in (cb[0], cb[2]):   # corner bars out to the frame
+                bars.append(rect(u - RIB / 2, cb[3] - RIB / 2, u + RIB / 2, h + 5) ^ ring)
     sash = cs_union(bars) ^ inner
     parts.append(ext(sash, -PLUG + GLASS, -SASH_REC))
     # upper sash frame (a second frame line just inside the ring reads as the sash stile)

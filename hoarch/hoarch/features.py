@@ -670,7 +670,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
                        for p in where])
         floor = floor - socks
     # railings and arcades per run
-    rails, arcades = [], []
+    rails, arcades, stops = [], [], []
     lens = [Facade(r["a"], r["b"]).L for r in runs]
     for k, r in enumerate(runs):
         f = Facade(r["a"], r["b"], 0.0)
@@ -678,23 +678,41 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         A = f.A.copy()
         A[:, 3] = np.r_[f.p0 - f.n * inset, H_floor]
         skip = [(u - w / 2, u + w / 2) for (ri, u, w) in steps_at if ri == k]
+        # the square plinths stay square to the plan: on a slanted run they reach further
+        clr = max(1.75, 1.6 * (abs(f.u[0]) + abs(f.u[1])) + 0.15)
         for a_, b_ in zip(us[:-1], us[1:]):
             if any(not (b_ <= s0 or a_ >= s1) for s0, s1 in skip):
                 continue
-            L = (b_ - a_) - 3.5
+            L = (b_ - a_) - 2 * clr
             if L < 3.0:
                 continue
             # railing_section is built z-up; facade frames are (u, v up, w out)
-            rails.append(railing_section(L, rail_h).translate([a_ + 1.75, 0, 0]).transform(Z_UP_TO_FACADE).transform(A))
+            rails.append(railing_section(L, rail_h).translate([a_ + clr, 0, 0]).transform(Z_UP_TO_FACADE).transform(A))
+        if len(us) < 2:                         # a lone corner post: its longer neighbour's arcade covers it
+            arcades.append((None, A))
+            continue
         # arcade ends: stop against a corner post covered by a longer neighbour's arcade
         u0, u1 = us[0] - 1.5, us[-1] + 1.5
         prev, nxt = runs[k - 1] if k > 0 else None, runs[k + 1] if k + 1 < len(runs) else None
         if prev is not None and np.allclose(prev["b"], r["a"], atol=0.05) and lens[k - 1] > lens[k]:
             u0 = us[0] + beam / 2 + 0.1
+            stops.append((k, k - 1, us[0]))
         if nxt is not None and np.allclose(nxt["a"], r["b"], atol=0.05) and lens[k + 1] > lens[k]:
             u1 = us[-1] - beam / 2 - 0.1
+            stops.append((k, k + 1, us[-1]))
         arc = porch_arcade(u0, u1, us, post_h, beam=beam)
         arcades.append((arc.transform(A), A))
+    # a stopped end meets the covering beam square only at a right angle: clear it of that
+    # beam (on any angle) and of the corner post's square capital below the beam
+    for k, j, u in stops:
+        arc, A = arcades[k]
+        Aj, Lj = arcades[j][1], lens[j]
+        beam_j = box([-5.0, -1.0, -1.1 - 0.15], [Lj + 5.0, post_h + 1.0, 1.1 + 0.8]).transform(Aj)
+        f = Facade(runs[k]["a"], runs[k]["b"], 0.0)
+        p = f.p0 + f.u * u - f.n * inset
+        cap = box([p[0] - 1.75, p[1] - 1.75, H_floor - 1.0], [p[0] + 1.75, p[1] + 1.75, H_floor + post_h - beam])
+        arcades[k] = (arc - beam_j - cap, A)
+    arcades = [(a, A) for a, A in arcades if a is not None]
     roof = _porch_roof(pts, runs, H_floor + post_h, over)
     st = _porch_steps(runs, steps_at, H_floor)
     return dict(deck=deck, floor=floor, posts=posts, rails=rails, arcades=arcades, roof=roof, steps=st,

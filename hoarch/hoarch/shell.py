@@ -74,16 +74,34 @@ class Opening:
         return cs.translate((self.u, self.v0))
 
 
+def _zones(H, belts, start):
+    """Height intervals of a facade of height H between the belt zones (for quoins/boards)."""
+    zs, v = [], start
+    for b0, b1 in sorted(belts):
+        if H <= b1:
+            continue
+        if b0 > v:
+            zs.append((v, b0))
+        v = max(v, b1)
+    if H > v:
+        zs.append((v, H))
+    return zs
+
+
 def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=True,
                water_table=True, partitions=(), extra_cut=None, hide_extra=None, corners=None,
-               belt_trim=True):
+               belt_trim=True, siding=None):
     """Build the one-piece shell with its siding and trim.
 
-    ``belt`` = (v_bottom, v_top) of the belt course above each block's base (None for none).
+    ``belt`` = (v_bottom, v_top) of the belt course above each block's base, a list of such
+    zones, or None.
     ``corners`` = "quoin" (alternating blocks), "board" (plain corner boards) or "none";
     default follows the legacy ``quoins`` flag. ``belt_trim=False`` leaves the belt zone
-    bare (storey_shells puts a separate belt ring there)."""
+    bare (storey_shells puts a separate belt ring there).
+    ``siding(f, block, region)`` -> texture in the facade's (u, v) frame (v up from the
+    block's base) replaces the default clapboard, e.g. shingles on an upper storey."""
     corners = corners or ("quoin" if quoins else "none")
+    belts = [] if belt is None else ([belt] if isinstance(belt[0], (int, float)) else list(belt))
     quoins = corners == "quoin"
     boards = corners == "board"
     CBW, CBT = 2.4, 0.65
@@ -138,22 +156,24 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
             if be:
                 keep.append(rect(f.L - 1.0, -1, f.L + 1, H + 1))
                 dress.append(f.place(box([f.L - 1.0, 1.8, 0], [f.L, H, 0.55])))
-            if belt is not None and H > belt[1]:
-                keep.append(rect(-1, belt[0], f.L + 1, belt[1]))
+            for bl in belts:
+                if H > bl[1]:
+                    keep.append(rect(-1, bl[0], f.L + 1, bl[1]))
             if water_table:
                 keep.append(rect(-1, -1, f.L + 1, 1.8))
             reg = region - cs_union(keep)
             # drop slivers narrower than ~0.9 mm (they print as hairlines and render as cracks)
             reg = reg.offset(-0.45, JoinType.Miter, 4.0).offset(0.45, JoinType.Miter, 4.0) ^ region
             if not reg.is_empty():
-                dress.append(f.place(clapboard(reg, pitch=pitch, d=sid_d, dmin=0.05, datum=1.8)))
+                tex = siding(f, b, reg) if siding else clapboard(reg, pitch=pitch, d=sid_d, dmin=0.05, datum=1.8)
+                dress.append(f.place(tex))
             # quoins: chamfered blocks, long and short legs alternating, wrapping the corner
             # (each leg runs QT past the corner so the two faces' blocks meet solid)
             if quoins:
                 for at_start, on in ((True, cstart), (False, cend)):
                     if not on:
                         continue
-                    zones = [(0.0, H)] if belt is None or H <= belt[1] else [(0.0, belt[0]), (belt[1], H)]
+                    zones = _zones(H, belts, 0.0)
                     for (qa, qb) in zones:
                         v = max(qa, 1.8) if water_table and qa == 0 else qa
                         k = 0 if at_start else 1
@@ -170,7 +190,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
                             k += 1
             # plain corner boards (Italianate / Gothic houses), with a small cap under the belt/eave
             if boards:
-                zones = [(1.8, H)] if belt is None or H <= belt[1] else [(1.8, belt[0]), (belt[1], H)]
+                zones = _zones(H, belts, 1.8)
                 for at_start, on in ((True, cstart), (False, cend)):
                     if not on:
                         continue
@@ -180,7 +200,9 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
                         dress.append(f.place(box([u0 - (0.2 if not at_start else 0), qb - 0.8, 0],
                                                  [u1 + (0.2 if at_start else 0), qb, CBT + 0.3])))
             # belt course: frieze band + drip cap
-            if belt_trim and belt is not None and H > belt[1]:
+            for belt in (belts if belt_trim else []):
+                if H <= belt[1]:
+                    continue
                 e0 = -1.0 if cstart else 0.0
                 e1 = f.L + 1.0 if cend else f.L
                 band = box([e0, belt[0], 0], [e1, belt[1] - 0.8, 0.9])
@@ -330,3 +352,43 @@ def storey_shells(blocks, openings, z_split, t=3.0, prof=BELT_PROF, clear=(), **
         upper = upper - kp
         lower = lower - kp
     return dict(lower=lower, ring=ring, upper=upper, ring_h=h, outline=outline)
+
+
+def stacked_shells(blocks, openings, splits, t=3.0, prof=BELT_PROF, clear=(), **kw):
+    """Walls as a stack of one-piece storey shells with a belt ring at every split.
+
+    ``splits`` = absolute z of each storey joint, low to high. At each one the shell is cut,
+    a belt ring (the outline of the blocks that continue above it) takes the joint, the
+    piece below gets a corbelled locating lip for the ring and the ring one for the piece
+    above. A block that ends below a split (a wing, or the main house under a taller
+    tower) simply stops in the piece below. ``clear`` = keep-outs for interior partitions.
+
+    Returns dict(shells=[bottom .. top], rings=[...], outlines=[...], ring_h)."""
+    h = prof[-1][1]
+    zb = min(b.z0 for b in blocks)
+    belts = [(z - zb, z - zb + h) for z in splits]
+    shell = wall_shell(blocks, openings, t=t, belt=belts, belt_trim=False, **kw)
+    shells, rings, outlines = [], [], []
+    lo = prev_base = None
+    for z in splits:
+        above = [b for b in blocks if b.z1 > z + h + 1.0]
+        base = cs_union([b.cs for b in above])
+        outline = max(base.to_polygons(), key=lambda L: abs(poly(L).area()))
+        piece = shell.trim_by_plane([0, 0, -1.0], -z)
+        if lo is not None:
+            piece = piece.trim_by_plane([0, 0, 1.0], lo)
+        piece = piece + _corbel(base, t, z) + lip_ring(base, t, z)
+        if lo is not None:
+            piece = piece - lip_keep(prev_base, t, lo)
+        shells.append(piece)
+        rings.append(belt_ring(outline, z, t=t, prof=prof))
+        outlines.append(outline)
+        lo, prev_base = z + h, base
+    top = shell.trim_by_plane([0, 0, 1.0], lo) - lip_keep(prev_base, t, lo)
+    shells.append(top)
+    out = []
+    for piece in shells:
+        for kp in clear:
+            piece = piece - kp
+        out.append(piece)
+    return dict(shells=out, rings=rings, outlines=outlines, ring_h=h)
