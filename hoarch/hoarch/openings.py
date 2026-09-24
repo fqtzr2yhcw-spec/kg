@@ -673,6 +673,18 @@ def _leaf(style, u, lw, dh, hinge_left):
         _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), -1.21, -0.6))
         panel(rect(pu0, 1.3, m - 0.35, dh * 0.45 - 1.0))
         panel(rect(m + 0.35, 1.3, pu1, dh * 0.45 - 1.0))
+    elif style == "margin":               # one big light ringed by narrow margin lights
+        gl = rect(pu0, dh * 0.40, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        inner = gl.offset(-0.9, JoinType.Miter, 4.0)
+        ring = inner.offset(0.25, JoinType.Miter, 4.0) - inner.offset(-0.25, JoinType.Miter, 4.0)
+        b = gl.bounds()
+        ib = inner.bounds()
+        ticks = [rect(ib[0] - 0.25, ib[1] - 0.25 - 2, ib[0] + 0.25, ib[1] + 0.25) , rect(ib[2] - 0.25, ib[1] - 2, ib[2] + 0.25, ib[1] + 0.25),
+                 rect(ib[0] - 0.25, ib[3] - 0.25, ib[0] + 0.25, ib[3] + 2), rect(ib[2] - 0.25, ib[3] - 0.25, ib[2] + 0.25, ib[3] + 2)]
+        _GLASS_BARS.append(ext((ring + cs_union(ticks)) ^ gl.offset(0.2), -1.21, -0.6))
+        panel(rect(pu0, 1.3, pu1, dh * 0.40 - 1.0))
     elif style == "oval":
         cx, cy = (pu0 + pu1) / 2, dh * 0.7
         rx, ry = (pu1 - pu0) / 2 - 0.2, min(dh * 0.18, top - st - cy)
@@ -762,6 +774,9 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
             r = min((tb[3] - tb[1]) / 2 - 0.2, (tb[2] - tb[0]) / 2 - 0.4)
             pat = (circle((0.0, cy), r + RIB / 2, 32) - circle((0.0, cy), r - RIB / 2, 32)) + \
                 rect(tb[0] - 1, cy - RIB / 2, tb[2] + 1, cy + RIB / 2) + rect(-RIB / 2, tb[1] - 1, RIB / 2, tb[3] + 1)
+        elif tstyle == "arch":                   # a round arch bar springing from the transom's foot
+            cx, r = 0.0, min((tb[2] - tb[0]) / 2 - 0.5, (tb[3] - tb[1]) - 0.5)
+            pat = (circle((cx, tb[1]), r + RIB / 2, 40) - circle((cx, tb[1]), r - RIB / 2, 40))
         elif tstyle == "twin":                   # one upright bar: two lights
             pat = rect(-RIB / 2, tb[1] - 1, RIB / 2, tb[3] + 1)
         elif tstyle == "cross":                  # a cross of bars: four lights

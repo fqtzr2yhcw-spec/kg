@@ -212,6 +212,22 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         hood = M.hull_points([(x, y, sh + 1.59) for x in (-w / 2 - 0.4, w / 2 + 0.4) for y in (-d / 2 - 0.4, d / 2 + 0.4)] +
                              [(0.0, 0.0, h)])
         return body + hood
+    if style == "stepped":
+        # a brick stack that steps in twice on 45 degree stone weatherings, then a plain cap
+        s1, s2 = h * 0.35, h * 0.65
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, s1]) + _skin(w, d, 0.0, s1 - 0.4, _brick("running"))
+        w2, d2 = w - 1.2, d - 1.2
+        body = body + M.hull_points([(x, y, s1 - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                                    [(x, y, s1 + 0.6) for x in (-w2 / 2, w2 / 2) for y in (-d2 / 2, d2 / 2)])
+        body = body + box([-w2 / 2, -d2 / 2, s1 + 0.59], [w2 / 2, d2 / 2, s2]) + \
+            _skin(w2, d2, s1 + 0.6, s2 - 0.4, _brick("running"))
+        w3, d3 = w2 - 1.2, d2 - 1.2
+        body = body + M.hull_points([(x, y, s2 - 0.01) for x in (-w2 / 2, w2 / 2) for y in (-d2 / 2, d2 / 2)] +
+                                    [(x, y, s2 + 0.6) for x in (-w3 / 2, w3 / 2) for y in (-d3 / 2, d3 / 2)])
+        body = body + box([-w3 / 2, -d3 / 2, s2 + 0.59], [w3 / 2, d3 / 2, h - 0.8]) + \
+            _skin(w3, d3, s2 + 0.6, h - 1.2, _brick("running"))
+        body = body + _corbel_out(w3, d3, h - 0.8, 0.4) + box([-w3 / 2 - 0.4, -d3 / 2 - 0.4, h - 0.81], [w3 / 2 + 0.4, d3 / 2 + 0.4, h])
+        return body - box([-w3 / 2 + 0.7, -d3 / 2 + 0.7, h - 1.0], [w3 / 2 - 0.7, d3 / 2 - 0.7, h + 1])
     if style == "stovepipe":
         # a sheet-iron flue: a band, and a cone cap flaring at 45 degrees (w = pipe diameter)
         r = w / 2
@@ -223,14 +239,14 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
-            "stovepipe", "coped", "hooded")
+            "stovepipe", "coped", "hooded", "stepped")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
 def finial(style, r=1.2, h=8.0, seg=28):
     """Turned finials, one per building with a tower, spire or cupola:
     urn (Beaumont), acorn (Ashby), iron (Harcourt), ball (Fowler), stack (Ardmore),
-    spire (Carrow)."""
+    spire (Carrow), onion (the drugstore's turret)."""
     if style == "urn":
         from .ornament import finial as f0
         return f0(r, h)
@@ -249,6 +265,9 @@ def finial(style, r=1.2, h=8.0, seg=28):
     elif style == "stack":
         prof = [(0, 0), (1.3, 0), (1.3, 1.0), (1.0, 1.3), (1.0, 2.0), (0.8, 2.2), (0.8, 3.0), (0.6, 3.2),
                 (0.6, 4.0), (0.45, 4.2), (0.45, 6.0), (0, 7.0)]
+    elif style == "onion":
+        prof = [(0, 0), (1.1, 0), (1.1, 0.5), (0.6, 1.0), (0.55, 1.6), (0.9, 2.2), (1.25, 3.0), (1.2, 3.7),
+                (0.8, 4.4), (0.45, 5.0), (0.4, 6.2), (0, 7.0)]
     elif style == "spire":
         prof = [(0, 0), (1.2, 0), (1.2, 0.5), (0.8, 0.9), (0.8, 1.3), (1.05, 1.6), (1.05, 1.9), (0.6, 2.3),
                 (0.5, 3.5), (0.8, 3.8), (0.8, 4.1), (0.45, 4.4), (0.4, 6.3), (0, 7.0)]
@@ -314,6 +333,15 @@ def foundation_skin(style, reg, seed=0):
         pc = cs_union(piers) ^ reg
         stones = ashlar(pc, course=(0.9, 1.4), length=(1.0, 1.7), d=0.5, seed=seed, rough=0.1)
         return stones + S.beadboard(reg - pc.offset(0.2, JoinType.Miter, 4.0), pitch=1.2, groove=0.5, d=0.25)
+    if style == "bossed":                # smooth blocks, each with a raised chamfered boss (bossage)
+        b = reg.bounds()
+        out = [S.brick_bond(reg, "running", bl=5.6, bh=b[3] - b[1] + 0.4, mortar=0.5, bed=0.4, d=0.2, datum=b[1],
+                            uoff=seed % 3)]
+        u = b[0] - (seed % 3) - 5.6
+        while u < b[2] + 5.6:
+            out.append(chamfer_box(u + 1.0, b[1] + 0.6, u + 4.6, b[3] - 0.8, 0.19, 0.3, c=0.25, bottom=0.3))
+            u += 5.6
+        return union(out) ^ M.extrude(reg, 2.0).translate([0, 0, -0.5])
     if style == "polished":              # polished granite: tall smooth blocks with V joints
         b = reg.bounds()
         blocks = []
@@ -346,6 +374,8 @@ BELTS = {
               dict(w=0.6, z=0.8, h=3.0, d0=0.5, d=0.35, c=0.15, pitch=4.0, margin=1.6)),
     "bead": ([(0.0, 0.0), (0.4, 0.4), (0.4, 3.2), (0.7, 3.5), (0.7, 3.9), (0.4, 4.2), (0.4, 4.4)], None),
     "sill": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.4, 3.7), (1.4, 4.4)], None),
+    "cavetto": ([(0.0, 0.0), (0.3, 0.3), (0.3, 1.2), (0.6, 1.5), (1.0, 2.2), (1.3, 3.2), (1.3, 3.6), (1.6, 3.9),
+                 (1.6, 4.4)], None),
     "fascia": ([(0.0, 0.0), (0.4, 0.4), (0.4, 2.6), (0.9, 3.1), (0.9, 3.4), (1.3, 3.8), (1.3, 4.4)], None),
     "torus": ([(0.0, 0.0), (0.4, 0.4), (0.4, 1.0), (0.9, 1.5), (1.2, 1.9), (1.3, 2.3), (1.2, 2.7), (0.9, 3.1),
                (0.6, 3.4), (0.6, 3.6), (1.0, 4.0), (1.0, 4.4)], None),
@@ -398,6 +428,11 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     elif style == "modillion":           # a scrolled modillion: a horizontal console, its front rolled under
         r = min(0.5 * h, 0.3 * d)
         prof = cs_union([poly([(0, 0), (d, 0), (d, -h * 0.5), (0.0, -h)]), circle((d - r, -h * 0.5), r, 16)])
+    elif style == "volute":              # a bracket whose face is a double volute: a big scroll over a small one
+        r1, r2 = min(0.32 * h, 0.45 * d), min(0.2 * h, 0.3 * d)
+        prof = cs_union([poly([(0, 0), (d, 0), (d, -r1), (d * 0.45, -h + r2), (0.0, -h)]),
+                         circle((d - r1, -r1), r1, 20), circle((d * 0.45, -h + r2), r2, 16)])
+        prof = prof - circle((d - r1, -r1), r1 * 0.4, 12)
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])

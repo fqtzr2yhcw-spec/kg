@@ -89,6 +89,11 @@ def _column(style, u0, u1, v0, v1, cap_h=2.4, base_h=3.0):
         cut = box([u0 + 0.5, s0, 0.6], [u1 - 0.5, s1, 1.0])
     if cut is not None:
         parts[-1] = parts[-1] - cut
+    if style == "rosette" and s1 - s0 > 3:       # a column of round bosses up the shaft
+        n = max(2, int((s1 - s0) / 3.2))
+        for k in range(n):
+            vv = s0 + (s1 - s0) * (k + 0.5) / n
+            parts.append(ext(circle((um, vv), min(0.6, (u1 - u0) / 2 - 0.35), 16), 0.79, 1.2))
     if style == "chamfered" and s1 - s0 > 3:     # a wooden pilaster: a raised chamfered shaft with stops
         parts.append(chamfer_box(u0 + 0.3, s0 - 0.6, u1 - 0.3, s1 + 0.6, 0.79, 0.41, c=0.21))     # faces on the grid
     if style == "panel":
@@ -101,7 +106,7 @@ def _column(style, u0, u1, v0, v1, cap_h=2.4, base_h=3.0):
 
 
 def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2, transom=6.4, beam=2.0,
-               lite=2.4, bulk_style="panel", mullion=True, posts=True, t=3.0, grid=None):
+               lite=2.4, bulk_style="panel", mullion=True, posts=True, t=3.0, grid=None, bays=1):
     """Cast-iron storefront filling a W x H opening (u centred, v from 0), one part printed
     face-up (plug back on the bed, no supports): pilasters at both ends and either side of a
     recessed entry ``entry`` wide at ``entry_at``, panelled bulkheads under the display
@@ -121,6 +126,10 @@ def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2
     vt = zq(H - beam - transom)                  # transom lights' bottom
     ve = vt - 0.8                                # the entry opening's top = the transom bar's bottom
     cols = [(-W / 2, -W / 2 + col), (W / 2 - col, W / 2)]
+    if entry <= 0 and bays > 1:                  # no entry: ``bays`` display bays between columns
+        for k in range(1, bays):
+            c = -W / 2 + W * k / bays
+            cols.append((c - col / 2, c + col / 2))
     ent = None
     if entry > 0:
         e0, e1 = entry_at - entry / 2, entry_at + entry / 2
@@ -180,6 +189,16 @@ def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2
         # bulkhead: a raised panel (or a lozenge) on the frame
         if bulk_style == "panel":
             parts.append(chamfer_box(a + 0.8, 1.2, b - 0.8, bulk - 0.6, -0.01, 0.4, c=0.2))
+        elif bulk_style == "tile":                 # a grid of small raised square tiles
+            parts.append(box([a + 0.8, 1.2, -0.01], [b - 0.8, bulk - 0.6, 0.2]))
+            nu = max(2, int((b - a - 1.6) / 1.4))
+            nv = max(2, int((bulk - 1.8) / 1.4))
+            tw = (b - a - 1.6) / nu
+            th = (bulk - 1.8) / nv
+            for i in range(nu):
+                for j in range(nv):
+                    parts.append(box([a + 0.8 + i * tw + 0.25, 1.2 + j * th + 0.25, 0.19],
+                                     [a + 0.8 + (i + 1) * tw - 0.25, 1.2 + (j + 1) * th - 0.25, 0.6]))
         elif bulk_style == "boards":               # vertical beaded boards
             parts.append(box([a + 0.8, 1.2, -0.01], [b - 0.8, bulk - 0.6, 0.4]) -
                          union([box([x - 0.25, 1.6, 0.2], [x + 0.25, bulk - 1.0, 1.0])
@@ -381,7 +400,8 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     segmental (``rise``) or flat head, sash with ``lites``/``rows``, a stone sill with lugs
     (``sill`` = its projection), and optionally a head: "hood" (a cast-iron segmental hood
     with ears), "lintel" (a stone lintel with a keystone), "archivolt" (a stepped arch band
-    with a keystone and imposts) or "pediment" (frieze, cornice and a triangular pediment). The brick arch of a brick
+    with a keystone and imposts), "pediment" (frieze, cornice and a triangular pediment) or
+    "shouldered" (a flat lintel with shouldered ends and a rosette). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -424,6 +444,15 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
         parts.append(ext(tri, 0.0, 0.4))
         parts.append(ext(tri - tri.offset(-0.7, JoinType.Miter, 4.0), 0.0, 1.0))
         top = v1 + pw * 0.42
+    elif head == "shouldered":
+        # a flat lintel whose ends step up into shoulders, with a raised rosette at the centre
+        lw = w / 2 + casing + 1.2
+        parts.append(chamfer_box(-lw, h + casing - 0.01, lw, h + casing + 1.6, 0.0, 0.8, c=0.2))
+        for sg in (-1, 1):
+            a, b = sorted((sg * lw, sg * (lw - 1.8)))
+            parts.append(chamfer_box(a, h + casing + 1.59, b, h + casing + 2.6, 0.0, 0.8, c=0.2))
+        parts.append(ext(circle((0.0, h + casing + 0.8), 0.6, 16), 0.79, 1.2))
+        top = h + casing + 2.6
     elif head == "lintel":
         lw = w / 2 + casing + 1.0
         parts.append(chamfer_box(-lw, h, lw, h + 2.4, 0.0, 0.8, c=0.2))
@@ -664,3 +693,55 @@ def corrugated_panel(L, W, t=1.0, pitch=1.6, h=0.4, chord=1.3):
     ribs = [M.cylinder(W, r, r, 48).rotate([-90, 0, 0]).translate([u, 0.0, t + h - r])
             for u in np.arange(pitch / 2, L, pitch)]
     return box([0, 0, 0], [L, W, t]) + (union(ribs) ^ box([0, 0, t - 0.01], [L, W, t + h]))
+
+
+def blade_sign(shape_cs, text=None, cap=1.8, t=1.2, arm=9.0, drop=2.4, relief=0.4, font="serif"):
+    """A hanging blade sign standing out from a wall: a flat board of outline ``shape_cs``
+    (in its own (x, y) plane, top at y = 0, hanging below) with raised ``text`` on its face,
+    hung from a scrolled iron arm ``arm`` long with a wall plate. Local frame: x out from the
+    wall (0 at the wall), y up, z across. Prints lying on its back (z = 0 on the bed): board,
+    arm and plate all start on the bed; the letters stand on the board."""
+    b = shape_cs.bounds()
+    parts = [ext(shape_cs.translate((arm / 2 - (b[0] + b[2]) / 2, -drop)), 0.0, t)]
+    if text:
+        tc = text_cs(text, cap, font, grow=0.08)
+        cy = -drop + (b[1] + b[3]) / 2 - cap / 2
+        parts.append(ext(tc.translate((arm / 2, cy)), t - 0.01, t + relief))
+    # arm: a bar along the top with a scroll under it, a wall plate, and two hangers
+    parts.append(box([0.0, -0.5, 0.0], [arm, 0.5, 0.8]))
+    parts.append(ext(circle((2.4, -1.8), 1.3, 24) - circle((2.4, -1.8), 0.7, 20) + rect(0.0, -1.8, 2.4, -0.4) -
+                     rect(0.5, -3.2, 2.4, -1.8), 0.0, 0.8))
+    parts.append(box([0.0, -3.0, 0.0], [0.8, 1.0, 1.6]))                                  # wall plate
+    for x in (arm / 2 + (b[0] - (b[0] + b[2]) / 2) + 1.0, arm / 2 + (b[2] - (b[0] + b[2]) / 2) - 1.0):
+        parts.append(box([x - 0.3, -drop + b[3] - 0.2, 0.0], [x + 0.3, 0.0, 0.6]))
+    return union(parts)
+
+
+def mortar_pestle_cs(w=7.0, h=6.0):
+    """Outline of a mortar and pestle (a bowl on a foot with a pestle leaning out of it),
+    top of the pestle at y = 0."""
+    bowl = poly([(-w / 2, -h * 0.45), (w / 2, -h * 0.45), (w * 0.38, -h * 0.8), (w * 0.2, -h * 0.92),
+                 (-w * 0.2, -h * 0.92), (-w * 0.38, -h * 0.8)])
+    foot = rect(-w * 0.28, -h, w * 0.28, -h * 0.9)
+    lip = rect(-w / 2 - 0.3, -h * 0.47, w / 2 + 0.3, -h * 0.38)
+    pestle = stroke([(w * 0.05, -h * 0.5), (w * 0.34, -0.5)], 0.9) + circle((w * 0.34, -0.6), 0.75, 16)
+    return cs_union([bowl, foot, lip, pestle])
+
+
+def gravel_deck(cs, z0, t=1.2, stone=0.5, pitch=0.9, seed=11):
+    """A flat roof deck of tar and gravel: a slab of outline ``cs`` from z0, its top
+    scattered with little stones (square pyramids, so every one prints). Prints flat."""
+    rng = np.random.default_rng(seed)
+    deck = M.extrude(cs, t).translate([0, 0, z0])
+    b = cs.bounds()
+    inner = cs.offset(-0.6, JoinType.Miter, 4.0)
+    stones = []
+    for x in np.arange(b[0] + 0.6, b[2] - 0.6, pitch):
+        for y in np.arange(b[1] + 0.6, b[3] - 0.6, pitch):
+            px, py = x + rng.uniform(-0.25, 0.25), y + rng.uniform(-0.25, 0.25)
+            if rng.random() < 0.55:
+                continue
+            s = stone * rng.uniform(0.8, 1.2)
+            stones.append(M.hull_points([(px - s / 2, py - s / 2, 0), (px + s / 2, py - s / 2, 0), (px - s / 2, py + s / 2, 0),
+                                         (px + s / 2, py + s / 2, 0), (px, py, 0.3)]).translate([0, 0, z0 + t - 0.01]))
+    return deck + (union(stones) ^ M.extrude(inner, t + 2).translate([0, 0, z0]))

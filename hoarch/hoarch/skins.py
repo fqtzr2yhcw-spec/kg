@@ -252,6 +252,18 @@ def brick_bond(region, bond="flemish", bl=2.4, bh=0.8, mortar=SLOT, bed=0.2, d=0
     return out
 
 
+def banded_brick(region, every=5, bl=2.4, bh=0.8, datum=0.0, d=0.25, **kw):
+    """Running-bond brick with every ``every``-th course left out: a deep horizontal channel
+    at regular heights (banded brickwork, as on a commercial front)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    k0 = math.floor((v0 - datum) / (bh * every)) - 1
+    k1 = math.ceil((v1 - datum) / (bh * every)) + 1
+    chan = cs_union([rect(u0 - 1, datum + k * every * bh, u1 + 1, datum + k * every * bh + bh) for k in range(k0, k1)])
+    return brick_bond(region - chan, "running", bl=bl, bh=bh, d=d, datum=datum, **kw)
+
+
 def soldier_band(region, v0, h=2.4, bw=0.8, mortar=SLOT, d=0.3):
     """A band of soldier bricks (standing on end) from v0 to v0 + h."""
     band = region ^ rect(-1e3, v0, 1e3, v0 + h)
