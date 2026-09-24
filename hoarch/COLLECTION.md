@@ -11,18 +11,23 @@ building is designed. All ten are done; the lineup render is `out/lineup/cycles/
 
 | # | Building | Style | Status |
 |---|---|---|---|
-| 1 | The Beaumont | Queen Anne: octagonal tower with a slate spire, fish-scale second storey, wraparound porch | done: print files (17 h 39 m, 385 g) |
-| 2 | The Ashby | Italianate villa: paired-bracket eaves, cupola, canted bay, full-width porch | done: print files (12 h 55 m, 368 g) |
-| 3 | The Harcourt | Second Empire: brick, slate mansard with nine dormers, centre tower, sculpted windows and door | done: print files (13 h 27 m, 313 g) |
-| 4 | The Fowler | Octagon house: two-layer eave, red standing-seam roof, octagonal cupola, three-face veranda, shutters | done: 78 parts, print files (7 h 55 m, 210 g) |
+| 1 | The Beaumont | Queen Anne: octagonal tower with a hexagon-slate spire, beaded lap siding under a staggered-shingle second storey, wraparound turned porch | done: print files (17 h 39 m, 385 g) |
+| 2 | The Ashby | Italianate villa: cream common-bond brick with quoins, paired-bracket eaves, V-groove cupola, canted bay, full-width porch on chamfered posts | done: print files (12 h 55 m, 368 g) |
+| 3 | The Harcourt | Second Empire: Flemish-bond brick with a diaper, slate mansard with nine dormers, centre tower, sculpted windows and door, fluted portico | done: print files (13 h 27 m, 313 g) |
+| 4 | The Fowler | Octagon house: scored stucco, two-layer eave on fan brackets, red 5V-crimp roof, octagonal cupola, Greek Revival windows, three-face veranda on Tuscan columns | done: 78 parts, print files (7 h 55 m, 210 g) |
 | 5 | The Whitby | Carpenter Gothic cottage: four steep gables with pierced bargeboards, board-and-batten, patterned slate, traceried lancets under crocketed labels, crocketed gablets, diamond-paned gable lancets, Gothic entrance on engaged shafts, pointed-arch porch | done: 40 parts, print files (6 h 35 m, 133 g) |
-| 6 | The Delancey | San Francisco Italianate row house: two-storey slanted bay with colonettes, rusticated front, two-layer cornice with flat roof, pedimented parapet, tall stoop, stone basement | done: 31 parts, print files (6 h 5 m, 177 g) |
-| 7 | The Ardmore | Richardsonian Romanesque: rock-faced brownstone, round tower with an arcaded belvedere and conical roof, arched corbel tables, stone entrance loggia with a great arch, voussoir windows on cushion-capital colonnettes, arcaded triple window, hipped roof with front gable and hip caps | done: 53 parts, print files (9 h 24 m, 202 g) |
+| 6 | The Delancey | San Francisco Italianate row house: two-storey slanted bay with colonettes, rusticated front and drop-siding sides, San Francisco windows, two-layer cornice on pendant brackets, pedimented parapet, tall stoop, rusticated basement | done: 31 parts, print files (6 h 5 m, 177 g) |
+| 7 | The Ardmore | Richardsonian Romanesque: rock-faced brownstone, round tower with an arcaded belvedere and conical clay-tile roof, arched corbel tables, stone entrance loggia with a great arch, voussoir windows on cushion-capital colonnettes, arcaded triple window, green clay-tile hipped roof with front gable and hip caps | done: 53 parts, print files (9 h 24 m, 202 g) |
 | 8 | The Merritt | Stick style: front-gabled with a cross-gabled wing, open gable trusses (collar, king post and drop, struts, fan of sticks), stickwork framing and X-braced panels, knee-braced deep eaves, crossed-stick window casings with pent hoods on braces, braced porch with a stick frieze | done: 49 parts, print files (8 h 24 m, 178 g) |
-| 9 | The Hollis | Folk Victorian farmhouse: gable-front-and-wing L-plan, sunburst gable ornaments on spindle friezes over fish-scale shingles, pedimented window crowns with fans and dentils, louvered shutters, spindle porch in the corner of the L, red standing-seam roof | done: 67 parts, print files (5 h 46 m, 133 g) |
-| 10 | The Carrow | Queen Anne castle: rock-faced stone first storey, lavender fish-scale shingled second storey with diamond bands, 12-sided turret rising to a bracketed cornice and a witch's-hat spire, patterned-slate hip with a front gable and pierced bargeboard, Queen Anne pediment and scroll windows, swan-neck entrance, wraparound turned porch with a chamfered corner | done: 66 parts, print files (8 h 31 m, 160 g) |
+| 9 | The Hollis | Folk Victorian farmhouse: gable-front-and-wing L-plan, Dutch lap siding with chevron-boarded gables, gingerbread gable ornaments, pedimented window crowns with fans and dentils, board shutters, spindle porch in the corner of the L, red pressed-metal shingle roof | done: 67 parts, print files (5 h 46 m, 133 g) |
+| 10 | The Carrow | Queen Anne castle: Roman brick first storey, lavender half-timbered second storey, 12-sided turret rising to a dentilled cornice and a witch's-hat spire, diamond-slate hip with a front gable and Tudor truss, Free Classic windows with diamond-paned uppers, Palladian attic window, sidelighted entrance, wraparound Eastlake porch with a chamfered corner | done: 66 parts, print files (8 h 31 m, 160 g) |
 
 ## Log
+- Uniqueness pass: every building has its own wall skin, porch (post, railing, frieze,
+  skirt, piers), roof covering, chimney, foundation facing, belt course, eave bracket,
+  finial, window and door family, sash pattern, gable ornament and shutter style (the table
+  under "Unique parts per building"). Fish-scale shingles are retired. Wall, foundation and
+  roof textures now sink 0.02-0.03 mm into their surface so none print as loose pieces.
 - Harcourt: sculpted Second Empire windows (pediment, drip hood) and grand door; ornament that only touched its frame now overlaps 0.2 mm (a surround in pieces now warns).
 - Fowler: new two-layer eave (roof.frieze_ring under the bracketed cornice), door_se with an entablature hood.
 - Delancey: colonettes on the bay corners, channel rustication siding, parapet printed on its back, stoop fitted round the stone base.

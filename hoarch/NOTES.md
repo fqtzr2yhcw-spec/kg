@@ -36,7 +36,7 @@ cornice and deck. The seams fall on shadow lines, where a real building has join
   Three stepped layers read as a moulded profile at this scale.
 - Cornice: about 11 mm tall, frieze 1 mm proud, soffit about 4.4 mm, crown about 6.6 mm.
   Brackets are paired every 10 mm.
-- Mansard: about 75° slope, a bell-cast flare in the lowest 2 mm, fish-scale rows 1.55 mm
+- Mansard: about 75° slope, a bell-cast flare in the lowest 2 mm, slate rows 1.55 mm
   with 1.8 mm tabs.
 - Porch: floor 14 mm above grade (1 mm under the first floor); posts 35.5 mm;
   roof fascia 3.2 mm with dentils. The porch roof tucks under the belt course, which acts
@@ -179,21 +179,39 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
 ## Library map
 
 - `core.py`: units, primitives, mitred profile sweeps (`sweep_ring`, `sweep_run`),
-  facades, textures (clapboard, fish-scale, ashlar, brick, lattice, board-and-batten
-  `battens`), pointed arches (`pointed_cs`, `pointed_rise`).
+  facades, textures (clapboard, slate and shingle rows in square, diamond, hexagon and
+  staggered shapes, ashlar, brick, lattice, board-and-batten `battens`), pointed arches
+  (`pointed_cs`, `pointed_rise`).
+- `skins.py`: more wall skins, one per building: lined sidings (beaded lap, Dutch lap,
+  drop siding, shiplap, V-groove), beadboard, diagonal and chevron boards, staggered
+  shingles, brick in six bonds (Flemish with an optional diaper, running, English, common,
+  Roman, stack) with a soldier band, scored stucco and half-timbering.
+- `porchwork.py`: porch styles, one per building: eight posts (turned, Tuscan, fluted,
+  chamfered, clustered, stick, spindle, Eastlake), railing fills (Chippendale, X, pierced
+  quatrefoil, sawn) and balusters (vase, urn, spindle), five friezes (scroll, entablature,
+  valance, spindle, fret) and eight skirts.
+- `trimwork.py`: ten chimneys, six finials, ten foundation facings, ten belt-course
+  profiles (`BELTS`) and six eave bracket styles (`bracket`, used by
+  `roof.bracketed_cornice` through `brackets=dict(style=...)`).
 - `openings.py`: one-piece window, door and twin-arch inserts (plug + surround), balcony;
   Italianate, Queen Anne and brick-house ("voussoir": long-and-short stone voussoirs and a
   keystone) heads; per-style families: Second Empire (`window_se`, `door_se`), Gothic
   (`window_gothic`, `door_gothic`: tracery, crockets, fleurs, label stops, engaged shafts),
   Romanesque (`window_romanesque`, `door_romanesque`: voussoir rings, cushion capitals,
   arcaded groups, open porch arch), Stick (`window_stick`, `door_stick`: crossed-stick
-  casings, pent hoods on knee braces) and Folk Victorian (`window_folk`, `door_folk`).
+  casings, pent hoods on knee braces), Folk Victorian (`window_folk`, `door_folk`), Greek
+  Revival (`window_greek`, `door_greek` with sidelights), San Francisco (`window_sf`,
+  `door_sf`) and Free Classic (`window_fc`, `window_palladian`, `door_fc`). Door leaves
+  (`_leaf`: arched, arched panels, studded, crossbuck, half glass, two panel, glazed, oval)
+  and transoms (sunburst, plain, stick, diamond, leaded) are picked per building, and so is
+  the sash pattern (`lites`, `rows`, `qa`, `upper="diamond"`).
 - `moulding.py`: sculpted mouldings as height fields on the 0.2 grid (band, run; profiles
   ARCHITRAVE, CASING, CROWN, SILL, BED) and carved ornament (cartouche, anthemion, scroll
   keystone, pendant, rosette).
 - `gables.py`: gabled roofs (`gabled_roof`: hollow body cut back to the gable walls, rake
   skins, fascia), gable ornaments hung on the rake ends (`bargeboard`, `gable_truss`,
-  `gable_sunburst`), `ridge_cap`, `hip_cap`, `chimney_seat`.
+  `gable_sunburst`, `gable_tudor`, `gable_gingerbread`), `ridge_cap`, `hip_cap`,
+  `chimney_seat`.
 - `ornament.py`: console brackets, dentils, keystones, fan crest, rosettes, finials,
   spandrels, chimney pots.
 - `shell.py`: wall shell from plan blocks (openings, siding, quoins or corner boards, belt
@@ -253,3 +271,12 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
 - **A tower rising through a roof**: carry its wall down through the storey below inside
   the house (it otherwise starts in mid-air at the eave), and make the upper walls, the
   tower and any gable one piece above the first belt, so nothing is orphaned by a joint.
+
+## Textures must overlap what they sit on
+
+A texture that only touches its surface (skin face on the wall face) can come out of the
+boolean union as a separate body: the brick foundation fell into 230 bodies and a crimped
+roof into 127, and `drop_specks` then threw the small ones away. Every wall skin, foundation
+facing and roof texture is now sunk 0.02-0.03 mm into its surface (`shell.wall_shell`,
+`shell.foundation`, `roof.hip_texture`, `trimwork._skin`), and ornament keeps the 0.2 mm
+overlap rule. Mount shutters just proud of the deepest siding (Dutch lap butts stand 0.46).
