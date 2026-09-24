@@ -77,11 +77,32 @@ Rich HO detail comes from a few devices repeated at every scale, each shaped to 
     corner is shared by both runs.
   - **Railings printed standing up**, so every baluster is a real round spindle. End
     stiles carry the rounded hand rail; small feet lift the bottom rail off the floor.
+  - **Posts and railings in one piece** (`joined=True`): each run of posts and its
+    railings print together, standing on the plinths and the railing feet (both run
+    0.4 mm into sockets in the floor). The only spans are short bridges: the bottom rail
+    between feet and the hand rail over the balusters. The arcade stays its own piece:
+    printed upright with the posts its arches and drops would start in mid-air, and
+    printed upside down with them the hand rails would.
   - **The arcade** (beam, a square rosette block over each post, sawn-work spandrels with
     an elliptical arch, roundels, teardrops and a crown drop) **prints on its top edge**,
     so front and back come out alike. Flat panels printed face-down were glossy on the
     bed side and stepped on the other, and read as boxy.
 - Corners where a wing meets the main house get no quoins (they are inside corners).
+- **Flowing Queen Anne work on the surrounds** (`ornament`: `stroke`, `volute`,
+  `sunburst`, `quatrefoil`, `bullseye`, `swag`, `urn_cs`, `scroll_bracket`): outlines
+  drawn as curves in the wall plane and built up in flat terraces, each level inside
+  the one below. The surround prints face-up, so the curves come out as clean perimeters,
+  with no overhang at all; bands at least 0.5 mm, levels on the 0.2 mm grid.
+  - First-floor windows (`style="pediment"`): bullseye corner blocks, a segmental
+    pediment with a carved fan, a shaped apron that sweeps down to a drop, a quatrefoil
+    boss.
+  - Second-floor windows (`style="scroll"`): an eyebrow hood whose ends roll into
+    volutes, a keystone with a fan crest, a sill on two scroll brackets and a pendant.
+  - Bays with no headroom (`style="blocks"`): the corner blocks and a moulded shelf.
+  - Doors (`openings.door_ornate`): round-headed glazed leaves with spandrel rosettes and
+    quatrefoil panels, a sunburst transom, fluted pilasters on plinths with bullseye
+    capitals; a frieze of swags round a cartouche under a broken swan-neck pediment with
+    an urn (front), or a segmental pediment with a fan (back).
 
 ## Printability rules (checked by slicing every plate)
 

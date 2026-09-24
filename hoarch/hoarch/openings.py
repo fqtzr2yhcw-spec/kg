@@ -356,13 +356,13 @@ def _pediment_head(half, v_base, rise_in=2.4, band=0.9, sun=True):
     tymp = arch_cs(-(half - band), half - band, vs - 0.01, vs, rise=rise_in, seg=40)
     parts.append(ext(tymp, 0.0, CAS))
     if sun and rise_in >= 2.0:
-        n = 5 if rise_in >= 2.8 else 3
-        hub, rays = sunburst((0.0, vs), 0.8 if n == 3 else 1.0, 1.25 if n == 3 else 1.7, rise_in - 0.3, n=n,
-                             a0=0.3 if n == 3 else 0.15, a1=math.pi - (0.3 if n == 3 else 0.15),
-                             ray1=0.8 if n == 3 else None)
-        inner = tymp.offset(-0.35, JoinType.Round)
-        parts.append(ext(hub ^ inner, CAS - 0.01, 1.2))
-        parts.append(ext(rays ^ inner, CAS - 0.01, 1.0))
+        # a carved fan: a half-round boss with five ribs radiating from a round bead
+        R = rise_in - 0.35
+        hub, rays = sunburst((0.0, vs), 0.0, 0.5, R - 0.1, n=5, a0=0.2, a1=math.pi - 0.2, ray0=0.45, ray1=0.7)
+        half_disc = arch_cs(-R, R, vs - 0.01, vs, rise=R, seg=40) ^ tymp.offset(-0.3, JoinType.Round)
+        parts.append(ext(half_disc, CAS - 0.01, 1.0))
+        parts.append(ext(rays ^ half_disc, 1.0 - 0.01, 1.2))
+        parts.append(ext(circle((0.0, vs), max(0.55, R * 0.3), 20) ^ half_disc, 1.0 - 0.01, 1.4))
     return parts, vs + rise_in + band
 
 

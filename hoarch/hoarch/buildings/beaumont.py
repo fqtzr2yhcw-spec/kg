@@ -397,6 +397,12 @@ def build(kit=None):
     kit.add("PORCH-roof-cap", "Slate", cap + ribs, group="porch")
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "PorchGray", sm.transform(A) - fkeep, group="porch")
+    # back stoop under the rear door
+    e, u = MAIN.locate(52.5, Y1)
+    f = MAIN.facades()[e]
+    A = f.A.copy()
+    A[:, 3] = f.world(u, -ZF, 1.4)
+    kit.add("STOOP-back", "PorchGray", FT.steps(16.0, ZF - 0.6, 4).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
     return kit
 
