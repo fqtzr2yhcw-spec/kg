@@ -214,17 +214,24 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
   `chimney_seat`.
 - `ornament.py`: console brackets, dentils, keystones, fan crest, rosettes, finials,
   spandrels, chimney pots.
-- `shell.py`: wall shell from plan blocks (openings, siding, quoins or corner boards, belt
+- `shell.py`: wall shell from plan blocks (openings, siding, corners: long-and-short or
+  equal quoins, or a corner-board style from `CORNER_BOARDS`: board, pilaster, chamfer,
+  stepped, capital, panel; belt
   course, water table, gable walls built in with `gables=`), per-storey shells with belt
   ring and lips, foundation.
-- `roof.py`: bracket and dentil runs, slope textures, hip roofs by planes, cresting and
+- `roof.py`: bracket and dentil runs, slope textures (square, diamond, hexagon and
+  staggered slate, standing seam, 5V crimp, lapped barrel tile), hip roofs by planes,
+  cresting (pointed-arch or spear-and-ball) and
   flat-printed cresting strips. **Mansards**: `mansard` builds a hollow band on a convex plan
   from any outer profile (straight with a bell-cast kick, or a concave tower cap), its inner
   face parallel to the chord so it prints upright with banded slate rows; `mansard_top` is the
   moulded curb ring (upside down, locating lip and a 45 degree seat in its profile) and a
   separate standing-seam deck plate that drops onto the seat.
 - `features.py`: dormer, tower cap, chimney, porch (deck, arcade panels, roof, steps);
-  turned porches with sawn, Gothic (pointed arches) or braced (Stick) arcades.
+  turned porches with sawn, Gothic (pointed arches) or braced (Stick) arcades, or any
+  `porchwork` frieze; porch roof edges (`ROOF_EDGES`: dentil, modillion, fillet, cove,
+  Gothic drops, stick battens, buttons, reeded) and pier facings matched to each
+  building's foundation (`_pier_skin`); panel, board and louvered shutters.
 - `kit.py`: parts with colour and print orientation, fit check, single-colour plate
   packing, 3MF/STL export, slice check, flat-lay and exploded render data, `drop_specks`
   (removes detached offcuts under 2 mm^3 that trims leave floating).

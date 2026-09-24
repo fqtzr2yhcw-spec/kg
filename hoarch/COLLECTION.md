@@ -71,3 +71,17 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Merritt | stick / X / braced / slats / parged; stick battens on the roof edge | Stick windows; crossbuck door, stick transom | open gable trusses; knee braces |
 | Hollis | spindle / spindle / spindle frieze / horizontal slats / block; button roof edge | Folk windows; half-glass door, diamond transom | gingerbread gables; board shutters |
 | Carrow | Eastlake / sawn / fret / arches / coursed stone; reeded roof edge | Free Classic windows with diamond uppers, Palladian attic window; Free Classic door | Tudor arch-braced gable; dentil turret cornice |
+
+
+| Building | Corners | Other trim of its own |
+|---|---|---|
+| Beaumont | plain corner boards with caps | pointed-arch iron cresting on the ridge and bay, corbelled chimneys with round pots |
+| Ashby | long-and-short quoins; sunk-panel boards on the cupola | twin round-arched windows (front and cupola), porch tin ribbed one way |
+| Harcourt | equal-block quoins in tight courses | spear-and-ball cresting, flat-seam portico tin (battens both ways), crowned pots |
+| Fowler | beads on the octagon's obtuse corners | pierced fan brackets on the frieze course and cupola |
+| Delancey | fluted pilasters with base blocks | colonettes on the bay corners, pedimented parapet |
+| Whitby | mitred posts with a chamfered corner | pierced bargeboards with spike finials |
+| Ardmore | none (rock-faced stone) | arched corbel table, cushion capitals |
+| Merritt | stepped double boards | stickwork, knee braces, tall chimney pots |
+| Hollis | capped boards on plinths | gingerbread with spindle screens |
+| Carrow | none (brick and half-timber) | octagonal chimney pots, Tudor truss |
