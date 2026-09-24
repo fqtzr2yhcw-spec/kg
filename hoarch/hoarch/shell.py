@@ -237,7 +237,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     return shell + dress
 
 
-def foundation(blocks, z0, z1, t=3.0, proud=0.8, stone_d=0.55, seed=4, openings=(), lip=1.2):
+def foundation(blocks, z0, z1, t=3.0, proud=0.8, stone_d=0.55, seed=4, openings=(), lip=1.2, style="fieldstone"):
     """Stone foundation ring under all blocks, ``proud`` outside the wall face.
 
     A locating lip rises ``lip`` above z1 just inside the wall's inner face so the
@@ -258,7 +258,8 @@ def foundation(blocks, z0, z1, t=3.0, proud=0.8, stone_d=0.55, seed=4, openings=
         if f.L < 0.8:
             continue
         reg = rect(0.0, 0.4, f.L, z1 - z0 - 0.4)
-        s = ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=stone_d, seed=seed + i)
+        from .trimwork import foundation_skin
+        s = foundation_skin(style, reg, seed=seed + i)
         tex.append(f.place(s))
     ring = ring + union(tex)
     # clip stone at corners so neighbours don't stack up outside the miter
@@ -364,7 +365,7 @@ def storey_shells(blocks, openings, z_split, t=3.0, prof=BELT_PROF, clear=(), **
     return dict(lower=lower, ring=ring, upper=upper, ring_h=h, outline=outline)
 
 
-def stacked_shells(blocks, openings, splits, t=3.0, prof=BELT_PROF, clear=(), **kw):
+def stacked_shells(blocks, openings, splits, t=3.0, prof=BELT_PROF, clear=(), belt_blocks="default", **kw):
     """Walls as a stack of one-piece storey shells with a belt ring at every split.
 
     ``splits`` = absolute z of each storey joint, low to high. At each one the shell is cut,
@@ -391,7 +392,8 @@ def stacked_shells(blocks, openings, splits, t=3.0, prof=BELT_PROF, clear=(), **
         if lo is not None:
             piece = piece - lip_keep(prev_base, t, lo)
         shells.append(piece)
-        rings.append(belt_ring(outline, z, t=t, prof=prof))
+        rings.append(belt_ring(outline, z, t=t, prof=prof,
+                               **({} if belt_blocks == "default" else dict(blocks=belt_blocks))))
         outlines.append(outline)
         lo, prev_base = z + h, base
     top = shell.trim_by_plane([0, 0, 1.0], lo) - lip_keep(prev_base, t, lo)

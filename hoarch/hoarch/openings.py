@@ -16,7 +16,7 @@ v = 0 at the opening bottom, w = 0 at the wall face.
 """
 import math
 
-from manifold3d import JoinType, Manifold as M
+from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
 from .core import RIB, SLOT, arch_cs, circle, cs_union, poly, rect, union
 from .ornament import (bezier, bullseye, chamfer_box, console, dentils, ext, fan_crest, keystone, oval, quatrefoil,
@@ -97,7 +97,7 @@ def _arc_band(w_in, spring, rise, r_in_extra, thick, u_ext=0.0, seg=32):
 
 
 def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare=False, ends=0.9, sill_ext=0.6,
-                  clip=False, apron=False, consoles=None, qa=False):
+                  clip=False, apron=False, consoles=None, qa=False, rows=(1, 1), upper=None):
     """Italianate window: segmental- or round-arched head, eared casing,
     bracketed sill, moulded hood with keystone; ``style`` in {"crest", "key", "flat"}, or
     "voussoir" (a brick-house head: stone voussoirs long and short in turn, and a keystone).
@@ -130,6 +130,17 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
         for i in range(1, n):
             u = -w / 2 + w * i / n
             bars.append(rect(u - RIB / 2, v0, u + RIB / 2, v1))
+    # ``rows``: horizontal muntins in each sash (6-over-6 is lites=(3, 3), rows=(2, 2))
+    for nr, v0, v1 in ((rows[0], 0.0, mr), (rows[1], mr, spring if rise > 0 else h)):
+        for j in range(1, nr):
+            v = v0 + (v1 - v0) * j / nr
+            bars.append(rect(-w, v - RIB / 2, w, v + RIB / 2))
+    if upper == "diamond":           # leaded diamond panes in the upper sash
+        for sgn in (-1, 1):
+            for k in range(-14, 15):
+                x0 = k * 1.6
+                bars.append(stroke([(x0 - sgn * 12, mr - 12 * 1.6), (x0 + sgn * 12, mr + 12 * 1.6)], RIB, caps=False)
+                            ^ rect(-w, mr, w, h + 5))
     if qa:   # border lights: an inner frame line and short bars across the border
         top = inner ^ rect(-w, mr + 0.3, w, h + 5)
         b = 1.2 if w >= 8 else 1.0
@@ -408,6 +419,7 @@ def _pediment_head(half, v_base, rise_in=2.4, band=0.9, sun=True):
     arc = arc ^ rect(-half - 1, vs - 0.01, half + 1, vs + rise_in + band + 1)
     parts.append(stepped(arc, [(0.0, 0.0, 1.2), (0.2, 1.2, 1.6)]))
     parts.append(ext(arc.hull(), 0.0, CAS))                   # tympanum: the whole segment under the band
+    parts.append(ext(rect(-(half - band), vs - 0.2, half - band, vs + 0.2), 0.0, CAS))   # seats it into the shelf
     tymp = arch_cs(-(half - band), half - band, vs - 0.01, vs, rise=rise_in, seg=40)
     if sun and rise_in >= 2.0:
         # a carved fan: a half-round boss with five ribs radiating from a round bead
@@ -542,19 +554,110 @@ def _ornate_leaf(u, lw, dh, hinge_left):
     return parts, light
 
 
-def door_ornate(w, h, leaves=2, transom=4.2, head="swan", pil=1.6):
+def _leaf(style, u, lw, dh, hinge_left):
+    """One door leaf of the given style (face at w -0.8, details up to -0.2), from v 0.5 to
+    dh - 0.3. Returns (solids, glass CrossSection or None). One style per building:
+    arched (round-headed light over a quatrefoil panel), arch_panels (two raised panels with
+    arched heads, no glass), studded (boards with rows of iron studs and a ring), crossbuck
+    (a glazed light with muntins over an X-braced panel), half_glass (a light with a muntin
+    cross over two small panels), two_panel (two tall raised panels), glazed_tall (glass
+    nearly full height under a segmental head), oval (an oval light over a panel with a
+    raised lozenge)."""
+    if style == "arched":
+        return _ornate_leaf(u, lw, dh, hinge_left)
+    st = min(1.0, lw * 0.16)
+    top = dh - 0.3
+    parts = [ext(rect(u, 0.5, u + lw, top), -1.0, -0.8)]
+    pu0, pu1 = u + st, u + lw - st
+    kx = u + lw - 0.55 if hinge_left else u + 0.55
+    knob_v = dh * 0.46
+    glass = None
+
+    def panel(cs, lvl=0):
+        parts.append(stepped(cs, [(0.0, -0.8, -0.6), (0.3, -0.6, -0.4)]))
+    if style == "arch_panels":
+        r = (pu1 - pu0) / 2
+        lo = rect(pu0, 1.4, pu1, dh * 0.3)
+        hi = arch_cs(pu0, pu1, dh * 0.3 + 1.0, top - 1.0 - r)
+        panel(lo)
+        panel(hi)
+        parts.append(ext(circle(((pu0 + pu1) / 2, (dh * 0.3 + 1.0 + top - 1.0 - r) / 2), min(0.55, r * 0.4), 16), -0.41, -0.2))
+    elif style == "studded":
+        g = []
+        n = max(2, int(lw / 1.3))
+        for k in range(1, n):
+            x = u + lw * k / n
+            g.append(rect(x - 0.25, 0.9, x + 0.25, top - 0.4))
+        parts[0] = parts[0] - ext(cs_union(g), -0.9, 0.0)
+        studs = []
+        for v in (1.6, dh * 0.35, dh * 0.65, top - 1.0):
+            for k in range(n):
+                studs.append(circle((u + lw * (k + 0.5) / n, v), 0.3, 10))
+        parts.append(ext(cs_union(studs), -0.81, -0.4))
+        parts.append(ext(circle((kx, knob_v), 0.7, 20) - circle((kx, knob_v), 0.25, 12), -0.81, -0.4))
+    elif style == "crossbuck":
+        gl = rect(pu0, dh * 0.5, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        lo = rect(pu0, 1.2, pu1, dh * 0.5 - 1.0)
+        parts.append(ext(lo.offset(0.45, JoinType.Miter, 4.0) - lo, -0.8, -0.5))
+        b = lo.bounds()
+        x = cs_union([stroke([(b[0], b[1]), (b[2], b[3])], 0.6), stroke([(b[0], b[3]), (b[2], b[1])], 0.6)]) ^ lo
+        parts.append(ext(x, -0.81, -0.5))
+    elif style == "half_glass":
+        gl = rect(pu0, dh * 0.52, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        c = gl.bounds()
+        parts.append(ext((rect((c[0] + c[2]) / 2 - 0.25, c[1], (c[0] + c[2]) / 2 + 0.25, c[3]) +
+                          rect(c[0], (c[1] + c[3]) / 2 - 0.25, c[2], (c[1] + c[3]) / 2 + 0.25)) ^ gl, -1.2, -0.7))
+        m = (pu0 + pu1) / 2
+        panel(rect(pu0, 1.3, m - 0.35, dh * 0.52 - 1.0))
+        panel(rect(m + 0.35, 1.3, pu1, dh * 0.52 - 1.0))
+    elif style == "two_panel":
+        panel(rect(pu0, 1.3, pu1, dh * 0.38))
+        panel(rect(pu0, dh * 0.38 + 0.9, pu1, top - st))
+    elif style == "glazed_tall":
+        gl = arch_cs(pu0, pu1, dh * 0.24, top - st - 1.0, rise=1.0)
+        glass = gl
+        parts.append(ext(gl.offset(0.5, JoinType.Round) - gl, -0.8, -0.55))
+        pl_ = rect(pu0, 1.2, pu1, dh * 0.24 - 0.9)
+        panel(pl_)
+        pb = pl_.bounds()
+        parts.append(ext(circle(((pb[0] + pb[2]) / 2, (pb[1] + pb[3]) / 2), min(0.5, (pb[3] - pb[1]) * 0.3), 16), -0.41, -0.2))
+    elif style == "oval":
+        cx, cy = (pu0 + pu1) / 2, dh * 0.7
+        rx, ry = (pu1 - pu0) / 2 - 0.2, min(dh * 0.18, top - st - cy)
+        gl = poly([(cx + rx * math.cos(2 * math.pi * k / 40), cy + ry * math.sin(2 * math.pi * k / 40)) for k in range(40)])
+        glass = gl
+        parts.append(ext(gl.offset(0.5, JoinType.Round) - gl, -0.8, -0.55))
+        lo = rect(pu0, 1.3, pu1, dh * 0.42)
+        panel(lo)
+        b = lo.bounds()
+        mx, my = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+        parts.append(ext(poly([(mx, b[1] + 0.8), (b[2] - 0.7, my), (mx, b[3] - 0.8), (b[0] + 0.7, my)]), -0.41, -0.2))
+    else:
+        raise ValueError(style)
+    if style != "studded":
+        parts.append(ext(circle((kx, knob_v), 0.35, 12), -0.8, -0.4))
+    return parts, glass
+
+
+def door_ornate(w, h, leaves=2, transom=4.2, head="swan", pil=1.6, leaf="arched", tstyle="sunburst"):
     """Queen Anne entrance: ornate leaves (round-headed lights, quatrefoil panels), a
     sunburst transom, panelled pilasters on plinths with bullseye capitals, and either
     ``head="swan"``: a frieze with a cartouche and swags, a cornice and a broken swan-neck
     pediment with an urn, or ``head="pediment"``: a segmental pediment with a sunburst.
     Local frame as the windows (u centred, v from the sill, w out of the wall)."""
-    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom)
+    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom, leaf, tstyle)
     parts = []
     return _door_ornate_surround(w, h, op, plug_cs, sash_parts, head, pil)
 
 
-def _ornate_door_sash(w, h, leaves, transom):
-    """The ornate leaves and sunburst transom of door_ornate / door_se (the plug part)."""
+def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
+    """The leaves and transom of a door (the plug part): leaf style (see _leaf) and a
+    transom of style sunburst, plain (with an oval boss), stick (a row of narrow lights),
+    diamond (a diamond grid) or leaded (a border of small squares)."""
     op = rect(-w / 2, 0, w / 2, h)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
     pl = PLUG
@@ -564,11 +667,12 @@ def _ornate_door_sash(w, h, leaves, transom):
     u = -w / 2 + CLR + 0.5
     parts, lights = [], []
     for i in range(leaves):
-        lp, light = _ornate_leaf(u, lw, dh, hinge_left=(i == 0))
+        lp, light = _leaf(leaf, u, lw, dh, hinge_left=(i == 0))
         parts += lp
-        lights.append(light)
+        if light is not None:
+            lights.append(light)
         u += lw + mid
-    glass = cs_union(lights)
+    glass = cs_union(lights) if lights else CS()
     cut = ext(glass, -pl - 1, 0.0)
     parts = [p - cut for p in [ext(plug_cs, -pl, -1.0)] + parts]
     parts.append(ext(glass, -pl, -pl + GLASS))
@@ -580,9 +684,35 @@ def _ornate_door_sash(w, h, leaves, transom):
         parts.append(ext(tcs, -pl, -pl + GLASS))
         parts.append(ext(rect(-w / 2, dh - 0.3, w / 2, dh + 0.3), -pl, -0.4))             # transom bar
         tb = tcs.bounds()
-        hub, rays = sunburst((0.0, tb[1]), 1.0, 1.6, max(tb[2], tb[3] - tb[1]) + 2.0, n=7, a0=0.2, a1=math.pi - 0.2,
-                             ray0=RIB, ray1=RIB + 0.1)
-        parts.append(ext((hub + rays) ^ tcs, -pl + GLASS - 0.01, -0.6))
+        if tstyle == "sunburst":
+            hub, rays = sunburst((0.0, tb[1]), 1.0, 1.6, max(tb[2], tb[3] - tb[1]) + 2.0, n=7, a0=0.2, a1=math.pi - 0.2,
+                                 ray0=RIB, ray1=RIB + 0.1)
+            pat = hub + rays
+        elif tstyle == "plain":
+            cy = (tb[1] + tb[3]) / 2
+            pat = oval((0.0, cy), min(2.2, (tb[2] - tb[0]) * 0.2), min(1.1, (tb[3] - tb[1]) * 0.36))
+        elif tstyle == "stick":
+            n = max(3, int((tb[2] - tb[0]) / 1.5))
+            pat = cs_union([rect(tb[0] + (tb[2] - tb[0]) * k / n - 0.25, tb[1] - 1, tb[0] + (tb[2] - tb[0]) * k / n + 0.25,
+                                 tb[3] + 1) for k in range(1, n)])
+        elif tstyle == "diamond":
+            bars = []
+            for sgn in (-1, 1):
+                for k in range(-12, 13):
+                    x0 = k * 1.8
+                    bars.append(stroke([(x0 - sgn * 8, tb[1] - 8), (x0 + sgn * 8, tb[1] + 8)], RIB, caps=False))
+            pat = cs_union(bars)
+        elif tstyle == "leaded":
+            inner = tcs.offset(-1.1, JoinType.Miter, 4.0)
+            bars = [inner.offset(RIB / 2, JoinType.Miter, 4.0) - inner.offset(-RIB / 2, JoinType.Miter, 4.0)]
+            n = max(2, int((tb[2] - tb[0]) / 1.2))
+            for k in range(1, n):
+                x = tb[0] + (tb[2] - tb[0]) * k / n
+                bars.append(rect(x - RIB / 2, tb[1] - 1, x + RIB / 2, tb[3] + 1) - inner.offset(-RIB / 2, JoinType.Miter, 4.0))
+            pat = cs_union(bars)
+        else:
+            raise ValueError(tstyle)
+        parts.append(ext(pat ^ tcs, -pl + GLASS - 0.01, -0.6))
     return op, plug_cs, parts
 
 
@@ -603,7 +733,7 @@ def _door_ornate_surround(w, h, op, plug_cs, sash_parts, head, pil):
     cw = w / 2 + pil + 0.5
     if head == "swan":
         # frieze: cartouche and swags between rosettes
-        parts.append(ext(rect(-w / 2, h, w / 2, h + 2.2), 0.0, CAS))
+        parts.append(ext(rect(-w / 2, h, w / 2, h + 2.4), 0.0, CAS))        # into the cornice: one piece
         parts.append(ext(oval((0.0, h + 1.1), 1.4, 0.85), CAS - 0.01, 1.0))
         parts.append(ext(oval((0.0, h + 1.1), 0.75, 0.42), 1.0 - 0.01, 1.2))
         sw_ = []
@@ -622,7 +752,7 @@ def _door_ornate_surround(w, h, op, plug_cs, sash_parts, head, pil):
             p3 = (sg * 2.1, vc + 3.1)
             pts = bezier(p0, (sg * cw * 0.55, vc + 0.4), (sg * cw * 0.5, vc + 3.1), p3, 28)
             necks.append(stroke(pts, 0.8))
-            fields.append(poly([tuple(p) for p in pts] + [(p3[0], vc), (p0[0], vc)]))
+            fields.append(poly([tuple(p) for p in pts] + [(p3[0], vc - 0.2), (p0[0], vc - 0.2)]))     # into the cornice
             necks.append(volute((p3[0], p3[1] - 0.6), 0.95, turns=0.85, band=0.55, a0=math.pi / 2,
                                 sense=1 if sg > 0 else -1))
             ros.append(circle((sg * (cw * 0.62), vc + 1.0), 0.45, 16))
@@ -632,11 +762,11 @@ def _door_ornate_surround(w, h, op, plug_cs, sash_parts, head, pil):
                                                  (sg * cw * 0.5, vc + 3.1), (sg * 2.1, vc + 3.1), 28), 0.5)
                                    for sg in (-1, 1)]), 1.2 - 0.01, 1.6))
         parts.append(ext(cs_union(ros), CAS - 0.01, 1.0))
-        parts.append(ext(urn_cs(0.0, vc, 3.4, 1.9), 0.0, 1.2))
+        parts.append(ext(urn_cs(0.0, vc, 3.4, 1.9) + rect(-0.6, vc - 0.2, 0.6, vc + 0.3), 0.0, 1.2))
         parts.append(ext(circle((0.0, vc + 3.4 * 3.35 / 4), 0.38, 16), 1.2 - 0.01, 1.4))
         top = vc + 3.6
     else:
-        parts.append(ext(rect(-w / 2, h, w / 2, h + 2.2), 0.0, CAS))
+        parts.append(ext(rect(-w / 2, h, w / 2, h + 2.4), 0.0, CAS))        # into the pediment: one piece
         parts.append(ext(cs_union([swag(-w / 2 + 0.6, -0.4, h + 1.6, 0.7, 0.6), swag(0.4, w / 2 - 0.6, h + 1.6, 0.7, 0.6),
                                    circle((0.0, h + 1.5), 0.5, 16)]), CAS - 0.01, 1.0))
         head_, top = _pediment_head(cw - 0.3, h + 2.2, rise_in=3.0)
@@ -743,13 +873,13 @@ def cartouche_or_fan(v_base, rise_p, half):
     return ext(rays, CAS - 0.01, 1.0)
 
 
-def door_se(w, h, leaves=2, transom=4.4, pil=2.0, arch_w=1.8, head="pediment"):
+def door_se(w, h, leaves=2, transom=4.4, pil=2.0, arch_w=1.8, head="pediment", leaf="arched", tstyle="sunburst"):
     """Second Empire entrance: the ornate leaves and fanlight of door_ornate in a moulded
     architrave, fluted pilasters on plinths with moulded capitals, an entablature (frieze
     with a cartouche between rosettes, dentils, a crowned cornice returned over the
     pilasters) and a segmental pediment with a fan and a palmette on the apex."""
     from . import moulding as MD
-    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom)
+    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom, leaf, tstyle)
     A = arch_w
     parts = []
     outer = op.offset(A, JoinType.Miter, 4.0)
@@ -1202,7 +1332,7 @@ def window_romanesque(w, h, n=1, gap=2.6, lites=(1, 1), flat=False, col=1.2, L=2
     return _one_piece(sash, parts, op, plug_cs, PLUG, top, -1.8)
 
 
-def door_romanesque(w, h, orders=2, col=1.3, L=3.0, plug=True, leaves=2):
+def door_romanesque(w, h, orders=2, col=1.3, L=3.0, plug=True, leaves=2, leaf="studded"):
     """Great round-arched Romanesque entrance: the arch springs low (w/2 under the crown)
     from ``orders`` receding pairs of colonnettes with cushion capitals on a moulded impost
     band; a ring of long voussoirs and a roll hood over it. With ``plug`` the doorway holds
@@ -1223,12 +1353,13 @@ def door_romanesque(w, h, orders=2, col=1.3, L=3.0, plug=True, leaves=2):
         body = [ext(plug_cs, -pl, -1.0)]
         lights = []
         for i in range(leaves):
-            lp, light = _ornate_leaf(u, lw, dh, hinge_left=(i == 0))
+            lp, light = _leaf(leaf, u, lw, dh, hinge_left=(i == 0))
             body += lp
-            lights.append(light)
+            if light is not None:
+                lights.append(light)
             u += lw + mid
         fan = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, spring + 0.3, w, h + 5)
-        glass = cs_union(lights) + fan
+        glass = (cs_union(lights) + fan) if lights else fan
         cut = ext(glass, -pl - 1, 0.0)
         sash = [p - cut for p in body]
         sash.append(ext(glass, -pl, -pl + GLASS))
@@ -1329,10 +1460,10 @@ def window_stick(w, h, lites=(1, 1), qa=True, A=1.2, apron=True, brace=True):
     return _one_piece([sash], parts, op, plug_cs, PLUG, top, bottom)
 
 
-def door_stick(w, h, leaves=2, transom=4.0, A=1.4):
+def door_stick(w, h, leaves=2, transom=4.0, A=1.4, leaf="crossbuck", tstyle="stick"):
     """Stick-style entrance: the ornate leaves and transom of door_ornate in a crossed-stick
     casing, a stick frieze and a deep pent hood on big knee braces."""
-    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom)
+    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom, leaf, tstyle)
     parts = [ext((op - op.offset(-RIB, JoinType.Miter, 4.0)) ^ rect(-w, 0.5, w, h + 1), 0.0, CAS)]
     parts.append(ext(rect(-w / 2 - A - 0.9, h, w / 2 + A + 0.9, h + A), 0.0, CAS))
     for sg in (-1, 1):
@@ -1391,10 +1522,10 @@ def window_folk(w, h, lites=(1, 1), head="pediment", A=1.2):
     return _one_piece([sash], parts, op, plug_cs, PLUG, top, -1.9)
 
 
-def door_folk(w, h, leaves=1, transom=3.6, A=1.4, head="pediment"):
+def door_folk(w, h, leaves=1, transom=3.6, A=1.4, head="pediment", leaf="half_glass", tstyle="diamond"):
     """Folk Victorian entrance: the ornate leaf and transom of door_ornate in a crossetted
     casing on plinths, with the frieze, dentils and pediment crown of window_folk."""
-    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom)
+    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom, leaf, tstyle)
     parts = [ext((op - op.offset(-RIB, JoinType.Miter, 4.0)) ^ rect(-w, 0.5, w, h + 1), 0.0, CAS)]
     parts.append(ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, CAS))
     for sg in (-1, 1):
@@ -1404,3 +1535,282 @@ def door_folk(w, h, leaves=1, transom=3.6, A=1.4, head="pediment"):
         parts.append(ext(rect(e0, h - 1.4, e1, h + A), 0.0, CAS))
     top = _folk_crown(w / 2 + A + 0.6, h + A, head, parts)
     return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)
+
+
+# ------------------------------------------------------------------ Greek Revival (the Fowler)
+def window_greek(w, h, lites=(3, 3), rows=(2, 2), A=1.2):
+    """Greek Revival window: six-over-six sash, a flat casing with a bead, a lintel board
+    under a low peaked cap with acroteria blocks at its ends and apex, and a slab sill."""
+    from . import moulding as MD
+    op = opening_cs(w, h, 0)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    sash = window_insert(w, h, 0, lites=lites, rows=rows, bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    parts.append(ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, CAS))
+    parts.append(ext((op.offset(RIB, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + 1), CAS - 0.01, BEAD))
+    half = w / 2 + A + 0.6
+    v0 = h + A - 0.2
+    parts.append(ext(rect(-half, v0, half, v0 + 1.8), 0.0, 1.0))                    # lintel board
+    parts.append(MD.run(-half - 0.4, half + 0.4, v0 + 1.8 + 0.8, MD.CROWN, 0.8, up=False))
+    vt = v0 + 2.6
+    rise = 0.32 * (half + 0.4)
+    tri = poly([(-half - 0.4, vt - 0.3), (half + 0.4, vt - 0.3), (0.0, vt + rise)])             # seated in the cap
+    parts.append(MD.band(tri, 0.9, MD.CROWN, clip=rect(-half - 2, vt + 0.3, half + 2, vt + 10)))
+    parts.append(ext(tri.offset(-0.8, JoinType.Miter, 4.0) + (rect(-half + 0.6, vt - 0.3, half - 0.6, vt + 0.9) ^ tri), 0.0, CAS))
+    for u in (-half - 0.1, half + 0.1):
+        parts.append(chamfer_box(u - 0.6, vt - 0.2, u + 0.6, vt + 1.0, 0.0, 1.2, c=0.3))
+    parts.append(chamfer_box(-0.6, vt + rise - 0.6, 0.6, vt + rise + 0.8, 0.0, 1.2, c=0.3))
+    top = vt + rise + 0.8
+    sw = w / 2 + A + 0.5
+    parts.append(chamfer_box(-sw, -1.4, sw, 0.2, 0.0, 1.4, c=0.4, bottom=0.8))
+    return _one_piece([sash], parts, op, plug_cs, PLUG, top, -1.4)
+
+
+def door_greek(w, h, side=2.4, transom=3.6, A=1.6):
+    """Greek Revival entrance: a two-panel door between glazed sidelights under a transom of
+    rectangular lights, framed by panelled pilasters and a plain entablature."""
+    from . import moulding as MD
+    W = w + 2 * side
+    op = rect(-W / 2, 0, W / 2, h)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    pl = PLUG
+    dh = h - transom
+    body = [ext(plug_cs, -pl, -1.0)]
+    lp, _ = _leaf("two_panel", -w / 2 + 0.2, w - 0.4, dh, True)
+    body += lp
+    glass = []
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * (w / 2 + 0.3), sg * (W / 2 - CLR - 0.5)))
+        glass.append(rect(u0, dh * 0.35, u1, dh - 0.5))
+        body.append(chamfer_box(u0, 1.0, u1, dh * 0.35 - 0.5, -1.0, 0.4, c=0.2))
+    tcs = rect(-W / 2 + CLR + 0.5, dh + 0.3, W / 2 - CLR - 0.5, h - CLR - 0.5)
+    glass.append(tcs)
+    g = cs_union(glass)
+    body = [p - ext(g, -pl + GLASS, 0.5) for p in body]
+    sash = body + [ext(g, -pl, -pl + GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
+    bars = [rect(-w / 2 - 0.2, 0.3, -w / 2 + 0.3, h), rect(w / 2 - 0.3, 0.3, w / 2 + 0.2, h), rect(-W, dh - 0.3, W, dh + 0.3)]
+    for sg in (-1, 1):
+        for j in (1, 2):
+            v = dh * 0.35 + (dh * 0.65 - 0.5) * j / 3
+            bars.append(rect(sg * (w / 2) - (side if sg < 0 else 0), v - RIB / 2, sg * (w / 2) + (side if sg > 0 else 0), v + RIB / 2))
+    for k in range(1, 6):
+        x = -W / 2 + W * k / 6
+        bars.append(rect(x - RIB / 2, dh, x + RIB / 2, h))
+    sash.append(ext(cs_union(bars) ^ plug_cs, -pl + GLASS - 0.01, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * W / 2, sg * (W / 2 + A)))
+        parts.append(ext(rect(u0, 0.0, u1, h + 0.2), 0.0, 0.8))
+        parts.append(chamfer_box(u0 + 0.35, 2.6, u1 - 0.35, h - 1.4, 0.8 - 0.01, 0.4, c=0.2))
+        parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 2.0, 0.0, 1.2, c=0.3, bottom=0.0))
+    half = W / 2 + A + 0.4
+    parts.append(ext(rect(-half, h - 0.1, half, h + 1.0), 0.0, 1.0))                # architrave
+    parts.append(ext(rect(-half, h + 0.9, half, h + 3.0), 0.0, CAS))                # frieze
+    parts.append(MD.run(-half - 0.6, half + 0.6, h + 4.2, MD.CROWN, 1.3, up=False))
+    return _one_piece(sash, parts, op, plug_cs, PLUG, h + 4.2, 0.0)
+
+
+# ------------------------------------------------------------------ San Francisco Italianate (the Delancey)
+def window_sf(w, h, rise=2.2, A=1.4, col=1.2):
+    """San Francisco Italianate window: a segmental head, engaged colonnettes with leafy
+    capitals carrying an arched architrave, a raised keystone block with a rosette, and a
+    moulded sill on paired corbels."""
+    from . import moulding as MD
+    spring = h - rise
+    op = opening_cs(w, h, rise)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    sash = window_insert(w, h, rise, lites=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    for sg in (-1, 1):
+        u = sg * (w / 2 + col / 2 + 0.1)
+        parts.append(MD.band(rect(u - col / 2, 1.2, u + col / 2, spring - 1.4), col / 2, [(0.0, 0.6), (0.5, 1.0), (1.0, 1.2)]))
+        parts.append(chamfer_box(u - col / 2 - 0.25, 0.0, u + col / 2 + 0.25, 1.4, 0.0, 1.2, c=0.3, bottom=0.0))
+        cap = chamfer_box(u - col / 2 - 0.3, spring - 1.6, u + col / 2 + 0.3, spring, 0.0, 1.3, c=0.4, bottom=0.8)
+        parts.append(cap)
+        parts.append(ext(cs_union([circle((u + dx, spring - 0.8), 0.3, 12) for dx in (-0.45, 0.0, 0.45)]), 1.29, 1.6))
+    ar = op.offset(A + col * 0.5, JoinType.Miter, 4.0)
+    parts.append(MD.band(ar, A, MD.ARCHITRAVE, clip=rect(-w - 10, spring - 0.01, w + 10, h + 20) - op))
+    ktop = h + A + col * 0.5 + 0.8
+    parts.append(chamfer_box(-0.8, h - 0.4, 0.8, ktop, 0.0, 1.8, c=0.4))
+    parts.append(MD.rosette(0.0, (h + ktop) / 2 + 0.2, 0.5, 1.6, 0.6))
+    sw = w / 2 + col + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        for du in (-0.6, 0.6):
+            parts.append(console(1.6, 0.9, 0.5, u=sg * (w / 2 - 0.2) + du, v_top=-0.8, w0=0.0))
+    return _one_piece([sash], parts, op, plug_cs, PLUG, ktop, -2.4)
+
+
+def door_sf(w, h, rise=2.6, pil=1.8, A=1.4):
+    """San Francisco entrance: tall glazed double doors under an arched transom of radiating
+    bars, fluted pilasters with capitals, a frieze with three rosettes and a segmental
+    arched cornice with a ball on top."""
+    from . import moulding as MD
+    spring = h - rise
+    op = opening_cs(w, h, rise)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    pl = PLUG
+    dh = spring - 0.4
+    mid = SLOT
+    lw = (w - 2 * CLR - 1.0 - mid) / 2
+    u = -w / 2 + CLR + 0.5
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    for i in range(2):
+        lp, light = _leaf("glazed_tall", u, lw, dh, i == 0)
+        body += lp
+        if light is not None:
+            lights.append(light)
+        u += lw + mid
+    fan = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, spring + 0.3, w, h + 5)
+    g = cs_union(lights) + fan
+    sash = [p - ext(g, -pl - 1, 0.0) for p in body]
+    sash += [ext(g, -pl, -pl + GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0),
+             ext(rect(-w, spring - 0.3, w, spring + 0.3) ^ plug_cs, -pl, -0.4)]
+    rays = cs_union([stroke([(0.0, spring), (8 * math.cos(a), spring + 8 * math.sin(a))], RIB) for a in
+                     (0.5, 1.0, math.pi / 2, math.pi - 1.0, math.pi - 0.5)])
+    sash.append(ext(rays ^ fan, -pl + GLASS - 0.01, -0.6))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    parts.append(MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 20) - op))
+    ui, uo = w / 2 + A, w / 2 + A + pil
+    vcap = h + A
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * ui, sg * uo))
+        um = (u0 + u1) / 2
+        parts.append(ext(rect(u0, 2.4, u1, vcap), 0.0, 1.0) -
+                     union([ext(stroke([(um + dx, 3.4), (um + dx, vcap - 1.2)], 0.5), 0.6, 1.2) for dx in (-0.45, 0.45)]))
+        parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 2.4, 0.0, 1.2, c=0.4, bottom=0.0))
+        parts.append(chamfer_box(u0 - 0.3, vcap - 0.2, u1 + 0.3, vcap + 1.4, 0.0, 1.3, c=0.4, bottom=0.8))
+    half = uo + 0.3
+    parts.append(ext(rect(-half, vcap + 1.2, half, vcap + 3.6), 0.0, CAS))          # into the cornice: one piece
+    for uu in (-half * 0.55, 0.0, half * 0.55):
+        parts.append(MD.rosette(uu, vcap + 2.3, 0.65, CAS - 0.01, 0.8))
+    vb = vcap + 3.4
+    parts.append(MD.run(-half - 0.5, half + 0.5, vb + 1.2, MD.CROWN, 1.2, up=False))
+    seg = arch_cs(-half - 0.2, half + 0.2, vb + 0.8, vb + 1.2, rise=2.4, seg=48)                  # seated in the cornice
+    parts.append(MD.band(seg, 1.1, MD.CROWN, clip=rect(-half - 2, vb + 1.2, half + 2, vb + 10)))
+    parts.append(ext((seg.offset(-1.0, JoinType.Round) + (rect(-half + 0.5, vb + 0.9, half - 0.5, vb + 2.2) ^ seg))
+                     ^ rect(-half, vb + 0.9, half, vb + 10), 0.0, CAS))
+    top = vb + 1.2 + 2.4
+    parts.append(ext(circle((0.0, top + 0.5), 0.75, 20) + rect(-0.35, top - 0.4, 0.35, top + 0.2), 0.0, 1.4))
+    return _one_piece(sash, parts, op, plug_cs, PLUG, top + 1.25, 0.0)
+
+
+# ------------------------------------------------------------------ Queen Anne Free Classic (the Carrow)
+def window_fc(w, h, A=1.3, pediment=True):
+    """Queen Anne Free Classic window: diamond-paned upper sash over a plain lower one,
+    fluted pilaster jambs on plinths with capitals, dentils under a triangular pediment
+    with an oculus in its tympanum, and a moulded sill."""
+    from . import moulding as MD
+    op = opening_cs(w, h, 0)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    sash = window_insert(w, h, 0, lites=(1, 1), bare=True, upper="diamond")["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * w / 2, sg * (w / 2 + A)))
+        um = (u0 + u1) / 2
+        parts.append(ext(rect(u0, 1.2, u1, h + 0.2), 0.0, 0.8) - ext(stroke([(um, 2.2), (um, h - 1.2)], 0.5), 0.4, 1.0))
+        parts.append(chamfer_box(u0 - 0.2, -0.2, u1 + 0.2, 1.4, 0.0, 1.0, c=0.3, bottom=0.0))
+        parts.append(chamfer_box(u0 - 0.25, h - 0.2, u1 + 0.25, h + 1.2, 0.0, 1.1, c=0.35, bottom=0.7))
+    half = w / 2 + A + 0.25
+    parts.append(ext(rect(-half, h + 1.0, half, h + 2.2), 0.0, CAS))
+    parts.append(dentils(-half + 0.2, half - 0.2, h + 1.8, 0.9, 0.0, 1.0))
+    vb = h + 2.6
+    parts.append(MD.run(-half - 0.5, half + 0.5, vb + 0.8, MD.CROWN, 1.0, up=False))
+    top = vb + 0.8
+    if pediment:
+        rise = 0.5 * (half + 0.5)
+        tri = poly([(-half - 0.5, top - 0.01), (half + 0.5, top - 0.01), (0.0, top + rise)])
+        parts.append(MD.band(tri, 1.0, MD.CROWN, clip=rect(-half - 2, top + 0.3, half + 2, top + 20)))
+        parts.append(ext(tri.offset(-0.9, JoinType.Miter, 4.0) + (rect(-half + 0.6, top - 0.3, half - 0.6, top + 0.3) ^ tri),
+                         0.0, CAS))
+        oc = (0.0, top + rise * 0.36)
+        rr = min(0.95, rise * 0.24)
+        parts.append(ext(circle(oc, rr + 0.5, 24) - circle(oc, rr, 24), CAS - 0.01, 1.1))
+        top += rise
+    sw = w / 2 + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return _one_piece([sash], parts, op, plug_cs, PLUG, top, -1.2)
+
+
+def window_palladian(wc, h, ws=2.6, gap=1.2, A=1.1):
+    """Palladian (Venetian) window: a round-headed centre light between two narrow
+    square-headed side lights, on pilaster mullions, the side lights' entablature running
+    into the arch's springing, a keystone at the crown and a sill across all three."""
+    from . import moulding as MD
+    spring = h - wc / 2
+    hs = spring
+    xs = wc / 2 + gap + ws / 2
+    ops = [opening_cs(wc, h, None), rect(-xs - ws / 2, 0.0, -xs + ws / 2, hs), rect(xs - ws / 2, 0.0, xs + ws / 2, hs)]
+    op = cs_union(ops)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    sash = [window_insert(wc, h, None, lites=(2, 2), bare=True, upper="diamond")["insert"]]
+    for sg in (-1, 1):
+        sash.append(window_insert(ws, hs, 0, lites=(1, 1), bare=True)["insert"].translate([sg * xs, 0, 0]))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    for u in (-xs - ws / 2 - A / 2 - 0.1, -wc / 2 - gap / 2, wc / 2 + gap / 2, xs + ws / 2 + A / 2 + 0.1):
+        cw = min(A, gap) if abs(abs(u) - (wc / 2 + gap / 2)) < 0.01 else A
+        parts.append(ext(rect(u - cw / 2 - 0.05, 0.0, u + cw / 2 + 0.05, hs), 0.0, 0.8))
+    half = xs + ws / 2 + A + 0.2
+    parts.append(ext(rect(-half, hs - 0.1, -wc / 2, hs + 1.2), 0.0, 1.0))
+    parts.append(ext(rect(wc / 2, hs - 0.1, half, hs + 1.2), 0.0, 1.0))
+    band = op.offset(A, JoinType.Round) ^ rect(-wc, spring, wc, h + 10)
+    parts.append(MD.band(band, A, MD.CASING, clip=rect(-wc, spring, wc, h + 20) - ops[0]))
+    kt = h + A + 0.8
+    parts.append(chamfer_box(-0.6, h - 0.3, 0.6, kt, 0.0, 1.6, c=0.35))
+    sw = half + 0.3
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return _one_piece(sash, parts, op, plug_cs, PLUG, kt, -1.2)
+
+
+def door_fc(w, h, side=2.2, transom=3.4, A=1.4):
+    """Queen Anne Free Classic entrance: an oval-light door between leaded sidelights under
+    a leaded transom, fluted pilasters, dentils and a triangular pediment with an oculus."""
+    from . import moulding as MD
+    W = w + 2 * side
+    op = rect(-W / 2, 0, W / 2, h)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    pl = PLUG
+    dh = h - transom
+    body = [ext(plug_cs, -pl, -1.0)]
+    lp, light = _leaf("oval", -w / 2 + 0.2, w - 0.4, dh, True)
+    body += lp
+    glass = [light]
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * (w / 2 + 0.3), sg * (W / 2 - CLR - 0.5)))
+        glass.append(rect(u0, 1.4, u1, dh - 0.5))
+    tcs = rect(-W / 2 + CLR + 0.5, dh + 0.3, W / 2 - CLR - 0.5, h - CLR - 0.5)
+    glass.append(tcs)
+    g = cs_union(glass)
+    body = [p - ext(g, -pl + GLASS, 0.5) for p in body]
+    sash = body + [ext(g, -pl, -pl + GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
+    bars = [rect(-w / 2 - 0.2, 0.3, -w / 2 + 0.3, h), rect(w / 2 - 0.3, 0.3, w / 2 + 0.2, h), rect(-W, dh - 0.3, W, dh + 0.3)]
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * (w / 2 + 0.3), sg * (W / 2 - CLR - 0.5)))
+        side_cs = rect(u0, 1.4, u1, dh - 0.5)
+        inner = side_cs.offset(-0.6, JoinType.Miter, 4.0)
+        bars.append(side_cs - inner.offset(-RIB, JoinType.Miter, 4.0) if not inner.is_empty() else side_cs)
+    inner_t = tcs.offset(-0.8, JoinType.Miter, 4.0)
+    bars.append(tcs - inner_t)
+    bars.append(inner_t.offset(RIB / 2) - inner_t.offset(-RIB / 2))
+    sash.append(ext(cs_union(bars) ^ plug_cs, -pl + GLASS - 0.01, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * W / 2, sg * (W / 2 + A)))
+        um = (u0 + u1) / 2
+        parts.append(ext(rect(u0, 2.2, u1, h + 0.2), 0.0, 0.9) - ext(stroke([(um, 3.2), (um, h - 1.2)], 0.5), 0.5, 1.1))
+        parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 2.2, 0.0, 1.2, c=0.3, bottom=0.0))
+        parts.append(chamfer_box(u0 - 0.3, h - 0.2, u1 + 0.3, h + 1.3, 0.0, 1.3, c=0.4, bottom=0.8))
+    half = W / 2 + A + 0.3
+    parts.append(ext(rect(-half, h + 1.1, half, h + 2.6), 0.0, CAS))
+    parts.append(dentils(-half + 0.2, half - 0.2, h + 2.2, 1.0, 0.0, 1.0))
+    vb = h + 3.0
+    parts.append(MD.run(-half - 0.5, half + 0.5, vb + 1.0, MD.CROWN, 1.2, up=False))
+    top = vb + 1.0
+    rise = 0.42 * (half + 0.5)
+    tri = poly([(-half - 0.5, top - 0.01), (half + 0.5, top - 0.01), (0.0, top + rise)])
+    parts.append(MD.band(tri, 1.1, MD.CROWN, clip=rect(-half - 2, top + 0.3, half + 2, top + 20)))
+    parts.append(ext(tri.offset(-1.0, JoinType.Miter, 4.0) + (rect(-half + 0.6, top - 0.3, half - 0.6, top + 0.3) ^ tri), 0.0, CAS))
+    oc = (0.0, top + rise * 0.36)
+    rr = min(1.2, rise * 0.24)
+    parts.append(ext(circle(oc, rr + 0.55, 28) - circle(oc, rr, 28), CAS - 0.01, 1.2))
+    return _one_piece(sash, parts, op, plug_cs, PLUG, top + rise, 0.0)

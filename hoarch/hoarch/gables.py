@@ -261,3 +261,92 @@ def gable_sunburst(L, slope, d_eave, skin=1.8, width=1.4, d=0.8, collar=0.36, fi
                         poly([(L / 2 - 0.5, H + finial - 1.2), (L / 2 + 0.5, H + finial - 1.2), (L / 2, H + finial)])])
         out.append(ext(fcs, 0.0, d + 0.2))
     return union(out)
+
+
+def gable_tudor(L, slope, d_eave, skin=1.8, width=1.4, d=0.8, finial=4.0):
+    """Queen Anne / Tudor gable truss hung on the rake: plain rafters, a collar, a king post
+    and two curved braces rising from the collar ends to the king post (an arch-braced
+    truss), with a turned drop under the king post and a finial."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    depth = skin + width
+    band = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    rafters = cs_union(band) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    H = tip[1]
+    vc = H * 0.3
+    u_c = vc / s - d_eave
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    parts = [rect(u_c - 0.5, vc, L - u_c + 0.5, vc + 1.2), rect(L / 2 - 0.6, vc - 2.0, L / 2 + 0.6, H - 0.5)]
+    # arch braces: circular arcs from the collar ends up to the king post, springing tangent to the collar
+    for sg in (-1, 1):
+        ua = L / 2 + sg * (L / 2 - u_c - 0.5)
+        vb = vc + (H - vc) * 0.55
+        pts = []
+        for t in np.linspace(0, 1, 24):
+            x = ua + (L / 2 - ua) * math.sin(t * math.pi / 2)
+            y = vc + 1.2 + (vb - vc - 1.2) * (1 - math.cos(t * math.pi / 2))
+            pts.append((x, y))
+        parts.append(stroke(pts, 0.8))
+        # a pair of short vertical studs between collar and rafters
+        us = L / 2 + sg * (L / 2 - u_c) * 0.7
+        parts.append(rect(us - 0.35, vc + 1.0, us + 0.35, s * (min(us, L - us) + d_eave) - 0.2))
+    frame_cs = (cs_union(parts) ^ tri) + rafters
+    frame_cs = frame_cs.offset(-0.26, JoinType.Round).offset(0.26, JoinType.Round)
+    frame_cs = cs_union([pc for pc in frame_cs.decompose() if pc.area() > 2.0])
+    out = [ext(frame_cs, 0.0, d)]
+    kb = vc - 2.0
+    out.append(ext(cs_union([rect(L / 2 - 0.45, kb - 2.4, L / 2 + 0.45, kb + 0.3), circle((L / 2, kb - 2.6), 0.7, 20)]),
+                   0.0, d + 0.2))
+    if finial:
+        out.append(ext(cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 1.0),
+                                 circle((L / 2, H + finial - 1.0), 0.75, 20)]), 0.0, d + 0.2))
+    return union(out)
+
+
+def gable_gingerbread(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
+    """Folk Victorian gingerbread: a narrow rafter board edged with a row of sawn drops, and
+    a spindle screen (a rail with short spindles and balls) hung across the peak from a
+    king post that ends in a turned drop."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    depth = skin + width
+    band, drops = [], []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+        dirv = (tip - a) / np.linalg.norm(tip - a)
+        run = float(np.linalg.norm(tip - a))
+        m = max(3, int(run / 2.0))
+        for k in range(1, m - 1):
+            p = a + dirv * (run * k / m) + n * (depth - 0.2)
+            drops.append(cs_union([rect(p[0] - 0.3, p[1] - 1.2, p[0] + 0.3, p[1] + 0.3), circle((p[0], p[1] - 1.4), 0.45, 14)]))
+    rafters = cs_union(band + drops) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    H = tip[1]
+    vr = H * 0.52
+    u_r = vr / s - d_eave + depth * c * 0.5
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    parts = [rect(u_r, vr - 0.7, L - u_r, vr), rect(L / 2 - 0.55, vr - 2.4, L / 2 + 0.55, H - 0.5)]
+    n = max(3, int((L - 2 * u_r) / 1.4))
+    for k in range(n):
+        x = u_r + (L - 2 * u_r) * (k + 0.5) / n
+        ytop = s * (min(x, L - x) + d_eave) - depth * c + 0.3
+        if ytop - vr < 1.0:
+            continue
+        parts += [rect(x - 0.28, vr - 0.1, x + 0.28, ytop), circle((x, vr + 0.7), 0.42, 12)]
+    frame_cs = (cs_union(parts) ^ tri) + rafters
+    frame_cs = frame_cs.offset(-0.26, JoinType.Round).offset(0.26, JoinType.Round)
+    frame_cs = cs_union([pc for pc in frame_cs.decompose() if pc.area() > 2.0])
+    out = [ext(frame_cs, 0.0, d)]
+    kb = vr - 2.4
+    out.append(ext(cs_union([rect(L / 2 - 0.4, kb - 1.8, L / 2 + 0.4, kb + 0.3), circle((L / 2, kb - 2.0), 0.6, 18),
+                             poly([(L / 2 - 0.45, kb - 2.4), (L / 2 + 0.45, kb - 2.4), (L / 2, kb - 3.3)])]), 0.0, d + 0.2))
+    if finial:
+        out.append(ext(cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 1.2),
+                                 poly([(L / 2 - 0.7, H + finial - 1.2), (L / 2 + 0.7, H + finial - 1.2), (L / 2, H + finial)])]),
+                       0.0, d + 0.2))
+    return union(out)

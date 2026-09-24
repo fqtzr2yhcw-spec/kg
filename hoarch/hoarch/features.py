@@ -216,7 +216,7 @@ def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True, styl
 
 
 def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.4, skirt=1.4, floor=True,
-               ledger_off=0.0):
+               ledger_off=0.0, infill="lattice", pier_tex="brick"):
     """Porch deck: brick piers, lattice skirt and fascia along the outer edges, a ledger on
     the house side, and (``floor=True``) the floor slab. With floor=False the floor is left
     to porch_floor() as its own part (its own colour, boards on its bed face).
@@ -243,13 +243,21 @@ def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.
         lat_reg = rect(0.2, 0.0, L - 0.2, H - floor_t - skirt)
         for u in pu:
             lat_reg = lat_reg - rect(u - pier / 2, -1, u + pier / 2, H)
-        lat = lattice(lat_reg, pitch=1.8, bar=0.5, d=1.2)          # two 0.6 layers: no fused slot
+        from . import porchwork as PW
+        lat = PW.skirt_fill(infill, lat_reg, d=1.2)                # two 0.6 layers: no fused slot
         parts.append(f.place(lat.translate([0, 0, -1.9])))
         parts.append(f.place(box([0.0, 0.0, -2.5], [L, H - floor_t - skirt, -1.8])))      # backing web
         for u in pu:
             pr = box([u - pier / 2, 0.0, -pier + 0.2], [u + pier / 2, H - floor_t - skirt + 0.01, 0.0])
-            tex = brick(rect(u - pier / 2 + 0.05, 0.0, u + pier / 2 - 0.05, H - floor_t - skirt), bl=2.0,
-                        d=0.2).translate([0, 0, -0.01])
+            preg = rect(u - pier / 2 + 0.05, 0.0, u + pier / 2 - 0.05, H - floor_t - skirt)
+            if pier_tex == "stone":
+                from .core import ashlar
+                tex = ashlar(preg, course=(1.8, 2.6), length=(1.6, 3.4), d=0.3, seed=int(u * 13) % 97)
+            elif pier_tex == "plain":
+                tex = chamfer_box(u - pier / 2 + 0.3, 0.3, u + pier / 2 - 0.3, H - floor_t - skirt - 0.3, 0.0, 0.3, c=0.2)
+            else:
+                tex = brick(preg, bl=2.0, d=0.2)
+            tex = tex.translate([0, 0, -0.01])
             parts.append(f.place(pr + tex))
     return union(parts)
 
@@ -447,14 +455,42 @@ def shutter(w, h, t=0.8, stile=0.6, louver=1.0, mid=True):
     return union(parts)
 
 
-def shutters_for(opening_w, opening_h, casing=1.1, gap=0.6, t=0.8, h=None):
+def shutter_panel(w, h, t=0.8, stile=0.6):
+    """Raised-panel shutter (Italianate): two panels, each a bevelled field inside the frame."""
+    parts = [ext(rect(0, 0, w, h), 0.0, t - 0.3)]
+    mid = h * 0.42
+    for v0, v1 in ((stile, mid - stile / 2), (mid + stile / 2, h - stile)):
+        if v1 - v0 > 1.5 and w - 2 * stile > 1.0:
+            parts.append(chamfer_box(stile + 0.2, v0 + 0.2, w - stile - 0.2, v1 - 0.2, t - 0.31, 0.3, c=0.2))
+    frame_cs = rect(0, 0, w, h) - rect(stile, stile, w - stile, h - stile) + rect(0, mid - stile / 2, w, mid + stile / 2)
+    parts.append(ext(frame_cs, 0.0, t))
+    return union(parts)
+
+
+def shutter_board(w, h, t=0.8):
+    """Farmhouse board shutter: vertical boards with grooves, a Z brace of battens and a
+    diamond cut-out near the top."""
+    parts = [ext(rect(0, 0, w, h), 0.0, t - 0.3)]
+    n = max(2, int(w / 1.2))
+    g = cs_union([rect(w * k / n - 0.25, 0.3, w * k / n + 0.25, h - 0.3) for k in range(1, n)])
+    parts[0] = parts[0] - ext(g, 0.2, t)
+    bat = cs_union([rect(0.2, 1.0, w - 0.2, 1.9), rect(0.2, h - 1.9, w - 0.2, h - 1.0),
+                    stroke([(0.6, 1.8), (w - 0.6, h - 1.8)], 0.8)])
+    parts.append(ext(bat, t - 0.31, t + 0.2))
+    c = (w / 2, h - 3.2)
+    dia = poly([(c[0], c[1] + 0.8), (c[0] + 0.55, c[1]), (c[0], c[1] - 0.8), (c[0] - 0.55, c[1])])
+    return union(parts) - ext(dia, -1, t + 1)
+
+
+def shutters_for(opening_w, opening_h, casing=1.1, gap=0.6, t=0.8, h=None, style="louver"):
     """A pair of shutters (left, right) framing an opening, in insert-local coordinates
     (u centred on the opening, v from the opening bottom, mounted at w = stand_off).
     The default gap clears the casing's ears (0.5 past the casing at the head)."""
     sw = opening_w / 2
     hh = opening_h if h is None else h
-    left = shutter(sw, hh, t=t).translate([-(opening_w / 2 + casing + gap + sw), 0, 0])
-    right = shutter(sw, hh, t=t).translate([opening_w / 2 + casing + gap, 0, 0])
+    mk = {"louver": shutter, "panel": shutter_panel, "board": shutter_board}[style]
+    left = mk(sw, hh, t=t).translate([-(opening_w / 2 + casing + gap + sw), 0, 0])
+    right = mk(sw, hh, t=t).translate([opening_w / 2 + casing + gap, 0, 0])
     return left, right
 
 
@@ -531,7 +567,7 @@ def baluster(h, rmax=0.55, rmin=0.36, seg=20):
 
 
 def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pitch=8.0, foot_margin=0.5,
-                    stiles=True):
+                    stiles=True, style="turned"):
     """Baluster railing between two posts, printed upright. Local frame: u along 0..L, v up
     from the porch floor (= print z), w across, centred. Feet carry the bottom rail
     ``foot`` above the floor; turned balusters; a hand rail with a rounded top.
@@ -548,10 +584,16 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
     vb, vt = foot + 0.8, h - 1.0                   # every flat face on the 0.2 mm layer grid
     for u in ((0.0, L - 0.7) if stiles else ()):                                     # end stiles
         parts.append(box([u, -0.5, foot], [u + 0.7, 0.5, vt + 0.01]))
-    n = max(1, int(round((L - 1.4) / pitch)))
-    for j in range(n):
-        u = 0.7 + (L - 1.4) * (j + 0.5) / n
-        parts.append(baluster(vt - vb + 0.02).translate([u, 0.0, vb - 0.01]))
+    from . import porchwork as PW
+    if style in ("chippendale", "x", "pierced", "sawn"):
+        parts.append(PW.fill_flat(style, L, vb - 0.01, vt + 0.01))
+    else:
+        mk, pt = {"turned": (baluster, pitch), "vase": (PW.baluster_vase, 2.4), "urn": (PW.baluster_urn, 2.4),
+                  "spindle": (PW.spindle, 1.25)}[style]
+        n = max(1, int(round((L - 1.4) / pt)))
+        for j in range(n):
+            u = 0.7 + (L - 1.4) * (j + 0.5) / n
+            parts.append(mk(vt - vb + 0.02).translate([u, 0.0, vb - 0.01]))
     # hand rail: square under-rail, rounded cap (in (w, v), extruded along u)
     cap = poly([(-rail_w / 2, vt), (rail_w / 2, vt), (rail_w / 2, h - 0.4), (rail_w / 2 - 0.2, h - 0.2),
                 (rail_w / 2 - 0.4, h), (-rail_w / 2 + 0.4, h), (-rail_w / 2 + 0.2, h - 0.2), (-rail_w / 2, h - 0.4)])
@@ -703,7 +745,9 @@ def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0,
         u0, u1 = a + cap / 2 + 0.1, b - cap / 2 - 0.1
         if u1 - u0 < 6.0:
             continue
-        sp = {"gothic": _gothic_spandrel_cs, "braced": _braced_spandrel_cs}.get(style, _spandrel_cs)(u0, u1, vb - drop, vb)
+        from . import porchwork as PW
+        fn = {"gothic": _gothic_spandrel_cs, "braced": _braced_spandrel_cs, "sawn": _spandrel_cs}.get(style) or PW.FRIEZES[style]
+        sp = fn(u0, u1, vb - drop, vb)
         body = ext(sp, tb / 2 - ts, tb / 2)
         rim = ext(sp.offset(-0.55, JoinType.Round).offset(0.05, JoinType.Round), tb / 2 - 0.3, tb / 2 + 1)
         parts.append(body - rim)
@@ -717,7 +761,8 @@ ARCADE_PRINT = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
 
 
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
-                 boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0, arcade="sawn"):
+                 boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0, arcade="sawn", post="turned",
+                 rail="turned", skirt="lattice", pier_tex="brick"):
     """Porch with turned posts, upright railings and edge-printed arcades.
     ``arcade``: "sawn" (elliptical arches with roundels) or "gothic" (pointed arches, trefoils).
 
@@ -740,7 +785,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
     outer = [i for i, _ in edges]
     piers = {i: list(r["posts"]) for i, r in edges}
     deck = porch_deck(pts, outer, H=H_floor, piers_u=piers, pier=pier, floor=boards is None,
-                      ledger_off=ledger_off)
+                      ledger_off=ledger_off, infill=skirt, pier_tex=pier_tex)
     # post positions (deduplicated at shared corners)
     where = []
     for r in runs:
@@ -750,7 +795,9 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             if not any(np.allclose(p, q, atol=0.05) for q in where):
                 where.append(p)
     ph = post_h - beam + 0.4                    # plinth sits 0.4 down in a floor socket
-    post = turned_post(ph, collar=(rail_h + 0.4) if joined else None)
+    from . import porchwork as PW
+    post_style = post
+    post = PW.POSTS[post_style](ph, collar=(rail_h + 0.4) if joined else None)
     posts = [post.translate([p[0], p[1], H_floor - 0.4]) for p in where]
     floor = None
     if boards is not None:
@@ -781,9 +828,9 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             # railing_section is built z-up; facade frames are (u, v up, w out)
             if joined:        # end feet clear of the square plinths (they reach further on a slant)
                 ext_ = 1.6 * (abs(f.u[0]) + abs(f.u[1]))
-                rs = railing_section(L, rail_h, sink=0.4, foot_margin=ext_ + 0.8 - clr, stiles=False)
+                rs = railing_section(L, rail_h, sink=0.4, foot_margin=ext_ + 0.8 - clr, stiles=False, style=rail)
             else:
-                rs = railing_section(L, rail_h)
+                rs = railing_section(L, rail_h, style=rail)
             rails.append(rs.translate([a_ + clr, 0, 0]).transform(Z_UP_TO_FACADE).transform(A))
             run_rails.setdefault(k, []).append(rails[-1])
         if len(us) < 2:                         # a lone corner post: its longer neighbour's arcade covers it

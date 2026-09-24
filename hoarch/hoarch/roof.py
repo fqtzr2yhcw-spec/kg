@@ -24,7 +24,7 @@ def _edges(path):
     return P, miters(P)
 
 
-def edge_brackets(path, z_top, h, d0, d, t, pitch, margin=2.5, pair=0.0, corner=True, skip=None):
+def edge_brackets(path, z_top, h, d0, d, t, pitch, margin=2.5, pair=0.0, corner=True, skip=None, style="scroll"):
     """Consoles under a soffit along every edge. d0 = frieze face offset; brackets
     project to d0 + d. ``pair`` > 0 places twin brackets that far apart."""
     P, Mi = _edges(path)
@@ -43,7 +43,8 @@ def edge_brackets(path, z_top, h, d0, d, t, pitch, margin=2.5, pair=0.0, corner=
                 uu = u + du
                 if skip is not None and skip(f.world(uu, 0, d0)):
                     continue
-                c = console(h, d, t, u=uu, v_top=0.0, w0=0.0)
+                from .trimwork import bracket
+                c = bracket(style, h, d, t, u=uu, v_top=0.0, w0=0.0)
                 A = f.A.copy()
                 A[:, 3] = f.world(0.0, 0.0, d0) + np.array([0, 0, z_top])
                 out.append(c.transform(A))
@@ -199,7 +200,19 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
         q = pi.q
         A2 = np.array([[e[0], e[1], -(e @ q)], [t[0] / cth, t[1] / cth, -(t @ q) / cth]])
         loc = reg.transform(A2)
-        if shape == "seam":
+        if shape in ("tile", "crimp"):
+            b = loc.bounds()
+            n0 = int(np.floor(b[0] / seam_pitch))
+            ribs = []
+            for k in range(n0, int(np.ceil(b[2] / seam_pitch)) + 1):
+                u = k * seam_pitch
+                if shape == "tile":       # barrel tiles: a wide rib per row, broken at every course
+                    for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                        ribs.append(rect(u - seam_pitch * 0.32, j * pitch + 0.25, u + seam_pitch * 0.32, (j + 1) * pitch))
+                else:                     # 5V crimp: a pair of narrow ribs per panel
+                    ribs += [rect(u - 0.85, b[1] - 1, u - 0.35, b[3] + 1), rect(u + 0.35, b[1] - 1, u + 0.85, b[3] + 1)]
+            tex = M.extrude(cs_union(ribs) ^ loc.offset(-0.3, JoinType.Miter, 4.0), d)
+        elif shape == "seam":
             b = loc.bounds()
             n0 = int(np.floor(b[0] / seam_pitch))
             ribs = [rect(k * seam_pitch - seam_w / 2, b[1] - 1, k * seam_pitch + seam_w / 2, b[3] + 1)
@@ -294,7 +307,7 @@ def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_
         b = dict(pair=0.0, margin=2.5)
         b.update(brackets)
         parts.append(edge_brackets(path, z0 + b["z_top"], b["h"], b["d0"], b["d"], b["t"], b["pitch"],
-                                   margin=b["margin"], pair=b["pair"], skip=b.get("skip")))
+                                   margin=b["margin"], pair=b["pair"], skip=b.get("skip"), style=b.get("style", "scroll")))
     if brackets and panels:
         b = dict(pair=0.0, margin=2.5)
         b.update(brackets)

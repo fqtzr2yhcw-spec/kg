@@ -376,6 +376,16 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
             elif shp == "diamond":
                 c = u + wtab / 2
                 tabs.append(poly([(c, vk), (c + r, vk + r), (c + r, top), (c - r, top), (c - r, vk + r)]))
+            elif shp == "hex":            # clipped bottom corners (hexagonal slate)
+                c, q = u + wtab / 2, r * 0.5
+                tabs.append(poly([(c - r + q, vk), (c + r - q, vk), (c + r, vk + q), (c + r, top), (c - r, top),
+                                  (c - r, vk + q)]))
+            elif shp == "stagger":        # square butts of random width, some shorter than their neighbours
+                h_ = (int(u * 7.3 + k * 3.1) % 5)
+                low = 0.4 if h_ % 2 else 0.0
+                wv = wtab * (0.75 + 0.12 * h_)
+                tabs.append(rect(u + gap / 2, vk + low, u + wv - gap / 2, top))       # short butts show the row below
+                u += wv - wtab
             else:
                 tabs.append(rect(u + gap / 2, vk, u + wtab - gap / 2, top))
             u += wtab
