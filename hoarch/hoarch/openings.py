@@ -96,7 +96,8 @@ def _arc_band(w_in, spring, rise, r_in_extra, thick, u_ext=0.0, seg=32):
 def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare=False, ends=0.9, sill_ext=0.6,
                   clip=False, apron=False, consoles=None, qa=False):
     """Italianate window: segmental- or round-arched head, eared casing,
-    bracketed sill, moulded hood with keystone; ``style`` in {"crest", "key", "flat"}.
+    bracketed sill, moulded hood with keystone; ``style`` in {"crest", "key", "flat"}, or
+    "voussoir" (a brick-house head: stone voussoirs long and short in turn, and a keystone).
     Queen Anne styles (see _window_qa): "pediment" (segmental pediment with a sunburst on
     bullseye corner blocks, a shaped apron with a drop), "blocks" (the same without the
     pediment, for a head with no headroom) and "scroll" (an eyebrow hood whose ends roll
@@ -167,7 +168,7 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     # ears: small outward steps at the spring line (a flat cap on consoles has none)
     consoles = (style == "flat") if consoles is None else consoles
     ear_h = 1.1
-    for s in (() if (style == "flat" and consoles) else (-1, 1)):
+    for s in (() if ((style == "flat" and consoles) or style == "voussoir") else (-1, 1)):
         u0 = s * (w / 2 + casing)
         parts.append(ext(rect(min(u0, u0 + s * 0.5), spring - ear_h, max(u0, u0 + s * 0.5), spring + 0.2), 0.0, CAS))
     # --- sill with two small brackets -------------------------------------------------
@@ -224,6 +225,34 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
                                 ((r0 + 0.2) * math.sin(a) + 0.3 * math.cos(a), cy + (r0 + 0.2) * math.cos(a) - 0.3 * math.sin(a))]))
             fan = (cs_union(fl) ^ (cas_out - op) ^ rect(-w, spring + 0.3, w, h + 20)).offset(-0.2).offset(0.2)
             parts.append(ext(fan, CAS, BEAD))
+    elif style == "voussoir":
+        # brick-house head: an arch of stone voussoirs, long and short in turn (Gibbs
+        # fashion), with a projecting keystone. The joints are nozzle-wide slots.
+        thick = 1.6
+        band, cy, r0 = _arc_band(w, spring, rise, casing - 0.15, thick)
+        r1 = r0 + thick
+        a_lim = math.acos(max(-1.0, min(1.0, (spring - 0.2 - cy) / (r1 + 0.8))))
+        n = max(5, int(round(2 * a_lim * (r0 + thick / 2) / 1.8)))
+        n += 1 - n % 2                                  # odd: a stone (the keystone) at the crown
+        stones = []
+        for k in range(n):
+            if k == n // 2:
+                continue
+            a0, a1 = -a_lim + 2 * a_lim * k / n, -a_lim + 2 * a_lim * (k + 1) / n
+            ro = r1 + (0.8 if (k - n // 2) % 2 == 0 else 0.0)
+            g = math.asin(SLOT / 2 / r0)
+            arc = [a0 + g + (a1 - a0 - 2 * g) * j / 6 for j in range(7)]
+            pts = [(ro * math.sin(a), cy + ro * math.cos(a)) for a in arc]
+            pts += [(r0 * math.sin(a), cy + r0 * math.cos(a)) for a in reversed(arc)]
+            stones.append(poly(pts))
+        face = cs_union(stones) ^ rect(-w, spring - 0.2, w, h + 20)
+        if clip:
+            face = face ^ rect(-w / 2 - casing - ends, -1, w / 2 + casing + ends, h + 20)
+        face = face.offset(-0.25, JoinType.Miter, 4.0).offset(0.25, JoinType.Miter, 4.0)   # no specks
+        parts.append(stepped(face, [(0.0, 0.0, 0.8), (0.2, 0.8, 1.0)]))
+        ktop = cy + r1 + 1.2
+        parts.append(keystone(0.0, cy + r0 - 0.2, ktop - (cy + r0 - 0.2), 1.3, 1.9, 0.0, 1.6))
+        top = ktop
     else:  # flat cornice cap
         cw = w / 2 + casing + 0.8
         parts.append(ext(rect(-cw, h + casing - 0.2, cw, h + casing + 0.9), 0.0, 1.2))

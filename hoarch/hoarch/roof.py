@@ -369,3 +369,73 @@ def cresting_strips(crest, path, z, d_off):
         if not seg.is_empty():
             out.append((i, seg, f.A.copy(), f.L))
     return out
+
+
+# ------------------------------------------------------------------ mansards
+def offset_path(path, d):
+    """The convex plan ``path`` offset outward by d (mitred corners), CCW."""
+    P, Mi = _edges(path)
+    return [tuple(p + d * m) for p, m in zip(P, Mi)]
+
+
+def mansard(path, prof, t=2.6, tex=None):
+    """A mansard band on a convex plan ``path``: hollow, open at the top, printed upright.
+
+    ``prof`` = the outer profile [(d, z), ...] from the bottom up, d = outward offset from
+    the wall face. It must only move in (or straight up) as z rises, so no outer face
+    overhangs: a straight slope with a bell-cast kick at its foot, or a concave tower cap.
+    The inner face is one straight line parallel to the chord from the bottom point to the
+    top one, set in so the band is at least ``t`` thick everywhere. It leans in at about
+    the roof's own pitch (15-20 degrees off vertical), which prints fine.
+    ``tex`` = dict(pitch, wtab, d, shape) puts slate rows on every segment, or None.
+    Returns (solid, texture, inner) where inner(z) is the inner face offset at height z."""
+    P, Mi = _edges(path)
+
+    def ring_at(d, z):
+        return np.c_[P + d * Mi, np.full(len(P), z)]
+    outer = union([M.hull_points(np.vstack([ring_at(d0, z0), ring_at(d1, z1)]).tolist())
+                   for (d0, z0), (d1, z1) in zip(prof[:-1], prof[1:])])
+    (da, za), (db, zb) = prof[0], prof[-1]
+    k = (db - da) / (zb - za)
+    s = t + max(da + k * (z - za) - d for d, z in prof)
+
+    def inner(z):
+        return da + k * (z - za) - s
+    cav = M.hull_points(np.vstack([ring_at(inner(za - 1.0), za - 1.0), ring_at(inner(zb + 1.0), zb + 1.0)]).tolist())
+    solid = outer - cav
+    texture = M()
+    if tex:
+        tk = dict(pitch=1.6, wtab=1.9, d=0.4, shape="fish")
+        tk.update(tex)
+        texture = union([slope_texture(path, z0, z1, d0, d1, **tk)
+                         for (d0, z0), (d1, z1) in zip(prof[:-1], prof[1:]) if z1 - z0 >= tk["pitch"]])
+        texture = texture.trim_by_plane([0, 0, -1.0], -zb)      # rows stand square to the slope: none above the top
+    return solid, texture, inner
+
+
+def mansard_top(path, d_top, z, t, h=2.6, deck_th=1.2, seams=5.2, clr=0.15):
+    """Top curb and flat deck of a mansard whose band's top outer edge is at offset
+    ``d_top`` and is ``t`` thick (horizontally) at height z. Two parts:
+
+    * ``ring``: a moulded curb on the band top, printed upside down. A lip in the same
+      profile drops just inside the band's inner edge to locate it, and its inner face has a
+      45 degree seat for the deck;
+    * ``deck``: a flat standing-seam deck plate, printed flat, its edge chamfered 45 degrees
+      to sit on the seat, flush with the curb top.
+
+    Every face either stands on the one below or overhangs 45 degrees in print. Returns
+    dict(ring, deck, path=top outline, z_top=deck top)."""
+    top_path = offset_path(path, d_top)
+    prof = [(-t - 1.2, -1.2), (-t - clr, -1.2), (-t - clr, 0.0), (0.2, 0.0), (0.2, 0.6), (0.6, 1.0), (0.6, 1.6),
+            (1.0, 2.0), (1.0, h), (-t, h), (-t - deck_th, h - deck_th)]
+    ring = sweep_ring(top_path, shift_profile(prof, z))
+    P, Mi = _edges(top_path)
+    a = np.c_[P + (-t - clr) * Mi, np.full(len(P), z + h)]
+    b = np.c_[P + (-t - clr - deck_th) * Mi, np.full(len(P), z + h - deck_th)]
+    deck = M.hull_points(np.vstack([a, b]).tolist())
+    if seams:
+        cs = poly([tuple(p) for p in P + (-t - clr - 0.8) * Mi])
+        x0, y0, x1, y1 = cs.bounds()
+        ribs = cs_union([rect(x - 0.25, y0, x + 0.25, y1) for x in np.arange(x0 + seams / 2, x1, seams)]) ^ cs
+        deck = deck + slab(ribs, z + h - 0.01, z + h + 0.4)
+    return dict(ring=ring, deck=deck, path=top_path, z_top=z + h)
