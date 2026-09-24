@@ -1269,3 +1269,75 @@ def door_romanesque(w, h, orders=2, col=1.3, L=3.0, plug=True, leaves=2):
         return dict(insert=sur, sash=M(), glass=M(), frame=sur, surround=sur, back=0.0, cut=op,
                     landing=footprint(sur, op), top=top, bottom=0.0)
     return _one_piece(sash, parts, op, plug_cs, PLUG, top, 0.0)
+
+
+# ------------------------------------------------------------------ Stick style
+# Flat board trim whose members cross at the corners like framing sticks, a pent hood on
+# diagonal knee braces over a frieze of short sticks, an X-braced apron, border-light sashes.
+
+def _stick_frame(w, h, A, parts, ext_=0.9, d=CAS):
+    """Head and side boards that run past each other at the corners (crossed sticks)."""
+    parts.append(ext(rect(-w / 2 - A - ext_, h, w / 2 + A + ext_, h + A), 0.0, d))               # head
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * w / 2, sg * (w / 2 + A)))
+        parts.append(ext(rect(u0, -ext_ - 1.0, u1, h + A + ext_), 0.0, d + 0.2))                  # sides
+
+
+def _stick_head(w, h, A, parts, hood_w=1.4, frieze=2.2, brace=True):
+    """A frieze of short sticks over the head board, a pent hood (a crowned shelf) over it,
+    and two diagonal knee braces from the side boards up to the hood's ends. Returns top."""
+    from . import moulding as MD
+    v0 = h + A
+    half = w / 2 + A
+    parts.append(ext(rect(-half, v0 - 0.01, half, v0 + frieze), 0.0, 0.4))                   # frieze field
+    n = max(2, int((2 * half - 0.8) / 1.3))
+    sticks = [rect(-half + 0.4 + (2 * half - 0.8) * (k + 0.5) / n - 0.3, v0, -half + 0.4 + (2 * half - 0.8) * (k + 0.5) / n + 0.3,
+                   v0 + frieze) for k in range(n)]
+    parts.append(ext(cs_union(sticks), 0.39, 0.8))
+    hv = v0 + frieze
+    hh = half + hood_w
+    parts.append(MD.run(-hh, hh, hv + 1.4, MD.CROWN, 1.4, up=False))
+    parts.append(ext(rect(-hh + 0.2, hv + 1.39, hh - 0.2, hv + 2.0), 0.0, 1.0))                # the hood's roof edge
+    if brace:
+        for sg in (-1, 1):
+            a = (sg * (w / 2 + A * 0.5), h - 2.6)
+            b = (sg * (hh - 0.5), hv + 0.2)
+            parts.append(ext(stroke([a, b], 0.7), 0.0, 1.2))
+    return hv + 2.0
+
+
+def window_stick(w, h, lites=(1, 1), qa=True, A=1.2, apron=True, brace=True):
+    """Stick-style window: border-light sash (``qa``), crossed-stick casing, a pent hood on
+    knee braces over a frieze of sticks, a sill on two blocks and an X-braced apron."""
+    from . import moulding as MD
+    op = opening_cs(w, h, 0)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    sash = window_insert(w, h, 0, lites=lites, bare=True, qa=qa)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    _stick_frame(w, h, A, parts)
+    top = _stick_head(w, h, A, parts, brace=brace)
+    sw = w / 2 + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    bottom = -1.9
+    if apron:
+        aw = w / 2
+        parts.append(ext(rect(-aw, -3.6, aw, -0.9), 0.0, 0.4))
+        x = cs_union([stroke([(-aw + 0.5, -3.3), (aw - 0.5, -1.2)], 0.55), stroke([(-aw + 0.5, -1.2), (aw - 0.5, -3.3)], 0.55)])
+        parts.append(ext(x ^ rect(-aw, -3.6, aw, -0.9), 0.39, 0.8))
+        parts.append(ext(rect(-aw - 0.3, -4.0, aw + 0.3, -3.5), 0.0, 0.8))
+        bottom = -4.0
+    return _one_piece([sash], parts, op, plug_cs, PLUG, top, bottom)
+
+
+def door_stick(w, h, leaves=2, transom=4.0, A=1.4):
+    """Stick-style entrance: the ornate leaves and transom of door_ornate in a crossed-stick
+    casing, a stick frieze and a deep pent hood on big knee braces."""
+    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom)
+    parts = [ext((op - op.offset(-RIB, JoinType.Miter, 4.0)) ^ rect(-w, 0.5, w, h + 1), 0.0, CAS)]
+    parts.append(ext(rect(-w / 2 - A - 0.9, h, w / 2 + A + 0.9, h + A), 0.0, CAS))
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * w / 2, sg * (w / 2 + A)))
+        parts.append(ext(rect(u0, 0.0, u1, h + A + 0.9), 0.0, CAS + 0.2))
+        parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 2.4, 0.0, 1.2, c=0.3, bottom=0.0))       # plinths
+    top = _stick_head(w, h, A, parts, hood_w=2.0, frieze=2.6)
+    return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)

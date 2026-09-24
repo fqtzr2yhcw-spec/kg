@@ -11,7 +11,7 @@ from manifold3d import JoinType, Manifold as M
 
 from .core import (RIB, SLOT, Facade, box, brick, ccw, circle, cs_union, lattice, miters, offset, poly, rect, slab,
                    sweep_run, union)
-from .ornament import chamfer_box, chimney_pot, dentils, ext, keystone, spandrel
+from .ornament import chamfer_box, chimney_pot, dentils, ext, keystone, spandrel, stroke
 from . import openings as O
 
 
@@ -668,6 +668,23 @@ def _gothic_spandrel_cs(u0, u1, v_bot, v_top, band=0.8, wood=0.7):
     return solid + drop
 
 
+def _braced_spandrel_cs(u0, u1, v_bot, v_top, wood=0.8):
+    """Stick-style bay between two posts: a frieze of short sticks between the beam and a
+    rail below it, and a straight diagonal knee brace from each post up to the rail. (u, v)"""
+    rail0, rail1 = v_top - 2.0, v_top - 1.2          # printed upside down from the beam: faces on the grid
+    parts = [rect(u0, rail0, u1, rail1)]
+    n = max(2, int((u1 - u0) / 1.4))
+    for k in range(n):
+        u = u0 + (u1 - u0) * (k + 0.5) / n
+        parts.append(rect(u - 0.28, rail1 - 0.05, u + 0.28, v_top + 0.05))
+    L = min(4.2, (u1 - u0) * 0.3)
+    for sg, ue in ((1, u0), (-1, u1)):
+        parts.append(stroke([(ue + sg * 0.35, rail0 - L * 0.8), (ue + sg * L, rail0 + 0.3)], wood))
+        foot = v_top - round((v_top - (rail0 - L * 0.8 - 0.4)) / 0.2) * 0.2
+        parts.append(rect(min(ue, ue + sg * 0.9), foot, max(ue, ue + sg * 0.9), rail1))
+    return cs_union(parts) ^ rect(u0, v_bot, u1, v_top + 0.05)
+
+
 def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0, cap=3.0, style="sawn"):
     """Upper porch work for one run: beam with moulded edges, a square block with a rosette
     over every post, a tab into each post's slot, and a sawn-work spandrel (arch, roundels,
@@ -686,7 +703,7 @@ def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0,
         u0, u1 = a + cap / 2 + 0.1, b - cap / 2 - 0.1
         if u1 - u0 < 6.0:
             continue
-        sp = (_gothic_spandrel_cs if style == "gothic" else _spandrel_cs)(u0, u1, vb - drop, vb)
+        sp = {"gothic": _gothic_spandrel_cs, "braced": _braced_spandrel_cs}.get(style, _spandrel_cs)(u0, u1, vb - drop, vb)
         body = ext(sp, tb / 2 - ts, tb / 2)
         rim = ext(sp.offset(-0.55, JoinType.Round).offset(0.05, JoinType.Round), tb / 2 - 0.3, tb / 2 + 1)
         parts.append(body - rim)
