@@ -98,13 +98,19 @@ def _column(style, u0, u1, v0, v1, cap_h=2.4, base_h=3.0):
 
 
 def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2, transom=6.4, beam=2.0,
-               lite=2.4, bulk_style="panel", mullion=True):
+               lite=2.4, bulk_style="panel", mullion=True, posts=True, t=3.0):
     """Cast-iron storefront filling a W x H opening (u centred, v from 0), one part printed
     face-up (plug back on the bed, no supports): pilasters at both ends and either side of a
     recessed entry ``entry`` wide at ``entry_at``, panelled bulkheads under the display
     windows, a sill, the display glass, a transom bar and a band of prism-glass transom
     lights ``lite`` wide, and a beam under the sign band. The entry is an opening through the
     part: the vestibule (its own part) stands behind it.
+
+    ``posts``: a brick post (returned as ``posts``, local frame, for the wall part of a wall
+    ``t`` thick) stands behind every inner column, so the wall over the storefront bridges
+    only from post to post instead of across the whole front. The posts' fronts come to a
+    45 degree point and the plug has a matching V notch: the wall still prints upright and
+    the storefront face-up without supports.
 
     Returns the insert dict of openings.py (insert, glass / sash / frame zones, cut, landing,
     top, bottom, back) plus ``entry`` = (u centre, width, height) for the vestibule."""
@@ -119,6 +125,18 @@ def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2
         ent = rect(e0, 0.0, e1, ve)
     cols.sort()
     plug_cs = op - ent if ent is not None else op
+    post_m = notch = M()
+    if posts:
+        A = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])       # (u, w, v) -> (u, v, w)
+        pm, nm = [], []
+        for a, b in cols:
+            if a < -W / 2 + 0.01 or b > W / 2 - 0.01:
+                continue                        # the jambs carry the ends
+            c = (a + b) / 2
+            sec = poly([(c - PLUG, -t), (c + PLUG, -t), (c + PLUG, -PLUG), (c, 0.0), (c - PLUG, -PLUG)])
+            pm.append(M.extrude(sec, H + 0.2).transform(A))
+            nm.append(M.extrude(sec.offset(0.15, JoinType.Miter, 4.0), H + 2.0).translate([0, 0, -1.0]).transform(A))
+        post_m, notch = union(pm), union(nm)
     # display bays: between neighbouring columns, except the entry
     bays = []
     for (a0, a1), (b0, b1) in zip(cols[:-1], cols[1:]):
@@ -138,7 +156,7 @@ def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2
         nl = max(1, int(round((b - a) / lite)))
         bars += [rect(a + (b - a) * k / nl - 0.25, vt, a + (b - a) * k / nl + 0.25, H) for k in range(1, nl)]
     glass_cs = cs_union(glass + tls)
-    sash = [ext(glass_cs, -PLUG, -PLUG + GLASS), ext(plug_cs - glass_cs, -PLUG, 0.0)]
+    sash = [ext(glass_cs, -PLUG, -PLUG + GLASS), ext(plug_cs - glass_cs, -PLUG, 0.0) - notch]
     # a centre mullion in wide display windows
     if mullion:
         for a, b in bays:
@@ -165,7 +183,7 @@ def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2
     parts.append(box([-W / 2, H - beam, 0.0], [W / 2, H - beam + 0.6, 0.6]))  # its bed moulding
     for a, b in cols:
         parts.append(_column(style, a, b, 0.0, H - beam))
-    frame = union(parts) ^ ext(plug_cs, -PLUG - 1, 5.0)     # nothing past the plug: no support needed
+    frame = (union(parts) ^ ext(plug_cs, -PLUG - 1, 5.0)) - notch     # nothing past the plug: no support needed
     sash_m = union(sash)
     ins = sash_m + frame
     n = len(ins.decompose())
@@ -173,20 +191,21 @@ def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2
         print("  WARNING: storefront falls into", n, "pieces")
     gl = sash_m ^ ext(glass_cs.offset(0.01), -PLUG - 1.0, -PLUG + GLASS)
     return dict(insert=ins, glass=gl, sash=sash_m - gl, frame=frame, surround=frame, back=0.0,
-                cut=op, landing=op.offset(0.15, JoinType.Miter, 4.0), top=H, bottom=0.0,
+                cut=op, landing=op.offset(0.15, JoinType.Miter, 4.0), top=H, bottom=0.0, posts=post_m,
                 entry=(entry_at, entry, ve) if ent is not None else None, cols=cols)
 
 
-def vestibule(entry, depth, v_top, bulk=7.2, side=0.8, door_h=None, transom=True):
+def vestibule(entry, depth, v_top, bulk=7.2, side=0.8, door_h=None, transom=True, front=-PLUG):
     """The recessed entry behind a storefront, as its own part: a floor (a step up from the
     sidewalk), side walls whose inner faces carry a panelled base and a display-glass panel,
     a back wall with a pair of half-glazed doors (and a transom light), and a ceiling.
     Local frame as the storefront (u centred on the entry, v up, w out; it stands behind the
-    storefront, w <= -PLUG). Prints upright on its floor; the ceiling bridges the entry."""
+    storefront, w <= ``front``: -PLUG, or the wall's inner face when the storefront leaves
+    posts in the wall). Prints upright on its floor; the ceiling bridges the entry."""
     wl = entry / 2
     wo = wl + side
-    w0 = -PLUG
-    wb = -(PLUG + depth)                       # the door plane
+    w0 = front
+    wb = front - depth                         # the door plane
     parts = [box([-wo, 0.0, wb - 0.8], [wo, 0.8, w0]),                   # floor
              box([-wo, v_top, wb - 0.8], [wo, v_top + 0.8, w0]),         # ceiling
              box([-wo, 0.8, wb - 0.8], [wo, v_top, wb])]                  # back wall
@@ -354,3 +373,25 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
         parts.append(chamfer_box(-sw, -1.4, sw, 0.2, 0.0, sill, c=0.3))
         bottom = -1.4
     return _one_piece([sash], parts, op, plug_cs, PLUG, top, bottom)
+
+
+def door_commercial(w, h, transom=4.0, leaf="four_panel", tstyle="number:12", casing=0.8, head="cornice", leaves=1):
+    """A commercial street door (the upstairs entrance beside a storefront): leaves and a
+    transom (see openings._ornate_door_sash), a flat casing with corner blocks, a stone step
+    and a head: "cornice" (a moulded cap on two small consoles) or None. Prints face-up."""
+    from .openings import _ornate_door_sash, _one_piece
+    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom, leaf, tstyle)
+    parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6)]
+    parts.append(ext((op.offset(casing, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + casing + 1), 0.0, 0.6))
+    for sg in (-1, 1):                       # corner blocks at the head
+        u = sg * (w / 2 + casing / 2)
+        parts.append(chamfer_box(u - casing / 2 - 0.1, h - 0.1, u + casing / 2 + 0.1, h + casing + 0.1, 0.0, 1.0, c=0.25))
+    top = h + casing + 0.1
+    if head == "cornice":
+        hw = w / 2 + casing + 0.6
+        parts.append(box([-hw, top - 0.01, 0.0], [hw, top + 1.4, 0.8]))
+        parts.append(chamfer_box(-hw - 0.4, top + 1.4, hw + 0.4, top + 2.2, 0.0, 1.4, c=0.3, bottom=0.8))
+        for sg in (-1, 1):
+            parts.append(console(1.8, 1.0, 0.8, sg * (hw - 0.4), top + 1.41, style="scroll"))
+        top += 2.2
+    return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)

@@ -33,6 +33,10 @@ def _corbel_out(w, d, z, grow):
 
 
 def _pot(r, h, style="plain"):
+    if style == "square":                # a square clay pot with a banded top
+        body = box([-r, -r, 0], [r, r, h - 0.8]) + box([-r - 0.3, -r - 0.3, h - 0.8], [r + 0.3, r + 0.3, h])
+        body = body + _corbel_out(2 * r, 2 * r, h - 0.8, 0.3)
+        return body - box([-r + 0.5, -r + 0.5, h - 1.2], [r - 0.5, r - 0.5, h + 1])
     if style == "octagon":               # an eight-sided pot with a band and a flared lip
         prof = [(0, 0), (r * 1.1, 0), (r * 1.1, 0.4), (r * 0.85, 0.8), (r * 0.85, h * 0.5), (r * 1.0, h * 0.5 + 0.2),
                 (r * 1.0, h * 0.5 + 0.6), (r * 0.85, h * 0.5 + 0.8), (r * 0.85, h - 0.6), (r * 1.05, h - 0.4),
@@ -164,10 +168,24 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         for k in (-1, 0, 1):
             body = body + _pot(1.1, 3.8, "octagon").translate([k * w * 0.3, 0, h - 0.2])
         return body
+    if style == "party":
+        # a wide party-wall stack: running bond, a band of corbelled courses, a stone cap and
+        # three square pots in a row
+        sh = h - 3.4
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + _skin(w, d, 0.0, sh - 2.0, _brick("running"))
+        for k in range(2):
+            g = 0.25 * (k + 1)
+            z = sh - 2.0 + 0.8 * k
+            body = body + _corbel_out(w + 2 * (g - 0.25), d + 2 * (g - 0.25), z + 0.25, 0.25) + \
+                box([-w / 2 - g, -d / 2 - g, z + 0.24], [w / 2 + g, d / 2 + g, z + 0.8])
+        body = body + box([-w / 2 - 0.5, -d / 2 - 0.5, sh - 0.41], [w / 2 + 0.5, d / 2 + 0.5, sh + 0.6])
+        for k in (-1, 0, 1):
+            body = body + _pot(0.9, 2.8, "square").translate([k * w * 0.3, 0, sh + 0.4])
+        return body
     raise ValueError(style)
 
 
-CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched")
+CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -233,6 +251,8 @@ def foundation_skin(style, reg, seed=0):
         return S.brick_bond(reg ^ rect(b[0] - 1, b[1] - 1, b[2] + 1, b[3] - 2.4), "running", d=0.25) + top
     if style == "block":
         return ashlar(reg, course=(1.9, 1.9), length=(5.6, 5.6), d=0.5, seed=seed, rough=0.12)
+    if style == "plinth":                # long smooth dressed granite blocks, two courses
+        return S.brick_bond(reg, "running", bl=12.0, bh=2.0, mortar=0.5, bed=0.4, d=0.3, uoff=seed % 5)
     if style == "coursed":
         return ashlar(reg, course=(1.2, 1.8), length=(5.0, 11.0), d=0.45, seed=seed, rough=0.1)
     raise ValueError(style)
@@ -256,6 +276,7 @@ BELTS = {
     "cleat": ([(0.0, 0.0), (0.5, 0.5), (0.5, 3.8), (0.8, 4.1), (0.8, 4.4)],
               dict(w=0.6, z=0.8, h=3.0, d0=0.5, d=0.35, c=0.15, pitch=4.0, margin=1.6)),
     "bead": ([(0.0, 0.0), (0.4, 0.4), (0.4, 3.2), (0.7, 3.5), (0.7, 3.9), (0.4, 4.2), (0.4, 4.4)], None),
+    "sill": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.4, 3.7), (1.4, 4.4)], None),
     "boss": ([(0.0, 0.0), (0.7, 0.7), (0.7, 3.4), (1.3, 4.0), (1.3, 4.4)],
              dict(w=1.2, z=1.6, h=1.2, d0=0.7, d=0.45, c=0.4, pitch=3.6, margin=2.0)),
 }
@@ -266,7 +287,8 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     """An eave bracket of height h projecting d, t wide, top at v_top. Styles:
     scroll (the Italianate console), block (a stepped modillion block), curve (a quarter-
     round bracket with a drop), pendant (a scroll over a hanging turned drop), fan (a
-    pierced quarter-round), brace (a diagonal stick brace)."""
+    pierced quarter-round), brace (a diagonal stick brace), metal (a pressed-metal bracket:
+    a block head, an ogee and a round drop)."""
     from .ornament import console, side_profile
     if style == "scroll":
         return console(h, d, t, u=u, v_top=v_top, w0=w0)
@@ -288,6 +310,12 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
                                                                              -(min(d, h) - 0.6) * math.sin(a))], 0.5)
                           for a in (0.45, 0.8, 1.15)])
         prof = cs_union([disc - slots, rect(0.0, -h, 0.6, 0.0)])
+    elif style == "metal":               # a pressed-metal cornice bracket: a block head over an ogee and a drop
+        hd = round(0.45 * d / 0.2) * 0.2
+        pts = [(0, 0), (d, 0), (d, -h * 0.28)] + \
+              [(d - (d - hd) * (3 * s * s - 2 * s ** 3), -h * 0.28 - h * 0.44 * s) for s in np.linspace(0.1, 1, 9)] + \
+              [(hd, -h + 0.9), (0.0, -h + 0.9)]
+        prof = cs_union([poly(pts), circle((hd * 0.5, -h + 0.9), min(0.8, hd * 0.5), 16)])
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])

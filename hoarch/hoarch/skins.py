@@ -13,7 +13,7 @@ import math
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from .core import SLOT, cs_union, frame, poly, rect, union
+from .core import SLOT, circle, cs_union, frame, poly, rect, union
 from .ornament import stroke
 
 
@@ -288,3 +288,63 @@ SKINS = {
     "vgroove": vgroove, "beadboard": beadboard, "diagonal_boards": diagonal_boards,
     "stagger_shingles": stagger_shingles, "scored_stucco": scored_stucco,
 }
+
+
+# ------------------------------------------------------------------ brick details for commercial fronts
+def brick_arch(u, v0, w, h, rise, casing=0.6, rings=2, course=1.0, gap=0.4, joint=0.5, d=0.4, brick=1.0):
+    """Rowlock arch over a segmental (or round) opening centred at u, bottom v0, w wide and
+    h tall with a head of ``rise``: ``rings`` rings of bricks on edge round the casing,
+    ``joint`` wide radial joints between the bricks and a ``gap`` of mortar between the rings,
+    standing ``d`` proud. Facade (u, v). Returns (outline for the keep-out, relief).
+    The ring edges' crowns (flat facets on a wall that prints upright) land on the 0.2 mm
+    layer grid when v0 + h does: keep ``course`` and ``gap`` multiples of 0.2."""
+    from .openings import _arc_band
+    spring = v0 + h - rise
+    thick = rings * course + (rings - 1) * gap
+    band, cy, r0 = _arc_band(w, spring - v0, rise, round((casing + 0.1) / 0.2) * 0.2, thick)
+    band = band.translate((u, v0))
+    cy += v0
+    cuts = []
+    for k in range(1, rings):                          # mortar between the rings
+        ri = r0 + k * course + (k - 1) * gap
+        cuts.append(circle((u, cy), ri + gap, 96) - circle((u, cy), ri, 96))
+    rmid = r0 + thick / 2
+    n = max(3, int(round(math.pi * rmid / (brick + joint))))
+    for k in range(-n, n + 1):                          # radial joints
+        a = k * (brick + joint) / rmid
+        ca, sa = math.sin(a), math.cos(a)
+        cuts.append(stroke([(u + ca * (r0 - 0.5), cy + sa * (r0 - 0.5)), (u + ca * (r0 + thick + 0.5),
+                                                                       cy + sa * (r0 + thick + 0.5))], joint))
+    relief = band - cs_union(cuts) if cuts else band
+    # a mortar bed under the bricks keeps the arch one body
+    return band, union([M.extrude(band, d / 2), M.extrude(relief, d)])
+
+
+def corbel_courses(u0, u1, v0, courses=3, bh=0.8, bed=0.2, step=0.25, d0=0.25, bl=2.4, mortar=0.5, dentils=True):
+    """A corbelled brick frieze: ``courses`` courses of stretchers each stepping ``step``
+    further out than the one below (45 degrees or less, so the wall still prints upright), and
+    a course of dentils (every other header standing out) on top. Facade (u, v); returns
+    (outline for the keep-out, relief)."""
+    parts = []
+    for k in range(courses):
+        v = v0 + k * bh
+        cells = []
+        u = u0 - bl + (k % 2) * bl / 2
+        while u < u1:
+            cells.append(rect(max(u0, u + mortar / 2), v, min(u1, u + bl - mortar / 2), v + bh - bed))
+            u += bl
+        # the course's body, then its brick faces
+        parts.append(M.extrude(rect(u0, v - 0.01, u1, v + bh), d0 + step * k))
+        parts.append(M.extrude(cs_union(cells), d0 + step * (k + 1)))
+    top = v0 + courses * bh
+    dmax = d0 + step * courses
+    if dentils:
+        parts.append(M.extrude(rect(u0, top - 0.01, u1, top + bh), dmax - 0.1))
+        cells = []
+        u = u0 + 0.4
+        while u + 1.1 < u1:
+            cells.append(rect(u, top, u + 1.1, top + bh - bed))
+            u += 2.2
+        parts.append(M.extrude(cs_union(cells), dmax + 0.1))
+        top += bh
+    return rect(u0, v0, u1, top), union(parts)
