@@ -179,21 +179,34 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
 ## Library map
 
 - `core.py`: units, primitives, mitred profile sweeps (`sweep_ring`, `sweep_run`),
-  facades, textures (clapboard, fish-scale, ashlar, brick, lattice).
+  facades, textures (clapboard, fish-scale, ashlar, brick, lattice, board-and-batten
+  `battens`), pointed arches (`pointed_cs`, `pointed_rise`).
 - `openings.py`: one-piece window, door and twin-arch inserts (plug + surround), balcony;
   Italianate, Queen Anne and brick-house ("voussoir": long-and-short stone voussoirs and a
-  keystone) heads.
+  keystone) heads; per-style families: Second Empire (`window_se`, `door_se`), Gothic
+  (`window_gothic`, `door_gothic`: tracery, crockets, fleurs, label stops, engaged shafts),
+  Romanesque (`window_romanesque`, `door_romanesque`: voussoir rings, cushion capitals,
+  arcaded groups, open porch arch), Stick (`window_stick`, `door_stick`: crossed-stick
+  casings, pent hoods on knee braces) and Folk Victorian (`window_folk`, `door_folk`).
+- `moulding.py`: sculpted mouldings as height fields on the 0.2 grid (band, run; profiles
+  ARCHITRAVE, CASING, CROWN, SILL, BED) and carved ornament (cartouche, anthemion, scroll
+  keystone, pendant, rosette).
+- `gables.py`: gabled roofs (`gabled_roof`: hollow body cut back to the gable walls, rake
+  skins, fascia), gable ornaments hung on the rake ends (`bargeboard`, `gable_truss`,
+  `gable_sunburst`), `ridge_cap`, `hip_cap`, `chimney_seat`.
 - `ornament.py`: console brackets, dentils, keystones, fan crest, rosettes, finials,
   spandrels, chimney pots.
 - `shell.py`: wall shell from plan blocks (openings, siding, quoins or corner boards, belt
-  course, water table), per-storey shells with belt ring and lips, foundation.
+  course, water table, gable walls built in with `gables=`), per-storey shells with belt
+  ring and lips, foundation.
 - `roof.py`: bracket and dentil runs, slope textures, hip roofs by planes, cresting and
   flat-printed cresting strips. **Mansards**: `mansard` builds a hollow band on a convex plan
   from any outer profile (straight with a bell-cast kick, or a concave tower cap), its inner
   face parallel to the chord so it prints upright with banded slate rows; `mansard_top` is the
   moulded curb ring (upside down, locating lip and a 45 degree seat in its profile) and a
   separate standing-seam deck plate that drops onto the seat.
-- `features.py`: dormer, tower cap, chimney, porch (deck, arcade panels, roof, steps).
+- `features.py`: dormer, tower cap, chimney, porch (deck, arcade panels, roof, steps);
+  turned porches with sawn, Gothic (pointed arches) or braced (Stick) arcades.
 - `kit.py`: parts with colour and print orientation, fit check, single-colour plate
   packing, 3MF/STL export, slice check, flat-lay and exploded render data, `drop_specks`
   (removes detached offcuts under 2 mm^3 that trims leave floating).
@@ -220,3 +233,23 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
 - **Cresting strips** stop half a fence-thickness short of each corner and take only their
   own fence, so no sliver of the crossing strip rides along.
 
+## Gabled roofs and gable walls (the Whitby onward)
+
+- **The gable wall is part of the top wall shell**, a pentagon standing on the facade, so it
+  takes the facade's siding and openings and prints upright with the storey below it. A
+  separate gable piece would stand on a joint with nothing to locate it.
+- **The roof body stops 0.15 mm inside each gable wall** and only a rake skin (1.8 mm, the
+  top layer of the roof) runs over the wall and past it. The wall's top edge sits 0.15 mm
+  under the skin. The roof drops in between the gable walls onto the lip on the eave walls.
+- **Steep roofs are hollow**: with a slope over 1 the underside leans less than 45 degrees
+  from vertical and prints upright. Chimneys stand in blind pockets over a downward
+  pyramid of fill (`chimney_seat`), never over the hollow.
+- **Ridge and hip caps** cover the joint where two slate faces meet (otherwise every layer at
+  the ridge is a hairline sliver), with a flat top two nozzles wide on the layer grid. Trim
+  a cap clear of the gable walls and of the space under the rake skin.
+- **Gable ornaments hang on the rake's end** (w = rake): bargeboard, truss or sunburst. They
+  print flat, face-up, one piece each; make sure the near-apex cuts leave the two halves
+  joined (skip scallops that fall inside the other half).
+- **A tower rising through a roof**: carry its wall down through the storey below inside
+  the house (it otherwise starts in mid-air at the eave), and make the upper walls, the
+  tower and any gable one piece above the first belt, so nothing is orphaned by a joint.

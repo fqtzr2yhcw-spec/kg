@@ -24,9 +24,9 @@ from hoarch.ornament import finial
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
 NAME = "Carrow Queen Anne Castle"
-COLORS = {"Stone": "#948A80", "Goldenrod": "#C9A04A", "Cream": "#EDE3C8", "Slate": "#3F4A4F", "Granite": "#6F6D6A",
+COLORS = {"Stone": "#948A80", "Lavender": "#9A88A8", "Cream": "#EDE3C8", "Slate": "#3F4A4F", "Granite": "#6F6D6A",
           "Brick": "#8A3B2B", "PorchGray": "#6B706F", "Windows_Doors": "#EDE3C8"}
-RENDER_MAT = {"Stone": "stone_wall", "Goldenrod": "siding", "Cream": "trim", "Slate": "roof", "Granite": "stone",
+RENDER_MAT = {"Stone": "stone_wall", "Lavender": "siding", "Cream": "trim", "Slate": "roof", "Granite": "stone",
               "Brick": "brick", "PorchGray": "porchfloor", "Windows_Doors": "trim", "Sash": "sash", "Door": "door",
               "Glass": "glass"}
 
@@ -141,7 +141,7 @@ def build(kit=None):
     base = cs_union([MAIN.cs, TURRET.cs])
     tring = slab((offset(TURRET.cs, -0.05) - offset(TURRET.cs, -3.0)) ^ offset(MAIN.cs, -3.05), S1 + RH, ZE + 1.2)
     tring = tring - lip_keep(base, 3.0, S1 + RH)
-    kit.add("WALLS-2", "Goldenrod", st["shells"][1] + lip + tring, group="walls")
+    kit.add("WALLS-2", "Lavender", st["shells"][1] + lip + tring, group="walls")
     kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF), group="foundation")
     inserts = []
     for o in OPENINGS:
