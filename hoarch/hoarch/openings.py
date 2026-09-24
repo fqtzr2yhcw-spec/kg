@@ -1710,7 +1710,7 @@ def window_fc(w, h, A=1.3, pediment=True):
         um = (u0 + u1) / 2
         parts.append(ext(rect(u0, 1.2, u1, h + 0.2), 0.0, 0.8) - ext(stroke([(um, 2.2), (um, h - 1.2)], 0.5), 0.4, 1.0))
         parts.append(chamfer_box(u0 - 0.2, -0.2, u1 + 0.2, 1.4, 0.0, 1.0, c=0.3, bottom=0.0))
-        parts.append(chamfer_box(u0 - 0.25, h - 0.2, u1 + 0.25, h + 1.2, 0.0, 1.1, c=0.35, bottom=0.7))
+        parts.append(chamfer_box(u0 - 0.25, h - 0.2, u1 + 0.25, h + 1.2, 0.0, 1.2, c=0.35, bottom=0.7))
     half = w / 2 + A + 0.25
     parts.append(ext(rect(-half, h + 1.0, half, h + 2.2), 0.0, CAS))
     parts.append(dentils(-half + 0.2, half - 0.2, h + 1.8, 0.9, 0.0, 1.0))
@@ -1725,7 +1725,7 @@ def window_fc(w, h, A=1.3, pediment=True):
                          0.0, CAS))
         oc = (0.0, top + rise * 0.36)
         rr = min(0.95, rise * 0.24)
-        parts.append(ext(circle(oc, rr + 0.5, 24) - circle(oc, rr, 24), CAS - 0.01, 1.1))
+        parts.append(ext(circle(oc, rr + 0.5, 24) - circle(oc, rr, 24), CAS - 0.01, 1.2))
         top += rise
     sw = w / 2 + A + 0.4
     parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
@@ -1797,9 +1797,9 @@ def door_fc(w, h, side=2.2, transom=3.4, A=1.4):
     for sg in (-1, 1):
         u0, u1 = sorted((sg * W / 2, sg * (W / 2 + A)))
         um = (u0 + u1) / 2
-        parts.append(ext(rect(u0, 2.2, u1, h + 0.2), 0.0, 0.9) - ext(stroke([(um, 3.2), (um, h - 1.2)], 0.5), 0.5, 1.1))
+        parts.append(ext(rect(u0, 2.2, u1, h + 0.2), 0.0, 1.0) - ext(stroke([(um, 3.2), (um, h - 1.2)], 0.5), 0.6, 1.2))
         parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 2.2, 0.0, 1.2, c=0.3, bottom=0.0))
-        parts.append(chamfer_box(u0 - 0.3, h - 0.2, u1 + 0.3, h + 1.3, 0.0, 1.3, c=0.4, bottom=0.8))
+        parts.append(chamfer_box(u0 - 0.3, h - 0.2, u1 + 0.3, h + 1.3, 0.0, 1.4, c=0.4, bottom=0.8))
     half = W / 2 + A + 0.3
     parts.append(ext(rect(-half, h + 1.1, half, h + 2.6), 0.0, CAS))
     parts.append(dentils(-half + 0.2, half - 0.2, h + 2.2, 1.0, 0.0, 1.0))

@@ -153,8 +153,8 @@ def post_eastlake(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
         # 45 degree chamfer top and bottom
         b = b ^ M.hull_points([(x, y, z) for x in (-s, s) for y in (-s, s) for z in (z0 + 0.4, z1 - 0.4)] +
                               [(x, y, z) for x in (-s + 0.4, s - 0.4) for y in (-s + 0.4, s - 0.4) for z in (z0, z1)])
-        if grooves:
-            for zz in (z0 + 0.9, z1 - 1.3):
+        if grooves:                     # incised lines, their faces on the layer grid
+            for zz in (z0 + 0.6, z1 - 1.0):
                 b = b - union([box([-s - 1, -s - 1, zz], [s + 1, -s + 0.25, zz + 0.4]).rotate([0, 0, 90 * k])
                                for k in range(4)])
         return b
@@ -283,7 +283,7 @@ def frieze_entablature(u0, u1, v_bot, v_top):
     parts = [rect(u0, v_top - 1.6, u1, v_top + 0.05)]
     u = u0 + 0.4
     while u + 0.6 < u1 - 0.3:
-        parts.append(rect(u, v_top - 2.5, u + 0.6, v_top - 1.55))      # their feet on the layer grid
+        parts.append(rect(u, v_top - 2.4, u + 0.6, v_top - 1.55))
         u += 1.1
     return cs_union(parts)
 
@@ -338,7 +338,7 @@ def frieze_spindle(u0, u1, v_bot, v_top):
 
 def frieze_fret(u0, u1, v_bot, v_top):
     """Eastlake fretwork: a row of rings between two rails, quarter sunbursts at the posts."""
-    rail0, rail1 = v_top - 3.0, v_top - 2.3
+    rail0, rail1 = v_top - 3.0, v_top - 2.4        # rail faces on the layer grid (printed upside down)
     parts = [rect(u0, rail0, u1, rail1)]
     D = v_top - rail1
     n = max(2, int((u1 - u0 - 2.0) / (D + 0.2)))
