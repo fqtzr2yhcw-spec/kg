@@ -16,7 +16,7 @@ from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
 from .core import (Facade, box, ccw, cs_union, frame, miters, offset, poly, rect, scallop_rows, slab,
                    sweep_ring, union)
-from .ornament import chamfer_box, console, dentils, lozenge
+from .ornament import chamfer_box, console, dentils, lozenge, side_profile
 
 
 def _edges(path):
@@ -446,3 +446,59 @@ def mansard_top(path, d_top, z, t, h=2.6, deck_th=1.2, seams=5.2, clr=0.15):
         ribs = cs_union([rect(x - 0.25, y0, x + 0.25, y1) for x in np.arange(x0 + seams / 2, x1, seams)]) ^ cs
         deck = deck + slab(ribs, z + h - 0.01, z + h + 0.4)
     return dict(ring=ring, deck=deck, path=top_path, z_top=z + h)
+
+
+# ------------------------------------------------------------------ two-layer eaves
+def _bracket_us(L, pitch, margin, pair):
+    k = max(1, int(round((L - 2 * margin) / pitch)))
+    us = [margin + (L - 2 * margin) * j / k for j in range(k + 1)]
+    return [u + du for u in us for du in ((-pair / 2, pair / 2) if pair > 0 else (0.0,))]
+
+
+def frieze_ring(path, z0, h=5.6, t=3.0, face=0.9, brackets=None, tail=1.6, panels=True, skip=None):
+    """Upright frieze course under a bracketed cornice ring: the lower layer of a two-layer
+    eave. The full wall thickness plus a frieze board ``face`` proud, a projecting plinth
+    moulding at its foot (on the print bed, so it needs no support), raised panels with a
+    diamond boss between the bracket positions, and a tapering scroll tail with a drop under
+    every bracket of the cornice above, so each bracket continues down the frieze.
+
+    ``brackets`` = the cornice's bracket dict (pitch, margin, pair, t, d0): the tails line up
+    with it and meet the cornice brackets' feet (``tail`` = their projection there).
+    It stands on the wall's top lip; the cornice ring's own lip drops inside it."""
+    prof = [(-t, 0.0), (face + 0.5, 0.0), (face + 0.5, 0.6), (face, 1.1), (face, h), (-t, h)]
+    parts = [sweep_ring(path, shift_profile(prof, z0))]
+    P, Mi = _edges(path)
+    b = dict(pair=0.0, margin=2.5, t=0.8, pitch=10.0)
+    b.update(brackets or {})
+    for i in range(len(P)):
+        a_, b_ = P[i], P[(i + 1) % len(P)]
+        f = Facade(a_, b_, 0.0)
+        if f.L < 2 * b["margin"] + b["t"]:
+            continue
+        us = _bracket_us(f.L, b["pitch"], b["margin"], b["pair"])
+        loc = []
+        for u in us:
+            if skip is not None and skip(f.world(u, 0, face)):
+                continue
+            L = h - 1.6
+            side = [(0.0, h), (tail, h), (tail * 0.6, h - L * 0.55), (0.6, h - L), (0.6, 1.6), (0.0, 1.6)]
+            loc.append(side_profile(side, u - b["t"] / 2, u + b["t"] / 2).translate([0, 0, face - 0.02]))
+            drop = [(0.0, 1.6), (0.6, 1.6), (0.0, 1.0)]
+            loc.append(side_profile(drop, u - b["t"] / 2, u + b["t"] / 2).translate([0, 0, face - 0.02]))
+        if panels:
+            half = (b["pair"] / 2 if b["pair"] > 0 else 0.0) + b["t"] / 2 + 0.6
+            centres = _bracket_us(f.L, b["pitch"], b["margin"], 0.0)
+            for ua, ub in zip(centres[:-1], centres[1:]):
+                u0, u1 = ua + half, ub - half
+                if u1 - u0 < 2.4:
+                    continue
+                if skip is not None and (skip(f.world(u0, 0, face)) or skip(f.world(u1, 0, face))):
+                    continue
+                loc.append(chamfer_box(u0, 1.8, u1, h - 0.8, face - 0.05, 0.45, c=0.3))
+                loc.append(lozenge((u0 + u1) / 2, (h + 1.0) / 2, min(1.6, (u1 - u0) * 0.3), min(2.2, h - 3.0),
+                                   face + 0.4, 0.3))
+        if loc:
+            A = f.A.copy()
+            A[:, 3] = f.world(0.0, 0.0, 0.0) + np.array([0, 0, z0])
+            parts.append(union(loc).transform(A))
+    return union(parts)

@@ -436,3 +436,11 @@ def lattice(region, pitch=1.6, bar=RIB, d=0.5, angle=45):
 def mesh_arrays(m):
     mesh = m.to_mesh()
     return np.asarray(mesh.vert_properties)[:, :3].astype(np.float64), np.asarray(mesh.tri_verts).astype(np.int64)
+
+
+def ngon(c, apothem, n=8, face_south=True):
+    """Regular n-gon (CCW) of the given apothem about c; with face_south, edge 0 faces -y."""
+    R = apothem / math.cos(math.pi / n)
+    a0 = -math.pi / 2 - math.pi / n if face_south else 0.0
+    return [(c[0] + R * math.cos(a0 + 2 * math.pi * k / n), c[1] + R * math.sin(a0 + 2 * math.pi * k / n))
+            for k in range(n)]
