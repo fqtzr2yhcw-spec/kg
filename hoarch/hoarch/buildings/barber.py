@@ -29,10 +29,15 @@ from hoarch.ornament import ext
 from hoarch.shell import Block, Opening, _corner_board, foundation, wall_shell
 
 NAME = "Keller's Barber Shop"
+# the sign, tablet, awning and boardwalk each print on a plate of their own: each takes
+# filament changes by height, which would recolour anything else on the plate
 COLORS = {"White": "#EEEBE3", "Navy": "#243553", "Red": "#A3262A", "Roof": "#4A4A48", "Timber": "#5B4636",
-          "Planks": "#6F5034", "Iron": "#2B2B2B", "Windows_Doors": "#243553"}
+          "Planks": "#6F5034", "Iron": "#2B2B2B", "Windows_Doors": "#243553", "Sign": "#A3262A", "Tablet": "#EEEBE3",
+          "Awning": "#A3262A", "Boardwalk": "#5B4636"}
 RENDER_MAT = {"White": "siding", "Navy": "navy", "Red": "red", "Roof": "roof", "Timber": "timber", "Planks": "planks",
-              "Iron": "iron", "Windows_Doors": "navy", "Sash": "sash", "Door": "door", "Glass": "glass"}
+              "Iron": "iron", "Windows_Doors": "navy", "Sash": "sash", "Door": "door", "Glass": "glass", "Sign": "red",
+              "Tablet": "siding", "Awning": "red", "Boardwalk": "timber"}
+STRIPE = 2.2              # awning stripes: 11 layers each
 
 # ------------------------------------------------------------------ levels (v from the block base)
 ZF = 3.2                  # timber sill = the boardwalk's top
@@ -85,7 +90,8 @@ def _openings():
 
 
 OPENINGS = _openings()
-APPLIED = [("AWNING", 2.6, AW_V - 2.0, W - 5.2, 2.0),
+AW_U, AW_L = 2.5, 15 * STRIPE
+APPLIED = [("AWNING", AW_U, AW_V - 2.0, AW_L, 2.0),
            ("SIGN", (W - SF_W) / 2, SIGN_V, SF_W, SIGN_H),
            ("FRIEZE", 0.0, FR_V, W, FR_H),
            ("CORNICE", 0.0, CAP_V, W, 3.2)]
@@ -187,14 +193,14 @@ def build(kit=None):
         A_[:, 3] = f.world(u0, v0, w0)
         return A_
 
-    L_aw = W - 5.2
-    aw = SF.awning(L_aw, depth=10.0, drop=5.0, valance=2.6)
-    Aa = frame_at(2.6, AW_V)
+    aw = SF.awning(AW_L, depth=10.0, drop=5.0, valance=2.6, point=STRIPE)
+    Aa = frame_at(AW_U, AW_V)
     R_side = np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]])        # (u, v, w) -> (v, w, u): on its side
-    kit.add("AWNING", "Red", aw.transform(Aa), P=R_side @ inv34(Aa), group="front", render=_stripes(aw, Aa, L_aw, 2.4))
+    kit.add("AWNING", "Awning", aw.transform(Aa), P=R_side @ inv34(Aa), group="front",
+            render=_stripes(aw, Aa, AW_L, STRIPE))
     sign = SF.sign_band(SF_W, SIGN_H, "BARBER", cap=4.0, font="sans", board=1.0, frame=0.8, relief=0.4)
     As = frame_at((W - SF_W) / 2, SIGN_V)
-    kit.add("SIGN", "Red", sign.transform(As), P=inv34(As), group="front", render=_upper(sign, As, 1.0, "Red", "White"))
+    kit.add("SIGN", "Sign", sign.transform(As), P=inv34(As), group="front", render=_upper(sign, As, 1.0, "Red", "White"))
     tails = [1.2, 12.9, 25.1, 36.8]
     fr = SF.frieze_band(W, FR_H, board=1.2, panels=[(3.0, 11.1), (14.7, 23.3), (26.9, 35.0)],
                         tails=dict(us=tails, w=1.2, d=2.4, style="sawn"))
@@ -212,7 +218,7 @@ def build(kit=None):
     tab = SF.name_tablet(tw, th, None, "1891", cap=2.6, head="gable", board=1.2, relief=0.4) + \
         ext(outline + rect(-tw / 2 - 2.4, 0.0, tw / 2 + 2.4, 2.4), -2.4, 0.01)
     At = frame_at(W / 2, HF + 0.8, -1.0)
-    kit.add("TABLET", "White", tab.transform(At), P=inv34(At), group="front", render=_upper(tab, At, 1.2, "White", "Navy"))
+    kit.add("TABLET", "Tablet", tab.transform(At), P=inv34(At), group="front", render=_upper(tab, At, 1.2, "White", "Navy"))
     print("front", round(time.time() - t0, 1))
 
     # --- roof: two panels of rolled roofing on the walls' sloped tops, a ridge roll, a stovepipe
@@ -244,7 +250,7 @@ def build(kit=None):
     bw = SF.boardwalk(W + 2.0, BW_D, ZF, pitch=2.2)
     Ab = np.array([[-1.0, 0, 0, W + 1.0], [0, -1.0, 0, -1.55], [0, 0, 1.0, 0.0]])       # clear of the sill's bolt heads
     walk = bw.transform(Ab)
-    kit.add("BOARDWALK", "Timber", walk, P=print_flip(), group="boardwalk",
+    kit.add("BOARDWALK", "Boardwalk", walk, P=print_flip(), group="boardwalk",
             render=FT.plank_zones(walk, ZF, "Planks", "Timber"))
     pole = SF.barber_pole(h=16.0).translate([1.6, -9.2, ZF])
     kit.add("POLE", "White", pole, group="boardwalk")

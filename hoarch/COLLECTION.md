@@ -6,7 +6,8 @@ FDM (0.4 mm nozzle, 0.20 mm layers), with windows and doors as the standout deta
 
 Work order for each building: concept → print checks (0 interfering pairs, lint) → renders
 (hero and a close-up) → commit. Export and slicing run in the background while the next
-building is designed. All ten are done; the lineup render is `out/lineup/cycles/lineup.png`
+building is designed. All ten houses are done, and a Main Street line of storefronts has
+started (11 and 12); the lineup render is `out/lineup/cycles/lineup.png`
 (built by merging each building's render data). Every building has 0 interfering part pairs.
 
 | # | Building | Style | Status |
@@ -21,6 +22,8 @@ building is designed. All ten are done; the lineup render is `out/lineup/cycles/
 | 8 | The Merritt | Stick style: front-gabled with a cross-gabled wing, open gable trusses (collar, king post and drop, struts, fan of sticks), stickwork framing and X-braced panels, knee-braced deep eaves, crossed-stick window casings with pent hoods on braces, braced porch with a stick frieze | done: 49 parts, print files (8 h 24 m, 178 g) |
 | 9 | The Hollis | Folk Victorian farmhouse: gable-front-and-wing L-plan, Dutch lap siding with chevron-boarded gables, gingerbread gable ornaments, pedimented window crowns with fans and dentils, board shutters, spindle porch in the corner of the L, red pressed-metal shingle roof | done: 67 parts, print files (5 h 46 m, 133 g) |
 | 10 | The Carrow | Queen Anne castle: Roman brick first storey, lavender half-timbered second storey, 12-sided turret rising to a dentilled cornice and a witch's-hat spire, diamond-slate hip with a front gable and Tudor truss, Free Classic windows with diamond-paned uppers, Palladian attic window, sidelighted entrance, wraparound Eastlake porch with a chamfered corner | done: 66 parts, print files (8 h 31 m, 160 g) |
+| 11 | The Pemberton Block | Main Street: three-storey brick commercial block, 1868. English-bond front with rowlock arches, a soldier course and a corbel table; cast-iron storefront (fluted columns, panelled bulkheads, prism-glass transoms) with a recessed entry; gilt-lettered sign band under a dentilled store cornice; panelled frieze and pressed-metal bracketed cap (the double cornice); name-and-date tablet on the parapet | print checks clean; export, slicing and print files in progress |
+| 12 | Keller's Barber Shop | Main Street: one-storey false-front shop, 1891. Rustic (half-log) siding on the front, vertical boards on the sides, beaded corner boards; storefront with panelled pilasters, lozenge bulkheads and a single glazed door; striped awning with a pinked hem; sign board; frieze on jigsawn brackets under a red cap; gable date tablet; rolled-roofing gable roof with a stovepipe; plank boardwalk and barber pole | print checks clean; export, slicing and print files in progress |
 
 ## Log
 - Uniqueness pass: every building has its own wall skin, porch (post, railing, frieze,
@@ -58,6 +61,8 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Merritt | bevel clapboard with stickwork | parged | cleat | staggered shakes | ribbed | none |
 | Hollis | Dutch lap siding, chevron boards in the gables | block | bead | small square metal shingles | plain | none |
 | Carrow | Roman brick first storey, half-timber second storey and turret | coursed stone | boss | diamond slate (turret too) | arched | spire |
+| Pemberton | English-bond front with rowlock arches, soldier course, end piers and a corbel table; running-bond party walls | granite plinth | sill course | flat deck with seams, parapet coping | party-wall stack with square pots | none (name tablet) |
+| Keller's | rustic (half-log) lap front, vertical beadboard sides and rear | timber sill with bolt heads | none (one storey) | rolled roofing, ridge roll | stovepipe | none (date tablet) |
 
 | Building | Porch: post / railing / frieze / skirt / piers; roof edge | Windows and door | Gable, shutters, brackets |
 |---|---|---|---|
@@ -71,6 +76,8 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Merritt | stick / X / braced / slats / parged; stick battens on the roof edge | Stick windows; crossbuck door, stick transom | open gable trusses; knee braces |
 | Hollis | spindle / spindle / spindle frieze / horizontal slats / block; button roof edge | Folk windows; half-glass door, diamond transom | gingerbread gables; board shutters |
 | Carrow | Eastlake / sawn / fret / arches / coursed stone; reeded roof edge | Free Classic windows with diamond uppers, Palladian attic window; Free Classic door | Tudor arch-braced gable; dentil turret cornice |
+| Pemberton | cast-iron storefront: fluted columns, panelled bulkheads, prism transoms; recessed entry with a pair of half-glazed doors | segmental 2-over-2 under rowlock arches, 1-over-1 under stone lintels; street door with four-panel leaf and a numbered transom; rear 1-over-1 | pressed-metal brackets and tails; dentilled caps |
+| Keller's | storefront with panelled pilasters, lozenge bulkheads, wide transom lights; shallow entry with a single glazed door; striped awning; boardwalk | 4-over-4 under flat iron hoods; store door (big light, push bar, kick plate) with a stick transom | jigsawn brackets on the frieze |
 
 
 | Building | Corners | Other trim of its own |
@@ -85,3 +92,5 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Merritt | stepped double boards | stickwork, knee braces, tall chimney pots |
 | Hollis | capped boards on plinths | gingerbread with spindle screens |
 | Carrow | none (brick and half-timber) | octagonal chimney pots, Tudor truss |
+| Pemberton | none (end piers in the brick) | brick posts with V fronts behind the storefront columns, gilt sign letters by one filament change |
+| Keller's | beaded boards, full height on the false front | awning stripes by height, barber pole with helical ridges, plank boardwalk |
