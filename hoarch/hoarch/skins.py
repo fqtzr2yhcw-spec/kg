@@ -442,6 +442,50 @@ def dentil_arch(u, v0, w, h, rise, casing=0.6, course=1.4, joint=0.5, d=0.35, br
     return out, relief
 
 
+def stone_arch(u, v0, w, h, rise, casing=0.6, ring=2.4, joint=0.5, d=0.45, block=1.8):
+    """A ring of stone voussoirs round an arched opening, long and short in turn at the
+    extrados, with a raised keystone. Returns (outline for the keep-out, relief)."""
+    from .openings import _arc_band
+    spring = v0 + h - rise
+    band, cy, r0 = _arc_band(w, spring - v0, rise, round((casing + 0.1) / 0.2) * 0.2, ring)
+    band = band.translate((u, v0))
+    cy += v0
+    rmid = r0 + ring / 2
+    n = max(2, int(round(math.pi * rmid / 2 / (block + joint))))
+    cuts, notch = [], []
+    for k in range(-n, n + 1):
+        a = (k + 0.5) * (block + joint) / rmid
+        ca, sa = math.sin(a), math.cos(a)
+        cuts.append(stroke([(u + ca * (r0 - 0.5), cy + sa * (r0 - 0.5)), (u + ca * (r0 + ring + 0.5),
+                                                                       cy + sa * (r0 + ring + 0.5))], joint))
+        if k % 2:                                 # every other voussoir stops short at the extrados
+            notch.append(circle((u, cy), r0 + ring + 0.1, 64) - circle((u, cy), r0 + ring - 0.6, 64))
+    stones = band - cs_union(cuts)
+    relief = union([M.extrude(band, d / 2), M.extrude(stones, d)])
+    top = v0 + h + round((casing + 0.1) / 0.2) * 0.2
+    kt = round((top + ring + 0.3) / 0.2) * 0.2
+    key = poly([(u - 0.8, top - 0.2), (u + 0.8, top - 0.2), (u + 1.1, kt), (u - 1.1, kt)])
+    relief = relief + M.extrude(key, d + 0.4)
+    return band + key, relief
+
+
+def jack_arch(u, v_top, w, h=2.4, splay=1.2, joint=0.5, d=0.45, n=7):
+    """A flat (jack) arch of splayed stone voussoirs over a square-headed opening ``w`` wide
+    whose head is at ``v_top``, with a taller keystone. Returns (outline, relief)."""
+    top = v_top + h
+    outline = poly([(u - w / 2 - 0.2, v_top), (u + w / 2 + 0.2, v_top), (u + w / 2 + 0.2 + splay, top),
+                    (u - w / 2 - 0.2 - splay, top)])
+    cuts = []
+    for k in range(1, n):
+        s = k / n
+        xb = u - w / 2 - 0.2 + (w + 0.4) * s
+        xt = u - w / 2 - 0.2 - splay + (w + 0.4 + 2 * splay) * s
+        cuts.append(stroke([(xb, v_top - 0.5), (xt, top + 0.5)], joint, caps=False))
+    relief = union([M.extrude(outline, d / 2), M.extrude(outline - cs_union(cuts), d)])
+    key = poly([(u - 0.6, v_top), (u + 0.6, v_top), (u + 0.9, top + 0.6), (u - 0.9, top + 0.6)])
+    return outline + key, relief + M.extrude(key, d + 0.3)
+
+
 def corbel_courses(u0, u1, v0, courses=3, bh=0.8, bed=0.2, step=0.25, d0=0.25, bl=2.4, mortar=0.5, dentils=True):
     """A corbelled brick frieze: ``courses`` courses of stretchers each stepping ``step``
     further out than the one below (45 degrees or less, so the wall still prints upright), and

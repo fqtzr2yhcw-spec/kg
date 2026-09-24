@@ -15,6 +15,7 @@ All geometry is in a local (u, v, w) frame: u = 0 at the opening centre,
 v = 0 at the opening bottom, w = 0 at the wall face.
 """
 import math
+import numpy as np
 
 from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
@@ -712,6 +713,32 @@ def _leaf(style, u, lw, dh, hinge_left):
         panel(lo)
         lb = lo.bounds()
         parts.append(ext(stroke([(lb[0] + 0.6, lb[1] + 0.6), (lb[2] - 0.6, lb[3] - 0.6)], 0.6, caps=False) ^ lo, -0.41, -0.2))
+    elif style == "boards_glass":         # a tall light with a centre bar over a panel of upright boards
+        gl = rect(pu0, dh * 0.34, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        c = gl.bounds()
+        _GLASS_BARS.append(ext(rect((c[0] + c[2]) / 2 - 0.25, c[1], (c[0] + c[2]) / 2 + 0.25, c[3]) ^ gl.offset(0.2), -1.21, -0.6))
+        lo = rect(pu0, 1.3, pu1, dh * 0.34 - 1.0)
+        parts.append(ext(lo, -0.81, -0.6))
+        lb = lo.bounds()
+        parts.append(ext(cs_union([rect(x - 0.25, lb[1] + 0.4, x + 0.25, lb[3] - 0.4)
+                                   for x in np.arange(lb[0] + 1.0, lb[2] - 0.5, 1.0)]), -0.61, -0.4))
+    elif style == "ledged":               # vertical planks on three ledges with Z braces between them
+        g = []
+        nb = max(2, int(lw / 1.2))
+        for k in range(1, nb):
+            x = u + lw * k / nb
+            g.append(rect(x - 0.25, 0.9, x + 0.25, top - 0.4))
+        parts[0] = parts[0] - ext(cs_union(g), -1.0, 0.0)
+        ledges = [1.6, dh * 0.5, top - 1.6]
+        for vv in ledges:
+            parts.append(ext(rect(u + 0.4, vv - 0.5, u + lw - 0.4, vv + 0.5), -0.81, -0.4))
+        for va, vb in zip(ledges[:-1], ledges[1:]):
+            a0, a1 = (u + 0.6, va + 0.5), (u + lw - 0.6, vb - 0.5)
+            if not hinge_left:
+                a0, a1 = (u + lw - 0.6, va + 0.5), (u + 0.6, vb - 0.5)
+            parts.append(ext(stroke([a0, a1], 0.8, caps=False) ^ rect(u, va, u + lw, vb), -0.81, -0.4))
     elif style == "oval":
         cx, cy = (pu0 + pu1) / 2, dh * 0.7
         rx, ry = (pu1 - pu0) / 2 - 0.2, min(dh * 0.18, top - st - cy)

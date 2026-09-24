@@ -883,3 +883,38 @@ def _taper(P, v0, v1, t):
     up = (P[:, 2] - base) > 0.005
     P[:, 2] = np.where(up, base + (P[:, 2] - base) * (1.0 - 0.45 * s) + 0.25 * (1 - s), P[:, 2])
     return P
+
+
+def iron_shutter(w, h, t=0.8, straps=2):
+    """One leaf of an iron fire shutter, hooked open beside a window: a plate with a raised
+    rim, ``straps`` horizontal straps with rivet heads, and a hinge pin. Local (u 0..w, v
+    0..h, w 0..t+); prints flat on its back."""
+    parts = [box([0, 0, 0], [w, h, t])]
+    parts.append(ext(rect(0, 0, w, h) - rect(0.5, 0.5, w - 0.5, h - 0.5), t - 0.01, t + 0.4))
+    for k in range(straps):
+        v = h * (k + 1) / (straps + 1)
+        parts.append(box([0.0, v - 0.4, t - 0.01], [w, v + 0.4, t + 0.4]))
+        parts.append(ext(cs_union([circle((x, v), 0.25, 10) for x in (0.8, w / 2, w - 0.8)]), t + 0.39, t + 0.6))
+    return union(parts)
+
+
+def hoist_cs(beam=8.0, drop=7.0):
+    """Side view of a hoist over a loading door, for a flat part standing out from the wall:
+    a beam (x out from the wall, y up from the beam's foot), a pulley wheel at its end, the
+    rope down to a block and a hook, and a wall plate. Top of the beam at y = 1.6."""
+    beam_cs = rect(0.0, 0.0, beam, 1.6) + rect(0.0, -0.8, 0.9, 2.4)
+    wheel = circle((beam - 1.4, -0.8), 1.3, 28) - circle((beam - 1.4, -0.8), 0.45, 12)
+    hanger = rect(beam - 1.7, -0.9, beam - 1.1, 0.01)
+    rope = rect(beam - 2.95, -drop, beam - 2.45, -0.8) + rect(beam - 0.35, -drop + 1.2, beam + 0.15, -0.8)
+    block = rect(beam - 3.3, -drop - 1.6, beam + 0.5, -drop + 1.2)
+    hook = stroke([(beam - 1.4, -drop - 1.6), (beam - 1.4, -drop - 2.6), (beam - 0.8, -drop - 3.2), (beam - 0.2, -drop - 2.8)],
+                  0.6, caps=True)
+    return cs_union([beam_cs, wheel, hanger, rope, block, hook])
+
+
+def shingle_panel(L, W, t=1.2, pitch=1.8, width=2.0):
+    """A roof panel of wood shingles in straight courses, ``L`` along the eave by ``W`` up the
+    slope. Own frame (u along the eave, v up the slope, w out); prints flat on its back."""
+    from .skins import coursed_shingles
+    return box([0, 0, 0], [L, W, t]) + coursed_shingles(rect(0, 0, L, W), pitch=pitch, width=width, d=0.45,
+                                                           datum=0.0).translate([0, 0, t - 0.02])

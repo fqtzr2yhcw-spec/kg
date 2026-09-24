@@ -359,6 +359,18 @@ def foundation_skin(style, reg, seed=0):
         pc = cs_union(piers) ^ reg
         stones = ashlar(pc, course=(0.9, 1.4), length=(1.0, 1.7), d=0.5, seed=seed, rough=0.1)
         return stones + S.beadboard(reg - pc.offset(0.2, JoinType.Miter, 4.0), pitch=1.2, groove=0.5, d=0.25)
+    if style == "battered":              # a smooth dressed base course with a bevelled weathering on top
+        b = reg.bounds()
+        top = b[3]
+        blocks = []
+        u = b[0] - (seed % 4) * 2.0
+        while u < b[2]:
+            blocks.append(chamfer_box(u + 0.25, b[1], u + 7.75, top - 1.4, 0.0, 0.5, c=0.3, bottom=0.5))
+            u += 8.0
+        blocks = union(blocks)
+        bevel = M.hull_points([(x, y, 0.0) for x in (b[0], b[2]) for y in (top - 1.9, top)] +
+                              [(x, top - 1.4, 0.5) for x in (b[0], b[2])] + [(x, top - 0.9, 0.5) for x in (b[0], b[2])])
+        return (blocks + bevel) ^ M.extrude(reg, 2.0).translate([0, 0, -0.5])
     if style == "herringbone":           # brick laid in a herringbone between a plain top course
         b = reg.bounds()
         top = b[3] - 1.0
@@ -433,6 +445,7 @@ BELTS = {
               dict(w=0.6, z=0.8, h=3.0, d0=0.5, d=0.35, c=0.15, pitch=4.0, margin=1.6)),
     "bead": ([(0.0, 0.0), (0.4, 0.4), (0.4, 3.2), (0.7, 3.5), (0.7, 3.9), (0.4, 4.2), (0.4, 4.4)], None),
     "sill": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.4, 3.7), (1.4, 4.4)], None),
+    "string": ([(0.0, 0.0), (0.5, 0.5), (0.5, 3.4), (1.1, 4.0), (1.1, 4.4)], None),
     "roll": ([(0.0, 0.0), (0.4, 0.4), (0.6, 0.8), (0.6, 1.2), (0.4, 1.6), (0.4, 2.8), (1.0, 3.4), (1.0, 4.4)], None),
     "cavetto": ([(0.0, 0.0), (0.3, 0.3), (0.3, 1.2), (0.6, 1.5), (1.0, 2.2), (1.3, 3.2), (1.3, 3.6), (1.6, 3.9),
                  (1.6, 4.4)], None),
