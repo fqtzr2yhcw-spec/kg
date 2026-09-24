@@ -376,7 +376,8 @@ def build(kit=None):
             dict(a=(-14.0, -28.0), b=(WX0, -28.0), posts=[0.663, 25.0, 50.5, 72.0]),
             dict(a=(WX0, -28.0), b=(WX0, WY0), posts=[1.6])]
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, 59.5, 16.0)], boards=dict(pitch=1.8),
-                        joined=True, ledger_off=1.5)          # the ledger clears the foundation's stones
+                        joined=True, ledger_off=1.5,          # the ledger clears the foundation's stones
+                        pier_tex="fieldstone", roof_edge="dentil")
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     kit.add("PORCH-deck", "Cream", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")

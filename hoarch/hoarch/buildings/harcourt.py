@@ -245,7 +245,8 @@ def build(kit=None):
             dict(a=(px1, y1), b=(px1, y0), posts=[1.6, (y0 - y1) - 1.7])]
     P = FT.porch_turned([(px0, y0), (px0, y1), (px1, y1), (px1, y0)], runs, H_floor, post_h,
                         steps_at=[(1, (px1 - px0) / 2, 14.0)], boards=dict(pitch=1.8), joined=True,
-                        post="fluted", rail="urn", arcade="entablature", skirt="square", pier_tex="stone")
+                        post="fluted", rail="urn", arcade="entablature", skirt="square", pier_tex="granite",
+                        roof_edge="fillet")
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     # keep-out boxes round the inserts, their tops and bottoms on the layer grid (the porch
     # roof is notched by them and prints upside down)

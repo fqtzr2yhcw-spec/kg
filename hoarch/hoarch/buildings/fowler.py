@@ -212,7 +212,7 @@ def build(kit=None):
     post_h = (S1 - 0.2) - (H_floor + 5.2)
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=steps_at, boards=dict(pitch=1.8),
                         joined=True, ledger_off=1.5, post="tuscan", rail="chippendale", arcade="valance",
-                        skirt="diamond", pier_tex="plain")
+                        skirt="diamond", pier_tex="brick", roof_edge="cove")
     fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])

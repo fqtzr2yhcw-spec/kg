@@ -59,15 +59,15 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Hollis | Dutch lap siding, chevron boards in the gables | block | bead | small square metal shingles | plain | none |
 | Carrow | Roman brick first storey, half-timber second storey and turret | coursed stone | boss | diamond slate (turret too) | arched | spire |
 
-| Building | Porch: post / railing / frieze / skirt / piers | Windows and door | Gable, shutters, brackets |
+| Building | Porch: post / railing / frieze / skirt / piers; roof edge | Windows and door | Gable, shutters, brackets |
 |---|---|---|---|
-| Beaumont | turned / turned / sawn / lattice / brick | Queen Anne windows; swan-neck door, arched leaves | shingled gables; no shutters; curve brackets |
-| Ashby | chamfered / vase / scroll / panels / brick | Italianate arched 2-over-2; paired door | panel shutters; scroll brackets |
-| Harcourt | fluted / urn / entablature / square / stone | Second Empire windows; door with arched-panel leaves, plain transom | block brackets |
-| Fowler | tuscan / Chippendale / valance / diamond / plain | Greek Revival 6-over-6 with cornice heads; door with sidelights | louvered shutters; fan brackets |
+| Beaumont | turned / turned / sawn / lattice / fieldstone; dentil roof edge | Queen Anne windows; swan-neck door, arched leaves | shingled gables; no shutters; curve brackets |
+| Ashby | chamfered / vase / scroll / panels / limestone; modillion roof edge | Italianate arched 2-over-2; paired door | panel shutters; scroll brackets |
+| Harcourt | fluted / urn / entablature / square / granite; filleted roof edge | Second Empire windows; door with arched-panel leaves, plain transom | block brackets |
+| Fowler | Tuscan / Chippendale / valance / pierced diamonds / brick; cove roof edge | Greek Revival 6-over-6 with cornice heads; door with sidelights | louvered shutters; fan brackets |
 | Delancey | stoop only | San Francisco windows; door with a hood on consoles | pendant brackets |
-| Whitby | clustered / pierced / Gothic arches / pickets / stone | Gothic lancets; Gothic door | pierced bargeboards |
+| Whitby | clustered / pierced / Gothic arches / pickets / rubble; Gothic drops on the roof edge | Gothic lancets; Gothic door | pierced bargeboards |
 | Ardmore | stone loggia | Romanesque windows; studded door | corbel table |
-| Merritt | stick / X / braced / slats / brick | Stick windows; crossbuck door, stick transom | open gable trusses; knee braces |
-| Hollis | spindle / spindle / spindle frieze / horizontal slats / plain | Folk windows; half-glass door, diamond transom | gingerbread gables; board shutters |
-| Carrow | Eastlake / sawn / fret / arches / stone | Free Classic windows with diamond uppers, Palladian attic window; Free Classic door | Tudor arch-braced gable; dentil turret cornice |
+| Merritt | stick / X / braced / slats / parged; stick battens on the roof edge | Stick windows; crossbuck door, stick transom | open gable trusses; knee braces |
+| Hollis | spindle / spindle / spindle frieze / horizontal slats / block; button roof edge | Folk windows; half-glass door, diamond transom | gingerbread gables; board shutters |
+| Carrow | Eastlake / sawn / fret / arches / coursed stone; reeded roof edge | Free Classic windows with diamond uppers, Palladian attic window; Free Classic door | Tudor arch-braced gable; dentil turret cornice |

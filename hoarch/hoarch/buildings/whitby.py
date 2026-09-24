@@ -194,7 +194,7 @@ def build(kit=None):
     post_h = 44.0 - H_floor                    # the porch roof clears the door's finial
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, Lf / 2, 13.0)], boards=dict(pitch=1.8),
                         joined=True, ledger_off=1.5, arcade="gothic", post="clustered", rail="pierced", skirt="pickets",
-                        pier_tex="stone")
+                        pier_tex="rubble", roof_edge="drop")
     fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])

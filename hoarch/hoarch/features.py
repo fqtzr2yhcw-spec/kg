@@ -250,16 +250,35 @@ def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.
         for u in pu:
             pr = box([u - pier / 2, 0.0, -pier + 0.2], [u + pier / 2, H - floor_t - skirt + 0.01, 0.0])
             preg = rect(u - pier / 2 + 0.05, 0.0, u + pier / 2 - 0.05, H - floor_t - skirt)
-            if pier_tex == "stone":
-                from .core import ashlar
-                tex = ashlar(preg, course=(1.8, 2.6), length=(1.6, 3.4), d=0.3, seed=int(u * 13) % 97)
-            elif pier_tex == "plain":
+            if pier_tex == "plain":
                 tex = chamfer_box(u - pier / 2 + 0.3, 0.3, u + pier / 2 - 0.3, H - floor_t - skirt - 0.3, 0.0, 0.3, c=0.2)
             else:
-                tex = brick(preg, bl=2.0, d=0.2)
+                tex = _pier_skin(pier_tex, preg, int(u * 13) % 97)
             tex = tex.translate([0, 0, -0.01])
             parts.append(f.place(pr + tex))
     return union(parts)
+
+
+def _pier_skin(style, reg, seed):
+    """Facing for a porch pier, a small-scale match for each building's foundation:
+    brick (default), stone, fieldstone, limestone, granite, rubble, parged, block, coursed."""
+    from .core import ashlar
+    from . import skins as SK
+    if style in ("stone", "fieldstone"):
+        return ashlar(reg, course=(1.8, 2.6), length=(1.6, 3.4), d=0.3, seed=seed)
+    if style == "limestone":
+        return SK.brick_bond(reg, "running", bl=3.2, bh=1.6, mortar=0.5, bed=0.4, d=0.3)
+    if style == "granite":
+        return ashlar(reg, course=(2.4, 3.0), length=(2.4, 3.4), d=0.35, seed=seed, rough=0.15)
+    if style == "rubble":
+        return ashlar(reg, course=(1.2, 1.8), length=(1.2, 2.4), d=0.3, seed=seed, rough=0.12)
+    if style == "parged":
+        return SK.scored_stucco(reg, course=2.0, block=3.4, d=0.25)
+    if style == "block":
+        return ashlar(reg, course=(1.6, 1.6), length=(3.2, 3.2), d=0.3, seed=seed, rough=0.1)
+    if style == "coursed":
+        return ashlar(reg, course=(1.2, 1.4), length=(2.0, 3.4), d=0.3, seed=seed, rough=0.08)
+    return brick(reg, bl=2.0, d=0.2)
 
 
 def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT, depth=0.4, border=1.6,
@@ -300,25 +319,65 @@ def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT
     return floor
 
 
-def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None):
+ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain")
+
+
+def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None, edge="dentil"):
     """Flat porch roof: deck slab plus a moulded fascia along the yard edges.
 
     outer_path = open polyline along the yard edges (CCW order, yard on the right).
-    Prints upside down."""
+    Prints upside down, so every ornament on the fascia hangs from the crown (stands on it
+    in print) or is a groove, and every flat face is a multiple of 0.2 from z0. ``edge``, one
+    per building: dentil, modillion (blocks with bevelled feet), fillet (two raised bands),
+    cove (a concave crown, no ornament), drop (Gothic points), sticks (Stick battens),
+    button (round bosses), reeded (grooves cut along the fascia), plain."""
+    if not dent:
+        edge = "plain"
     top = z0 + fascia + th - 0.4
     deck = slab(roof_cs if roof_cs is not None else poly(ccw(poly_pts)), top - th, top)
     seat = -(over + 4.0)   # inner edge: wide enough to sit on the post beams
-    prof = [(seat, z0), (0.0, z0), (0.0, z0 + fascia - 0.6), (0.35, z0 + fascia - 0.4), (over - 0.3, z0 + fascia),
-            (over, z0 + fascia + 0.3), (over, top), (seat, top)]
-    edge = sweep_run(outer_path, prof)
-    parts = [deck, edge]
-    if dent:
-        P = np.asarray(outer_path, float)
-        for a, b in zip(P[:-1], P[1:]):
-            f = Facade(a, b, 0.0)
+    zc = z0 + fascia                       # the crown's foot
+    face = [(0.0, z0)]
+    if edge == "fillet":                   # raised bands, their tops bevelled 45 degrees (undersides in print)
+        for zb in (z0 + 0.6, z0 + 1.6):
+            face += [(0.0, zb), (0.4, zb), (0.4, zb + 0.2), (0.0, zb + 0.6)]
+    elif edge == "reeded":                 # grooves 0.3 deep, two layers tall
+        for zb in (z0 + 0.6, z0 + 1.2, z0 + 1.8):
+            face += [(0.0, zb), (-0.3, zb), (-0.3, zb + 0.4), (0.0, zb + 0.4)]
+    if edge == "cove":
+        face += [(0.0, zc - 1.2)] + [(1.1 - 1.1 * math.cos(t), zc - 1.2 + 1.2 * math.sin(t))
+                                     for t in np.linspace(0.15, math.pi / 2, 7)]
+    else:
+        face += [(0.0, zc - 0.6), (0.35, zc - 0.4), (over - 0.3, zc)]
+    prof = [(seat, z0)] + face + [(over, zc + 0.3), (over, top), (seat, top)]
+    parts = [deck, sweep_run(outer_path, prof)]
+    P = np.asarray(outer_path, float)
+    for a, b in zip(P[:-1], P[1:]):
+        f = Facade(a, b, 0.0)
+        L = f.L
+        if edge == "dentil":
             # dentils run up into the crown moulding so, upside down, they stand on it
-            den = dentils(0.6, f.L - 0.6, z0 + fascia - 1.2, 1.0, 0.0, 0.7)
-            parts.append(f.place(den))
+            parts.append(f.place(dentils(0.6, L - 0.6, zc - 1.2, 1.0, 0.0, 0.7)))
+        elif edge == "modillion":
+            n = max(1, int((L - 1.6) / 3.0))
+            for k in range(n + 1):
+                u = 0.8 + (L - 1.6) * k / max(n, 1)
+                parts.append(f.place(M.hull_points([(u + du, z, d) for du in (-0.5, 0.5) for z, d in
+                                                    ((z0 + 1.2, 0.0), (z0 + 1.2, 0.5), (z0 + 1.6, 0.9), (zc, 0.9), (zc, 0.0))])))
+        elif edge == "drop":
+            n = max(1, int((L - 1.2) / 2.0))
+            cs = cs_union([poly([(u - 0.55, zc - 0.2), (u + 0.55, zc - 0.2), (u + 0.55, zc - 0.7), (u, zc - 1.7),
+                                 (u - 0.55, zc - 0.7)]) for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
+            parts.append(f.place(ext(cs, 0.0, 0.7)))
+        elif edge == "sticks":
+            n = max(1, int((L - 1.2) / 2.2))
+            cs = cs_union([rect(u - 0.3, z0 + 0.4, u + 0.3, zc - 0.2) for u in (0.6 + (L - 1.2) * (k + 0.5) / n
+                                                                              for k in range(n))])
+            parts.append(f.place(ext(cs, 0.0, 0.5)))
+        elif edge == "button":
+            n = max(1, int((L - 1.2) / 1.6))
+            cs = cs_union([circle((u, zc - 0.65), 0.45, 16) for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
+            parts.append(f.place(ext(cs, 0.0, 0.6)))
     return union(parts)
 
 
@@ -381,7 +440,7 @@ def porch(poly_pts, runs, H_floor=14.0, post_h=35.5, over=1.4, footprint_keep=No
     return dict(deck=deck, floor=floor, panels=panels, roof=roof, steps=st)
 
 
-def _porch_roof(pts, runs, z0, over):
+def _porch_roof(pts, runs, z0, over, edge="dentil"):
     """Roof over the porch polygon grown by ``over``, with its fascia along the runs."""
     base = poly(pts)
     roof_cs = offset(base, over)
@@ -410,7 +469,7 @@ def _porch_roof(pts, runs, z0, over):
         path[0] = path[0] + e0 / np.linalg.norm(e0) * over
         e1 = path[-1] - path[-2]
         path[-1] = path[-1] + e1 / np.linalg.norm(e1) * over
-    return porch_roof(None, [tuple(p) for p in path], z0, over=over, roof_cs=roof_cs)
+    return porch_roof(None, [tuple(p) for p in path], z0, over=over, roof_cs=roof_cs, edge=edge)
 
 
 def _porch_steps(runs, steps_at, H_floor):
@@ -764,7 +823,7 @@ ARCADE_PRINT = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
 
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
                  boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0, arcade="sawn", post="turned",
-                 rail="turned", skirt="lattice", pier_tex="brick"):
+                 rail="turned", skirt="lattice", pier_tex="brick", roof_edge="dentil"):
     """Porch with turned posts, upright railings and edge-printed arcades.
     ``arcade``: "sawn" (elliptical arches with roundels) or "gothic" (pointed arches, trefoils).
 
@@ -860,7 +919,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         cap = box([p[0] - 1.75, p[1] - 1.75, H_floor - 1.0], [p[0] + 1.75, p[1] + 1.75, H_floor + post_h - beam])
         arcades[k] = (arc - beam_j - cap, A)
     arcades = [(a, A) for a, A in arcades if a is not None]
-    roof = _porch_roof(pts, runs, H_floor + post_h, over)
+    roof = _porch_roof(pts, runs, H_floor + post_h, over, edge=roof_edge)
     st = _porch_steps(runs, steps_at, H_floor)
     frames = []
     if joined:

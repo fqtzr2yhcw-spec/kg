@@ -215,7 +215,8 @@ def build(kit=None):
             dict(a=(134.0, y1), b=(134.0, y0), posts=[1.6, 23.9])]
     P = FT.porch_turned([(0.0, y0), (0.0, y1), (134.0, y1), (134.0, y0)], runs, H_floor, post_h,
                         steps_at=[(1, 67.0, 16.0)], boards=dict(pitch=1.8), joined=True,
-                        post="chamfered", rail="vase", arcade="scroll", skirt="panels", pier_tex="brick")
+                        post="chamfered", rail="vase", arcade="scroll", skirt="panels", pier_tex="limestone",
+                        roof_edge="modillion")
     fkeep = slab(offset(poly(MAIN.pts), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
