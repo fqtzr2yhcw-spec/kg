@@ -264,8 +264,11 @@ def build(kit=None):
     below = proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8))
     cap_ = proof.trim_by_plane([0, 0, 1.0], ptop - 0.8)
     inner_cs = M.extrude(cap_.slice(ptop - 0.4).offset(-0.5), 5).translate([0, 0, ptop - 1])
+    # flat-seam tin: battens both ways, a grid of panels (the Ashby's tin has ribs one way only)
     ribs = union([box([x - 0.25, y1 - 10, ptop - 0.01], [x + 0.25, y0, ptop + 0.4])
-                  for x in np.arange(px0 + 1.0, px1, 5.2)]) ^ inner_cs
+                  for x in np.arange(px0 + 1.0, px1, 5.2)] +
+                 [box([px0 - 10, y - 0.25, ptop - 0.01], [px1 + 10, y + 0.25, ptop + 0.4])
+                  for y in np.arange(y1 + 2.6, y0, 5.2)]) ^ inner_cs
     kit.add("PORCH-roof", "Limestone", below, P=print_flip(), group="porch")
     kit.add("PORCH-roof-tin", "Slate", cap_ + ribs, group="porch")
     for k, (sm, A) in enumerate(P["steps"]):
