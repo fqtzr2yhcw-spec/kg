@@ -163,7 +163,8 @@ def build(kit=None):
     y_meet = (zc - Z_EAVE) / S_MAIN - D_EAVE + 1.0
     caps = union([G.ridge_cap((D / 2, D / 2), (W - D / 2, D / 2), zr, S_MAIN, ZE),
                   G.ridge_cap((xm, -RAKE), (xm, y_meet), zc, S_CROSS, ZE)])
-    walls_env = wl["facade"].place(M.extrude(wl["cs"].offset(0.15), 4.2).translate([0, 0, -3.15]))
+    # the gable wall and the space under the rake skin in front of it (no cap pokes below the skin)
+    walls_env = wl["facade"].place(M.extrude(wl["cs"].offset(0.15), RAKE + 4.2).translate([0, 0, -3.15]))
     corners = [(-D_EAVE, -D_EAVE), (W + D_EAVE, -D_EAVE), (W + D_EAVE, D + D_EAVE), (-D_EAVE, D + D_EAVE)]
     ends = [(D / 2, D / 2), (W - D / 2, D / 2), (W - D / 2, D / 2), (D / 2, D / 2)]
     hips = union([G.hip_cap((c[0], c[1], Z_EAVE), (e[0], e[1], zr), half=1.3, up=0.7, drop=1.8)
