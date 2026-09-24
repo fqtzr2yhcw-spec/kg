@@ -33,12 +33,12 @@ from hoarch.shell import Block, Opening, foundation, lip_keep, stacked_shells
 NAME = "Beaumont Queen Anne Rev C"
 COLORS = {"Sage": "#7F8F6A", "Gold": "#C79A45", "Cream": "#EFE7D2", "Oxblood": "#5A1A24", "Slate": "#43474D",
           "Walnut": "#4A2616", "Brick": "#8A3B2B", "Fieldstone": "#8D877C", "PorchGray": "#6B706F",
-          "Windows": "#EFE7D2", "Doors": "#EFE7D2"}
-# windows and doors are one part each (glass, sash / door and cream frame) on their own plates:
-# filament changes at layer heights give the glass, the oxblood sash or walnut door and the frame
+          "Windows_Doors": "#EFE7D2"}
+# windows and doors are one part each (plug with glass and sash, and the surround), all on
+# their own plate: it is the one plate printed with supports (under the surrounds)
 RENDER_MAT = {"Sage": "siding", "Gold": "shingle", "Cream": "trim", "Oxblood": "sash", "Slate": "roof",
               "Walnut": "door", "Brick": "brick", "Fieldstone": "stone", "PorchGray": "porchfloor",
-              "Windows": "trim", "Doors": "trim"}
+              "Windows_Doors": "trim"}
 PALETTE = {"siding": ["#7f8f6a", 0.62, 0.0], "shingle": ["#c79a45", 0.6, 0.0], "trim": ["#efe7d2", 0.55, 0.0],
            "sash": ["#5a1a24", 0.45, 0.0], "roof": ["#43474d", 0.8, 0.0], "door": ["#4a2616", 0.45, 0.0],
            "brick": ["#8a3b2b", 0.85, 0.0], "stone": ["#8d877c", 0.9, 0.0], "porchfloor": ["#6b706f", 0.7, 0.0]}
@@ -244,7 +244,7 @@ def build(kit=None):
         tag = f"{b[2] - b[0]:.1f}x{b[3] - b[1]:.1f}"
         key = "DOOR" if o.kind == "door" else "WIN"
         world, P, zones = O.place(sp, A, "Cream", "Walnut" if o.kind == "door" else "Oxblood")
-        inserts.append(kit.add(f"{key}-{o.name}", "Doors" if o.kind == "door" else "Windows", world, P=P,
+        inserts.append(kit.add(f"{key}-{o.name}", "Windows_Doors", world, P=P,
                                key=f"{key}-{tag}-{o.v0 > 20}", group="inserts", render=zones))
     print("walls + inserts", round(time.time() - t0, 1))
 
@@ -286,7 +286,7 @@ def build(kit=None):
     roof_all = roof_all - box([X1 / 2 - 0.65, ry0 - 1, rz], [X1 / 2 + 0.65, ry1 + 1, ridge + 10])
     kit.add("ROOF-main", "Slate", roof_all, group="roof")
     kit.add("DORMER", "Gold", dm["face"], group="roof")
-    kit.add("WIN-dormer", "Windows", dm["win"], P=dm["P"], group="inserts", render=dm["zones"])
+    kit.add("WIN-dormer", "Windows_Doors", dm["win"], P=dm["P"], group="inserts", render=dm["zones"])
     kit.add("ROOF-crest", "Slate", _ridge_crest((X1 / 2, ry0), (X1 / 2, ry1), rz), group="roof")
     for k, (x, y) in enumerate(chims):
         z0 = chim_z0(x, y)
@@ -330,7 +330,7 @@ def build(kit=None):
     Ag = gf.A.copy()
     Ag[:, 3] = gf.world(a_u, a_v, 0.0)
     aworld, aP, azones = O.place(attic, Ag, "Cream", "Oxblood")
-    kit.add("WIN-attic", "Windows", aworld, P=aP, group="inserts", render=azones)
+    kit.add("WIN-attic", "Windows_Doors", aworld, P=aP, group="inserts", render=azones)
     kit.add("GABLE-trim", "Cream", gf.place(ext(tr, 0.0, 0.8)), P=inv34(gf.A), group="roof")     # flat on its back
 
     # --- tower: eave ring, fish-scale spire, separate finial
@@ -425,4 +425,5 @@ if __name__ == "__main__":
     if "export" in sys.argv:
         from hoarch.kit import slice_check
         kit.export(os.path.join(OUT, "kit"), layer=0.2)
-        slice_check(os.path.join(OUT, "kit"), os.path.join(HERE, "..", "..", "slicer", "bambu_like.ini"), layer=0.2)
+        slice_check(os.path.join(OUT, "kit"), os.path.join(HERE, "..", "..", "slicer", "bambu_like.ini"), layer=0.2,
+                    supported=("Windows_Doors", "Test"))

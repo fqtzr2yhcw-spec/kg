@@ -13,7 +13,7 @@ that kit is in the repo.
 | Wall shell | **One piece per storey**: the whole first floor (with one-storey wings), then the whole second floor; 3.0 mm walls, plain openings | Upright |
 | Belt ring | The string course between the storey shells, full wall thickness plus the moulding; it is the joint | Upright |
 | Foundation | Ring the shape of the plan, stone faces, locating lip for the shell | Upright |
-| Window / door | **Two parts:** a sash/plug that fits the opening, and a surround with casing, sill, hood and crest | Both face-up |
+| Window / door | **One part:** a plug with the glass and sash that fits the opening, and the surround with casing, sill, hood and crest | Face-up, supports under the surround |
 | Cornice | Ring swept along the plan with a real moulding profile; brackets and dentils added | Upside down |
 | Mansard | Stacked slices: curb ring, then two slate slices. Dormers drop into notches in the slices | Upright |
 | Top deck | Top cornice ring and flat roof deck in one part | Upside down |
@@ -108,25 +108,23 @@ Rich HO detail comes from a few devices repeated at every scale, each shaped to 
 
 ## Windows and doors: one part each (after the Ashby test prints)
 
-Each window or door is ONE part with a flat back, printed face-up:
+Each window or door is ONE part, the way the reference kit makes them: a plug with the glass
+and the sash (or the door leaves) that slides into the wall opening, and the surround on top.
 
-- The glass is its first two 0.2 mm layers across the opening. The sash (0.4 mm) or the door
-  leaves (0.8 mm) are built on the glass. The surround stands on a base under its whole
-  outline, so the sash sits 0.6-1.0 mm behind the casing.
-- It glues onto the wall face, into the landing cut in the siding (which locates it). No plug:
-  a plug under a wider surround would leave the surround starting in mid-air.
-- Colour by height, if wanted: filament changes at 0.4 mm (glass to sash/door colour) and at
-  0.8 mm for windows or 1.2 mm for doors (to the trim colour). The only side effect is a thin
-  band of sash colour along the back edge of the frame, hidden by the siding.
-- Windows and doors get their own plates (colours "Windows" and "Doors") because their colour
-  heights differ.
+- The glass is the plug's back face, two 0.2 mm layers; the sash sits recessed in the wall.
+- It prints face-up. The surround is wider than the plug and starts 1.6 mm above the bed,
+  so this is the one kind of part printed WITH supports (tree/organic, on the build plate
+  only). The supports touch only the back of the surround, which lies against the wall.
+- All windows and doors share one plate ("Windows_Doors"), so supports are switched on for
+  that plate alone.
+- They print in one colour; the glass and the trim are painted.
 
 ## Printability rules (checked by slicing every plate)
 
 - Anything that would overhang goes in its own part, printed with that face down.
   Examples: window surrounds, the balcony, cresting strips.
-- Sash and surround are split so that neither needs supports. (The reference kit needs
-  supports for its windows and doors.)
+- Windows and doors are the one exception: plug and surround in one part, printed with
+  supports under the surround (see above), like the reference kit.
 - Use a brim on thin standing parts: dormer bodies and hoods, cresting, steps, finial,
   chimney.
 - Long bridges over flat door heads in the wall shell are acceptable in PLA.
@@ -173,7 +171,9 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
    minimum section); they must never be the lone top of a plate.
 7. Before export, run `hoarch.lint` (sub-nozzle ribs and slots per layer, in print
    orientation), `lint.overhang_kit` (area printed over air at Bambu Studio's default 30°
-   support threshold: only opening heads, which bridge, may remain), the fit check and the slicer. Then print the **detail test plate**
+   support threshold: only opening heads, which bridge, may remain; the windows and doors
+   are the one exception and print with supports), the fit check and the slicer. Then print
+   the **detail test plate**
    (`buildings/sampler.py`, about 1.5 h) before a full kit.
 
 ## Library map

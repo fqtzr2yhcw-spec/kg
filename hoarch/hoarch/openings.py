@@ -1,16 +1,15 @@
-"""Windows and doors, each printed as ONE part that glues onto the wall face.
+"""Windows and doors, each ONE part like the reference kit's: a plug and its surround.
 
-Construction (the house standard since the Ashby test prints):
-  * the wall has a plain opening; the part covers it from outside and sits in the
-    landing cut in the siding around it (which locates it);
-  * the part has a flat back: the glazing is its first two 0.2 mm layers (GLASS)
-    across the opening, the sash (or the door leaves) is built on the glass, and the
-    surround (casing, sill, hood...) stands on a base under its whole outline, so
-    the sash reads recessed behind the casing;
-  * it prints face-up, back on the bed, with no supports. Colour by layer height:
-    glass below GLASS, sash (door) below the part's ``back`` depth, frame above,
-    so two filament changes give clear glass, a coloured sash and a trim colour.
-  * ``bare`` windows (no surround) still plug into the opening (PLUG deep).
+Construction (the house standard):
+  * the wall has a plain opening; the part's *plug* slides into it with CLR clearance
+    per side and PLUG depth, and its surround (casing, sill, hood...) sits on the wall
+    face in the landing cut in the siding;
+  * the glazing is the plug's back face: GLASS thick (two 0.2 mm layers), so it glows
+    when lit, and the sash is built on it, recessed inside the wall;
+  * it prints face-up (local w becomes print z + PLUG). The surround is wider than the
+    plug, so it starts PLUG above the bed: print these parts WITH supports (tree, on
+    the build plate only). The supports touch only the back of the surround, which lies
+    against the wall.
 
 All geometry is in a local (u, v, w) frame: u = 0 at the opening centre,
 v = 0 at the opening bottom, w = 0 at the wall face.
@@ -24,9 +23,7 @@ from .ornament import (bezier, bullseye, chamfer_box, console, dentils, ext, fan
                        rosette_block, scroll_bracket, stepped, stroke, sunburst, swag, urn_cs, volute)
 
 CLR = 0.15      # plug clearance per side
-PLUG = 1.6      # plug depth into a 3.0 mm wall (8 x 0.2 mm layers), bare windows only
-WIN_BACK = 0.8  # one-piece window: glass (0.4) + sash (0.4) behind the surround's base
-DOOR_BACK = 1.2  # one-piece door: glass (0.4) + door leaves (0.8)
+PLUG = 1.6      # plug depth into a 3.0 mm wall (8 x 0.2 mm layers)
 GLASS = 0.4     # glazing thickness (2 x 0.2 mm layers)
 SASH_REC = 0.4  # sash face sits this far behind the wall face
 # face-up relief heights above the wall face sit on the 0.2 mm layer grid:
@@ -36,7 +33,7 @@ BEAD = 1.0      # raised back-band / bead on the casing
 
 def place(sp, A, frame_col, sash_col, glass_col=None):
     """World solid, print transform and render zones of a one-piece window/door ``sp`` in
-    the facade frame ``A`` (local w = 0 on the wall face): its flat back goes on the wall."""
+    the facade frame ``A`` (local w = 0 on the wall face; the plug goes into the opening)."""
     from .core import inv34
     B = A.copy()
     B[:, 3] = A[:, 3] + A[:, 2] * sp["back"]          # shift out by the back depth
@@ -50,18 +47,16 @@ def footprint(surround, op, grow=0.15):
     return cs_union([surround.project().offset(grow, JoinType.Miter, 4.0), op.offset(grow, JoinType.Miter, 4.0)])
 
 
-def _one_piece(sash_parts, sur_parts, op, plug_cs, back, top, bottom, land_extra=None):
-    """Join sash and surround into one flat-backed part (see the module notes).
+def _one_piece(sash_parts, sur_parts, op, plug_cs, pl, top, bottom, land_extra=None):
+    """Join the plug (glass and sash) and the surround into one part (see the module notes).
     Returns the insert dict; ``glass``/``sash``/``frame`` are its colour zones for renders."""
     sur = union(sur_parts)
     sash = union(sash_parts)
-    fp = cs_union([sur.project(), op])                 # everything that sits on the wall face
-    frame = sur + ext(fp - plug_cs, -back, 0.0)        # the surround on its base
-    glass = sash ^ ext(fp.offset(1.0), -back - 1.0, -back + GLASS)
+    glass = sash ^ ext(op.offset(1.0), -pl - 1.0, -pl + GLASS)
     land = footprint(sur, op)
     if land_extra is not None:
         land = land + land_extra
-    return dict(insert=sash + frame, sash=sash - glass, glass=glass, frame=frame, surround=sur, back=back,
+    return dict(insert=sash + sur, sash=sash - glass, glass=glass, frame=sur, surround=sur, back=0.0,
                 cut=op, landing=land, top=top, bottom=bottom)
 
 
@@ -115,7 +110,7 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     spring = h - rise
     op = opening_cs(w, h, rise)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
-    pl, rec = (PLUG, SASH_REC) if bare else (WIN_BACK, 0.0)
+    pl, rec = PLUG, SASH_REC
     parts = []
     # --- glass + sash ring + bars ---------------------------------------------------
     frame_w = 0.55
@@ -239,7 +234,7 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
                 parts.append(console(2.6, 1.2, 0.8, u=s * (w / 2 + casing / 2), v_top=h + casing - 0.9, w0=CAS))
         top = h + casing + 1.5
     parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))      # lip over the sash frame
-    return _one_piece(sash_parts, parts, op, plug_cs, WIN_BACK, top, bottom)
+    return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, bottom)
 
 
 def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=True):
@@ -248,7 +243,7 @@ def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=T
     transom > 0 adds a glazed transom of that height at the top of the opening."""
     op = rect(-w / 2, 0, w / 2, h)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
-    pl = DOOR_BACK
+    pl = PLUG
     parts = [ext(plug_cs, -pl, -1.0)]                               # door slab back
     ring = plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0)
     parts.append(ext(ring, -pl, 0.0))
@@ -303,7 +298,7 @@ def twin_arch_window(w, h, balcony=5.0, casing=1.0):
     wall face (w up), so its brackets need no support."""
     op = opening_cs(w, h, None)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
-    pl = WIN_BACK
+    pl = PLUG
     parts = [ext(plug_cs, -pl, -pl + GLASS),
              ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
     # centre colonnette + two arched lights
@@ -315,7 +310,7 @@ def twin_arch_window(w, h, balcony=5.0, casing=1.0):
         c = s * (0.4 + lw / 2)
         lights.append(arch_cs(c - lw / 2, c + lw / 2, 0.4, spring + (w / 2 - lw / 2) * 0.35))
     frame_cs = plug_cs.offset(-0.5, JoinType.Miter, 4.0) - cs_union(lights)
-    parts.append(ext(frame_cs + col, -pl + GLASS, 0.0))
+    parts.append(ext(frame_cs + col, -pl + GLASS, -SASH_REC))
     parts.append(ext(rect(-0.55, spring - 0.2, 0.55, spring + 0.25), -pl + GLASS, 0.0))   # capital
     sash_parts, parts = parts, []
     cas_out = op.offset(casing, JoinType.Round)
@@ -484,7 +479,7 @@ def _window_qa(w, h, rise, spring, op, cas_out, casing, style, apron, clip, part
         parts.append(ext(cs_union([stroke([(0.0, -0.9), (0.0, -1.5)], 0.5), circle((0.0, -1.75), 0.45, 16)]), 0.0, 0.6))
         bottom = -2.9
     parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))      # lip over the sash frame
-    return _one_piece(sash_parts, parts, op, plug_cs, WIN_BACK, top, bottom)
+    return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, bottom)
 
 
 def _ornate_leaf(u, lw, dh, hinge_left):
@@ -521,7 +516,7 @@ def door_ornate(w, h, leaves=2, transom=4.2, head="swan", pil=1.6):
     Local frame as the windows (u centred, v from the sill, w out of the wall)."""
     op = rect(-w / 2, 0, w / 2, h)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
-    pl = DOOR_BACK
+    pl = PLUG
     dh = h - transom
     mid = SLOT if leaves > 1 else 0.0
     lw = (w - 2 * CLR - 1.0 - mid * (leaves - 1)) / leaves

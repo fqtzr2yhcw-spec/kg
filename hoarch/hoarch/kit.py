@@ -331,9 +331,11 @@ def preview(path, placed, color, title):
 
 
 # ------------------------------------------------------------------ slicing check
-def slice_check(outdir, ini, layer=0.16, manifest=None):
+def slice_check(outdir, ini, layer=0.16, manifest=None, supported=()):
     """Slice every plate in ``outdir`` with the PrusaSlicer CLI and record time, grams and
-    stability warnings into manifest.json. Returns the manifest."""
+    stability warnings into manifest.json. Plates whose file name contains one of
+    ``supported`` are sliced with supports (organic, on the build plate only), as they are
+    meant to be printed. Returns the manifest."""
     import re
     import subprocess
     man = manifest or json.load(open(os.path.join(outdir, "manifest.json")))
@@ -365,8 +367,11 @@ def slice_check(outdir, ini, layer=0.16, manifest=None):
         for dx, dy in ((0.0, 0.0), (0.37, 0.23), (-0.29, 0.41), (0.53, -0.31)):
             if dx or dy:
                 nudge(src, dx, dy)
+            sup = any(k in os.path.basename(src) for k in supported)
+            extra = ["--support-material", "--support-material-auto", "--support-material-buildplate-only",
+                     "--support-material-style", "organic"] if sup else []
             r = subprocess.run(["prusa-slicer", "--export-gcode", "--load", ini, "--dont-arrange", "--layer-height",
-                                str(layer), "--output", gc, src], capture_output=True, text=True, timeout=3600)
+                                str(layer), *extra, "--output", gc, src], capture_output=True, text=True, timeout=3600)
             if os.path.exists(gc) or "negative spacing" not in (r.stdout + r.stderr):
                 break
             print(f"  {os.path.basename(src)}: slicer rounding failure, nudging the plate", flush=True)
@@ -384,7 +389,7 @@ def slice_check(outdir, ini, layer=0.16, manifest=None):
             m = re.search(r"filament used \[g\] = ([\d.]+)", tail)
             g = float(m.group(1)) if m else None
             os.remove(gc)
-        pl["slice"] = {"time": t, "grams": g, "warnings": warn}
+        pl["slice"] = {"time": t, "grams": g, "warnings": warn, "supports": bool(sup)}
         if t not in ("FAILED", "?"):
             tot_m += minutes(t)
         tot_g += g or 0

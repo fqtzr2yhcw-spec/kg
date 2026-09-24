@@ -21,11 +21,11 @@ from hoarch.shell import Block, Opening, foundation, lip_keep, storey_shells, wa
 
 NAME = "Ashby Italianate Villa"
 COLORS = {"Sand": "#D8C49A", "White": "#F2F0EB", "Charcoal": "#3E4247", "Stone": "#8C8A85",
-          "Forest": "#2F4A3A", "Brick": "#8A3B2B", "Windows": "#F2F0EB", "Doors": "#F2F0EB"}
-# windows and doors are one part each (glass, sash and frame), on their own plates so the glass
-# and the sash / door can take their colours by filament changes at layer heights
+          "Forest": "#2F4A3A", "Brick": "#8A3B2B", "Windows_Doors": "#F2F0EB"}
+# windows and doors are one part each (plug with glass and sash, and the surround), all on
+# their own plate: it is the one plate printed with supports (under the surrounds)
 RENDER_MAT = {"Sand": "siding", "White": "trim", "Charcoal": "roof", "Stone": "stone", "Forest": "accent",
-              "Brick": "brick", "Windows": "trim", "Doors": "trim"}
+              "Brick": "brick", "Windows_Doors": "trim"}
 PALETTE = {"siding": ["#D8C49A", 0.6, 0.0], "trim": ["#EEECE7", 0.55, 0.0], "roof": ["#3E4247", 0.5, 0.0],
            "stone": ["#8C8A85", 0.85, 0.0], "accent": ["#2F4A3A", 0.5, 0.0], "brick": ["#8A3B2B", 0.85, 0.0]}
 
@@ -121,7 +121,7 @@ def build(kit=None):
         key = "DOOR" if o.kind == "door" else "WIN"
         col = "Forest" if o.kind == "door" else "White"
         world, P, zones = O.place(sp, A, "White", col)          # one part: glass, sash and frame
-        inserts.append(kit.add(f"{key}-{o.name}", "Doors" if o.kind == "door" else "Windows", world, P=P,
+        inserts.append(kit.add(f"{key}-{o.name}", "Windows_Doors", world, P=P,
                                key=f"{key}-{tag}-{o.v0 > 20}", group="inserts", render=zones))
         if sh:
             w_op = sp["cut"].bounds()[2] - sp["cut"].bounds()[0]
@@ -173,7 +173,7 @@ def build(kit=None):
     for o in cup_ops:
         A = o.local_frame()
         world, P, zones = O.place(o.spec, A, "White", "White")
-        kit.add(f"WIN-{o.name}", "Windows", world, P=P, key="WIN-cupola", group="cupola", render=zones)
+        kit.add(f"WIN-{o.name}", "Windows_Doors", world, P=P, key="WIN-cupola", group="cupola", render=zones)
     cz = flat + CUP_H
     cup_eave = R.bracketed_cornice(cup.pts, cz, R.CORNICE_SMALL,
                                    brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=7.0, pair=1.5, margin=3.0),
@@ -309,4 +309,5 @@ if __name__ == "__main__":
     if "export" in sys.argv:
         from hoarch.kit import slice_check
         kit.export(os.path.join(OUT, "kit"), layer=0.2)
-        slice_check(os.path.join(OUT, "kit"), os.path.join(HERE, "..", "..", "slicer", "bambu_like.ini"), layer=0.2)
+        slice_check(os.path.join(OUT, "kit"), os.path.join(HERE, "..", "..", "slicer", "bambu_like.ini"), layer=0.2,
+                    supported=("Windows_Doors", "Test"))

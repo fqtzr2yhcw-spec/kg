@@ -51,12 +51,12 @@ OPENINGS_S = _openings()
 
 
 def build(single=True):
-    colors = {"Test": "#B8B8B8"} if single else V.COLORS
-    mat = {"Test": "trim"} if single else V.RENDER_MAT
+    colors = {"Test": "#B8B8B8", "Windows_Doors": "#B8B8B8"} if single else V.COLORS
+    mat = {"Test": "trim", "Windows_Doors": "trim"} if single else V.RENDER_MAT
     kit = Kit(NAME, colors, mat)
 
-    def C(c):
-        return "Test" if single else c
+    def C(c):          # windows and doors keep their own plate (the one printed with supports)
+        return "Test" if single and c != "Windows_Doors" else c
 
     ops = [o for o, _ in OPENINGS_S]
     clear = [lip_keep(poly(BLOCK.pts), 3.0, ZF, 1.2),
@@ -71,7 +71,7 @@ def build(single=True):
         sp = o.spec
         key = "DOOR" if o.kind == "door" else "WIN"
         world, P, zones = O.place(sp, A, C("White"), C("Forest" if o.kind == "door" else "White"))
-        kit.add(f"{key}-{o.name}", C("Doors" if o.kind == "door" else "Windows"), world, P=P, render=zones)
+        kit.add(f"{key}-{o.name}", C("Windows_Doors"), world, P=P, render=zones)
         if sh:
             b = sp["cut"].bounds()
             w_op, h_op = b[2] - b[0], b[3] - b[1]
@@ -141,4 +141,5 @@ if __name__ == "__main__":
     if "export" in sys.argv:
         from hoarch.kit import slice_check
         kit.export(os.path.join(OUT, "kit"), layer=0.2)
-        slice_check(os.path.join(OUT, "kit"), os.path.join(HERE, "..", "..", "slicer", "bambu_like.ini"), layer=0.2)
+        slice_check(os.path.join(OUT, "kit"), os.path.join(HERE, "..", "..", "slicer", "bambu_like.ini"), layer=0.2,
+                    supported=("Windows_Doors",))
