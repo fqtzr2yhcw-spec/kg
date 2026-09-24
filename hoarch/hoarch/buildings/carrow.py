@@ -26,9 +26,11 @@ from hoarch.kit import Kit, print_flip
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
 NAME = "Carrow Queen Anne Castle"
-COLORS = {"Tawny": "#A4683F", "Lavender": "#9A88A8", "Cream": "#EDE3C8", "Slate": "#3F4A4F", "Granite": "#6F6D6A",
+COLORS = {"PorchDeck": "#EDE3C8", "Planks": "#6F5034",       # the planked porch deck: two colours, one change
+          "Tawny": "#A4683F", "Lavender": "#9A88A8", "Cream": "#EDE3C8", "Slate": "#3F4A4F", "Granite": "#6F6D6A",
           "Brick": "#8A3B2B", "PorchGray": "#6B706F", "Windows_Doors": "#EDE3C8"}
-RENDER_MAT = {"Tawny": "stone_wall", "Lavender": "siding", "Cream": "trim", "Slate": "roof", "Granite": "stone",
+RENDER_MAT = {"PorchDeck": "trim", "Planks": "planks",
+              "Tawny": "stone_wall", "Lavender": "siding", "Cream": "trim", "Slate": "roof", "Granite": "stone",
               "Brick": "brick", "PorchGray": "porchfloor", "Windows_Doors": "trim", "Sash": "sash", "Door": "door",
               "Glass": "glass"}
 
@@ -232,14 +234,16 @@ def build(kit=None):
             dict(a=(PX1, -PD), b=(PX1, 0.0), posts=[1.6, PD - 3.2])]
     H_floor = ZF - 2.0
     post_h = 47.0 - H_floor
-    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, 47.0 - (-PD + CH_), 11.0)], boards=dict(pitch=1.8),
+    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, 47.0 - (-PD + CH_), 11.0)],
+                        planks=dict(pitch=1.5, border=1.6),
                         joined=True, ledger_off=1.5, post="eastlake", rail="sawn", arcade="fret", skirt="arches",
                         pier_tex="coursed", roof_edge="reeded")
     fkeep = slab(offset(base, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
-    kit.add("PORCH-deck", "Cream", P["deck"] - fkeep, P=print_flip(), group="porch")
-    kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
+    deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
+    kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
+            render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     tabs = union([arc for arc, _ in P["arcades"]])
     fnd = foundation(BLOCKS, 0.0, ZF, style="coursed")
     for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):

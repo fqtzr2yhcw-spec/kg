@@ -216,7 +216,7 @@ def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True, styl
 
 
 def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.4, skirt=1.4, floor=True,
-               ledger_off=0.0, infill="lattice", pier_tex="brick"):
+               ledger_off=0.0, infill="lattice", pier_tex="brick", planks=None):
     """Porch deck: brick piers, lattice skirt and fascia along the outer edges, a ledger on
     the house side, and (``floor=True``) the floor slab. With floor=False the floor is left
     to porch_floor() as its own part (its own colour, boards on its bed face).
@@ -227,6 +227,19 @@ def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.
     base = poly(pts)
     parts = [slab(base, H - floor_t, H)] if floor else []
     ztop = H - floor_t + (0.01 if floor else -0.02)      # a separate floor rests on this
+    if planks is not None:
+        # planks printed with the deck (upside down, on the bed): the frame reaches 0.2 up
+        # into them so every plank is one solid with it, and joists cross under the planks
+        floor_t = planks.get("t", 1.2)
+        ztop = H - floor_t + 0.2
+        along = np.asarray(planks["along"], float)
+        ang = np.degrees(np.arctan2(along[1], along[0])) + (45.0 if planks.get("diagonal") else 0.0)
+        b = base.bounds()
+        R = np.hypot(b[2] - b[0], b[3] - b[1]) + 10
+        cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+        sp = planks.get("joist", 6.0)
+        js = cs_union([rect(k - 0.5, -R, k + 0.5, R) for k in np.arange(-R, R, sp)]).rotate(ang).translate((cx, cy))    # across the planks
+        parts.append(slab(js ^ offset(base, -0.3), H - floor_t - skirt, ztop))
     for i in range(len(pts)):
         f = Facade(pts[i], pts[(i + 1) % len(pts)], 0.0)
         L = f.L
@@ -257,6 +270,49 @@ def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.
             tex = tex.translate([0, 0, -0.01])
             parts.append(f.place(pr + tex))
     return union(parts)
+
+
+def porch_planks(poly_pts, outer_edges, H=14.0, t=1.2, pitch=1.8, crack=0.25, border=1.6, along=None, nose=0.35,
+                 diagonal=False, joist=6.0):
+    """The porch floor as separate planks with hairline cracks between them, for a deck that
+    prints upside down with them: the planks are its first layers on the bed (print them in a
+    wood colour and change filament once, at ``t``). The cracks run right through the planks,
+    finer than the nozzle, so the boards print as separate strips with a dark line between.
+    Border boards frame the yard edges (``border`` = 0 for none) behind a rounded nosing that
+    overhangs the skirt. Planks run ``along`` (default: away from the house, perpendicular to
+    the longest yard edge); ``diagonal`` turns them 45 degrees."""
+    pts = ccw(poly_pts)
+    base = poly(pts)
+    edges = [Facade(pts[i], pts[(i + 1) % len(pts)], 0.0) for i in outer_edges]
+    if along is None:
+        along = -max(edges, key=lambda f: f.L).n
+    along = np.asarray(along, float) / np.linalg.norm(along)
+    ang = np.degrees(np.arctan2(along[1], along[0])) + (45.0 if diagonal else 0.0)
+    b = base.bounds()
+    R = np.hypot(b[2] - b[0], b[3] - b[1]) + 10
+    cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+    cracks = cs_union([rect(k - crack / 2, -R, k + crack / 2, R) for k in np.arange(-R, R, pitch)])
+    cracks = cracks.rotate(ang - 90).translate((cx, cy))
+    field = base
+    if border > 0:
+        for f in edges:
+            strip = poly([tuple(f.p0 + f.u * -50 + f.n * 0.01), tuple(f.p1 + f.u * 50 + f.n * 0.01),
+                          tuple(f.p1 + f.u * 50 - f.n * border), tuple(f.p0 + f.u * -50 - f.n * border)])
+            field = field - strip
+    boards = field - cracks
+    if border > 0:
+        boards = boards + (base - offset(field, crack))
+    out = slab(boards, H - t, H)
+    for f in edges:            # rounded nosing: the border board's edge, proud of the skirt
+        out = out + f.place(box([-0.3, H - 0.6, -0.2], [f.L + 0.3, H, nose]))
+    return out
+
+
+def plank_zones(deck, H, planks_col, deck_col, t=1.2):
+    """Render zones of a planked deck: the planks (its first ``t`` of print, the wood colour)
+    and the frame above them."""
+    top = box([-1e4, -1e4, H - t], [1e4, 1e4, H + 5])
+    return [(planks_col, deck ^ top), (deck_col, deck - top)]
 
 
 def _pier_skin(style, reg, seed):
@@ -823,8 +879,10 @@ ARCADE_PRINT = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
 
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
                  boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0, arcade="sawn", post="turned",
-                 rail="turned", skirt="lattice", pier_tex="brick", roof_edge="dentil"):
+                 rail="turned", skirt="lattice", pier_tex="brick", roof_edge="dentil", planks=None):
     """Porch with turned posts, upright railings and edge-printed arcades.
+    ``planks`` = dict for porch_planks(): the floor is planks printed with the deck (one part,
+    upside down, one filament change at the planks' thickness) instead of a separate floor.
     ``arcade``: "sawn" (elliptical arches with roundels) or "gothic" (pointed arches, trefoils).
 
     runs: list of dict(a, b, posts=[u, ...]) in CCW order (u from a along the yard edge);
@@ -845,8 +903,18 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
                 edges.append((i, r))
     outer = [i for i, _ in edges]
     piers = {i: list(r["posts"]) for i, r in edges}
-    deck = porch_deck(pts, outer, H=H_floor, piers_u=piers, pier=pier, floor=boards is None,
-                      ledger_off=ledger_off, infill=skirt, pier_tex=pier_tex)
+    if planks is not None:
+        planks = dict(planks)
+        if planks.get("along") is None:
+            fl = max((Facade(pts[i], pts[(i + 1) % len(pts)], 0.0) for i in outer), key=lambda f: f.L)
+            planks["along"] = -fl.n
+        deck = porch_deck(pts, outer, H=H_floor, piers_u=piers, pier=pier, floor=False, ledger_off=ledger_off,
+                          infill=skirt, pier_tex=pier_tex, planks=planks)
+        deck = deck + porch_planks(pts, outer, H=H_floor, **planks)
+        boards = None
+    else:
+        deck = porch_deck(pts, outer, H=H_floor, piers_u=piers, pier=pier, floor=boards is None,
+                          ledger_off=ledger_off, infill=skirt, pier_tex=pier_tex)
     # post positions (deduplicated at shared corners)
     where = []
     for r in runs:
@@ -943,10 +1011,15 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             pieces = [post.translate([p[0], p[1], H_floor - 0.4]) for p in mine]
             pieces += [r for k in ch for r in run_rails.get(k, [])]
             frames += union(pieces).decompose()           # a post with no railing stays its own piece
-        if floor is not None:                             # sockets for the plinths and the railing feet
+        if floor is not None or planks is not None:       # sockets for the plinths and the railing feet
             # (sliced at the floor's top too: a post whose base block has a chamfered foot is widest there)
             foot = cs_union([fr.slice(z) for fr in frames for z in (H_floor - 0.2, H_floor - 0.01)])
-            floor = floor - slab(foot.offset(0.15, JoinType.Miter, 4.0), H_floor - 0.41, H_floor + 1)
+            sock = slab(foot.offset(0.15, JoinType.Miter, 4.0), H_floor - 0.41, H_floor + 1)
+            if floor is not None:
+                floor = floor - sock
+            else:
+                deck = deck - sock
+                deck = union([c for c in deck.decompose() if c.volume() > 0.5])
         posts, rails = [], []
     return dict(deck=deck, floor=floor, posts=posts, rails=rails, arcades=arcades, roof=roof, steps=st,
                 sockets=[tuple(p) for p in where], frames=frames)

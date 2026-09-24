@@ -26,9 +26,11 @@ from hoarch.ornament import ext, stroke
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
 NAME = "Merritt Stick Style House"
-COLORS = {"Sage": "#8C9670", "Cream": "#EDE3C8", "Charcoal": "#3D3F42", "Fieldstone": "#8D877C",
+COLORS = {"PorchDeck": "#EDE3C8", "Planks": "#6F5034",       # the planked porch deck: two colours, one change
+          "Sage": "#8C9670", "Cream": "#EDE3C8", "Charcoal": "#3D3F42", "Fieldstone": "#8D877C",
           "Brick": "#8A3B2B", "PorchGray": "#6B706F", "Windows_Doors": "#EDE3C8"}
-RENDER_MAT = {"Sage": "siding", "Cream": "trim", "Charcoal": "roof", "Fieldstone": "stone", "Brick": "brick",
+RENDER_MAT = {"PorchDeck": "trim", "Planks": "planks",
+              "Sage": "siding", "Cream": "trim", "Charcoal": "roof", "Fieldstone": "stone", "Brick": "brick",
               "PorchGray": "porchfloor", "Windows_Doors": "trim", "Sash": "sash", "Door": "door", "Glass": "glass"}
 PALETTE = {"siding": ["#8C9670", 0.65, 0.0], "trim": ["#EDE3C8", 0.55, 0.0], "roof": ["#3D3F42", 0.8, 0.0],
            "stone": ["#8D877C", 0.9, 0.0], "brick": ["#8A3B2B", 0.85, 0.0], "porchfloor": ["#6B706F", 0.7, 0.0],
@@ -238,14 +240,16 @@ def build(kit=None):
             dict(a=(MW, -PD), b=(MW, 0.0), posts=[1.6, PD - 3.2])]
     H_floor = ZF - 1.0
     post_h = 43.6 - H_floor
-    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, 18.0, 12.0)], boards=dict(pitch=1.8),
+    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, 18.0, 12.0)],
+                        planks=dict(pitch=1.7, border=1.6, diagonal=True),
                         joined=True, ledger_off=1.5, arcade="braced", post="stick", rail="x", skirt="slats",
                         pier_tex="parged", roof_edge="sticks")
     fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
-    kit.add("PORCH-deck", "Cream", P["deck"] - fkeep, P=print_flip(), group="porch")
-    kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
+    deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
+    kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
+            render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     tabs = union([arc for arc, _ in P["arcades"]])
     fnd = foundation(BLOCKS, 0.0, ZF, style="parged")
     for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):

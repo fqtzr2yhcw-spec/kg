@@ -31,12 +31,14 @@ from hoarch.ornament import ext, finial
 from hoarch.shell import Block, Opening, foundation, lip_keep, stacked_shells
 
 NAME = "Beaumont Queen Anne Rev C"
-COLORS = {"Sage": "#7F8F6A", "Gold": "#C79A45", "Cream": "#EFE7D2", "Oxblood": "#5A1A24", "Slate": "#43474D",
+COLORS = {"PorchDeck": "#EFE7D2", "Planks": "#6F5034",       # the planked porch deck: two colours, one change
+          "Sage": "#7F8F6A", "Gold": "#C79A45", "Cream": "#EFE7D2", "Oxblood": "#5A1A24", "Slate": "#43474D",
           "Walnut": "#4A2616", "Brick": "#8A3B2B", "Fieldstone": "#8D877C", "PorchGray": "#6B706F",
           "Windows_Doors": "#EFE7D2"}
 # windows and doors are one part each (plug with glass and sash, and the surround), all on
 # their own plate: it is the one plate printed with supports (under the surrounds)
-RENDER_MAT = {"Sage": "siding", "Gold": "shingle", "Cream": "trim", "Oxblood": "sash", "Slate": "roof",
+RENDER_MAT = {"PorchDeck": "trim", "Planks": "planks",
+              "Sage": "siding", "Gold": "shingle", "Cream": "trim", "Oxblood": "sash", "Slate": "roof",
               "Walnut": "door", "Brick": "brick", "Fieldstone": "stone", "PorchGray": "porchfloor",
               "Windows_Doors": "trim", "Glass": "glass"}     # Glass: the painted glass, renders only
 PALETTE = {"siding": ["#7f8f6a", 0.62, 0.0], "shingle": ["#c79a45", 0.6, 0.0], "trim": ["#efe7d2", 0.55, 0.0],
@@ -375,12 +377,14 @@ def build(kit=None):
             dict(a=(-28.0, -14.0), b=(-14.0, -28.0), posts=[0.663, 19.799 - 0.663]),
             dict(a=(-14.0, -28.0), b=(WX0, -28.0), posts=[0.663, 25.0, 50.5, 72.0]),
             dict(a=(WX0, -28.0), b=(WX0, WY0), posts=[1.6])]
-    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, 59.5, 16.0)], boards=dict(pitch=1.8),
+    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, 59.5, 16.0)],
+                        planks=dict(pitch=1.8, border=1.6),
                         joined=True, ledger_off=1.5,          # the ledger clears the foundation's stones
                         pier_tex="fieldstone", roof_edge="dentil")
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
-    kit.add("PORCH-deck", "Cream", P["deck"] - fkeep, P=print_flip(), group="porch")
-    kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
+    deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
+    kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
+            render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     # posts and railings as one piece (printed upright on plinths and railing feet)
     for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
         kit.add(f"PORCH-frame-{k}", "Cream", fr, group="porch")

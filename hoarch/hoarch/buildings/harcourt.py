@@ -24,10 +24,12 @@ from hoarch.kit import Kit, print_flip
 from hoarch.shell import Block, Opening, foundation, lip_keep, stacked_shells
 
 NAME = "Harcourt Second Empire"
-COLORS = {"Brick": "#8E3B2C", "Limestone": "#D9CFB6", "Slate": "#4A5159", "Iron": "#27292C",
+COLORS = {"PorchDeck": "#D9CFB6", "Planks": "#6F5034",       # the planked porch deck: two colours, one change
+          "Brick": "#8E3B2C", "Limestone": "#D9CFB6", "Slate": "#4A5159", "Iron": "#27292C",
           "Granite": "#7E7C78", "PorchGray": "#6B706F", "Windows_Doors": "#D9CFB6"}
 # windows and doors print in one colour and are painted; Sash/Door/Glass are render-only zones
-RENDER_MAT = {"Brick": "brick", "Limestone": "trim", "Slate": "roof", "Iron": "iron", "Granite": "stone",
+RENDER_MAT = {"PorchDeck": "trim", "Planks": "planks",
+              "Brick": "brick", "Limestone": "trim", "Slate": "roof", "Iron": "iron", "Granite": "stone",
               "PorchGray": "porchfloor", "Windows_Doors": "trim", "Sash": "sash", "Door": "door", "Glass": "glass"}
 PALETTE = {"brick": ["#8E3B2C", 0.85, 0.0], "trim": ["#D9CFB6", 0.6, 0.0], "roof": ["#4A5159", 0.75, 0.0],
            "iron": ["#27292C", 0.45, 0.3], "stone": ["#7E7C78", 0.9, 0.0], "porchfloor": ["#6B706F", 0.7, 0.0],
@@ -243,7 +245,7 @@ def build(kit=None):
             dict(a=(px0, y1), b=(px1, y1), posts=[1.6, 12.0, (px1 - px0) - 12.0, (px1 - px0) - 1.6]),
             dict(a=(px1, y1), b=(px1, y0), posts=[1.6, (y0 - y1) - 1.7])]
     P = FT.porch_turned([(px0, y0), (px0, y1), (px1, y1), (px1, y0)], runs, H_floor, post_h,
-                        steps_at=[(1, (px1 - px0) / 2, 14.0)], boards=dict(pitch=1.8), joined=True,
+                        steps_at=[(1, (px1 - px0) / 2, 14.0)], planks=dict(pitch=1.4, border=1.6), joined=True,
                         post="fluted", rail="urn", arcade="entablature", skirt="square", pier_tex="granite",
                         roof_edge="fillet")
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
@@ -252,8 +254,9 @@ def build(kit=None):
     ins_keep = union([box([b[0] - 0.2, b[1] - 0.2, math.floor((b[2] - 0.2) / 0.2) * 0.2],
                           [b[3] + 0.2, b[4] + 0.2, math.ceil((b[5] + 0.2) / 0.2) * 0.2])
                       for b in (p.solid.bounding_box() for p in inserts if p is not None)])
-    kit.add("PORCH-deck", "Limestone", P["deck"] - fkeep, P=print_flip(), group="porch")
-    kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
+    deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
+    kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
+            render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     for k, fr in enumerate(sorted(P["frames"], key=lambda m: m.bounding_box()[0])):
         kit.add(f"PORCH-frame-{k}", "Limestone", fr, group="porch")
     for k, (arc, A) in enumerate(P["arcades"]):

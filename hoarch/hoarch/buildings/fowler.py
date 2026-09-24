@@ -24,9 +24,11 @@ from hoarch.kit import Kit, print_flip
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells, wall_shell
 
 NAME = "Fowler Octagon House"
-COLORS = {"Butter": "#E3CF94", "White": "#F2F0EB", "TinRed": "#7B3A2C", "Forest": "#2F4A3A",
+COLORS = {"PorchDeck": "#F2F0EB", "Planks": "#6F5034",       # the planked porch deck: two colours, one change
+          "Butter": "#E3CF94", "White": "#F2F0EB", "TinRed": "#7B3A2C", "Forest": "#2F4A3A",
           "Fieldstone": "#8D877C", "Brick": "#8A3B2B", "PorchGray": "#6B706F", "Windows_Doors": "#F2F0EB"}
-RENDER_MAT = {"Butter": "siding", "White": "trim", "TinRed": "roof", "Forest": "accent", "Fieldstone": "stone",
+RENDER_MAT = {"PorchDeck": "trim", "Planks": "planks",
+              "Butter": "siding", "White": "trim", "TinRed": "roof", "Forest": "accent", "Fieldstone": "stone",
               "Brick": "brick", "PorchGray": "porchfloor", "Windows_Doors": "trim", "Sash": "sash", "Door": "door",
               "Glass": "glass"}
 PALETTE = {"siding": ["#E3CF94", 0.6, 0.0], "trim": ["#F2F0EB", 0.55, 0.0], "roof": ["#7B3A2C", 0.45, 0.15],
@@ -210,14 +212,16 @@ def build(kit=None):
     steps_at = [(2, Lf / 2, 15.0)]
     H_floor = ZF - 1.0
     post_h = (S1 - 0.2) - (H_floor + 5.2)
-    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=steps_at, boards=dict(pitch=1.8),
+    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=steps_at,
+                        planks=dict(pitch=1.6, border=0.0),
                         joined=True, ledger_off=1.5, post="tuscan", rail="chippendale", arcade="valance",
                         skirt="diamond", pier_tex="brick", roof_edge="cove")
     fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
-    kit.add("PORCH-deck", "White", P["deck"] - fkeep, P=print_flip(), group="porch")
-    kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
+    deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
+    kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
+            render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     # on the diagonal runs the arcade tabs sit at 45 degrees to the post-top slots: cut each
     # slot to its tab (and keep the railing feet clear of the foundation's stones)
     tabs = union([arc for arc, _ in P["arcades"]])
