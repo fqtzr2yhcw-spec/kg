@@ -176,7 +176,7 @@ def build(kit=None):
     for (x, y, nm) in ((cx, cy - hs, "S"), (cx + hs, cy, "E"), (cx, cy + hs, "N"), (cx - hs, cy, "W")):
         e, u = cup.locate(x, y)
         cup_ops.append(Opening(cup, e, u, 4.0, twin, f"cupola-{nm}"))
-    kit.add("CUPOLA-walls", "White", wall_shell([cup], cup_ops, t=2.4, belt=None, corners="board", water_table=False,
+    kit.add("CUPOLA-walls", "White", wall_shell([cup], cup_ops, t=2.4, belt=None, corners="panel", water_table=False,
                                                 siding=lambda f, b, reg: SK.vgroove(reg, datum=0.6)),
             group="cupola")
     for o in cup_ops:

@@ -95,8 +95,9 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
 
     ``belt`` = (v_bottom, v_top) of the belt course above each block's base, a list of such
     zones, or None.
-    ``corners`` = "quoin" (alternating blocks), "board" (plain corner boards) or "none";
-    default follows the legacy ``quoins`` flag. ``belt_trim=False`` leaves the belt zone
+    ``corners`` = "quoin" (long and short blocks), "quoin_even" (equal blocks, tighter
+    courses), a corner-board style (see CORNER_BOARDS: board, pilaster, chamfer, stepped,
+    capital, panel) or "none"; default follows the legacy ``quoins`` flag. ``belt_trim=False`` leaves the belt zone
     bare (storey_shells puts a separate belt ring there).
     ``siding(f, block, region)`` -> texture in the facade's (u, v) frame (v up from the
     block's base) replaces the default clapboard, e.g. shingles on an upper storey.
@@ -105,8 +106,8 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     facade's siding and openings, and is ``t`` thick."""
     corners = corners or ("quoin" if quoins else "none")
     belts = [] if belt is None else ([belt] if isinstance(belt[0], (int, float)) else list(belt))
-    quoins = corners == "quoin"
-    boards = corners == "board"
+    quoins = corners in ("quoin", "quoin_even")
+    boards = corners in CORNER_BOARDS
     CBW, CBT = 2.4, 0.65
     solids = [b.solid() for b in blocks]
     outer_all = union(solids)
@@ -132,6 +133,8 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     # dressing per facade
     dress = []
     QL, QS, QH, QG, QT, QC = 3.6, 2.4, 2.4, 0.4, 0.7, 0.4    # long, short, course, joint, depth, chamfer
+    if corners == "quoin_even":                               # equal blocks in tighter courses
+        QL, QS, QH, QC = 2.6, 2.6, 2.0, 0.3
     for b in blocks:
         facs = b.facades()
         conv = b.convex_corners(min_turn=70.0)
@@ -198,17 +201,14 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
                             dress.append(f.place(blk))
                             v += QH
                             k += 1
-            # plain corner boards (Italianate / Gothic houses), with a small cap under the belt/eave
+            # corner boards, one style per building, each zone between belts on its own
             if boards:
                 zones = _zones(H, belts, 1.8)
                 for at_start, on in ((True, cstart), (False, cend)):
                     if not on:
                         continue
-                    u0, u1 = (0.0, CBW) if at_start else (f.L - CBW, f.L)
                     for (qa, qb) in zones:
-                        dress.append(f.place(box([u0, qa, 0], [u1, qb, CBT])))
-                        dress.append(f.place(box([u0 - (0.2 if not at_start else 0), qb - 0.8, 0],
-                                                 [u1 + (0.2 if at_start else 0), qb, CBT + 0.3])))
+                        dress.append(f.place(_corner_board(corners, f.L, at_start, qa, qb, CBW, CBT)))
             # belt course: frieze band + drip cap
             for belt in (belts if belt_trim else []):
                 if H <= belt[1]:
@@ -235,6 +235,53 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
         dress = dress - hide_extra
     # dress must not overhang past a shorter block's roof line where it meets a taller one: fine as is
     return shell + dress
+
+
+CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel")
+
+
+def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
+    """One corner board between heights qa and qb in a facade's (u, v, w) frame, at the
+    corner u = 0 (at_start) or u = L. Every flat face is at qa or qb or a multiple of 0.2
+    from them, and every projection's underside is square to the wall (it prints upright)
+    or bevelled 45 degrees:
+      board     plain, with a cap under the belt or eave (Beaumont)
+      pilaster  a flute down the middle, a base block and the cap (Delancey)
+      chamfer   the two boards mitred into a square post with its outer corner chamfered (Whitby)
+      stepped   a narrow second board on the corner side, no cap (Merritt)
+      capital   a base plinth and a capital flaring out at 45 degrees (Hollis)
+      panel     a long sunk panel (Ashby's cupola)"""
+    def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
+        return (a, b) if at_start else (L - b, L - a)
+    u0, u1 = span(0.0, w)
+    far0, far1 = span(0.0, w + 0.2)      # reaching 0.2 past the board on the side away from the corner
+    parts = []
+    if style == "chamfer":
+        c = 0.5
+        prof = [(0.0, 0.0), (w, 0.0), (w, t), (-t + c, t), (-(t - c / 2), t - c / 2)]
+        pts = [((uu if at_start else L - uu), v, ww) for uu, ww in prof for v in (qa, qb)]
+        return M.hull_points(pts)
+    parts.append(box([u0, qa, 0], [u1, qb, t]))
+    if style in ("board", "pilaster"):
+        parts.append(box([far0, qb - 0.8, 0], [far1, qb, t + 0.3]))
+    if style == "pilaster":
+        parts.append(box([far0, qa, 0], [far1, qa + 1.2, t + 0.3]))
+        um = (u0 + u1) / 2
+        if qb - qa > 5.0:
+            return union(parts) - box([um - 0.25, qa + 1.6, t - 0.25], [um + 0.25, qb - 1.6, t + 0.5])
+    if style == "stepped":
+        n0, n1 = span(0.0, 1.4)
+        parts.append(box([n0, qa, t - 0.01], [n1, qb, t + 0.4]))
+    if style == "capital":
+        parts.append(box([far0, qa, 0], [far1, qa + 1.4, t + 0.3]))
+        e0, e1 = span(0.0, w + 0.4)
+        if qb - qa > 5.0:
+            parts.append(M.hull_points([(uu, qb - 2.0, ww) for uu in (u0, u1) for ww in (0.0, t)] +
+                                       [(uu, qb - 1.6, ww) for uu in (e0, e1) for ww in (0.0, t + 0.4)]))
+            parts.append(box([e0, qb - 1.6, 0], [e1, qb, t + 0.4]))
+    if style == "panel" and qb - qa > 3.0:
+        return union(parts) - box([u0 + 0.5, qa + 1.0, t - 0.2], [u1 - 0.5, qb - 1.0, t + 0.5])
+    return union(parts)
 
 
 def foundation(blocks, z0, z1, t=3.0, proud=0.8, stone_d=0.55, seed=4, openings=(), lip=1.2, style="fieldstone"):

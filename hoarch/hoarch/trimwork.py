@@ -33,6 +33,11 @@ def _corbel_out(w, d, z, grow):
 
 
 def _pot(r, h, style="plain"):
+    if style == "octagon":               # an eight-sided pot with a band and a flared lip
+        prof = [(0, 0), (r * 1.1, 0), (r * 1.1, 0.4), (r * 0.85, 0.8), (r * 0.85, h * 0.5), (r * 1.0, h * 0.5 + 0.2),
+                (r * 1.0, h * 0.5 + 0.6), (r * 0.85, h * 0.5 + 0.8), (r * 0.85, h - 0.6), (r * 1.05, h - 0.4),
+                (r * 1.05, h), (r * 0.55, h), (r * 0.55, h - 0.8), (0, h - 0.8)]
+        return M.revolve(poly(prof), 8)
     if style == "tall":
         prof = [(0, 0), (r * 1.1, 0), (r * 1.1, 0.4), (r * 0.8, 1.0), (r * 0.8, h - 1.0), (r, h - 0.6), (r, h),
                 (r * 0.55, h), (r * 0.55, h - 0.8), (0, h - 0.8)]
@@ -157,7 +162,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
                 box([-w / 2 - g0 - 0.4, -d / 2 - g0 - 0.4, z0 + 0.39], [w / 2 + g0 + 0.4, d / 2 + g0 + 0.4, z0 + 0.8])
         body = body + box([-w / 2 - 1.2, -d / 2 - 1.2, sh + 2.39], [w / 2 + 1.2, d / 2 + 1.2, h])
         for k in (-1, 0, 1):
-            body = body + _pot(1.1, 3.8, "tall").translate([k * w * 0.3, 0, h - 0.2])
+            body = body + _pot(1.1, 3.8, "octagon").translate([k * w * 0.3, 0, h - 0.2])
         return body
     raise ValueError(style)
 

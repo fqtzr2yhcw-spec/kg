@@ -14,7 +14,7 @@ import math
 import numpy as np
 from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
-from .core import (Facade, box, ccw, cs_union, frame, miters, offset, poly, rect, scallop_rows, slab,
+from .core import (Facade, box, ccw, circle, cs_union, frame, miters, offset, poly, rect, scallop_rows, slab,
                    sweep_ring, union)
 from .ornament import chamfer_box, console, dentils, lozenge, side_profile
 
@@ -256,7 +256,7 @@ def _halfplane(a, b, c, big=3000.0):
     return poly([p0 + tv * big, p0 - tv * big, p0 - tv * big - nv * big, p0 + tv * big - nv * big])
 
 
-def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6):
+def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6, style="arch"):
     """One straight run of cresting in its own frame: u = 0..L along, v up, centred across.
 
     A bottom rail, spikes of two heights, and a middle rail carried on little pointed
@@ -268,6 +268,16 @@ def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6):
         return round(v / 0.2) * 0.2
     vm = zq(h * 0.55)
     cells = [rect(0, 0, L, 0.6), rect(0, vm, L, vm + 0.4)]
+    if style == "spear":
+        # spear-headed bars of two heights and a ball on the rail between them (prints flat)
+        for j in range(k + 1):
+            u = L * j / k
+            top = zq(h * (1.0 if j % 2 == 0 else 0.8))
+            cells.append(rect(u - bar / 2, 0, u + bar / 2, top - 0.6))
+            cells.append(poly([(u, top - 1.2), (u + 0.5, top - 0.6), (u, top), (u - 0.5, top - 0.6)]))
+            if j < k:
+                cells.append(circle((u + L / k / 2, vm + 0.6), 0.4, 16))
+        return M.extrude(cs_union(cells) ^ rect(0, 0, L, h + 1), t).translate([0, 0, -t / 2])
     for j in range(k + 1):
         u = L * j / k
         cells.append(rect(u - bar / 2, 0, u + bar / 2, zq(h * (1.0 if j % 2 == 0 else 0.75))))
@@ -278,15 +288,17 @@ def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6):
     return M.extrude(cs_union(cells) ^ rect(0, 0, L, h + 1), t).translate([0, 0, -t / 2])
 
 
-def cresting(path, z0, h=2.4, pitch=1.6, bar=0.5, t=0.6, d_off=0.0, finials=True):
-    """Iron roof cresting (a pierced fence of loops and spikes) along a closed path."""
+def cresting(path, z0, h=2.4, pitch=1.6, bar=0.5, t=0.6, d_off=0.0, finials=True, style="arch"):
+    """Iron roof cresting along a closed path: "arch" (spikes carrying a rail on pointed
+    arches, prints upright) or "spear" (spear-headed bars with balls on the rail, for strips
+    that print flat)."""
     P, Mi = _edges(path)
     out = []
     n = len(P)
     for i in range(n):
         a, b = P[i] + d_off * Mi[i], P[(i + 1) % n] + d_off * Mi[(i + 1) % n]
         f = Facade(a, b, 0.0)
-        fence = crest_fence(f.L, h, pitch, bar, t)
+        fence = crest_fence(f.L, h, pitch, bar, t, style=style)
         A = f.A.copy()
         A[:, 3] = f.world(0, 0, 0) + np.array([0, 0, z0])
         out.append(fence.transform(A))

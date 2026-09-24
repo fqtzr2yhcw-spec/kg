@@ -162,7 +162,7 @@ def build(kit=None):
                        skin=SKIN, rake=RAKE, inner_cs=offset(base, -3.0), fascia=FASCIA)
     gables = [(g["blk"], g["edge"], wl["cs"].translate((g["u0"], Z_EAVE - ZF))) for g, wl in zip(specs, rf["walls"])]
     bprof, bblocks = TW.BELTS["bead"]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", siding=_siding, gables=gables, prof=bprof,
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="capital", siding=_siding, gables=gables, prof=bprof,
                         belt_blocks=bblocks)
     kit.add("WALLS-1", "Robin", st["shells"][0], group="walls")
     kit.add("BELT", "White", st["rings"][0], group="walls")

@@ -132,7 +132,7 @@ def build(kit=None):
         cs = wl["cs"].translate((g["u0"], Z_EAVE - ZF))
         gables.append((MAIN, g["edge"], cs))
     bprof, bblocks = TW.BELTS["drip"]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", siding=_siding, gables=gables, prof=bprof,
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="chamfer", siding=_siding, gables=gables, prof=bprof,
                         belt_blocks=bblocks)
     kit.add("WALLS-1", "Fawn", st["shells"][0], group="walls")
     kit.add("BELT", "Cream", st["rings"][0], group="walls")

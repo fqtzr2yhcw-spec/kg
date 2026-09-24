@@ -145,7 +145,7 @@ def build(kit=None):
     base = cs_union([b.cs for b in BLOCKS])
     clear = [lip_keep(base, 3.0, ZF, 1.2)]
     bprof, bblocks = TW.BELTS["panel"]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", clear=clear, siding=_siding, prof=bprof,
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="pilaster", clear=clear, siding=_siding, prof=bprof,
                         belt_blocks=bblocks)
     kit.add("WALLS-1", "Mist", st["shells"][0] + _colonettes(ZF, S1), group="walls")
     kit.add("BELT", "Cream", st["rings"][0], group="walls")

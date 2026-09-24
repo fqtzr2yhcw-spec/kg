@@ -70,11 +70,10 @@ def _openings():
     L = []
     lo = O.window_se(10.4, 24.0, rise=0, head="pediment")                     # sculpted surrounds
     up = O.window_se(9.6, 22.0, rise=2.4, head="hood", apron=False)
-    tk = dict(casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
-    bay_f = O.window_insert(9.6, 20.0, rise=2.4, style="voussoir", apron=True, **tk)
-    bay_s = O.window_insert(6.8, 20.0, rise=1.8, style="voussoir", apron=True, **tk)
+    bay_f = O.window_se(9.6, 20.0, rise=0, head="cap", arch_w=1.4, apron=False)
+    bay_s = O.window_se(6.0, 20.0, rise=0, head="cap", arch_w=1.2, apron=False, sill_consoles=False)
     tw2 = O.window_se(11.2, 24.0, rise=None, head="hood", apron=False)       # round-headed
-    tw3 = O.twin_arch_window(14.0, 20.0, balcony=0)
+    tw3 = O.window_se(11.2, 18.0, rise=2.4, head="pediment", apron=False)
     front = O.door_se(15.4, 25.2, leaf="arch_panels", tstyle="plain")
     back = O.door_se(11.0, 24.0, leaves=1, pil=1.6, leaf="arch_panels", tstyle="plain")
 
@@ -133,7 +132,7 @@ def build(kit=None):
     t0 = time.time()
     clear = [lip_keep(cs_union([b.cs for b in BLOCKS]), 3.0, ZF, 1.2)]
     bprof, bblocks = TW.BELTS["stone"]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1, ZE], t=3.0, corners="quoin", clear=clear, siding=_brick,
+    st = stacked_shells(BLOCKS, OPENINGS, [S1, ZE], t=3.0, corners="quoin_even", clear=clear, siding=_brick,
                         prof=bprof, belt_blocks=bblocks)
     kit.add("WALLS-1", "Brick", st["shells"][0], group="walls")
     kit.add("BELT-1", "Limestone", st["rings"][0], group="walls")
@@ -194,7 +193,7 @@ def build(kit=None):
     kit.add("ROOF-curb", "Limestone", T["ring"] - tower_hug, P=print_flip(), group="roof")
     kit.add("ROOF-deck", "Slate", T["deck"] - tower_hug - pads, group="roof")
     top_path = T["path"]
-    crest = R.cresting(top_path, zdeck, h=2.4, pitch=1.6, d_off=-1.0)
+    crest = R.cresting(top_path, zdeck, h=2.4, pitch=2.0, d_off=-1.0, style="spear")
     for i, seg, A, L in R.cresting_strips(crest, top_path, zdeck, -1.0):
         for j, piece in enumerate((seg - tower_keep).decompose()):
             if piece.volume() > 1.0:
@@ -219,7 +218,7 @@ def build(kit=None):
     fpad = box([tc[0] - 1.8, tc[1] - 1.8, tdeck - 0.01], [tc[0] + 1.8, tc[1] + 1.8, tdeck + 1])
     kit.add("TOWER-curb", "Limestone", TT_["ring"], P=print_flip(), group="tower")
     kit.add("TOWER-deck", "Slate", TT_["deck"] - fpad, group="tower")
-    tcrest = R.cresting(ttop_path, tdeck, h=2.8, pitch=1.6, d_off=-1.0)
+    tcrest = R.cresting(ttop_path, tdeck, h=2.8, pitch=2.0, d_off=-1.0, style="spear")
     for i, seg, A, L in R.cresting_strips(tcrest, ttop_path, tdeck, -1.0):
         kit.add(f"TOWER-crest-{i}", "Iron", seg, P=inv34(A), key=f"TOWER-crest-{round(L, 1)}", group="tower")
     kit.add("TOWER-finial", "Iron", TW.finial("iron", 1.4, 9.0).translate([tc[0], tc[1], tdeck]), group="tower")
@@ -230,7 +229,7 @@ def build(kit=None):
     broof = max(R.flat_roof(BAY, keep=main_keep).decompose(), key=lambda m: m.volume())   # drop the offcut by the wall
     kit.add("BAY-roof", "Limestone", broof, P=print_flip(), group="bay")
     bz = BAY.z1 + R.CORNICE_SMALL[-1][1]
-    bcrest = R.cresting(BAY.pts, bz, h=2.4, pitch=1.6, d_off=3.0) - MAIN.solid(grow=1.0, dz0=-1, dz1=300)
+    bcrest = R.cresting(BAY.pts, bz, h=2.4, pitch=2.0, d_off=3.0, style="spear") - MAIN.solid(grow=1.0, dz0=-1, dz1=300)
     for i, seg, A, L in R.cresting_strips(bcrest, BAY.pts, bz, 3.0):
         if not seg.is_empty() and seg.volume() > 1.0:
             kit.add(f"BAY-crest-{i}", "Iron", seg, P=inv34(A), group="bay")
