@@ -108,42 +108,14 @@ def _openings():
 OPENINGS = _openings()
 
 
-def _cap(p0, p1, z, s, half=1.5, up=0.9):
-    """A ridge cap (roll) along the ridge p0 -> p1 at height z over slopes s: it covers the
-    joint of the two slate faces, standing ``up`` over the ridge and 0.5 over the slates at
-    its edges."""
-    p0, p1 = np.array(p0, float), np.array(p1, float)
-    d = (p1 - p0) / np.linalg.norm(p1 - p0)
-    n = np.array([-d[1], d[0]])
-    up = round((z + up - ZE) / 0.2) * 0.2 + ZE - z         # the flat top on the layer grid (roof prints from ZE)
-    pts = []
-    for p in (p0, p1):
-        for sg in (-1, 1):
-            q = p + sg * n * half
-            pts += [(q[0], q[1], z - s * half - 0.6), (q[0], q[1], z - s * half + 0.5)]
-        for sg in (-1, 1):                              # a flat top two nozzle widths across
-            q = p + sg * n * 0.4
-            pts.append((q[0], q[1], z + up))
-    return M.hull_points(pts)
-
-
 def _ridge_caps():
     zr = Z_EAVE + S_MAIN * (D / 2 + D_EAVE)
     zc = Z_EAVE + S_CROSS * ((GX1 - GX0) / 2 + D_EAVE)
     y_meet = (zc - Z_EAVE) / S_MAIN - D_EAVE + 1.0         # where a cross ridge dies into the main slope
     xm = (GX0 + GX1) / 2
-    return union([_cap((-RAKE, D / 2), (W + RAKE, D / 2), zr, S_MAIN),
-                  _cap((xm, -RAKE), (xm, y_meet), zc, S_CROSS),
-                  _cap((xm, D - y_meet), (xm, D + RAKE), zc, S_CROSS)])
-
-
-def _chimney_seat(roof_solid, x, y, half, z_top):
-    """Fill the hollow roof under a ridge chimney with a downward 45-degree pyramid (so it
-    prints upright), leaving the chimney a blind pocket."""
-    h = half + 2.0
-    pts = [(x + sx * h, y + sy * h, z_top) for sx in (-1, 1) for sy in (-1, 1)]
-    pts.append((x, y, z_top - h - 1.0))
-    return M.hull_points(pts) ^ roof_solid
+    return union([G.ridge_cap((-RAKE, D / 2), (W + RAKE, D / 2), zr, S_MAIN, ZE),
+                  G.ridge_cap((xm, -RAKE), (xm, y_meet), zc, S_CROSS, ZE),
+                  G.ridge_cap((xm, D - y_meet), (xm, D + RAKE), zc, S_CROSS, ZE)])
 
 
 def build(kit=None):
@@ -191,7 +163,7 @@ def build(kit=None):
     z0 = round((z_low - 2.4) / 0.2) * 0.2
     solid_env, _ = R.hip_roof(_roof_pieces(), Z_EAVE, S_MAIN, D_EAVE, texture=None, zlo=ZE)
     for (x, y) in chims:
-        roof = roof + _chimney_seat(solid_env, x, y, CH / 2, ridge + 1.0)
+        roof = roof + G.chimney_seat(solid_env, x, y, CH / 2, ridge + 1.0)
     pockets = union([box([x - CH / 2 - 0.4, y - CH / 2 - 0.4, z0], [x + CH / 2 + 0.4, y + CH / 2 + 0.4, ridge + 40])
                      for x, y in chims])
     kit.add("ROOF", "Slate", roof - pockets, group="roof")

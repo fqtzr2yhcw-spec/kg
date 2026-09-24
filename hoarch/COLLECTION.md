@@ -14,9 +14,9 @@ building is designed. At the end: a lineup render of the whole collection.
 | 2 | The Ashby | Italianate villa | done: print files |
 | 3 | The Harcourt | Second Empire | done: sculpted windows and door, re-sliced (13 h 27 m, 313 g) |
 | 4 | The Fowler | Octagon house: two-layer eave, red standing-seam roof, octagonal cupola, three-face veranda, shutters | done: 78 parts, 0 interferences, sliced (7 h 56 m, 210 g) |
-| 5 | The Whitby | Carpenter Gothic cottage: four steep gables with pierced bargeboards, board-and-batten, patterned slate, traceried lancets under crocketed labels, crocketed gablets, diamond-paned gable lancets, Gothic entrance on engaged shafts, pointed-arch porch | concept done, 40 parts, 0 interferences, print checks clean |
+| 5 | The Whitby | Carpenter Gothic cottage: four steep gables with pierced bargeboards, board-and-batten, patterned slate, traceried lancets under crocketed labels, crocketed gablets, diamond-paned gable lancets, Gothic entrance on engaged shafts, pointed-arch porch | done: 40 parts, 0 interferences, print checks clean, sliced (6 h 35 m, 133 g) |
 | 6 | The Delancey | San Francisco Italianate row house: two-storey slanted bay with colonettes, rusticated front, two-layer cornice with flat roof, pedimented parapet, tall stoop, stone basement | done: 31 parts, 0 interferences, sliced (6 h 6 m, 177 g) |
-| 7 | The Ardmore | Richardsonian Romanesque: rock-faced stone, round tower with conical roof, great arched entry | planned |
+| 7 | The Ardmore | Richardsonian Romanesque: rock-faced brownstone, round tower with an arcaded belvedere and conical roof, arched corbel tables, stone entrance loggia with a great arch, voussoir windows on cushion-capital colonnettes, arcaded triple window, hipped roof with front gable and hip caps | concept done, 53 parts, 0 interferences |
 | 8 | The Merritt | Stick style: stickwork panels, gable trusses, braced porch | planned |
 | 9 | The Hollis | Folk Victorian farmhouse: L-plan, spindlework porch, gable ornaments | planned |
 | 10 | The Carrow | Queen Anne castle: round turret, conical spire, wraparound porch | planned |
@@ -26,3 +26,4 @@ building is designed. At the end: a lineup render of the whole collection.
 - Fowler: new two-layer eave (roof.frieze_ring under the bracketed cornice), door_se with an entablature hood.
 - Delancey: colonettes on the bay corners, channel rustication siding, parapet printed on its back, stoop fitted round the stone base.
 - Whitby: Gothic Revival windows and door (`window_gothic`, `door_gothic`: pointed arches, bar tracery, crockets, fleur finials, label stops, engaged shafts), gable walls built into the top wall shell (`wall_shell(gables=...)`), `gables.gabled_roof` (hollow roof body with rake skins and a fascia) and `gables.bargeboard`, board-and-batten siding (`core.battens`), Gothic porch arcade.
+- Ardmore: Romanesque windows (`window_romanesque`: voussoir rings on a backing ring, cushion capitals, arcaded groups, heavy lintels) and doorways (`door_romanesque`, also as an open porch arch), arched corbel table, `gables.hip_cap` / `ridge_cap` / `chimney_seat`, tower wall carried down through the upper storey.

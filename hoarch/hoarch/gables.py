@@ -113,3 +113,45 @@ def bargeboard(L, slope, d_eave, skin=1.8, width=2.6, d=0.8, finial=5.0, drop=3.
                         poly([(L / 2 - 0.5, tip[1] + finial - 1.2), (L / 2 + 0.5, tip[1] + finial - 1.2), (L / 2, tip[1] + finial)])])
         parts.append(ext(fcs, 0.0, d + 0.2))
     return union(parts)
+
+
+def ridge_cap(p0, p1, z, s, z_grid, half=1.5, up=0.9):
+    """A ridge cap (roll) along the ridge p0 -> p1 at height z over slopes s: it covers the
+    joint of the two slate faces, standing ``up`` over the ridge and 0.5 over the slates at
+    its edges, with a flat top two nozzle widths across on the layer grid counted from
+    ``z_grid`` (where the roof starts printing)."""
+    p0, p1 = np.array(p0, float), np.array(p1, float)
+    d = (p1 - p0) / np.linalg.norm(p1 - p0)
+    n = np.array([-d[1], d[0]])
+    up = round((z + up - z_grid) / 0.2) * 0.2 + z_grid - z
+    pts = []
+    for p in (p0, p1):
+        for sg in (-1, 1):
+            q = p + sg * n * half
+            pts += [(q[0], q[1], z - s * half - 0.6), (q[0], q[1], z - s * half + 0.5)]
+            q = p + sg * n * 0.4
+            pts.append((q[0], q[1], z + up))
+    return M.hull_points(pts)
+
+
+def chimney_seat(roof_solid, x, y, half, z_top):
+    """Fill a hollow roof under a ridge chimney with a downward 45-degree pyramid (so it
+    prints upright), leaving the chimney a blind pocket."""
+    h = half + 2.0
+    pts = [(x + sx * h, y + sy * h, z_top) for sx in (-1, 1) for sy in (-1, 1)]
+    pts.append((x, y, z_top - h - 1.0))
+    return M.hull_points(pts) ^ roof_solid
+
+
+def hip_cap(a, b, half=1.0, up=0.7, drop=1.6):
+    """A cap (roll) along a sloping hip line from 3D point a up to b: it covers the joint of
+    the two slate faces meeting there, ``up`` proud of the hip and sunk ``drop`` at its edges."""
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    d = b[:2] - a[:2]
+    n = np.array([-d[1], d[0]]) / max(np.linalg.norm(d), 1e-9)
+    pts = []
+    for p in (a, b):
+        for sg in (-1, 1):
+            pts.append((p[0] + sg * n[0] * half, p[1] + sg * n[1] * half, p[2] - drop))
+            pts.append((p[0] + sg * n[0] * 0.35, p[1] + sg * n[1] * 0.35, p[2] + up))
+    return M.hull_points(pts)

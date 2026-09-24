@@ -16,7 +16,7 @@ v = 0 at the opening bottom, w = 0 at the wall face.
 """
 import math
 
-from manifold3d import JoinType
+from manifold3d import JoinType, Manifold as M
 
 from .core import RIB, SLOT, arch_cs, circle, cs_union, poly, rect, union
 from .ornament import (bezier, bullseye, chamfer_box, console, dentils, ext, fan_crest, keystone, oval, quatrefoil,
@@ -1096,4 +1096,176 @@ def door_gothic(w, h, k=1.0, shaft=1.6, arch_w=1.6, hood_w=1.3, leaves=2):
     top = hood_out.bounds()[3]
     parts.append(fleur(0.0, top - 0.4, 0.0, 1.6, 1.0))
     top = top - 0.4 + 3.1
+    return _one_piece(sash, parts, op, plug_cs, PLUG, top, 0.0)
+
+
+# ------------------------------------------------------------------ Richardsonian Romanesque
+# Round arches of long, equal voussoirs (0.6 mm joints) springing from squat colonnettes with
+# cushion capitals; arcaded bands of lights sharing their colonnettes; heavy rock-faced
+# lintels and sills; a great arched entrance of receding orders.
+
+ROLL = [(0.0, 0.8), (0.25, 1.1), (0.5, 1.2), (0.75, 1.1), (1.0, 0.8)]
+SHAFT = [(0.0, 0.6), (0.2, 0.8), (0.45, 1.0), (0.7, 1.2), (1.0, 1.2)]
+
+
+def _voussoirs(cx, spring, r0, L, stone=1.9, joint=0.6, clip=None, d=(0.8, 1.0)):
+    """A semicircular ring of equal voussoirs round (cx, spring) from radius r0 out L, face-up
+    relief stepped d[0] then d[1] with a chamfer; an odd count so a stone sits at the crown."""
+    n = max(5, int(round(math.pi * (r0 + L / 2) / stone)))
+    n += 1 - n % 2
+    stones = []
+    g = math.asin(min(0.9, joint / 2 / r0))
+    for k in range(n):
+        a0, a1 = math.pi * k / n, math.pi * (k + 1) / n
+        arc = [a0 + g + (a1 - a0 - 2 * g) * j / 6 for j in range(7)]
+        if k == 0:
+            arc[0] = -0.12                                   # the springers sit down on the impost
+        if k == n - 1:
+            arc[-1] = math.pi + 0.12
+        pts = [(cx + (r0 + L) * math.cos(a), spring + (r0 + L) * math.sin(a)) for a in arc]
+        pts += [(cx + r0 * math.cos(a), spring + r0 * math.sin(a)) for a in reversed(arc)]
+        stones.append(poly(pts))
+    above = rect(cx - r0 - L - 1, spring, cx + r0 + L + 1, spring + r0 + L + 1)
+    face = cs_union(stones) ^ above
+    back = (circle((cx, spring), r0 + L, 96) - circle((cx, spring), r0, 96)) ^ above
+    if clip is not None:
+        face = face ^ clip
+        back = back ^ clip
+    face = face.offset(-0.25, JoinType.Miter, 4.0).offset(0.25, JoinType.Miter, 4.0)
+    # a continuous backing ring under the stones: the joints are grooves, not through-slots,
+    # so the ring prints (and stays) as one piece
+    return ext(back, 0.0, 0.4) + stepped(face, [(0.0, 0.2, d[0]), (0.2, d[0], d[1])])
+
+
+def _cushion(u, v_top, wd, ht, w0=0.0, d=1.4):
+    """Cushion capital (a block whose lower corners round off into the shaft), top at v_top."""
+    blk = cs_union([rect(u - wd / 2, v_top - ht * 0.45, u + wd / 2, v_top),
+                    circle((u - wd / 2 + ht * 0.55, v_top - ht * 0.45), ht * 0.55, 20),
+                    circle((u + wd / 2 - ht * 0.55, v_top - ht * 0.45), ht * 0.55, 20)])
+    blk = blk ^ rect(u - wd / 2, v_top - ht, u + wd / 2, v_top)
+    return stepped(blk, [(0.0, w0, w0 + d - 0.4), (0.2, w0 + d - 0.4, w0 + d)])
+
+
+def window_romanesque(w, h, n=1, gap=2.6, lites=(1, 1), flat=False, col=1.2, L=2.2, hood=True, sill_ext=1.2):
+    """Romanesque window of ``n`` lights (w wide, h tall to the crown) side by side, ``gap``
+    apart. Arched (default): each light a semicircle ringed by long voussoirs springing from
+    squat colonnettes with cushion capitals (shared between lights), a roll hood over the
+    whole group, and a long stone sill. ``flat``: square-headed lights under one heavy
+    rock-faced lintel, with colonnette mullions."""
+    from . import moulding as MD
+    pitch = w + gap
+    cs_ = [(-(n - 1) / 2 + i) * pitch for i in range(n)]
+    rise = 0.0 if flat else w / 2
+    spring = h - rise
+    ops = [opening_cs(w, h, 0 if flat else None).translate((c, 0.0)) for c in cs_]
+    op = cs_union(ops)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    sash = [window_insert(w, h, 0 if flat else None, lites=lites, bare=True)["insert"].translate([c, 0, 0]) for c in cs_]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    half = cs_[-1] + w / 2 + col + 0.3                   # outer edge of the end colonnettes
+    # colonnettes: one at each end and one on every pier between lights
+    posts = [cs_[0] - w / 2 - col / 2 - 0.15] + [(a + b) / 2 for a, b in zip(cs_[:-1], cs_[1:])] + \
+            [cs_[-1] + w / 2 + col / 2 + 0.15]
+    for i, u in enumerate(posts):
+        cw = col if i in (0, len(posts) - 1) else min(col + 0.4, gap - 0.2)
+        parts.append(MD.band(rect(u - cw / 2, 1.0, u + cw / 2, spring - 1.6), cw / 2, SHAFT))
+        parts.append(chamfer_box(u - cw / 2 - 0.25, 0.0, u + cw / 2 + 0.25, 1.2, 0.0, 1.4, c=0.4, bottom=0.0))
+        parts.append(_cushion(u, spring, cw + 0.8, 1.8))
+    if flat:
+        # one heavy lintel over the group, rock-faced (a pillowed stepped block)
+        lt = rect(-half - 0.8, h - 0.1, half + 0.8, h + 3.2)
+        parts.append(stepped(lt, [(0.0, 0.0, 1.0), (0.3, 1.0, 1.4)]))
+        top = h + 3.2
+    else:
+        clip = None
+        vs = []
+        for c in cs_:
+            cl = rect(c - pitch / 2, -1, c + pitch / 2, h + 20) if n > 1 else None
+            vs.append(_voussoirs(c, spring, w / 2 + 0.1, L, clip=cl))
+        parts += vs
+        if n > 1:   # fill the spandrels between neighbouring rings with plain ashlar
+            ring_out = cs_union([circle((c, spring), w / 2 + L + 0.1, 48) for c in cs_])
+            sp = (rect(cs_[0], spring, cs_[-1], spring + w / 2 + L) - ring_out)
+            sp = sp.offset(-0.3, JoinType.Round).offset(0.3, JoinType.Round)
+            parts.append(ext(sp, 0.0, 0.6))
+        top = spring + w / 2 + L + 0.1
+        if hood:
+            outer = cs_union([circle((c, spring), w / 2 + L + 1.2, 64) for c in cs_]) + \
+                rect(cs_[0] - w / 2 - L - 1.2, spring - 0.01, cs_[-1] + w / 2 + L + 1.2, spring + 0.6)
+            parts.append(MD.band(outer, 1.1, ROLL, clip=rect(-half - 20, spring, half + 20, h + 40)))
+            for sg in (-1, 1):                          # the hood's ends run out as a short impost band
+                u0, u1 = sorted((sg * (half - 0.4), sg * (half + 2.2)))
+                parts.append(MD.run(u0, u1, spring, MD.CROWN, 1.0, up=False))
+            top = spring + w / 2 + L + 1.2
+    sw = half + sill_ext
+    parts.append(chamfer_box(-sw, -1.8, sw, 0.2, 0.0, 1.4, c=0.4, bottom=0.6))
+    return _one_piece(sash, parts, op, plug_cs, PLUG, top, -1.8)
+
+
+def door_romanesque(w, h, orders=2, col=1.3, L=3.0, plug=True, leaves=2):
+    """Great round-arched Romanesque entrance: the arch springs low (w/2 under the crown)
+    from ``orders`` receding pairs of colonnettes with cushion capitals on a moulded impost
+    band; a ring of long voussoirs and a roll hood over it. With ``plug`` the doorway holds
+    ornate leaves under a fanlight of radiating bars; without, it is an open porch arch (the
+    surround alone, printed flat on its back)."""
+    from . import moulding as MD
+    rise = w / 2
+    spring = h - rise
+    op = opening_cs(w, h, None)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    pl = PLUG
+    sash = []
+    if plug:
+        dh = spring - 0.4
+        mid = SLOT if leaves > 1 else 0.0
+        lw = (w - 2 * CLR - 1.0 - mid * (leaves - 1)) / leaves
+        u = -w / 2 + CLR + 0.5
+        body = [ext(plug_cs, -pl, -1.0)]
+        lights = []
+        for i in range(leaves):
+            lp, light = _ornate_leaf(u, lw, dh, hinge_left=(i == 0))
+            body += lp
+            lights.append(light)
+            u += lw + mid
+        fan = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, spring + 0.3, w, h + 5)
+        glass = cs_union(lights) + fan
+        cut = ext(glass, -pl - 1, 0.0)
+        sash = [p - cut for p in body]
+        sash.append(ext(glass, -pl, -pl + GLASS))
+        sash.append(ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0))
+        sash.append(ext(rect(-w, spring - 0.3, w, spring + 0.3) ^ plug_cs, -pl, -0.4))
+        hub, rays = sunburst((0.0, spring + 0.3), 1.4, 2.2, rise + 2.0, n=9, a0=0.15, a1=math.pi - 0.15,
+                             ray0=RIB, ray1=RIB + 0.1)
+        sash.append(ext((hub + rays) ^ fan, -pl + GLASS - 0.01, -0.6))
+    parts = []
+    if plug:
+        parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))
+    # receding orders: colonnettes and an arched roll per order
+    u_edge = w / 2
+    for k in range(orders):
+        uc = u_edge + col / 2 + 0.1
+        for sg in (-1, 1):
+            u = sg * uc
+            parts.append(MD.band(rect(u - col / 2, 1.4, u + col / 2, spring - 2.0), col / 2, SHAFT))
+            parts.append(chamfer_box(u - col / 2 - 0.3, 0.0, u + col / 2 + 0.3, 1.6, 0.0, 1.4, c=0.4, bottom=0.0))
+            parts.append(_cushion(u, spring - 0.4, col + 0.9, 1.8))
+        r_in = u_edge + 0.1
+        parts.append(MD.band(circle((0.0, spring), r_in + col + 0.2, 72), col + 0.2, ROLL,
+                             clip=rect(-w - 20, spring, w + 20, h + 40)))
+        u_edge = uc + col / 2 + 0.1
+    # impost band across the capitals and out past the jambs
+    parts.append(MD.run(-u_edge - 1.2, u_edge + 1.2, spring - 0.4, MD.CROWN, 1.0, up=True))
+    # the voussoir ring and the hood
+    parts.append(_voussoirs(0.0, spring + 0.6, u_edge + 0.1, L, stone=2.2, d=(1.0, 1.4)))
+    ro = u_edge + 0.1 + L
+    outer = circle((0.0, spring + 0.6), ro + 1.3, 96)
+    parts.append(MD.band(outer, 1.2, ROLL, clip=rect(-w - 20, spring + 0.6, w + 20, h + 40)))
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * (ro - 0.3), sg * (ro + 3.0)))
+        parts.append(MD.run(u0, u1, spring + 0.6, MD.CROWN, 1.0, up=False))
+    top = spring + 0.6 + ro + 1.3
+    if not plug:
+        sur = union(parts) - ext(op, -5, 5)
+        return dict(insert=sur, sash=M(), glass=M(), frame=sur, surround=sur, back=0.0, cut=op,
+                    landing=footprint(sur, op), top=top, bottom=0.0)
     return _one_piece(sash, parts, op, plug_cs, PLUG, top, 0.0)
