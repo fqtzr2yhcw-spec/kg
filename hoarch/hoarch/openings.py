@@ -352,9 +352,9 @@ def _pediment_head(half, v_base, rise_in=2.4, band=0.9, sun=True):
     vs = v_base + 0.6
     arc, cy, r0 = _arc_band(2 * (half - band), vs, rise_in, 0.0, band)
     arc = arc ^ rect(-half - 1, vs - 0.01, half + 1, vs + rise_in + band + 1)
-    parts.append(stepped(arc, [(0.0, 0.0, 1.2), (0.25, 1.2, 1.6)]))
+    parts.append(stepped(arc, [(0.0, 0.0, 1.2), (0.2, 1.2, 1.6)]))
+    parts.append(ext(arc.hull(), 0.0, CAS))                   # tympanum: the whole segment under the band
     tymp = arch_cs(-(half - band), half - band, vs - 0.01, vs, rise=rise_in, seg=40)
-    parts.append(ext(tymp, 0.0, CAS))
     if sun and rise_in >= 2.0:
         # a carved fan: a half-round boss with five ribs radiating from a round bead
         R = rise_in - 0.35
@@ -401,7 +401,7 @@ def _scroll_hood(w, h, rise, spring, casing):
         vs = spring
         crown = cy + r0 + 0.9
     arc = arc ^ rect(-half - 2, vs - 0.01, half + 2, crown + 1)
-    parts.append(stepped(arc, [(0.0, 0.0, 1.2), (0.25, 1.2, 1.6)]))
+    parts.append(stepped(arc, [(0.0, 0.0, 1.2), (0.2, 1.2, 1.6)]))
     ends = []
     for sg in (-1, 1):
         xe = sg * (half + 0.45 - 0.45)           # centre line of the band at its foot
