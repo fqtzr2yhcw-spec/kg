@@ -89,6 +89,8 @@ def _column(style, u0, u1, v0, v1, cap_h=2.4, base_h=3.0):
         cut = box([u0 + 0.5, s0, 0.6], [u1 - 0.5, s1, 1.0])
     if cut is not None:
         parts[-1] = parts[-1] - cut
+    if style == "chamfered" and s1 - s0 > 3:     # a wooden pilaster: a raised chamfered shaft with stops
+        parts.append(chamfer_box(u0 + 0.3, s0 - 0.6, u1 - 0.3, s1 + 0.6, 0.79, 0.41, c=0.21))     # faces on the grid
     if style == "panel":
         parts.append(ext(circle((um, (s0 + s1) / 2), 0.55, 16), 0.59, 1.0))      # a boss in the panel
     # capital: necking, a bell flaring out, the abacus
@@ -99,7 +101,7 @@ def _column(style, u0, u1, v0, v1, cap_h=2.4, base_h=3.0):
 
 
 def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2, transom=6.4, beam=2.0,
-               lite=2.4, bulk_style="panel", mullion=True, posts=True, t=3.0):
+               lite=2.4, bulk_style="panel", mullion=True, posts=True, t=3.0, grid=None):
     """Cast-iron storefront filling a W x H opening (u centred, v from 0), one part printed
     face-up (plug back on the bed, no supports): pilasters at both ends and either side of a
     recessed entry ``entry`` wide at ``entry_at``, panelled bulkheads under the display
@@ -165,12 +167,23 @@ def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2
             if b - a > 18.0:
                 m_ = (a + b) / 2
                 bars.append(rect(m_ - 0.35, bulk, m_ + 0.35, vt))
+    if grid:                                         # small-paned display windows: muntins
+        gc, gr = grid
+        for a, b in bays:
+            g0, g1 = a + 0.8, b - 0.8
+            h0, h1 = bulk + 0.8, vt - 0.8 - 0.6
+            bars += [rect(g0 + (g1 - g0) * k / gc - 0.25, h0, g0 + (g1 - g0) * k / gc + 0.25, h1) for k in range(1, gc)]
+            bars += [rect(g0, h0 + (h1 - h0) * k / gr - 0.25, g1, h0 + (h1 - h0) * k / gr + 0.25) for k in range(1, gr)]
     sash.append(ext(cs_union(bars) ^ glass_cs, -PLUG + GLASS - 0.01, -0.4))
     parts = []
     for a, b in bays:
         # bulkhead: a raised panel (or a lozenge) on the frame
         if bulk_style == "panel":
             parts.append(chamfer_box(a + 0.8, 1.2, b - 0.8, bulk - 0.6, -0.01, 0.4, c=0.2))
+        elif bulk_style == "boards":               # vertical beaded boards
+            parts.append(box([a + 0.8, 1.2, -0.01], [b - 0.8, bulk - 0.6, 0.4]) -
+                         union([box([x - 0.25, 1.6, 0.2], [x + 0.25, bulk - 1.0, 1.0])
+                                for x in np.arange(a + 2.0, b - 1.2, 1.2)]))
         elif bulk_style == "lozenge":
             parts.append(box([a + 0.8, 1.2, -0.01], [b - 0.8, bulk - 0.6, 0.2]))
             cu, cv = (a + b) / 2, bulk / 2 + 0.3
@@ -229,7 +242,19 @@ def vestibule(entry, depth, v_top, bulk=7.2, side=0.8, door_h=None, transom=True
     # doors: the frame stands 0.4 proud; each leaf has glass over a raised panel
     adds.append(box([-dw - 0.6, 0.8, wb], [dw + 0.6, dh + 0.6, wb + 0.4]) -
                 box([-dw, 0.8, wb - 1], [dw, dh, wb + 1]))
-    if doors == "single":
+    if doors == "glass_pair":                 # two fully glazed leaves with a grid of lights
+        for sg in (-1, 1):
+            a0, a1 = sorted((sg * 0.25, sg * dw))
+            adds.append(box([a0 + 0.5, 1.4, wb - 0.01], [a1 - 0.5, zq(dh * 0.18), wb + 0.3]))
+            g0, g1, h0, h1 = a0 + 0.6, a1 - 0.6, zq(dh * 0.24), zq(dh - 0.8)
+            cuts.append(box([g0, h0, wb - 0.3], [g1, h1, wb + 0.01]))
+            for k in (1, 2):
+                vv = zq(h0 + (h1 - h0) * k / 3)
+                adds.append(box([g0 - 0.1, vv - 0.2, wb - 0.3], [g1 + 0.1, vv + 0.2, wb + 0.01]))
+            um = (g0 + g1) / 2
+            adds.append(box([um - 0.2, h0 - 0.1, wb - 0.3], [um + 0.2, h1 + 0.1, wb + 0.01]))
+        cuts.append(box([-0.25, 0.8, wb - 0.3], [0.25, dh, wb + 0.01]))
+    elif doors == "single":
         adds.append(box([-dw + 0.9, 1.4, wb - 0.01], [dw - 0.9, zq(dh * 0.3), wb + 0.3]))   # low panel
         adds.append(box([-dw + 0.9, 0.8, wb - 0.01], [dw - 0.9, 1.2, wb + 0.3]))            # kick plate
         cuts.append(box([-dw + 1.0, zq(dh * 0.36), wb - 0.3], [dw - 1.0, zq(dh - 0.8), wb + 0.01]))
@@ -507,7 +532,7 @@ def barber_pole(h=16.0, r=1.0, turns=1.5, starts=3):
     return union(parts)
 
 
-def boardwalk(L, depth, H, pitch=2.2, crack=0.25, t=1.2, stringers=3, fascia=1.0, nose=0.35):
+def boardwalk(L, depth, H, pitch=2.2, crack=0.25, t=1.2, stringers=3, fascia=1.0, nose=0.35, base=None):
     """A plank sidewalk in front of a shop: planks running from the building out to the
     street with hairline cracks between them, on stringers along the street, a fascia on the
     street edge and the ends, and a rounded nosing. Local frame: u 0..L along the street,
@@ -517,12 +542,13 @@ def boardwalk(L, depth, H, pitch=2.2, crack=0.25, t=1.2, stringers=3, fascia=1.0
     cracks = cs_union([rect(u - crack / 2, -1.0, u + crack / 2, depth + 1.0) for u in np.arange(pitch, L - 0.5, pitch)])
     planks = slab(rect(0, 0, L, depth) - cracks, H - t, H)
     top = H - t + 0.2                                    # the frame reaches into the planks
+    z0 = 0.0 if base is None else H - t - base          # ``base``: a shallow frame (a balcony deck)
     parts = [planks]
     for v in np.linspace(1.2, depth - 1.2, stringers):
-        parts.append(box([0.0, v - 0.5, 0.0], [L, v + 0.5, top]))
-    parts.append(box([0.0, depth - fascia, 0.0], [L, depth, top]))                    # street fascia
+        parts.append(box([0.0, v - 0.5, z0], [L, v + 0.5, top]))
+    parts.append(box([0.0, depth - fascia, z0], [L, depth, top]))                     # street fascia
     for u0 in (0.0, L - fascia):
-        parts.append(box([u0, 0.0, 0.0], [u0 + fascia, depth, top]))                  # end fascias
+        parts.append(box([u0, 0.0, z0], [u0 + fascia, depth, top]))                   # end fascias
     parts.append(box([-0.3, depth - 0.2, H - 0.6], [L + 0.3, depth + nose, H]))      # nosing
     return union(parts)
 
@@ -576,3 +602,65 @@ def skylight(W, D, h=4.0, curb=1.6, bars=2.4):
     frame = union(ribs) ^ over
     solid = body + frame
     return solid, hip - frame
+
+
+def flag_sidewalk(L, depth, H, course=4.2, joint=0.5, d=0.4, seed=7):
+    """A sidewalk of big flagstones: a slab ``H`` thick, u 0..L, v 0..depth, its top cut
+    into courses of stones of random length with ``joint`` wide joints ``d`` deep. Prints
+    flat on its bottom (the joints are open to the top)."""
+    rng = np.random.default_rng(seed)
+    cuts = []
+    v = course
+    while v < depth - 0.5:
+        cuts.append(rect(-1.0, v - joint / 2, L + 1.0, v + joint / 2))
+        v += course
+    v = 0.0
+    while v < depth - 0.5:
+        u = -rng.uniform(0.0, 4.0)
+        while u < L:
+            u += rng.uniform(5.0, 9.0)
+            if 0.8 < u < L - 0.8:
+                cuts.append(rect(u - joint / 2, v, u + joint / 2, min(depth, v + course)))
+        v += course
+    return box([0.0, 0.0, 0.0], [L, depth, H]) - M.extrude(cs_union(cuts), d + 1.0).translate([0, 0, H - d])
+
+
+def gallery_frame(xs, H, beam=1.6, post=2.0, gusset=2.4, rail=None, depth_t=2.0):
+    """One level of a two-storey gallery, in the plane of its posts: square posts at ``xs``
+    (u positions) from v = 0 to H, a beam along their tops, pierced 45 degree gussets at
+    every post head, and optionally a railing (``rail`` = dict(h=, pitch=, picket=)): a sill
+    on the floor, square pickets and a hand rail. Local frame: u along, v up, w across (the
+    posts' depth, centred). Prints upright; the beam and hand rail bridge post to post."""
+    x0, x1 = min(xs) - post / 2, max(xs) + post / 2
+    hw = depth_t / 2
+    parts = [box([x0, H - beam, -hw], [x1, H, hw])]
+    for x in xs:
+        parts.append(box([x - post / 2, 0.0, -post / 2], [x + post / 2, H - beam + 0.01, post / 2]))
+        for sg in (-1, 1):
+            a = x + sg * post / 2
+            tri = poly([(a, H - beam + 0.01), (a + sg * gusset, H - beam + 0.01), (a, H - beam - gusset)])
+            hole = circle((a + sg * gusset * 0.3, H - beam - gusset * 0.3), 0.35, 12)
+            if (x0 <= a + sg * gusset <= x1):
+                parts.append(ext(tri - hole, -0.4, 0.4).transform(np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0]])))
+    if rail:
+        rh, pitch, pk = rail.get("h", 8.0), rail.get("pitch", 1.8), rail.get("picket", 0.8)
+        parts.append(box([x0, 0.0, -hw * 0.6], [x1, 0.8, hw * 0.6]))                  # sill
+        parts.append(box([x0, rh - 1.0, -hw * 0.7], [x1, rh, hw * 0.7]))              # hand rail
+        for a, b in zip(sorted(xs)[:-1], sorted(xs)[1:]):
+            a, b = a + post / 2, b - post / 2
+            n = max(1, int(round((b - a) / pitch)) - 1)
+            for k in range(1, n + 1):
+                u = a + (b - a) * k / (n + 1)
+                parts.append(box([u - pk / 2, 0.79, -pk / 2], [u + pk / 2, rh - 0.99, pk / 2]))
+    return union(parts)
+
+
+def corrugated_panel(L, W, t=1.0, pitch=1.6, h=0.4, chord=1.3):
+    """A roof panel of corrugated iron, ``L`` along the eave by ``W`` up the slope: a sheet
+    ``t`` thick with low round ribs (``h`` high, ``chord`` wide at the foot, so even their top
+    layer is wider than the nozzle) running up the slope every ``pitch``. Own frame (u along
+    the eave, v up the slope, w out); prints flat on its back."""
+    r = (chord * chord / 4 + h * h) / (2 * h)
+    ribs = [M.cylinder(W, r, r, 48).rotate([-90, 0, 0]).translate([u, 0.0, t + h - r])
+            for u in np.arange(pitch / 2, L, pitch)]
+    return box([0, 0, 0], [L, W, t]) + (union(ribs) ^ box([0, 0, t - 0.01], [L, W, t + h]))

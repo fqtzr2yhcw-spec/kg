@@ -200,6 +200,18 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         for k in (-1, 1):
             body = body + _pot(0.9, 3.2, "bell").translate([k * w * 0.25, 0, sh + 0.39])
         return body
+    if style == "hooded":
+        # a small brick flue with a corbelled top and a sheet-iron rain hood on four legs
+        sh = h - 3.0
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + _skin(w, d, 0.0, sh - 1.2, _brick("running"))
+        body = body + _corbel_out(w, d, sh - 0.4, 0.4) + box([-w / 2 - 0.4, -d / 2 - 0.4, sh - 0.41], [w / 2 + 0.4, d / 2 + 0.4, sh])
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                body = body + box([sx * (w / 2 - 0.2) - 0.35, sy * (d / 2 - 0.2) - 0.35, sh - 0.01],
+                                  [sx * (w / 2 - 0.2) + 0.35, sy * (d / 2 - 0.2) + 0.35, sh + 1.6])
+        hood = M.hull_points([(x, y, sh + 1.59) for x in (-w / 2 - 0.4, w / 2 + 0.4) for y in (-d / 2 - 0.4, d / 2 + 0.4)] +
+                             [(0.0, 0.0, h)])
+        return body + hood
     if style == "stovepipe":
         # a sheet-iron flue: a band, and a cone cap flaring at 45 degrees (w = pipe diameter)
         r = w / 2
@@ -211,7 +223,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
-            "stovepipe", "coped")
+            "stovepipe", "coped", "hooded")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -257,7 +269,8 @@ def foundation_skin(style, reg, seed=0):
     rock-faced courses), brick (Merritt: running bond over a soldier course), block (Hollis:
     rock-faced concrete block), coursed (Carrow: long thin coursed stones), plinth (Pemberton:
     long dressed granite), timber (the barber shop: a timber sill with bolt heads), polished
-    (the bank: tall polished granite blocks)."""
+    (the bank: tall polished granite blocks), piers (the general store: stone piers with
+    board skirting)."""
     from . import skins as S
     if style == "fieldstone":
         return ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=0.55, seed=seed)
@@ -291,6 +304,16 @@ def foundation_skin(style, reg, seed=0):
             bolts += [circle((u + 3.0 + 6.0 * k, vm), 0.4, 12) for k in range(3)]
             u += 18.0
         return M.extrude(cs_union(cells) ^ reg, 0.35) + M.extrude(cs_union(bolts) ^ reg.offset(-0.3), 0.6)
+    if style == "piers":                 # rubble-stone piers with vertical board skirting between them
+        b = reg.bounds()
+        piers = []
+        u = b[0] + 1.5 + (seed % 3)
+        while u < b[2] - 1.0:
+            piers.append(rect(u - 1.5, b[1], u + 1.5, b[3]))
+            u += 10.0
+        pc = cs_union(piers) ^ reg
+        stones = ashlar(pc, course=(0.9, 1.4), length=(1.0, 1.7), d=0.5, seed=seed, rough=0.1)
+        return stones + S.beadboard(reg - pc.offset(0.2, JoinType.Miter, 4.0), pitch=1.2, groove=0.5, d=0.25)
     if style == "polished":              # polished granite: tall smooth blocks with V joints
         b = reg.bounds()
         blocks = []
@@ -323,6 +346,7 @@ BELTS = {
               dict(w=0.6, z=0.8, h=3.0, d0=0.5, d=0.35, c=0.15, pitch=4.0, margin=1.6)),
     "bead": ([(0.0, 0.0), (0.4, 0.4), (0.4, 3.2), (0.7, 3.5), (0.7, 3.9), (0.4, 4.2), (0.4, 4.4)], None),
     "sill": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.4, 3.7), (1.4, 4.4)], None),
+    "fascia": ([(0.0, 0.0), (0.4, 0.4), (0.4, 2.6), (0.9, 3.1), (0.9, 3.4), (1.3, 3.8), (1.3, 4.4)], None),
     "torus": ([(0.0, 0.0), (0.4, 0.4), (0.4, 1.0), (0.9, 1.5), (1.2, 1.9), (1.3, 2.3), (1.2, 2.7), (0.9, 3.1),
                (0.6, 3.4), (0.6, 3.6), (1.0, 4.0), (1.0, 4.4)], None),
     "boss": ([(0.0, 0.0), (0.7, 0.7), (0.7, 3.4), (1.3, 4.0), (1.3, 4.4)],

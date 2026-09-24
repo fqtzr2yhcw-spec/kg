@@ -80,6 +80,24 @@ def vgroove(region, datum=0.0):
 
 
 # ------------------------------------------------------------------ vertical and diagonal boards
+def vertical_lap(region, pitch=2.0, d=0.45, d0=0.1, datum=0.0):
+    """Vertical lapped boards: each board's edge laps over the next, so across the wall the
+    boards make a sawtooth (a shadow line at every lap). All faces upright."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    k0 = math.floor((u0 - datum) / pitch) - 1
+    k1 = math.ceil((u1 - datum) / pitch) + 1
+    pts = [(datum + k0 * pitch, 0.0)]
+    for k in range(k0, k1):
+        uk = datum + k * pitch
+        pts += [(uk, d), (uk + pitch, d0)]
+    pts.append((datum + k1 * pitch, 0.0))
+    H = v1 - v0 + 2.0
+    strip = M.extrude(poly(pts), H).rotate([90, 0, 0]).translate([0, v1 + 1.0, 0])
+    return strip ^ M.extrude(region, d + 0.2).translate([0, 0, -0.1])
+
+
 def _grooved(region, grooves, d):
     if region.is_empty():
         return M()

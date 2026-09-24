@@ -133,7 +133,7 @@ def _openings():
     # rear: two windows and the back door below, three windows on each floor above
     wr1 = SF.window_commercial(9.0, 22.0, rise=1.6, lites=(1, 1), rows=(1, 2), sill=1.0)
     wr2 = SF.window_commercial(9.0, 21.0, rise=1.6, lites=(1, 1), rows=(1, 1), sill=1.0)
-    add(58.0, Y1, 0.0, SF.door_commercial(9.0, 30.0, transom=4.0, leaf="four_panel", tstyle="plain", head=None),
+    add(58.0, Y1, 0.0, SF.door_commercial(9.0, 30.0, transom=4.0, leaf="four_panel", tstyle="number:112", head=None),
         "back-door", "door")
     for x in (16.0, 36.0):
         add(x, Y1, 12.0, wr1, f"R{x:.0f}-1")

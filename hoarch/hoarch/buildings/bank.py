@@ -90,7 +90,7 @@ def _openings():
     add(C / 2, C / 2, 0.0, SF.door_commercial(6.4, 22.0, transom=5.0, leaf="grille", tstyle="ring", head="temple",
                                               text="BANK", leaves=2), "corner-door", "door")
     rear = SF.window_commercial(7.0, 16.0, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.0)
-    add(40.0, D, 0.0, SF.door_commercial(7.0, 21.0, transom=3.6, leaf="grille", tstyle="plain", head=None), "back-door",
+    add(40.0, D, 0.0, SF.door_commercial(7.0, 21.0, transom=3.6, leaf="grille", tstyle="ring", head=None), "back-door",
         "door")
     add(22.0, D, 10.0, rear, "R22-1")
     for x in (12.0, 36.0):

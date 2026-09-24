@@ -84,7 +84,7 @@ def _openings():
         add(W, y, 10.0, win, f"E{y:.0f}")
     add(0, 38.0, 10.0, win, "W38")
     add(W - 28.0, D, 10.0, win, "N10")
-    add(W - 10.0, D, 0.0, SF.door_commercial(9.0, 28.0, transom=3.6, leaf="store", tstyle="stick", head=None),
+    add(W - 10.0, D, 0.0, SF.door_commercial(9.0, 28.0, transom=3.6, leaf="store", tstyle="twin", head=None),
         "back-door", "door")
     return L
 
