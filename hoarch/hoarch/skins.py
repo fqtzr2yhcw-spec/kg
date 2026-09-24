@@ -232,7 +232,8 @@ def brick_bond(region, bond="flemish", bl=2.4, bh=0.8, mortar=SLOT, bed=0.2, d=0
     "english"  a course of stretchers, then a course of headers;
     "common"   (American) running bond with a course of headers every ``header_every``;
     "roman"    long, thin Roman brick (pass bl ~ 3.8, bh ~ 0.6) in running bond;
-    "stack"    bricks straight above each other (panels, chimneys).
+    "stack"    bricks straight above each other (panels, chimneys);
+    "monk"     two stretchers and a header in turn, the pattern stepping a third each course.
     ``diaper``: in Flemish bond, headers on a diamond lattice stand this much prouder."""
     if region.is_empty():
         return M()
@@ -268,6 +269,14 @@ def brick_bond(region, bond="flemish", bl=2.4, bh=0.8, mortar=SLOT, bed=0.2, d=0
                 while u < u1 + bl:
                     cells.append(rect(u + mortar / 2, v, u + hl - mortar / 2, top))
                     u += hl
+        elif bond == "monk":             # two stretchers and a header in turn, stepping each course
+            unit = 2 * bl + hl
+            u = u0 - 2 * unit + (k % 3) * unit / 3 + uoff
+            while u < u1 + unit:
+                cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, top))
+                cells.append(rect(u + bl + mortar / 2, v, u + 2 * bl - mortar / 2, top))
+                cells.append(rect(u + 2 * bl + mortar / 2, v, u + unit - mortar / 2, top))
+                u += unit
         elif bond == "stack":
             u = u0 - bl + uoff
             while u < u1 + bl:
@@ -395,6 +404,42 @@ def brick_arch(u, v0, w, h, rise, casing=0.6, rings=2, course=1.0, gap=0.4, join
     relief = band - cs_union(cuts) if cuts else band
     # a mortar bed under the bricks keeps the arch one body
     return band, union([M.extrude(band, d / 2), M.extrude(relief, d)])
+
+
+def dentil_arch(u, v0, w, h, rise, casing=0.6, course=1.4, joint=0.5, d=0.35, brick=0.9, stone=True):
+    """A single brick ring round an arched opening with every other brick standing proud
+    (a dog-tooth arch), springing from stone imposts and keyed with a stone at the crown.
+    Returns (outline for the keep-out, relief)."""
+    from .openings import _arc_band
+    spring = v0 + h - rise
+    band, cy, r0 = _arc_band(w, spring - v0, rise, round((casing + 0.1) / 0.2) * 0.2, course)
+    band = band.translate((u, v0))
+    cy += v0
+    rmid = r0 + course / 2
+    n = max(3, int(round(math.pi * rmid / (brick + joint))))
+    cuts, proud = [], []
+    for k in range(-n, n + 1):
+        a = k * (brick + joint) / rmid
+        ca, sa = math.sin(a), math.cos(a)
+        cuts.append(stroke([(u + ca * (r0 - 0.5), cy + sa * (r0 - 0.5)), (u + ca * (r0 + course + 0.5),
+                                                                       cy + sa * (r0 + course + 0.5))], joint))
+        if k % 2 == 0:
+            a2 = (k + 0.5) * (brick + joint) / rmid
+            proud.append(poly([(u + math.sin(a + 0.01) * r0, cy + math.cos(a + 0.01) * r0),
+                               (u + math.sin(a + 0.01) * (r0 + course), cy + math.cos(a + 0.01) * (r0 + course)),
+                               (u + math.sin(a2) * (r0 + course), cy + math.cos(a2) * (r0 + course)),
+                               (u + math.sin(a2) * r0, cy + math.cos(a2) * r0)]))
+    relief = union([M.extrude(band, d / 2), M.extrude(band - cs_union(cuts), d)])
+    pr = (cs_union(proud) ^ band) - cs_union(cuts)
+    if not pr.is_empty():
+        relief = relief + M.extrude(pr, d + 0.3)
+    out = band
+    if stone:
+        top = v0 + h + round((casing + 0.1) / 0.2) * 0.2
+        key = poly([(u - 0.7, top - 0.2), (u + 0.7, top - 0.2), (u + 1.0, top + course + 0.4), (u - 1.0, top + course + 0.4)])
+        relief = relief + M.extrude(key, d + 0.5)
+        out = out + key
+    return out, relief
 
 
 def corbel_courses(u0, u1, v0, courses=3, bh=0.8, bed=0.2, step=0.25, d0=0.25, bl=2.4, mortar=0.5, dentils=True):

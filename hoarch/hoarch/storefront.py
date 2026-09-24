@@ -836,3 +836,50 @@ def batten_panel(L, W, t=1.2, pitch=3.0, bw=0.8, bh=0.4):
     for u in np.arange(pitch / 2, L - 0.3, pitch):
         parts.append(chamfer_box(u - bw / 2, 0.0, u + bw / 2, W, t - 0.01, bh, c=0.15))
     return union(parts)
+
+
+def pretzel_cs(w=7.0, h=6.0, bar=1.0):
+    """Outline of a baker's pretzel, top at y = 0: a loop of dough crossed in the middle."""
+    pts = []
+    for t in np.linspace(0, 2 * math.pi, 90):
+        x = math.sin(t) * (1 + 0.35 * math.cos(t))
+        y = math.cos(t) * math.sin(t) * 1.1 - 0.3 * math.cos(t)
+        pts.append((x * w / 2.7, y * h / 1.6 - h * 0.55))
+    body = stroke(pts, bar, caps=True)
+    return body + stroke([(0.0, -0.2), (0.0, -h * 0.25)], bar * 0.8)
+
+
+def pantile_panel(L, W, t=1.2, pitch=2.4, course=4.0, h=0.5):
+    """A roof panel of pantiles, ``L`` along the eave by ``W`` up the slope: S-waved tiles in
+    rows running up the slope every ``pitch``, laid in courses ``course`` long, each course's
+    butt standing proud of the one above. Own frame (u along the eave, v up, w out); prints
+    flat on its back."""
+    parts = [box([0, 0, 0], [L, W, t])]
+    prof = []
+    for x in np.linspace(0, pitch, 13):
+        s = x / pitch
+        z = h * (0.5 + 0.5 * math.sin(2 * math.pi * s - math.pi / 2)) * (1.0 if s < 0.6 else 0.9)
+        prof.append((x, z))
+    v = 0.0
+    while v < W - 0.01:
+        v1 = min(W, v + course)
+        for u in np.arange(0.0, L, pitch):
+            pts = [(u + x, t - 0.01 + z) for x, z in prof]
+            sec = poly([(u, t - 0.01)] + pts + [(u + pitch, t - 0.01)])
+            m = M.extrude(sec, v1 - v)                                   # along +z = up the slope
+            m = m.transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, v], [0, 1.0, 0, 0]]))
+            # a butt: each course thickest at its lower end
+            parts.append(m.warp_batch(lambda P, v0=v, v1=v1: _taper(P, v0, v1, t)))
+        v = v1
+    return union(parts) ^ box([0, 0, 0], [L, W, t + h + 0.4])
+
+
+def _taper(P, v0, v1, t):
+    """Thin each pantile course toward its upper end and thicken its butt; the tiles' feet
+    stay on the sheet (only points above it move)."""
+    P = np.array(P)
+    s = np.clip((P[:, 1] - v0) / max(v1 - v0, 1e-6), 0, 1)
+    base = t - 0.01
+    up = (P[:, 2] - base) > 0.005
+    P[:, 2] = np.where(up, base + (P[:, 2] - base) * (1.0 - 0.45 * s) + 0.25 * (1 - s), P[:, 2])
+    return P

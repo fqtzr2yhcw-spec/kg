@@ -240,6 +240,20 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
                                   [sx * (w / 2 - 0.5) + 0.5, sy * (d / 2 - 0.5) + 0.5, h - 0.8])
         body = body + box([-w / 2 - 0.4, -d / 2 - 0.4, h - 0.81], [w / 2 + 0.4, d / 2 + 0.4, h])
         return body - box([-w / 2 + 0.8, -d / 2 + 0.8, sh - 1.0], [w / 2 - 0.8, d / 2 - 0.8, sh + 0.41])
+    if style == "tapered":
+        # a baker's oven stack: a wide brick shaft that tapers on 45 degree shoulders to a
+        # narrower flue, a projecting band and a plain cap
+        s1 = h * 0.45
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, s1]) + _skin(w, d, 0.0, s1 - 0.2, _brick("running"))
+        w2, d2 = w * 0.6, d * 0.6
+        g = (w - w2) / 2
+        body = body + M.hull_points([(x, y, s1 - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                                    [(x, y, s1 + g) for x in (-w2 / 2, w2 / 2) for y in (-d2 / 2, d2 / 2)])
+        body = body + box([-w2 / 2, -d2 / 2, s1 + g - 0.01], [w2 / 2, d2 / 2, h - 1.2]) + \
+            _skin(w2, d2, s1 + g, h - 2.8, _brick("running"))
+        body = body + _corbel_out(w2, d2, h - 2.4, 0.4) + box([-w2 / 2 - 0.4, -d2 / 2 - 0.4, h - 2.41], [w2 / 2 + 0.4, d2 / 2 + 0.4, h - 1.6])
+        body = body + box([-w2 / 2 - 0.1, -d2 / 2 - 0.1, h - 1.61], [w2 / 2 + 0.1, d2 / 2 + 0.1, h])
+        return body - box([-w2 / 2 + 0.7, -d2 / 2 + 0.7, h - 1.0], [w2 / 2 - 0.7, d2 / 2 - 0.7, h + 1])
     if style == "stovepipe":
         # a sheet-iron flue: a band, and a cone cap flaring at 45 degrees (w = pipe diameter)
         r = w / 2
@@ -251,7 +265,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
-            "stovepipe", "coped", "hooded", "stepped", "slab")
+            "stovepipe", "coped", "hooded", "stepped", "slab", "tapered")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -345,6 +359,22 @@ def foundation_skin(style, reg, seed=0):
         pc = cs_union(piers) ^ reg
         stones = ashlar(pc, course=(0.9, 1.4), length=(1.0, 1.7), d=0.5, seed=seed, rough=0.1)
         return stones + S.beadboard(reg - pc.offset(0.2, JoinType.Miter, 4.0), pitch=1.2, groove=0.5, d=0.25)
+    if style == "herringbone":           # brick laid in a herringbone between a plain top course
+        b = reg.bounds()
+        top = b[3] - 1.0
+        bricks = []
+        L, Wd = 2.2, 0.7
+        x = b[0] - 6.0
+        while x < b[2] + 6.0:
+            for yy in np.arange(b[1] - 3.0, top + 3.0, 1.6):
+                for sg in (-1, 1):
+                    c = (x + (0.8 if sg > 0 else 0.0), yy + (0.8 if sg > 0 else 0.0))
+                    dx, dy = math.cos(math.pi / 4) * L / 2, sg * math.sin(math.pi / 4) * L / 2
+                    bricks.append(stroke([(c[0] - dx, c[1] - dy), (c[0] + dx, c[1] + dy)], Wd, caps=False))
+            x += 1.6
+        field = reg ^ rect(b[0] - 1, b[1] - 1, b[2] + 1, top - 0.4)
+        out = M.extrude(cs_union(bricks) ^ field, 0.3)
+        return out + S.brick_bond(reg ^ rect(b[0] - 1, top, b[2] + 1, b[3] + 1), "stack", bl=1.2, bh=1.0, d=0.35, datum=top)
     if style == "cobble":                # rounded field cobbles laid in rough courses
         rng = np.random.default_rng(seed)
         b = reg.bounds()

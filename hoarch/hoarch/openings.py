@@ -563,6 +563,10 @@ def _glass_bars():
     return out
 
 
+def zq(v):
+    return round(v / 0.2) * 0.2
+
+
 def _leaf(style, u, lw, dh, hinge_left):
     """One door leaf of the given style (face at w -0.8, details up to -0.2), from v 0.5 to
     dh - 0.3. Returns (solids, glass CrossSection or None). One style per building:
@@ -694,6 +698,20 @@ def _leaf(style, u, lw, dh, hinge_left):
         bars = [rect(m - 0.25, b[1], m + 0.25, b[3])]
         bars += [rect(b[0], b[1] + (b[3] - b[1]) * k / 4 - 0.25, b[2], b[1] + (b[3] - b[1]) * k / 4 + 0.25) for k in (1, 2, 3)]
         _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), -1.21, -0.6))
+    elif style == "dutch":                # a Dutch door: two halves, the top one glazed with four lights
+        mid = zq(dh * 0.48)
+        parts.append(ext(rect(u, mid - 0.25, u + lw, mid + 0.25), -1.2, -0.4))           # the split, a ledge
+        gl = rect(pu0, mid + 1.0, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        b = gl.bounds()
+        m, vm = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+        _GLASS_BARS.append(ext((rect(m - 0.25, b[1], m + 0.25, b[3]) + rect(b[0], vm - 0.25, b[2], vm + 0.25)) ^ gl.offset(0.2),
+                               -1.21, -0.6))
+        lo = rect(pu0, 1.3, pu1, mid - 1.0)
+        panel(lo)
+        lb = lo.bounds()
+        parts.append(ext(stroke([(lb[0] + 0.6, lb[1] + 0.6), (lb[2] - 0.6, lb[3] - 0.6)], 0.6, caps=False) ^ lo, -0.41, -0.2))
     elif style == "oval":
         cx, cy = (pu0 + pu1) / 2, dh * 0.7
         rx, ry = (pu1 - pu0) / 2 - 0.2, min(dh * 0.18, top - st - cy)
@@ -727,7 +745,7 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
     """The leaves and transom of a door (the plug part): leaf style (see _leaf) and a
     transom of style sunburst, plain (with an oval boss), stick (a row of narrow lights),
     diamond (a diamond grid), leaded (a border of small squares), ring (a ring on a cross of
-    bars), twin (one bar), cross (a cross of bars) or "number:<digits>" (the street number in
+    bars), twin (one bar), cross (a cross of bars), heart or "number:<digits>" (the street number in
     raised gilt figures on the glass). One transom style per building."""
     op = rect(-w / 2, 0, w / 2, h)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
@@ -786,6 +804,11 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
         elif tstyle == "arch":                   # a round arch bar springing from the transom's foot
             cx, r = 0.0, min((tb[2] - tb[0]) / 2 - 0.5, (tb[3] - tb[1]) - 0.5)
             pat = (circle((cx, tb[1]), r + RIB / 2, 40) - circle((cx, tb[1]), r - RIB / 2, 40))
+        elif tstyle == "heart":                  # a raised heart in the middle of the light
+            cy = (tb[1] + tb[3]) / 2
+            r = min((tb[3] - tb[1]) * 0.28, 0.9)
+            pat = cs_union([circle((-r * 0.75, cy + r * 0.35), r, 20), circle((r * 0.75, cy + r * 0.35), r, 20),
+                            poly([(-r * 1.6, cy + 0.1), (r * 1.6, cy + 0.1), (0.0, cy - r * 1.9)])])
         elif tstyle == "twin":                   # one upright bar: two lights
             pat = rect(-RIB / 2, tb[1] - 1, RIB / 2, tb[3] + 1)
         elif tstyle == "cross":                  # a cross of bars: four lights
