@@ -200,17 +200,31 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
         q = pi.q
         A2 = np.array([[e[0], e[1], -(e @ q)], [t[0] / cth, t[1] / cth, -(t @ q) / cth]])
         loc = reg.transform(A2)
-        if shape in ("tile", "crimp"):
+        if shape == "tile":
+            # barrel tiles: a wide rib per row; each course is thickest at its lower end and
+            # thins up the slope, so the next course's butt laps over it (no gap to fuse)
             b = loc.bounds()
-            n0 = int(np.floor(b[0] / seam_pitch))
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            cols = range(int(np.floor(b[0] / seam_pitch)), int(np.ceil(b[2] / seam_pitch)) + 1)
+            courses = []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                cs = cs_union([rect(k * seam_pitch - seam_pitch * 0.32, j * pitch, k * seam_pitch + seam_pitch * 0.32,
+                                    (j + 1) * pitch + 0.01) for k in cols]) ^ clip
+                if cs.is_empty():
+                    continue
+
+                def taper(P, v0=j * pitch):
+                    P = np.array(P)
+                    P[:, 2] *= 1 - 0.55 * np.clip((P[:, 1] - v0) / pitch, 0, 1)
+                    return P
+                courses.append(M.extrude(cs, d).warp_batch(taper))
+            tex = union(courses)
+        elif shape == "crimp":            # 5V crimp: a pair of narrow ribs per panel
+            b = loc.bounds()
             ribs = []
-            for k in range(n0, int(np.ceil(b[2] / seam_pitch)) + 1):
+            for k in range(int(np.floor(b[0] / seam_pitch)), int(np.ceil(b[2] / seam_pitch)) + 1):
                 u = k * seam_pitch
-                if shape == "tile":       # barrel tiles: a wide rib per row, broken at every course
-                    for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
-                        ribs.append(rect(u - seam_pitch * 0.32, j * pitch + 0.25, u + seam_pitch * 0.32, (j + 1) * pitch))
-                else:                     # 5V crimp: a pair of narrow ribs per panel
-                    ribs += [rect(u - 0.85, b[1] - 1, u - 0.35, b[3] + 1), rect(u + 0.35, b[1] - 1, u + 0.85, b[3] + 1)]
+                ribs += [rect(u - 0.85, b[1] - 1, u - 0.35, b[3] + 1), rect(u + 0.35, b[1] - 1, u + 0.85, b[3] + 1)]
             tex = M.extrude(cs_union(ribs) ^ loc.offset(-0.3, JoinType.Miter, 4.0), d)
         elif shape == "seam":
             b = loc.bounds()

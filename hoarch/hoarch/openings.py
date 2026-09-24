@@ -600,10 +600,10 @@ def _leaf(style, u, lw, dh, hinge_left):
         glass = gl
         parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
         lo = rect(pu0, 1.2, pu1, dh * 0.5 - 1.0)
-        parts.append(ext(lo.offset(0.45, JoinType.Miter, 4.0) - lo, -0.8, -0.5))
+        parts.append(ext(lo.offset(0.45, JoinType.Miter, 4.0) - lo, -0.8, -0.4))        # faces on the layer grid
         b = lo.bounds()
         x = cs_union([stroke([(b[0], b[1]), (b[2], b[3])], 0.6), stroke([(b[0], b[3]), (b[2], b[1])], 0.6)]) ^ lo
-        parts.append(ext(x, -0.81, -0.5))
+        parts.append(ext(x, -0.81, -0.4))
     elif style == "half_glass":
         gl = rect(pu0, dh * 0.52, pu1, top - st)
         glass = gl
