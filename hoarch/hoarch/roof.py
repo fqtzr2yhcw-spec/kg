@@ -229,7 +229,11 @@ def _halfplane(a, b, c, big=3000.0):
 
 
 def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6):
-    """One straight run of cresting in its own frame: u = 0..L along, v up, centred across."""
+    """One straight run of cresting in its own frame: u = 0..L along, v up, centred across.
+
+    A bottom rail, spikes of two heights, and a middle rail carried on little pointed
+    arches that spring from the spikes at 45 degrees, so the fence prints upright with no
+    bridge anchored on a spike (PrusaSlicer flags those as loose extrusions)."""
     k = max(1, int(L / pitch))
 
     def zq(v):                          # printed upright: every rail and tip on the 0.2 mm grid
@@ -240,10 +244,9 @@ def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6):
         u = L * j / k
         cells.append(rect(u - bar / 2, 0, u + bar / 2, zq(h * (1.0 if j % 2 == 0 else 0.75))))
         if j < k:
-            cx = u + L / k / 2
-            r = min(L / k, h * 0.5) * 0.36
-            ring = CS.circle(r, 12).translate((cx, h * 0.3)) - CS.circle(max(0.0, r - bar), 12).translate((cx, h * 0.3))
-            cells.append(ring)
+            uL, uR = u + bar / 2, u + L / k - bar / 2
+            g = min((uR - uL) / 2, vm - 0.6)
+            cells.append(poly([(uL, vm - g), ((uL + uR) / 2, vm), (uR, vm - g), (uR, vm + 0.01), (uL, vm + 0.01)]))
     return M.extrude(cs_union(cells) ^ rect(0, 0, L, h + 1), t).translate([0, 0, -t / 2])
 
 

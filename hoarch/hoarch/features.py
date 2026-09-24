@@ -476,6 +476,9 @@ def _clamp_45(prof):
     return out
 
 
+COLLAR_PAD = 0.2       # the collar band runs past the hand rail (edges level with its faces upset PrusaSlicer)
+
+
 def turned_post(h, plinth=3.2, abacus=3.0, seg=36, slot=(1.2, 1.0), collar=None):
     """Victorian turned porch post, printed upright, floor at z=0, top of the abacus at h.
 
@@ -494,7 +497,7 @@ def turned_post(h, plinth=3.2, abacus=3.0, seg=36, slot=(1.2, 1.0), collar=None)
     if collar is None:
         c0, c1, c2 = Z(0.20), Z(0.23), Z(0.30)
     else:                                   # the ring's straight band spans the hand rail
-        c0, c1 = collar - 1.3, collar
+        c0, c1 = collar - 1.3 - COLLAR_PAD, collar + COLLAR_PAD
         c2 = max(Z(0.30), c1 + 0.55)
     prof = [(0.0, z0 - 0.01), (1.5, z0 - 0.01), (1.5, z0 + 0.35), (1.25, z0 + 0.7), (1.15, Z(0.04)),
             (1.05, c0), (1.35, c0 + 0.3), (1.35, c1), (1.0, c1 + 0.35),
