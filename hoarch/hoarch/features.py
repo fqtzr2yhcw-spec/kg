@@ -476,21 +476,29 @@ def _clamp_45(prof):
     return out
 
 
-def turned_post(h, plinth=3.2, abacus=3.0, seg=36, slot=(1.2, 1.0)):
+def turned_post(h, plinth=3.2, abacus=3.0, seg=36, slot=(1.2, 1.0), collar=None):
     """Victorian turned porch post, printed upright, floor at z=0, top of the abacus at h.
 
     Square plinth, torus base, tapered lower shaft, a ringed collar, a vase with a belly,
     a necked ring, the upper shaft, and a bell capital flaring at 45 degrees into a square
-    abacus. Never thinner than 1.9 mm. A slot across the abacus takes the arcade's tab."""
+    abacus. Never thinner than 1.9 mm. A slot across the abacus takes the arcade's tab.
+    ``collar``: height of a railing's hand rail top above the post's foot; the ringed collar
+    is then placed so the hand rail runs into it (a solid joint when post and railing print
+    as one piece) instead of meeting the thin shaft."""
     ph, ah = 1.2, 1.0
     z0, z1 = ph, h - ah - 1.4                 # turned zone (the capital bell sits above z1)
     L = z1 - z0
 
     def Z(t):
         return z0 + t * L
+    if collar is None:
+        c0, c1, c2 = Z(0.20), Z(0.23), Z(0.30)
+    else:                                   # the ring's straight band spans the hand rail
+        c0, c1 = collar - 1.3, collar
+        c2 = max(Z(0.30), c1 + 0.55)
     prof = [(0.0, z0 - 0.01), (1.5, z0 - 0.01), (1.5, z0 + 0.35), (1.25, z0 + 0.7), (1.15, Z(0.04)),
-            (1.05, Z(0.20)), (1.35, Z(0.20) + 0.3), (1.35, Z(0.23)), (1.0, Z(0.23) + 0.35),
-            (1.0, Z(0.30)), (1.25, Z(0.36)), (1.42, Z(0.45)), (1.25, Z(0.56)), (0.95, Z(0.64)),
+            (1.05, c0), (1.35, c0 + 0.3), (1.35, c1), (1.0, c1 + 0.35),
+            (1.0, c2), (1.25, Z(0.36)), (1.42, Z(0.45)), (1.25, Z(0.56)), (0.95, Z(0.64)),
             (1.3, Z(0.64) + 0.35), (1.3, Z(0.67)), (0.95, Z(0.67) + 0.35), (1.05, Z(0.76)), (1.0, z1),
             (1.1, z1 + 0.1), (1.45, z1 + 0.45), (1.45, z1 + 0.8), (0.0, z1 + 0.8)]
     prof = _clamp_45(prof[:-1]) + [(0.0, prof[-2][1])]
@@ -519,14 +527,14 @@ def baluster(h, rmax=0.55, rmin=0.36, seg=20):
     return M.revolve(poly(prof), seg)
 
 
-def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0):
+def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pitch=8.0):
     """Baluster railing between two posts, printed upright. Local frame: u along 0..L, v up
     from the porch floor (= print z), w across, centred. Feet carry the bottom rail
     ``foot`` above the floor; turned balusters; a hand rail with a rounded top.
     ``sink``: the feet run that far below the floor (into sockets), level with the posts'
     plinths when the railing is printed in one piece with its posts."""
     parts = []
-    nf = max(2, int(L / 8.0) + 1)
+    nf = max(2, int(L / foot_pitch) + 1)
     for j in range(nf):
         u = 0.5 + (L - 1.0) * j / (nf - 1)
         parts.append(box([u - 0.5, -0.6, -sink], [u + 0.5, 0.6, foot + 0.01]))
@@ -668,7 +676,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             if not any(np.allclose(p, q, atol=0.05) for q in where):
                 where.append(p)
     ph = post_h - beam + 0.4                    # plinth sits 0.4 down in a floor socket
-    post = turned_post(ph)
+    post = turned_post(ph, collar=(rail_h + 0.4) if joined else None)
     posts = [post.translate([p[0], p[1], H_floor - 0.4]) for p in where]
     floor = None
     if boards is not None:

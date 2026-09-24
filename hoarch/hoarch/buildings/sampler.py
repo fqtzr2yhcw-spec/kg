@@ -106,7 +106,7 @@ def build(single=True):
     f = Facade((0.0, y_run), (SX, y_run), 0.0)
     A = f.A.copy()
     A[:, 3] = np.r_[f.p0, H_floor]
-    post = FT.turned_post(post_h - 2.2 + 0.4)
+    post = FT.turned_post(post_h - 2.2 + 0.4, collar=8.6 + 0.4)
     # posts and railings as one piece, printed upright (as on the villa)
     frame = [post.translate([p[0], p[1], H_floor - 0.4]) for p in (f.p0 + f.u * u for u in us)]
     for a, b in zip(us[:-1], us[1:]):

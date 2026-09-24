@@ -80,7 +80,9 @@ Rich HO detail comes from a few devices repeated at every scale, each shaped to 
   - **Posts and railings in one piece** (`joined=True`): each run of posts and its
     railings print together, standing on the plinths and the railing feet (both run
     0.4 mm into sockets in the floor). The only spans are short bridges: the bottom rail
-    between feet and the hand rail over the balusters. The arcade stays its own piece:
+    between feet and the hand rail over the balusters. The post's ringed collar is placed
+    at the hand rail (`turned_post(collar=...)`), so the rail runs into the ring rather
+    than the thin shaft; PrusaSlicer flags "loose extrusions" on the frame otherwise. The arcade stays its own piece:
     printed upright with the posts its arches and drops would start in mid-air, and
     printed upside down with them the hand rails would.
   - **The arcade** (beam, a square rosette block over each post, sawn-work spandrels with
