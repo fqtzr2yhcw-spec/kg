@@ -65,21 +65,21 @@ def _brick(f, b, reg):
 # ------------------------------------------------------------------ openings
 def _openings():
     L = []
-    lo = O.window_insert(10.4, 26.0, rise=2.6, style="voussoir", apron=True)
-    up = O.window_insert(9.6, 22.0, rise=2.4, style="voussoir")
+    lo = O.window_se(10.4, 24.0, rise=0, head="pediment")                     # sculpted surrounds
+    up = O.window_se(9.6, 22.0, rise=2.4, head="hood", apron=False)
     tk = dict(casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
     bay_f = O.window_insert(9.6, 20.0, rise=2.4, style="voussoir", apron=True, **tk)
     bay_s = O.window_insert(6.8, 20.0, rise=1.8, style="voussoir", apron=True, **tk)
-    tw2 = O.window_insert(11.2, 24.0, rise=None, style="voussoir")         # round-headed
+    tw2 = O.window_se(11.2, 24.0, rise=None, head="hood", apron=False)       # round-headed
     tw3 = O.twin_arch_window(14.0, 20.0, balcony=0)
-    front = O.door_ornate(15.4, 26.0, leaves=2, transom=4.2, head="pediment")
-    back = O.door_insert(11.0, 26.0, leaves=1, transom=3.0)
+    front = O.door_se(15.4, 25.2)
+    back = O.door_se(11.0, 24.0, leaves=1, pil=1.6)
 
     def add(block, x, y, v0, sp, name, kind="window"):
         e, u = block.locate(x, y)
         L.append(Opening(block, e, u, v0, sp, name, kind))
 
-    for x in (14.5, 31.5, 96.5, 113.5):                                   # front, either side of the tower
+    for x in (12.8, 32.2, 95.8, 115.2):                                   # front, either side of the tower
         add(MAIN, x, 0, V1, lo, f"S{x:.0f}-1")
         add(MAIN, x, 0, V2, up, f"S{x:.0f}-2")
     mx = (TX0 + TX1) / 2

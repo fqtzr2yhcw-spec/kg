@@ -320,7 +320,7 @@ def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=T
         for s in (-1, 1):
             parts.append(console(3.2, 1.6, 0.8, u=s * (cw - 0.6), v_top=v0 + 2.2, w0=0.0))
         top = v0 + 3.3
-    return _one_piece(sash_parts, parts, op, plug_cs, pl, top, 0.0)
+    return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)
 
 
 def twin_arch_window(w, h, balcony=5.0, casing=1.0):
@@ -545,6 +545,13 @@ def door_ornate(w, h, leaves=2, transom=4.2, head="swan", pil=1.6):
     ``head="swan"``: a frieze with a cartouche and swags, a cornice and a broken swan-neck
     pediment with an urn, or ``head="pediment"``: a segmental pediment with a sunburst.
     Local frame as the windows (u centred, v from the sill, w out of the wall)."""
+    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom)
+    parts = []
+    return _door_ornate_surround(w, h, op, plug_cs, sash_parts, head, pil)
+
+
+def _ornate_door_sash(w, h, leaves, transom):
+    """The ornate leaves and sunburst transom of door_ornate / door_se (the plug part)."""
     op = rect(-w / 2, 0, w / 2, h)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
     pl = PLUG
@@ -573,7 +580,11 @@ def door_ornate(w, h, leaves=2, transom=4.2, head="swan", pil=1.6):
         hub, rays = sunburst((0.0, tb[1]), 1.0, 1.6, max(tb[2], tb[3] - tb[1]) + 2.0, n=7, a0=0.2, a1=math.pi - 0.2,
                              ray0=RIB, ray1=RIB + 0.1)
         parts.append(ext((hub + rays) ^ tcs, -pl + GLASS - 0.01, -0.6))
-    sash_parts, parts = parts, []
+    return op, plug_cs, parts
+
+
+def _door_ornate_surround(w, h, op, plug_cs, sash_parts, head, pil):
+    parts = []
     # opening lip and inner bead
     parts.append(ext((op - op.offset(-RIB, JoinType.Miter, 4.0)) ^ rect(-w, 0.5, w, h + 1), 0.0, CAS))
     parts.append(ext((op.offset(RIB, JoinType.Miter, 4.0) - op) ^ rect(-w, 0, w, h + 1), CAS, BEAD))
@@ -630,4 +641,147 @@ def door_ornate(w, h, leaves=2, transom=4.2, head="swan", pil=1.6):
         parts.append(ext(cs_union([stroke([(0.0, top - 0.2), (0.0, top + 0.5)], 0.6), circle((0.0, top + 0.85), 0.5, 16)]),
                          0.0, 1.2))
         top += 1.35
-    return _one_piece(sash_parts, parts, op, plug_cs, pl, top, 0.0)
+    return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)
+
+
+# ------------------------------------------------------------------ Second Empire surrounds
+# Sculpted mouldings (hoarch.moulding): every casing, hood and shelf has a real profile built
+# as a height field on the 0.2 mm grid, so it prints face-up as clean nested perimeters.
+
+def window_se(w, h, rise=None, head="hood", lites=(1, 1), arch_w=2.0, apron=True, sill_consoles=True):
+    """Second Empire window: an eared, moulded architrave and a sculpted head.
+
+    head "pediment": frieze, scroll consoles, a moulded shelf and a segmental pediment with a
+                     cartouche in the tympanum (first floor);
+    head "hood":     a crowned drip hood following the arch, returned at the spring line over
+                     drop pendants, with a scroll keystone rising into a palmette crest;
+    head "cap":      a moulded cornice cap on consoles, no pediment (where headroom is short).
+    Sill: a moulded nose on two small consoles, and (apron) a panelled apron with a drop."""
+    from . import moulding as MD
+    rise = w / 2 if rise is None else rise
+    spring = h - rise
+    op = opening_cs(w, h, rise)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    sash = window_insert(w, h, rise, lites=lites, bare=True)["insert"]
+    A = arch_w
+    parts = []
+    # --- eared architrave (crossettes at the head), no casing under the sill
+    v_ear = spring if rise > 0 else h
+    outer = op.offset(A, JoinType.Miter, 4.0)
+    ears = cs_union([rect(-w / 2 - A - 0.6, v_ear - 1.8, -w / 2, v_ear + (A if rise == 0 else 0.6)),
+                     rect(w / 2, v_ear - 1.8, w / 2 + A + 0.6, v_ear + (A if rise == 0 else 0.6))])
+    outer = cs_union([outer, ears])
+    above_sill = rect(-w - 10, 0.0, w + 10, h + 40)
+    parts.append(MD.band(outer, A + 0.6, MD.ARCHITRAVE, clip=above_sill - op))
+    parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))      # lip over the sash frame
+    half = w / 2 + A + 0.6                       # outer half-width at the ears
+    top = h + A
+    if head in ("pediment", "cap"):
+        v0 = (h if rise == 0 else h) + A          # top of the architrave (flat head)
+        if rise > 0:
+            v0 = spring + rise + A
+        # frieze with rosettes over the consoles
+        parts.append(ext(rect(-half, v0 - 0.2, half, v0 + 1.8), 0.0, CAS))
+        for sg in (-1, 1):
+            parts.append(MD.rosette(sg * (half - 0.7), v0 + 0.8, 0.62, CAS - 0.01, 0.6))
+            parts.append(console(3.6, 1.8, 1.2, u=sg * (half - 0.7), v_top=v0 - 0.2, w0=0.0))
+        # moulded shelf, returned past the consoles
+        vs = v0 + 1.8
+        parts.append(MD.run(-half - 0.6, half + 0.6, vs + 1.2, MD.CROWN, 1.2, up=False))
+        top = vs + 1.2
+        if head == "pediment":
+            rise_p = 2.6
+            seg = arch_cs(-half - 0.3, half + 0.3, vs + 1.2 - 0.01, vs + 1.2, rise=rise_p, seg=48)
+            parts.append(MD.band(seg, 1.1, MD.CROWN, clip=rect(-half - 2, vs + 1.2, half + 2, vs + 10)))
+            tymp = seg.offset(-1.0, JoinType.Round) ^ rect(-half, vs + 1.2, half, vs + 10)
+            parts.append(ext(tymp, 0.0, CAS))
+            parts.append(cartouche_or_fan(vs + 1.2, rise_p, half))
+            top = vs + 1.2 + rise_p
+    else:  # "hood": crowned drip hood following the head, stopped at the spring line on corbels
+        HB = 1.4
+        hood_out = op.offset(A + HB, JoinType.Miter, 4.0)
+        vcut = v_ear if rise > 0 else h + A
+        parts.append(MD.band(hood_out, HB, MD.CROWN, clip=rect(-w - 10, vcut, w + 10, h + 40)))
+        if rise > 0:
+            for sg in (-1, 1):
+                u0, u1 = sorted((sg * (w / 2 + A - 0.2), sg * (w / 2 + A + HB + 0.8)))
+                parts.append(MD.run(u0, u1, vcut, MD.CROWN, 1.2, up=False))          # label stop
+                parts.append(console(2.4, 1.6, 1.2, u=sg * (w / 2 + A + HB * 0.5 + 0.2), v_top=vcut - 1.2, w0=0.0))
+        crown_v = (h + A + HB) if rise == 0 else (spring + rise + A + HB)
+        kv0 = h - 0.2
+        parts.append(MD.scroll_keystone(0.0, kv0, crown_v + 1.0 - kv0, 1.6, 2.4, 0.0, 2.0))
+        parts.append(MD.anthemion((0.0, crown_v + 0.8), 4.0, 3.0, 0.0, 1.2))
+        top = crown_v + 0.8 + 3.0
+    # --- sill: moulded nose on two small consoles, panelled apron with a drop
+    sw = half + 0.3
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    bottom = -1.0
+    if sill_consoles:
+        for sg in (-1, 1):
+            parts.append(console(1.8, 1.0, 0.8, u=sg * (w / 2 + A / 2), v_top=-1.0, w0=0.0))
+        bottom = -2.8
+    if apron:
+        aw = w / 2 + A * 0.5
+        field = rect(-aw + 1.0, -3.2, aw - 1.0, -1.0)
+        parts.append(ext(field, 0.0, CAS))
+        parts.append(chamfer_box(-aw + 1.6, -2.7, aw - 1.6, -1.5, CAS, 0.4, c=0.25))
+        parts.append(MD.pendant(0.0, -3.2, 1.8, 0.0, 0.8))
+        bottom = min(bottom, -5.0)
+    return _one_piece([sash], parts, op, plug_cs, PLUG, top, bottom)
+
+
+def cartouche_or_fan(v_base, rise_p, half):
+    """Tympanum ornament of a segmental pediment: a cartouche if it fits, else a fan."""
+    from . import moulding as MD
+    hc = rise_p - 0.6
+    if hc >= 1.8 and half >= 4.0:
+        return MD.cartouche((0.0, v_base + 0.2 + hc / 2), min(3.2, half * 0.55), hc, CAS - 0.01, 0.8)
+    hub, rays = sunburst((0.0, v_base), 0.0, 0.5, rise_p - 0.4, n=5, a0=0.2, a1=math.pi - 0.2, ray0=0.45, ray1=0.7)
+    return ext(rays, CAS - 0.01, 1.0)
+
+
+def door_se(w, h, leaves=2, transom=4.4, pil=2.0, arch_w=1.8):
+    """Second Empire entrance: the ornate leaves and fanlight of door_ornate in a moulded
+    architrave, fluted pilasters on plinths with moulded capitals, an entablature (frieze
+    with a cartouche between rosettes, dentils, a crowned cornice returned over the
+    pilasters) and a segmental pediment with a fan and a palmette on the apex."""
+    from . import moulding as MD
+    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom)
+    A = arch_w
+    parts = []
+    outer = op.offset(A, JoinType.Miter, 4.0)
+    parts.append(MD.band(outer, A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op))
+    parts.append(ext((op - op.offset(-RIB, JoinType.Miter, 4.0)) ^ rect(-w, 0.5, w, h + 1), 0.0, CAS))
+    # fluted pilasters on plinths with moulded capitals
+    ui, uo = w / 2 + A, w / 2 + A + pil
+    vcap = h + A
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * ui, sg * uo))
+        um = (u0 + u1) / 2
+        body = ext(rect(u0, 2.6, u1, vcap), 0.0, 1.0)
+        flute = ext(stroke([(um, 3.6), (um, vcap - 1.0)], 0.6), 0.6, 1.2)
+        parts.append(body - flute)
+        parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 2.6, 0.0, 1.2, c=0.4))
+        parts.append(MD.run(u0 - 0.3, u1 + 0.3, vcap, MD.CROWN, 1.0, up=False))
+    # entablature: frieze with a cartouche between rosettes, dentils, crowned cornice
+    half = uo + 0.3
+    parts.append(ext(rect(-half, vcap, half, vcap + 2.8), 0.0, CAS))
+    parts.append(MD.cartouche((0.0, vcap + 1.4), 4.2, 2.4, CAS - 0.01, 0.8))
+    for sg in (-1, 1):
+        parts.append(MD.rosette(sg * (ui + pil / 2), vcap + 1.4, 0.8, CAS - 0.01, 0.6))
+    parts.append(dentils(-half + 0.3, half - 0.3, vcap + 2.8, 0.7, 0.0, 1.2))
+    vs = vcap + 3.5
+    parts.append(MD.run(-half - 0.7, half + 0.7, vs + 1.4, MD.CROWN, 1.4, up=False))
+    # segmental pediment with a fan in the tympanum and a palmette on the apex
+    vb = vs + 1.4
+    rise_p = 3.4
+    seg = arch_cs(-half - 0.4, half + 0.4, vb - 0.01, vb, rise=rise_p, seg=60)
+    parts.append(MD.band(seg, 1.2, MD.CROWN, clip=rect(-half - 2, vb, half + 2, vb + 10)))
+    tymp = seg.offset(-1.1, JoinType.Round) ^ rect(-half, vb, half, vb + 10)
+    parts.append(ext(tymp, 0.0, CAS))
+    hub, rays = sunburst((0.0, vb), 0.0, 1.0, rise_p - 0.6, n=7, a0=0.25, a1=math.pi - 0.25, ray0=0.5, ray1=0.8)
+    parts.append(ext((rays ^ tymp.offset(-0.3, JoinType.Round)), CAS - 0.01, 1.0))
+    parts.append(ext(arch_cs(-1.2, 1.2, vb - 0.01, vb, rise=1.2, seg=24), CAS - 0.01, 1.2))
+    parts.append(MD.anthemion((0.0, vb + rise_p + 0.6), 4.0, 3.0, 0.0, 1.2))
+    top = vb + rise_p + 0.6 + 3.0
+    return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)
