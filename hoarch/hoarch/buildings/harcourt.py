@@ -1,10 +1,12 @@
 """The Harcourt -- an original HO-scale (1:87.1) Second Empire house for the lineup.
 
-A symmetrical red-brick block with a centre tower over the entrance and cream stone trim:
-stone-arch window heads with long-and-short voussoirs, a straight bell-cast slate mansard
-with round-topped dormers, iron cresting on its flat top, and a tall concave mansard cap
-on the tower. A one-storey canted bay on the east side, a turned entrance portico, and a
-coursed granite foundation.
+A symmetrical block of Flemish-bond red brick (a diamond diaper of proud headers) with a
+centre tower over the entrance and cream stone trim: stone-arch window heads with
+long-and-short voussoirs, a straight bell-cast mansard of square slate banded with
+hexagons, round-topped dormers, iron cresting on its flat top, and a tall concave mansard
+cap on the tower. Block brackets, a plain stone belt, paneled chimneys, an iron finial. A
+one-storey canted bay on the east side, an entrance portico on fluted columns with urn
+balusters and an entablature, and a rock-faced granite foundation.
 
 usage: python3 -m hoarch.buildings.harcourt [check] [export]
 """
@@ -15,10 +17,9 @@ import time
 import numpy as np
 from manifold3d import Manifold as M
 
-from hoarch.core import box, brick, compose, cs_union, inv34, offset, poly, slab, union
-from hoarch import features as FT, openings as O, roof as R
+from hoarch.core import box, compose, cs_union, inv34, offset, poly, slab, union
+from hoarch import features as FT, openings as O, roof as R, skins as SK, trimwork as TW
 from hoarch.kit import Kit, print_flip
-from hoarch.ornament import finial
 from hoarch.shell import Block, Opening, foundation, lip_keep, stacked_shells
 
 NAME = "Harcourt Second Empire"
@@ -54,12 +55,13 @@ TOWER = Block("tower", [(TX0, TY0), (TX1, TY0), (TX1, TY1), (TX0, TY1)], ZF, TT)
 BAY = Block("bay", [(X1 - 3.0, 42.0), (X1, 42.0), (X1 + 9.0, 48.0), (X1 + 9.0, 64.0), (X1, 70.0),
                     (X1 - 3.0, 70.0)], ZF, ZF + 31.6)
 BLOCKS = [MAIN, TOWER, BAY]
-SLATE = ("fish", "fish", "square", "square", "diamond", "square", "square")    # banded courses
-TOWER_SLATE = ("fish", "fish", "diamond")
+SLATE = ("square", "square", "square", "hex")    # banded courses
+TOWER_SLATE = ("square",)
 
 
 def _brick(f, b, reg):
-    return brick(reg, datum=1.8)
+    """Flemish bond with a diamond diaper of headers standing 0.15 mm prouder."""
+    return SK.brick_bond(reg, "flemish", datum=1.8, diaper=0.15)
 
 
 # ------------------------------------------------------------------ openings
@@ -72,8 +74,8 @@ def _openings():
     bay_s = O.window_insert(6.8, 20.0, rise=1.8, style="voussoir", apron=True, **tk)
     tw2 = O.window_se(11.2, 24.0, rise=None, head="hood", apron=False)       # round-headed
     tw3 = O.twin_arch_window(14.0, 20.0, balcony=0)
-    front = O.door_se(15.4, 25.2)
-    back = O.door_se(11.0, 24.0, leaves=1, pil=1.6)
+    front = O.door_se(15.4, 25.2, leaf="arch_panels", tstyle="plain")
+    back = O.door_se(11.0, 24.0, leaves=1, pil=1.6, leaf="arch_panels", tstyle="plain")
 
     def add(block, x, y, v0, sp, name, kind="window"):
         e, u = block.locate(x, y)
@@ -129,7 +131,9 @@ def build(kit=None):
     kit.parts.clear()
     t0 = time.time()
     clear = [lip_keep(cs_union([b.cs for b in BLOCKS]), 3.0, ZF, 1.2)]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1, ZE], t=3.0, corners="quoin", clear=clear, siding=_brick)
+    bprof, bblocks = TW.BELTS["stone"]
+    st = stacked_shells(BLOCKS, OPENINGS, [S1, ZE], t=3.0, corners="quoin", clear=clear, siding=_brick,
+                        prof=bprof, belt_blocks=bblocks)
     kit.add("WALLS-1", "Brick", st["shells"][0], group="walls")
     kit.add("BELT-1", "Limestone", st["rings"][0], group="walls")
     # the tower's walls inside the house rise from the second floor, so its belt ring bears all round
@@ -138,7 +142,7 @@ def build(kit=None):
     kit.add("WALLS-2", "Brick", st["shells"][1] + tw_in, group="walls")
     kit.add("TOWER-BELT", "Limestone", st["rings"][1], group="tower")
     kit.add("TOWER-3", "Brick", st["shells"][2], group="tower")
-    kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF), group="foundation")
+    kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF, style="granite"), group="foundation")
     inserts = []
     for o in OPENINGS:
         A = o.local_frame()
@@ -155,7 +159,7 @@ def build(kit=None):
     tower_hug = TOWER.solid(grow=0.5, dz0=-1, dz1=200)          # the mansard notch hugs the tower (brick 0.25 proud)
     # --- main eave: single large brackets over frieze panels (upside down)
     eave = R.bracketed_cornice(MAIN.pts, ZE, EAVE,
-                               brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, t=0.9, pitch=9.6, margin=4.0,
+                               brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, t=0.9, pitch=9.6, margin=4.0, style="block",
                                              skip=lambda p: TX0 - 3.2 < p[0] < TX1 + 3.2 and p[1] < TY1 + 3.2),
                                dents=dict(z=4.4, h=0.8, d0=0.9, d=0.7), panels=dict(z=0.6, h=3.0, d=0.4))
     kit.add("EAVE-main", "Limestone", eave - tower_keep, P=print_flip(), group="roof")
@@ -185,7 +189,7 @@ def build(kit=None):
     zdeck = T["z_top"]
     chims = [(14.0, 56.0), (114.0, 56.0)]
     # each chimney stands in a 0.6 mm pocket in the deck, which locates it (no peg to overhang)
-    pads = union([box([x - 5.7, y - 5.7, zdeck - 0.6], [x + 5.7, y + 5.7, zdeck + 1]) for x, y in chims])
+    pads = union([box([x - 6.0, y - 6.0, zdeck - 0.6], [x + 6.0, y + 6.0, zdeck + 1]) for x, y in chims])     # clear of the pilasters
     kit.add("ROOF-curb", "Limestone", T["ring"] - tower_hug, P=print_flip(), group="roof")
     kit.add("ROOF-deck", "Slate", T["deck"] - tower_hug - pads, group="roof")
     top_path = T["path"]
@@ -195,13 +199,13 @@ def build(kit=None):
             if piece.volume() > 1.0:
                 kit.add(f"CREST-{i}{'ab'[j] if j < 2 else j}", "Iron", piece, P=inv34(A), group="roof")
     for k, (x, y) in enumerate(chims):
-        ch = FT.chimney(w=10.5, dpt=10.5, h=16.6, peg=None).translate([x, y, zdeck - 0.6])
+        ch = TW.chimney("paneled", w=10.5, d=10.5, h=16.6).translate([x, y, zdeck - 0.6])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
     print("roof", round(time.time() - t0, 1))
 
     # --- tower: eave ring, concave slate cap, curb and deck, cresting and finial
     teave = R.bracketed_cornice(TOWER.pts, TT, R.CORNICE_SMALL,
-                                brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.8, pitch=6.6, margin=2.6),
+                                brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.8, pitch=6.6, margin=2.6, style="block"),
                                 dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7), panels=dict(z=0.6, h=2.4, d=0.35))
     kit.add("TOWER-EAVE", "Limestone", teave, P=print_flip(), group="tower")
     cz0 = TT + R.CORNICE_SMALL[-1][1]
@@ -217,7 +221,7 @@ def build(kit=None):
     tcrest = R.cresting(ttop_path, tdeck, h=2.8, pitch=1.6, d_off=-1.0)
     for i, seg, A, L in R.cresting_strips(tcrest, ttop_path, tdeck, -1.0):
         kit.add(f"TOWER-crest-{i}", "Iron", seg, P=inv34(A), key=f"TOWER-crest-{round(L, 1)}", group="tower")
-    kit.add("TOWER-finial", "Iron", finial(1.4, 9.0).translate([tc[0], tc[1], tdeck]), group="tower")
+    kit.add("TOWER-finial", "Iron", TW.finial("iron", 1.4, 9.0).translate([tc[0], tc[1], tdeck]), group="tower")
     print("tower", round(time.time() - t0, 1))
 
     # --- east bay: flat roof with its cornice (upside down) and cresting
@@ -239,7 +243,8 @@ def build(kit=None):
             dict(a=(px0, y1), b=(px1, y1), posts=[1.6, 12.0, (px1 - px0) - 12.0, (px1 - px0) - 1.6]),
             dict(a=(px1, y1), b=(px1, y0), posts=[1.6, (y0 - y1) - 1.7])]
     P = FT.porch_turned([(px0, y0), (px0, y1), (px1, y1), (px1, y0)], runs, H_floor, post_h,
-                        steps_at=[(1, (px1 - px0) / 2, 14.0)], boards=dict(pitch=1.8), joined=True)
+                        steps_at=[(1, (px1 - px0) / 2, 14.0)], boards=dict(pitch=1.8), joined=True,
+                        post="fluted", rail="urn", arcade="entablature", skirt="square", pier_tex="stone")
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
@@ -265,7 +270,7 @@ def build(kit=None):
     e, u = MAIN.locate(64.0, Y1)
     f = MAIN.facades()[e]
     A = f.A.copy()
-    A[:, 3] = f.world(u, -ZF, 1.4)
+    A[:, 3] = f.world(u, -ZF, 1.8)                     # clear of the rock-faced granite
     kit.add("STOOP-back", "Granite", FT.steps(14.0, ZF - 0.6, 3).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
     print("specks dropped:", kit.drop_specks())

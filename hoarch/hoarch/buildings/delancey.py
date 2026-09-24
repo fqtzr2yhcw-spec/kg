@@ -1,9 +1,11 @@
 """The Delancey -- an original HO-scale (1:87.1) San Francisco Italianate row house.
 
-Narrow and tall on a raised basement: a two-storey slanted bay with colonettes on its
-corners, channel-rusticated wood on the front and clapboard on the sides, a heavy two-layer
-bracketed cornice with a flat roof, a front parapet with a segmental pediment and cartouche,
-sculpted window surrounds, and a pedimented entrance at the top of a tall stoop.
+Narrow and tall on a rusticated raised basement: a two-storey slanted bay with colonettes
+on its corners, channel-rusticated wood on the front and drop siding on the sides, a panelled
+belt, a heavy two-layer cornice on pendant brackets with a flat roof, a front parapet with a
+segmental pediment and cartouche, San Francisco window surrounds (colonnettes, arched
+architraves, keystones; two-over-one sash), glazed double doors under an arched cornice at
+the top of a tall stoop, and slim hooded chimneys.
 
 usage: python3 -m hoarch.buildings.delancey [check] [export]
 """
@@ -16,7 +18,7 @@ import numpy as np
 from manifold3d import Manifold as M
 
 from hoarch.core import arch_cs, box, brick, clapboard, cs_union, inv34, offset, poly, rect, slab, union
-from hoarch import features as FT, moulding as MD, openings as O, roof as R
+from hoarch import features as FT, moulding as MD, openings as O, roof as R, skins as SK, trimwork as TW
 from hoarch.kit import Kit, print_flip
 from hoarch.ornament import chamfer_box, ext, lozenge
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
@@ -52,22 +54,22 @@ BRK = dict(pitch=8.6, margin=3.6, pair=1.9, t=0.8)
 
 def _siding(f, b, reg):
     """Channel rustication (wood cut to look like stone blocks) on the street front and bay,
-    clapboard on the sides and back."""
+    drop siding on the sides and back."""
     if f.n[1] < -0.3:
         return brick(reg, bl=4.8, bh=1.6, mortar=0.5, d=0.3, datum=1.8, bed=0.4)
-    return clapboard(reg, pitch=1.2, d=0.3, dmin=0.05, datum=1.8)
+    return SK.drop_siding(reg, datum=1.8)
 
 
 def _openings():
     L = []
-    bay1 = O.window_se(8.8, 26.0, rise=0, head="cap")
-    bay2 = O.window_se(8.4, 24.0, rise=2.2, head="hood", apron=False)
-    cant1 = O.window_se(5.6, 26.0, rise=0, head="cap", arch_w=1.2, apron=False)
-    cant2 = O.window_se(5.6, 24.0, rise=1.6, head="hood", apron=False, arch_w=1.0, hood_w=1.0)
-    side1 = O.window_se(8.4, 24.0, rise=0, head="cap", apron=False)
-    side2 = O.window_se(8.0, 22.0, rise=2.2, head="hood", apron=False)
-    up_door = O.window_se(9.0, 24.0, rise=2.4, head="hood", apron=False)
-    front = O.door_se(12.4, 25.2)
+    bay1 = O.window_sf(8.8, 26.0, rise=2.4)
+    bay2 = O.window_sf(8.4, 24.0, rise=2.2)
+    cant1 = O.window_sf(5.2, 26.0, rise=1.8, A=1.0, col=1.0, lites=(1, 1))
+    cant2 = O.window_sf(5.2, 24.0, rise=1.6, A=1.0, col=1.0, lites=(1, 1))
+    side1 = O.window_sf(8.4, 24.0, rise=2.2)
+    side2 = O.window_sf(8.0, 22.0, rise=2.2)
+    up_door = O.window_sf(9.0, 24.0, rise=2.4)
+    front = O.door_sf(11.6, 25.2)
 
     def add(block, x, y, v0, sp, name, kind="window"):
         e, u = block.locate(x, y)
@@ -142,13 +144,15 @@ def build(kit=None):
     t0 = time.time()
     base = cs_union([b.cs for b in BLOCKS])
     clear = [lip_keep(base, 3.0, ZF, 1.2)]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", clear=clear, siding=_siding)
+    bprof, bblocks = TW.BELTS["panel"]
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", clear=clear, siding=_siding, prof=bprof,
+                        belt_blocks=bblocks)
     kit.add("WALLS-1", "Mist", st["shells"][0] + _colonettes(ZF, S1), group="walls")
     kit.add("BELT", "Cream", st["rings"][0], group="walls")
     kit.add("WALLS-2", "Mist", st["shells"][1] + _colonettes(S1 + RH, ZE) + _corbel(base, 3.0, ZE)
             + lip_ring(base, 3.0, ZE), group="walls")
     # raised basement: tall coursed-stone foundation with two small windows
-    fnd = foundation(BLOCKS, 0.0, ZF)
+    fnd = foundation(BLOCKS, 0.0, ZF, style="rusticated")
     bwin = O.window_insert(7.0, 7.0, rise=0, lites=(2, 1), bare=True)
     bops = []
     for (x, y, blk) in ((BX0 + BD + BW / 2, -BD, BAY), (X1, 40.0, MAIN), (X1, 80.0, MAIN)):
@@ -184,13 +188,13 @@ def build(kit=None):
     kit.add("EAVE-frieze", "Cream", R.frieze_ring(outline, ZE, h=FR_H, brackets=BRK), group="roof")
     zc = ZE + FR_H
     chims = [(8.0, 46.0), (8.0, 86.0)]
-    eave = R.bracketed_cornice(outline, zc, EAVE, brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, **BRK),
+    eave = R.bracketed_cornice(outline, zc, EAVE, brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, style="pendant", **BRK),
                                dents=dict(z=4.4, h=0.8, d0=0.9, d=0.7), deck=(6.4, 7.6))
     zdeck = zc + EAVE[-1][1]
     pockets = union([box([x - 5.7, y - 5.7, zdeck - 0.6], [x + 5.7, y + 5.7, zdeck + 1]) for x, y in chims])
     kit.add("EAVE-cornice-roof", "Cream", eave - pockets, P=print_flip(), group="roof")
     for k, (x, y) in enumerate(chims):
-        ch = FT.chimney(w=10.5, dpt=10.5, h=14.6, peg=None).translate([x, y, zdeck - 0.6])
+        ch = TW.chimney("slim", w=10.5, d=10.5, h=14.6).translate([x, y, zdeck - 0.6])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
     par, fpar = _parapet(zdeck)
     kit.add("PARAPET", "Cream", par.transform(fpar), P=inv34(fpar), group="roof")        # prints on its back

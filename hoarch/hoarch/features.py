@@ -883,7 +883,8 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             pieces += [r for k in ch for r in run_rails.get(k, [])]
             frames += union(pieces).decompose()           # a post with no railing stays its own piece
         if floor is not None:                             # sockets for the plinths and the railing feet
-            foot = cs_union([fr.slice(H_floor - 0.2) for fr in frames])
+            # (sliced at the floor's top too: a post whose base block has a chamfered foot is widest there)
+            foot = cs_union([fr.slice(z) for fr in frames for z in (H_floor - 0.2, H_floor - 0.01)])
             floor = floor - slab(foot.offset(0.15, JoinType.Miter, 4.0), H_floor - 0.41, H_floor + 1)
         posts, rails = [], []
     return dict(deck=deck, floor=floor, posts=posts, rails=rails, arcades=arcades, roof=roof, steps=st,

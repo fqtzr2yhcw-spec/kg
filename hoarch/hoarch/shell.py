@@ -176,7 +176,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
             reg = reg.offset(-0.45, JoinType.Miter, 4.0).offset(0.45, JoinType.Miter, 4.0) ^ region
             if not reg.is_empty():
                 tex = siding(f, b, reg) if siding else clapboard(reg, pitch=pitch, d=sid_d, dmin=0.05, datum=1.8)
-                dress.append(f.place(tex))
+                dress.append(f.place(tex.translate([0, 0, -0.02])))     # sunk a hair: one solid with the wall
             # quoins: chamfered blocks, long and short legs alternating, wrapping the corner
             # (each leg runs QT past the corner so the two faces' blocks meet solid)
             if quoins:
@@ -260,7 +260,7 @@ def foundation(blocks, z0, z1, t=3.0, proud=0.8, stone_d=0.55, seed=4, openings=
         reg = rect(0.0, 0.4, f.L, z1 - z0 - 0.4)
         from .trimwork import foundation_skin
         s = foundation_skin(style, reg, seed=seed + i)
-        tex.append(f.place(s))
+        tex.append(f.place(s.translate([0, 0, -0.03])))      # sunk a hair: one solid with the ring
     ring = ring + union(tex)
     # clip stone at corners so neighbours don't stack up outside the miter
     clip = slab(offset(outer, stone_d + 0.2), z0 - 1, z1 + 1)
@@ -337,7 +337,7 @@ def belt_ring(outline_pts, z0, t=3.0, prof=BELT_PROF, lip=True, blocks=BELT_BLOC
     return ring
 
 
-def storey_shells(blocks, openings, z_split, t=3.0, prof=BELT_PROF, clear=(), **kw):
+def storey_shells(blocks, openings, z_split, t=3.0, prof=BELT_PROF, clear=(), belt_blocks="default", **kw):
     """One-piece shells per storey with a belt ring between, like the reference's stacks.
 
     Builds the full shell (siding, trim, openings) with the belt zone bare, then cuts it
@@ -357,7 +357,7 @@ def storey_shells(blocks, openings, z_split, t=3.0, prof=BELT_PROF, clear=(), **
     lower = shell.trim_by_plane([0, 0, -1.0], -z_split)
     lower = lower + _corbel(base, t, z_split) + lip_ring(base, t, z_split)
     upper = shell.trim_by_plane([0, 0, 1.0], z_split + h)
-    ring = belt_ring(outline, z_split, t=t, prof=prof)
+    ring = belt_ring(outline, z_split, t=t, prof=prof, **({} if belt_blocks == "default" else dict(blocks=belt_blocks)))
     upper = upper - lip_keep(base, t, z_split + h)
     for kp in clear:
         upper = upper - kp

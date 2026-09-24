@@ -275,7 +275,7 @@ def urn_cs(u, v0, h, wmax):
              rect(u - max(RIB, wmax * 0.2) / 2, v0 + 0.45 * s, u + max(RIB, wmax * 0.2) / 2, v0 + 0.9 * s),
              oval((u, v0 + 1.55 * s), wmax / 2, 0.75 * s),                                  # bowl
              rect(u - wmax * 0.46, v0 + 2.05 * s, u + wmax * 0.46, v0 + 2.35 * s),         # lip
-             rect(u - max(RIB, wmax * 0.22) / 2, v0 + 2.3 * s, u + max(RIB, wmax * 0.22) / 2, v0 + 2.9 * s),
+             rect(u - max(RIB, wmax * 0.22) / 2, v0 + 2.3 * s, u + max(RIB, wmax * 0.22) / 2, v0 + 3.05 * s),
              circle((u, v0 + 3.35 * s), max(RIB * 0.6, 0.45 * s), 16)]                      # ball
     return cs_union(parts)
 

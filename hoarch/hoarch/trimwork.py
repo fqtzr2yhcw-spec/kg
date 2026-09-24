@@ -275,7 +275,7 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     elif style == "pendant":
         pts = [(0, 0), (d, 0)] + [(d * (1 - 0.7 * (3 * s * s - 2 * s ** 3)), -h * 0.7 * s) for s in np.linspace(0.05, 1, 10)] + \
               [(0, -h * 0.7)]
-        prof = cs_union([poly(pts), rect(0.0, -h, 0.6, -h * 0.7 + 0.01), circle((0.3, -h + 0.2), 0.45, 12)])
+        prof = cs_union([poly(pts), rect(0.0, -h, 0.6, -h * 0.7 + 0.01), circle((0.3, -h + 0.45), 0.45, 12)])
     elif style == "fan":
         disc = circle((0.0, 0.0), min(d, h), 32) ^ rect(0.0, -h, d, 0.0)
         slots = cs_union([stroke([(0.9 * math.cos(a), -0.9 * math.sin(a)), ((min(d, h) - 0.6) * math.cos(a),

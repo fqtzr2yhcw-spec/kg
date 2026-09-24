@@ -3,9 +3,11 @@
 Tall and steep: a front-gabled main block with a cross-gabled wing, deep eaves on diagonal
 knee braces, and an open truss in every gable (collar tie, king post with a drop, struts and a
 fan of sticks). The clapboard walls are framed by applied stickwork: corner and field
-verticals, bands under the sills and X-braced dado panels. Windows have crossed-stick casings,
-pent hoods on knee braces over stick friezes and border-light sashes; a braced porch with a
-stick frieze runs across the front.
+verticals, bands under the sills and X-braced dado panels, over a parged foundation and a
+cleated belt, under a roof of staggered shakes with a ribbed chimney. Windows have
+crossed-stick casings, pent hoods on knee braces over stick friezes and four-over-one sash;
+the entrance has crossbuck doors under a stick transom; a braced porch (square stick posts,
+X-braced railings, a slatted skirt on brick piers) runs across the front.
 
 usage: python3 -m hoarch.buildings.merritt [check] [export]
 """
@@ -18,7 +20,7 @@ import numpy as np
 from manifold3d import JoinType, Manifold as M
 
 from hoarch.core import box, clapboard, compose, cs_union, inv34, offset, poly, rect, slab, union
-from hoarch import features as FT, gables as G, openings as O, roof as R
+from hoarch import features as FT, gables as G, openings as O, roof as R, trimwork as TW
 from hoarch.kit import Kit, print_flip
 from hoarch.ornament import ext, stroke
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
@@ -123,10 +125,11 @@ def _openings():
     L = []
     front_door = O.door_stick(12.0, 26.0)
     back_door = O.door_stick(10.0, 24.0, leaves=1, transom=3.4)
-    lo = O.window_stick(8.4, 21.0)
-    lo_wide = O.window_stick(10.0, 21.0, lites=(2, 2))
-    up = O.window_stick(8.4, 20.0)
-    attic = O.window_stick(6.0, 11.0, apron=False)
+    s41 = dict(lites=(1, 2), rows=(1, 2), qa=False)            # four-over-one sash
+    lo = O.window_stick(8.4, 21.0, **s41)
+    lo_wide = O.window_stick(10.0, 21.0, lites=(1, 3), rows=(1, 2), qa=False)     # six-over-one
+    up = O.window_stick(8.4, 20.0, **s41)
+    attic = O.window_stick(6.0, 11.0, apron=False, **s41)
 
     def add(blk, x, y, v0, sp, name, kind="window"):
         e, u = blk.locate(x, y)
@@ -171,17 +174,19 @@ def build(kit=None):
     t0 = time.time()
     specs = _specs()
     base = cs_union([MAIN.cs, WING.cs])
-    rf = G.gabled_roof(_pieces(), Z_EAVE, D_EAVE, specs, texture=["square", "square", "fish", "fish"],
+    rf = G.gabled_roof(_pieces(), Z_EAVE, D_EAVE, specs, texture="stagger", tex_kw=dict(pitch=1.6, wtab=1.9, d=0.4),
                        skin=SKIN, rake=RAKE, inner_cs=offset(base, -3.0), fascia=FASCIA)
     gables = [(g["blk"], g["edge"], wl["cs"].translate((g["u0"], Z_EAVE - ZF))) for g, wl in zip(specs, rf["walls"])]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", siding=_siding, gables=gables)
+    bprof, bblocks = TW.BELTS["cleat"]
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", siding=_siding, gables=gables, prof=bprof,
+                        belt_blocks=bblocks)
     kit.add("WALLS-1", "Sage", st["shells"][0], group="walls")
     kit.add("BELT", "Cream", st["rings"][0], group="walls")
     no_lip = union([box([-1, -1, ZE - 1], [MW + 1, 5.0, ZE + 5]), box([-1, MD_ - 5.0, ZE - 1], [MW + 1, MD_ + 1, ZE + 5]),
                     box([WX1 - 5.0, WY0 - 1, ZE - 1], [WX1 + 1, WY1 + 1, ZE + 5])])
     lip = (_corbel(base, 3.0, ZE) + lip_ring(base, 3.0, ZE)) - no_lip
     kit.add("WALLS-2", "Sage", st["shells"][1] + lip, group="walls")
-    kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF), group="foundation")
+    kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF, style="parged"), group="foundation")
     inserts = []
     for o in OPENINGS:
         A = o.local_frame()
@@ -211,11 +216,11 @@ def build(kit=None):
     solid_env, _ = R.hip_roof(_pieces(), Z_EAVE, SLOPE, D_EAVE, texture=None, zlo=ZE)
     for (x, y) in chims:
         roof = roof + G.chimney_seat(solid_env, x, y, CH / 2, zr + 1.0)
-    pockets = union([box([x - CH / 2 - 0.4, y - CH / 2 - 0.4, z0], [x + CH / 2 + 0.4, y + CH / 2 + 0.4, zr + 40])
-                     for x, y in chims])
+    g = CH / 2 + 0.8                         # clear of the chimney's pilaster ribs
+    pockets = union([box([x - g, y - g, z0], [x + g, y + g, zr + 40]) for x, y in chims])
     kit.add("ROOF", "Charcoal", roof - pockets, group="roof")
     for k, (x, y) in enumerate(chims):
-        ch = FT.chimney(w=CH, dpt=CH, h=round((zr + 12.0 - z0) / 0.2) * 0.2, peg=None, pots=2).translate([x, y, z0])
+        ch = TW.chimney("ribbed", w=CH, d=CH, h=round((zr + 12.0 - z0) / 0.2) * 0.2).translate([x, y, z0])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
     for k, (g, wl) in enumerate(zip(specs, rf["walls"])):
         tr = G.gable_truss(wl["L"], wl["slope"], D_EAVE, skin=SKIN, width=1.6)
@@ -234,14 +239,15 @@ def build(kit=None):
     H_floor = ZF - 1.0
     post_h = 43.6 - H_floor
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, 18.0, 12.0)], boards=dict(pitch=1.8),
-                        joined=True, ledger_off=1.5, arcade="braced")
+                        joined=True, ledger_off=1.5, arcade="braced", post="stick", rail="x", skirt="slats",
+                        pier_tex="brick")
     fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     kit.add("PORCH-deck", "Cream", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
     tabs = union([arc for arc, _ in P["arcades"]])
-    fnd = foundation(BLOCKS, 0.0, ZF)
+    fnd = foundation(BLOCKS, 0.0, ZF, style="parged")
     for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
         kit.add(f"PORCH-frame-{k}", "Cream", fr - tabs - fnd, group="porch")
     for k, (arc, A) in enumerate(P["arcades"]):

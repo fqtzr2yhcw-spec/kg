@@ -1,11 +1,13 @@
 """The Whitby -- an original HO-scale (1:87.1) Carpenter Gothic cottage for the lineup.
 
-A storey and a half in board-and-batten on a fieldstone base, under a steep patterned-slate
-roof with four gables: the side gables and a steeper cross gable front and back, each hung
-with a pierced bargeboard with a king post, drop and spike finial. Pointed windows with bar
-tracery: twin lancets under crocketed labels on carved stops, crocketed gablets on the
-sides, diamond-paned lancets in the side gables. A traceried Gothic entrance on engaged
-shafts, a Gothic porch with pointed arches and trefoils, and tall brick chimneys.
+A storey and a half in board-and-batten on a rubble-stone base with a drip-moulded belt,
+under a steep patterned-slate roof with four gables: the side gables and a steeper cross
+gable front and back, each hung with a pierced bargeboard with a king post, drop and spike
+finial. Pointed windows with bar tracery: twin lancets under crocketed labels on carved
+stops, crocketed gablets on the sides, diamond-paned lancets in the side gables. A
+traceried Gothic entrance on engaged shafts, a Gothic porch (clustered shafts, pierced
+quatrefoil railings, pointed arches with trefoils, a picket skirt on stone piers), and
+chimneys of paired diagonal flues on stone bases.
 
 usage: python3 -m hoarch.buildings.whitby [check] [export]
 """
@@ -18,7 +20,7 @@ import numpy as np
 from manifold3d import Manifold as M
 
 from hoarch.core import battens, box, compose, cs_union, inv34, offset, poly, rect, slab, union
-from hoarch import features as FT, gables as G, openings as O, roof as R
+from hoarch import features as FT, gables as G, openings as O, roof as R, trimwork as TW
 from hoarch.kit import Kit, print_flip
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
@@ -129,7 +131,9 @@ def build(kit=None):
     for g, wl in zip(specs, rf["walls"]):
         cs = wl["cs"].translate((g["u0"], Z_EAVE - ZF))
         gables.append((MAIN, g["edge"], cs))
-    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", siding=_siding, gables=gables)
+    bprof, bblocks = TW.BELTS["drip"]
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", siding=_siding, gables=gables, prof=bprof,
+                        belt_blocks=bblocks)
     kit.add("WALLS-1", "Fawn", st["shells"][0], group="walls")
     kit.add("BELT", "Cream", st["rings"][0], group="walls")
     # the roof's locating lip runs only along the eave walls (a gable wall carries on upward)
@@ -138,7 +142,7 @@ def build(kit=None):
                     box([GX0 - 1.5, D - 5.0, ZE - 1], [GX1 + 1.5, D + 1, ZE + 5])])
     lip = (_corbel(MAIN.cs, 3.0, ZE) + lip_ring(MAIN.cs, 3.0, ZE)) - no_lip
     kit.add("WALLS-2", "Fawn", st["shells"][1] + lip, group="walls")
-    kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF), group="foundation")
+    kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF, style="rubble"), group="foundation")
     inserts = []
     for o in OPENINGS:
         A = o.local_frame()
@@ -168,7 +172,7 @@ def build(kit=None):
                      for x, y in chims])
     kit.add("ROOF", "Slate", roof - pockets, group="roof")
     for k, (x, y) in enumerate(chims):
-        ch = FT.chimney(w=CH, dpt=CH, h=ridge + 16.0 - z0, peg=None, pots=2).translate([x, y, z0])
+        ch = TW.chimney("diagonal", w=CH, d=CH, h=ridge + 16.0 - z0).translate([x, y, z0])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
     # --- pierced bargeboards on every gable, hung on the rake skin's end
     for k, (g, wl) in enumerate(zip(specs, rf["walls"])):
@@ -189,14 +193,15 @@ def build(kit=None):
     H_floor = ZF - 1.0
     post_h = 44.0 - H_floor                    # the porch roof clears the door's finial
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, Lf / 2, 13.0)], boards=dict(pitch=1.8),
-                        joined=True, ledger_off=1.5, arcade="gothic")
+                        joined=True, ledger_off=1.5, arcade="gothic", post="clustered", rail="pierced", skirt="pickets",
+                        pier_tex="stone")
     fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     kit.add("PORCH-deck", "Cream", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
     tabs = union([arc for arc, _ in P["arcades"]])
-    fnd = foundation(BLOCKS, 0.0, ZF)
+    fnd = foundation(BLOCKS, 0.0, ZF, style="rubble")
     for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
         kit.add(f"PORCH-frame-{k}", "Cream", fr - tabs - fnd, group="porch")
     for k, (arc, A) in enumerate(P["arcades"]):

@@ -407,8 +407,17 @@ def skirt_fill(style, reg, d=1.2):
                 holes.append(cs_union([rect(a, v0 + 0.8, b, spring), circle(((a + b) / 2, spring), r, 24)]))
         board = reg - cs_union(holes) if holes else reg
         return M.extrude(board, d)
-    if style == "diamond":
-        from .core import lattice
-        return lattice(reg, pitch=1.5, bar=0.5, d=d, angle=60)
+    if style == "diamond":              # a board pierced with a row of diamonds (steep sides print clean)
+        L = u1 - u0
+        n = max(1, int(round(L / 3.0)))
+        vm, hh = (v0 + v1) / 2, (v1 - v0) / 2 - 0.7
+        holes = []
+        for i in range(n):
+            c = u0 + L * (i + 0.5) / n
+            hw = min(L / n / 2 - 0.45, hh * 0.8)
+            if hw > 0.4 and hh > 0.5:
+                holes.append(poly([(c - hw, vm), (c, vm - hh), (c + hw, vm), (c, vm + hh)]))
+        board = reg - cs_union(holes) if holes else reg
+        return M.extrude(board, d)
     from .core import lattice
     return lattice(reg, pitch=1.8, bar=0.5, d=d)

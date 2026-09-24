@@ -1,12 +1,14 @@
 """The Ardmore -- an original HO-scale (1:87.1) Richardsonian Romanesque house for the lineup.
 
-Two and a half storeys of rock-faced brownstone on a granite base, with buff stone belt
-courses and an arched corbel table under the eaves. A round (twelve-sided) tower at the front
-corner rises a storey above the eaves to an arcaded belvedere and a steep conical roof. The
-entrance is a stone loggia with a great round arch; inside it a round-arched doorway of
-receding orders. Round-arched windows ring their heads with long voussoirs on squat
+Two and a half storeys of rock-faced brownstone on a base of tall boulder courses, with a
+buff billet-moulded belt and an arched corbel table under the eaves. A round (twelve-sided)
+tower at the front corner rises a storey above the eaves to an arcaded belvedere and a steep
+conical clay-tile roof with a stacked finial. The entrance is a stone loggia with a great
+round arch; inside it a round-arched doorway of receding orders with iron-studded doors.
+Round-arched windows (three-over-one sash) ring their heads with long voussoirs on squat
 colonnettes with cushion capitals: singles, an arcaded triple, and paired square-headed
-lights under a heavy lintel. A steep hipped roof with a front gable and ridge chimneys.
+lights under a heavy lintel. A steep hipped clay-tile roof with a front gable and
+rock-faced stone chimneys under gabled copings.
 
 usage: python3 -m hoarch.buildings.ardmore [check] [export]
 """
@@ -19,17 +21,17 @@ import numpy as np
 from manifold3d import Manifold as M
 
 from hoarch.core import ashlar, box, circle, cs_union, inv34, ngon, offset, poly, rect, slab, union
-from hoarch import features as FT, gables as G, openings as O, roof as R
+from hoarch import features as FT, gables as G, openings as O, roof as R, trimwork as TW
 from hoarch.kit import Kit, print_flip
-from hoarch.ornament import chamfer_box, ext, finial
+from hoarch.ornament import chamfer_box, ext
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells, wall_shell
 
 NAME = "Ardmore Richardsonian Romanesque"
-COLORS = {"Sandstone": "#9A6248", "Buff": "#D8C8A4", "Slate": "#3F4A4F", "Granite": "#7E7C78", "Brick": "#8A3B2B",
+COLORS = {"Sandstone": "#9A6248", "Buff": "#D8C8A4", "Tile": "#44584B", "Granite": "#7E7C78", "Brick": "#8A3B2B",
           "Windows_Doors": "#EDE3C8"}
-RENDER_MAT = {"Sandstone": "stone_wall", "Buff": "trim", "Slate": "roof", "Granite": "stone", "Brick": "brick",
+RENDER_MAT = {"Sandstone": "stone_wall", "Buff": "trim", "Tile": "roof", "Granite": "stone", "Brick": "brick",
               "Windows_Doors": "trim", "Sash": "sash", "Door": "door", "Glass": "glass"}
-PALETTE = {"stone_wall": ["#9A6248", 0.85, 0.0], "trim": ["#D8C8A4", 0.7, 0.0], "roof": ["#3F4A4F", 0.8, 0.0],
+PALETTE = {"stone_wall": ["#9A6248", 0.85, 0.0], "trim": ["#D8C8A4", 0.7, 0.0], "roof": ["#44584B", 0.6, 0.0],
            "stone": ["#7E7C78", 0.9, 0.0], "brick": ["#8A3B2B", 0.85, 0.0], "sash": ["#2F3A2E", 0.45, 0.0],
            "door": ["#4A2616", 0.45, 0.0]}
 
@@ -108,10 +110,11 @@ def _outside(p, blk, margin):
 
 def _openings():
     L = []
-    lo = O.window_romanesque(8.0, 22.0)
-    up = O.window_romanesque(7.6, 20.0)
+    s31 = dict(lites=(1, 3))                    # three-over-one sash
+    lo = O.window_romanesque(8.0, 22.0, **s31)
+    up = O.window_romanesque(7.6, 20.0, **s31)
     tri = O.window_romanesque(6.0, 17.0, n=3)
-    pair = O.window_romanesque(7.2, 18.0, n=2, flat=True)
+    pair = O.window_romanesque(7.2, 18.0, n=2, flat=True, **s31)
     gab = O.window_romanesque(5.6, 13.0, col=1.0, L=2.0)
     tw = O.window_romanesque(4.4, 15.0, col=0.9, L=1.8, hood=False, sill_ext=0.4)
     bel = O.window_romanesque(4.4, 11.0, col=0.9, L=1.6, hood=False, sill_ext=0.4)
@@ -164,15 +167,16 @@ def build(kit=None):
     pieces = [(MAIN.pts, [0, 1, 2, 3], S_MAIN),
               ([(GX0, -(RAKE - D_EAVE)), (GX1, -(RAKE - D_EAVE)), (GX1, 30.0), (GX0, 30.0)], [1, 3], S_CROSS)]
     specs = [dict(p0=(GX0, 0.0), p1=(GX1, 0.0), slope=S_CROSS, e=0.3)]
-    rf = G.gabled_roof(pieces, Z_EAVE, D_EAVE, specs, texture=["square", "square", "square", "fish"],
+    rf = G.gabled_roof(pieces, Z_EAVE, D_EAVE, specs, texture="tile", tex_kw=dict(pitch=2.2, seam_pitch=2.6, d=0.45),
                        skin=SKIN, rake=RAKE, inner_cs=offset(MAIN.cs, -3.0), fascia=FASCIA, hollow=2.6)
     wl = rf["walls"][0]
     gables = [(MAIN, 0, wl["cs"].translate((GX0, Z_EAVE - ZF)))]
     wall_ops = [o for o in OPENINGS if o.kind != "portal"] + [o for o in OPENINGS if o.kind == "portal"]
     # one joint only: above the first-floor belt the upper walls, the front gable and the whole
     # tower are one upright piece (the gable wall stays joined to the storey below it)
+    bprof, bblocks = TW.BELTS["billet"]
     st = stacked_shells(BLOCKS, wall_ops, [S1], t=3.0, corners="none", siding=_siding, gables=gables,
-                        water_table=True)
+                        water_table=True, prof=bprof, belt_blocks=bblocks)
     kit.add("WALLS-1", "Sandstone", st["shells"][0], group="walls")
     kit.add("BELT-1", "Buff", st["rings"][0], group="walls")
     tower_keep = TOWER.solid(grow=0.2, dz0=-1, dz1=1)
@@ -185,7 +189,7 @@ def build(kit=None):
     tring = slab((offset(TOWER.cs, -0.05) - offset(TOWER.cs, -3.0)) ^ offset(MAIN.cs, -3.05), S1 + RH, ZE + 1.2)
     tring = tring - lip_keep(base, 3.0, S1 + RH)
     kit.add("WALLS-2", "Sandstone", st["shells"][1] + lip + tring, group="walls")
-    kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF), group="foundation")
+    kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF, style="boulder"), group="foundation")
     inserts = []
     for o in OPENINGS:
         A = o.local_frame()
@@ -225,24 +229,22 @@ def build(kit=None):
     solid_env, _ = R.hip_roof(pieces, Z_EAVE, S_MAIN, D_EAVE, texture=None, zlo=ZE)
     for (x, y) in chims:
         roof = roof + G.chimney_seat(solid_env, x, y, CH / 2, zr + 1.0)
-    pockets = union([box([x - CH / 2 - 0.4, y - CH / 2 - 0.4, z0], [x + CH / 2 + 0.4, y + CH / 2 + 0.4, zr + 40])
-                     for x, y in chims])
+    g = CH / 2 + 0.9                         # clear of the chimney's rock-faced stones
+    pockets = union([box([x - g, y - g, z0], [x + g, y + g, zr + 40]) for x, y in chims])
     roof = roof - pockets - slab(offset(TOWER.cs, 1.4), ZE - 1, ZT + 1)
-    kit.add("ROOF", "Slate", roof, group="roof")
+    kit.add("ROOF", "Tile", roof, group="roof")
     for k, (x, y) in enumerate(chims):
-        ch = FT.chimney(w=CH, dpt=CH, h=round((zr + 14.0 - z0) / 0.2) * 0.2, peg=None, pots=2).translate([x, y, z0])
-        kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
+        ch = TW.chimney("stone", w=CH, d=CH, h=round((zr + 14.0 - z0) / 0.2) * 0.2).translate([x, y, z0])
+        kit.add(f"CHIMNEY-{k}", "Sandstone", ch, key="CHIMNEY", group="roof")
     print("roof", round(time.time() - t0, 1))
 
     # --- the tower's eave and conical roof
     tpts = TOWER.pts
-    teave = R.bracketed_cornice(tpts, ZT, R.CORNICE_SMALL, brackets=None,
-                                dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7), lip_t=3.0,
-                                deck=(6.0, 8.0))
+    teave = R.bracketed_cornice(tpts, ZT, R.CORNICE_SMALL, brackets=None, dents=None, lip_t=3.0, deck=(6.0, 8.0))
     kit.add("TOWER-eave", "Buff", teave, P=print_flip(), group="tower")
     zc0 = ZT + 8.0
-    cone, ctex = R.hip_roof([(tpts, list(range(12)))], zc0, 2.4, 3.0, texture="fish",
-                            tex_kw=dict(pitch=1.55, wtab=1.8, d=0.5))     # steep: deeper relief reads as >= a nozzle
+    cone, ctex = R.hip_roof([(tpts, list(range(12)))], zc0, 2.4, 3.0, texture="tile",
+                            tex_kw=dict(pitch=2.2, seam_pitch=2.6, d=0.5))     # steep: deeper relief reads as >= a nozzle
     inner, _ = R.hip_roof([(tpts, list(range(12)))], zc0 - 2.4 * math.sqrt(1 + 2.4 ** 2), 2.4, 3.0, texture=None)
     cone = (cone + ctex) - (inner ^ slab(offset(TOWER.cs, -1.0), zc0 - 1, zc0 + 200))
     rr = TAPO + 3.0
@@ -255,13 +257,13 @@ def build(kit=None):
     hipc = union([G.hip_cap((x, y, zc0), (TC[0], TC[1], zap), half=0.9, up=0.5, drop=1.4) for x, y in tips])
     cone = cone + hipc.trim_by_plane([0, 0, 1.0], zc0 + 0.2)
     cone = cone.trim_by_plane([0, 0, -1.0], -zseat) - seat
-    kit.add("TOWER-roof", "Slate", cone, group="tower")
-    kit.add("TOWER-finial", "Slate", finial(1.3, 10.0).translate([TC[0], TC[1], zseat - 0.4]), group="tower")
+    kit.add("TOWER-roof", "Tile", cone, group="tower")
+    kit.add("TOWER-finial", "Tile", TW.finial("stack", 1.3, 10.0).translate([TC[0], TC[1], zseat - 0.4]), group="tower")
     print("tower", round(time.time() - t0, 1))
 
     # --- the entrance loggia: a paved floor, a stone deck with a parapet, steps
     inner_p = offset(PORCH.cs, -3.0) - offset(MAIN.cs, 0.0)
-    fnd = foundation(BLOCKS, 0.0, ZF)
+    fnd = foundation(BLOCKS, 0.0, ZF, style="boulder")
     kit.add("PORCH-floor", "Granite", slab(inner_p.offset(-0.15), 0.0, ZF) - fnd, group="porch")
     deck_cs = PORCH.cs.offset(0.8) - MAIN.cs
     deck = slab(deck_cs, PZ, PZ + 1.6) + slab(offset(PORCH.cs, -3.15) - offset(MAIN.cs, 0.15), PZ - 1.2, PZ + 0.01)
@@ -276,12 +278,12 @@ def build(kit=None):
     e, u = PORCH.locate((PX0 + PX1) / 2, -PD)
     f = PORCH.facades()[e]
     A = f.A.copy()
-    A[:, 3] = f.world(u, -ZF, 1.4)
+    A[:, 3] = f.world(u, -ZF, 2.0)                     # clear of the boulder courses
     kit.add("STEPS-front", "Granite", FT.steps(20.0, ZF - 0.6, 4, cheek=2.0).transform(A), group="porch")
     e, u = MAIN.locate(80.0, D)
     f = MAIN.facades()[e]
     A = f.A.copy()
-    A[:, 3] = f.world(u, -ZF, 1.4)
+    A[:, 3] = f.world(u, -ZF, 2.0)                     # clear of the boulder courses
     kit.add("STEPS-back", "Granite", FT.steps(13.0, ZF - 0.6, 4).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
     print("specks dropped:", kit.drop_specks())

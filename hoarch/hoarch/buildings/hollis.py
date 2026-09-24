@@ -1,10 +1,13 @@
 """The Hollis -- an original HO-scale (1:87.1) Folk Victorian farmhouse for the lineup.
 
-An L-plan gable-front-and-wing farmhouse: clapboard walls with fish-scale shingles in the
-gables, and in every gable peak a sunburst ornament standing on a collar over a spindle
-frieze, hung from scalloped rafters. A spindlework porch with turned posts fills the corner
-of the L. Pedimented window crowns with fans and dentils, louvered shutters, a pedimented
-entrance, a red standing-seam roof and two chimneys.
+An L-plan gable-front-and-wing farmhouse: Dutch lap siding with chevron boarding in the
+gables, and in every gable peak gingerbread (a rafter board edged with sawn drops, a spindle
+screen hung from a king post with a turned drop). A spindlework porch (spindle posts and
+railings, a spindle frieze with fan brackets, a horizontal-slat skirt) fills the corner of
+the L. Pedimented window crowns with fans and dentils over two-over-two sash, board-and-
+batten shutters, a half-glass door under a diamond-paned transom, a rock-faced block
+foundation, a beaded belt, a roof of small red pressed-metal shingles and two plain brick
+chimneys.
 
 usage: python3 -m hoarch.buildings.hollis [check] [export]
 """
@@ -15,8 +18,8 @@ import time
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from hoarch.core import box, clapboard, compose, cs_union, inv34, offset, rect, scallop_rows, slab, union
-from hoarch import features as FT, gables as G, openings as O, roof as R
+from hoarch.core import box, compose, cs_union, inv34, offset, rect, slab, union
+from hoarch import features as FT, gables as G, openings as O, roof as R, skins as SK, trimwork as TW
 from hoarch.kit import Kit, print_flip
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
@@ -56,14 +59,14 @@ def _edge_of(b, f):
 
 
 def _siding(f, b, reg):
-    """Clapboard, and fish-scale shingles in the gables above a flat band at the eave line."""
+    """Dutch lap siding, and chevron boarding in the gables above a flat band at the eave line."""
     H = b.z1 - b.z0
     lo = reg ^ rect(-1, -1, f.L + 1, H)
-    out = clapboard(lo, pitch=1.2, d=0.3, dmin=0.05, datum=1.8)
+    out = SK.dutch_lap(lo, datum=1.8)
     if (b.name, _edge_of(b, f)) in GABLE_EDGES:
         band = reg ^ rect(-1, H, f.L + 1, H + 1.2)
         hi = reg ^ rect(-1, H + 1.2, f.L + 1, H + 200)
-        out = out + M.extrude(band, 0.6) + scallop_rows(hi, 1.6, 1.9, d=0.4, datum=H + 1.2, shape="fish")
+        out = out + M.extrude(band, 0.6) + SK.diagonal_boards(hi, centre=f.L / 2)
     return out
 
 
@@ -83,8 +86,8 @@ def _openings():
     L = []
     door = O.door_folk(10.0, 24.0)
     back_door = O.door_folk(9.0, 23.0, head="cap")
-    lo = O.window_folk(8.0, 19.0)
-    up = O.window_folk(7.6, 18.0, head="cap")
+    lo = O.window_folk(8.0, 19.0, lites=(2, 2))                  # two-over-two
+    up = O.window_folk(7.6, 18.0, head="cap", lites=(2, 2))
 
     def add(blk, x, y, v0, sp, name, kind="window"):
         e, u = blk.locate(x, y)
@@ -155,17 +158,19 @@ def build(kit=None):
     t0 = time.time()
     specs = _specs()
     base = cs_union([MAIN.cs, WING.cs])
-    rf = G.gabled_roof(_pieces(), Z_EAVE, D_EAVE, specs, texture="seam", tex_kw=dict(seam_pitch=3.2),
+    rf = G.gabled_roof(_pieces(), Z_EAVE, D_EAVE, specs, texture="square", tex_kw=dict(pitch=1.2, wtab=1.5, d=0.3),
                        skin=SKIN, rake=RAKE, inner_cs=offset(base, -3.0), fascia=FASCIA)
     gables = [(g["blk"], g["edge"], wl["cs"].translate((g["u0"], Z_EAVE - ZF))) for g, wl in zip(specs, rf["walls"])]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", siding=_siding, gables=gables)
+    bprof, bblocks = TW.BELTS["bead"]
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", siding=_siding, gables=gables, prof=bprof,
+                        belt_blocks=bblocks)
     kit.add("WALLS-1", "Robin", st["shells"][0], group="walls")
     kit.add("BELT", "White", st["rings"][0], group="walls")
     no_lip = union([box([-1, -1, ZE - 1], [MW + 1, 5.0, ZE + 5]), box([-1, MD_ - 5.0, ZE - 1], [MW + 1, MD_ + 1, ZE + 5]),
                     box([WX1 - 5.0, WY0 - 1, ZE - 1], [WX1 + 1, MD_ + 1, ZE + 5])])
     lip = (_corbel(base, 3.0, ZE) + lip_ring(base, 3.0, ZE)) - no_lip
     kit.add("WALLS-2", "Robin", st["shells"][1] + lip, group="walls")
-    kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF), group="foundation")
+    kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF, style="block"), group="foundation")
     inserts = []
     for o in OPENINGS:
         A = o.local_frame()
@@ -178,9 +183,9 @@ def build(kit=None):
                                group="inserts", render=zones))
         if o.name in SHUTTERED:
             w_op, h_op = b[2] - b[0], b[3] - b[1]
-            left, right = FT.shutters_for(w_op, h_op, casing=1.8, gap=0.6, h=h_op)
-            for side, m in (("L", left), ("R", right)):
-                kit.add(f"SHUTTER-{o.name}-{side}", "Forest", m.translate([0, 0, 0.32]).transform(A), P=inv34(A),
+            left, right = FT.shutters_for(w_op, h_op, casing=1.8, gap=0.6, h=h_op, style="board")
+            for side, m in (("L", left), ("R", right)):            # standing clear of the Dutch lap butts (0.46)
+                kit.add(f"SHUTTER-{o.name}-{side}", "Forest", m.translate([0, 0, 0.48]).transform(A), P=inv34(A),
                         key=f"SHUTTER-{h_op:.1f}", group="shutters")
     print("walls + inserts", round(time.time() - t0, 1))
 
@@ -204,10 +209,10 @@ def build(kit=None):
                      for x, y in chims])
     kit.add("ROOF", "TinRed", roof - pockets, group="roof")
     for k, (x, y) in enumerate(chims):
-        ch = FT.chimney(w=CH, dpt=CH, h=round((zr + 12.0 - z0) / 0.2) * 0.2, peg=None, pots=2).translate([x, y, z0])
+        ch = TW.chimney("plain", w=CH, d=CH, h=round((zr + 12.0 - z0) / 0.2) * 0.2).translate([x, y, z0])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
     for k, (g, wl) in enumerate(zip(specs, rf["walls"])):
-        tr = G.gable_sunburst(wl["L"], wl["slope"], D_EAVE, skin=SKIN, width=1.4)
+        tr = G.gable_gingerbread(wl["L"], wl["slope"], D_EAVE, skin=SKIN)
         f = wl["facade"]
         A = f.A.copy()
         A[:, 3] = f.world(0.0, 0.0, RAKE)
@@ -223,14 +228,15 @@ def build(kit=None):
     H_floor = ZF - 1.0
     post_h = 42.0 - H_floor
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(0, 12.0, 10.0)], boards=dict(pitch=1.8),
-                        joined=True, ledger_off=1.5, arcade="braced")
+                        joined=True, ledger_off=1.5, arcade="spindle", post="spindle", rail="spindle", skirt="hslats",
+                        pier_tex="plain")
     fkeep = slab(offset(base, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     kit.add("PORCH-deck", "White", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
     tabs = union([arc for arc, _ in P["arcades"]])
-    fnd = foundation(BLOCKS, 0.0, ZF)
+    fnd = foundation(BLOCKS, 0.0, ZF, style="block")
     for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
         kit.add(f"PORCH-frame-{k}", "White", fr - tabs - fnd, group="porch")
     for k, (arc, A) in enumerate(P["arcades"]):

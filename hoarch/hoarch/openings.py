@@ -1437,13 +1437,13 @@ def _stick_head(w, h, A, parts, hood_w=1.4, frieze=2.2, brace=True):
     return hv + 2.0
 
 
-def window_stick(w, h, lites=(1, 1), qa=True, A=1.2, apron=True, brace=True):
+def window_stick(w, h, lites=(1, 1), qa=True, A=1.2, apron=True, brace=True, rows=(1, 1)):
     """Stick-style window: border-light sash (``qa``), crossed-stick casing, a pent hood on
     knee braces over a frieze of sticks, a sill on two blocks and an X-braced apron."""
     from . import moulding as MD
     op = opening_cs(w, h, 0)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
-    sash = window_insert(w, h, 0, lites=lites, bare=True, qa=qa)["insert"]
+    sash = window_insert(w, h, 0, lites=lites, bare=True, qa=qa, rows=rows)["insert"]
     parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
     _stick_frame(w, h, A, parts)
     top = _stick_head(w, h, A, parts, brace=brace)
@@ -1611,7 +1611,7 @@ def door_greek(w, h, side=2.4, transom=3.6, A=1.6):
 
 
 # ------------------------------------------------------------------ San Francisco Italianate (the Delancey)
-def window_sf(w, h, rise=2.2, A=1.4, col=1.2):
+def window_sf(w, h, rise=2.2, A=1.4, col=1.2, lites=(1, 2)):
     """San Francisco Italianate window: a segmental head, engaged colonnettes with leafy
     capitals carrying an arched architrave, a raised keystone block with a rosette, and a
     moulded sill on paired corbels."""
@@ -1619,7 +1619,7 @@ def window_sf(w, h, rise=2.2, A=1.4, col=1.2):
     spring = h - rise
     op = opening_cs(w, h, rise)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
-    sash = window_insert(w, h, rise, lites=(1, 1), bare=True)["insert"]
+    sash = window_insert(w, h, rise, lites=lites, bare=True)["insert"]      # default two-over-one
     parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
     for sg in (-1, 1):
         u = sg * (w / 2 + col / 2 + 0.1)

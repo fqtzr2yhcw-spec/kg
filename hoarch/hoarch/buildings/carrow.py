@@ -1,11 +1,14 @@
 """The Carrow -- an original HO-scale (1:87.1) Queen Anne "castle" for the lineup.
 
-A rock-faced stone first storey under a fish-scale shingled second storey; a round (twelve-
-sided) turret at the front corner rising a storey above the eaves to a bracketed cornice and
-a steep witch's-hat spire; a steep patterned-slate hip with a front gable hung with a
-pierced bargeboard over an arched attic window; Queen Anne windows (pediments with carved
-fans over shaped aprons, scroll hoods, border-light sashes); a swan-neck entrance; and a
-turned porch wrapping the front and the west side round a chamfered corner.
+A first storey of long, thin Roman brick under a half-timbered second storey; a round
+(twelve-sided) turret at the front corner rising a storey above the eaves to a dentilled
+cornice and a steep witch's-hat spire of diamond slate with a spire finial; a steep
+diamond-slate hip with a front gable carrying an arch-braced Tudor truss over a Palladian
+attic window; Free Classic windows (fluted jambs, dentils, pediments with oculi, diamond-
+paned upper sash); a sidelighted entrance with an oval-light door; a boss-studded belt, a
+coursed-stone foundation, an arcaded Roman-brick chimney; and an Eastlake porch (chamfered
+posts with incised blocks, sawn balusters, a fretwork frieze, an arched skirt on stone
+piers) wrapping the front and the west side round a chamfered corner.
 
 usage: python3 -m hoarch.buildings.carrow [check] [export]
 """
@@ -17,16 +20,15 @@ import time
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from hoarch.core import ashlar, box, compose, cs_union, inv34, ngon, offset, rect, scallop_rows, slab, union
-from hoarch import features as FT, gables as G, openings as O, roof as R
+from hoarch.core import box, compose, cs_union, inv34, ngon, offset, rect, slab, union
+from hoarch import features as FT, gables as G, openings as O, roof as R, skins as SK, trimwork as TW
 from hoarch.kit import Kit, print_flip
-from hoarch.ornament import finial
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
 NAME = "Carrow Queen Anne Castle"
-COLORS = {"Stone": "#948A80", "Lavender": "#9A88A8", "Cream": "#EDE3C8", "Slate": "#3F4A4F", "Granite": "#6F6D6A",
+COLORS = {"Tawny": "#A4683F", "Lavender": "#9A88A8", "Cream": "#EDE3C8", "Slate": "#3F4A4F", "Granite": "#6F6D6A",
           "Brick": "#8A3B2B", "PorchGray": "#6B706F", "Windows_Doors": "#EDE3C8"}
-RENDER_MAT = {"Stone": "stone_wall", "Lavender": "siding", "Cream": "trim", "Slate": "roof", "Granite": "stone",
+RENDER_MAT = {"Tawny": "stone_wall", "Lavender": "siding", "Cream": "trim", "Slate": "roof", "Granite": "stone",
               "Brick": "brick", "PorchGray": "porchfloor", "Windows_Doors": "trim", "Sash": "sash", "Door": "door",
               "Glass": "glass"}
 
@@ -50,16 +52,16 @@ TC, TAPO = (72.0, 4.0), 13.0
 MAIN = Block("main", [(0, 0), (W, 0), (W, D), (0, D)], ZF, ZE)
 TURRET = Block("turret", ngon(TC, TAPO, n=12), ZF, ZT)
 BLOCKS = [MAIN, TURRET]
-SHINGLE = ["fish", "fish", "fish", "diamond", "diamond"]
+SLATE = "diamond"
 
 
 def _siding(f, b, reg):
-    """Rock-faced stone below the belt, fish-scale shingles above (bands of diamonds)."""
+    """Roman brick below the belt; half-timbering above (posts, rails at the sill and head
+    lines, braces), the turret and the front gable included."""
     lo = reg ^ rect(-1, -1, f.L + 1, S1 - ZF)
     hi = reg ^ rect(-1, S1 + RH - ZF - 0.01, f.L + 1, 400)
-    seed = sum(map(ord, b.name)) + int(f.p0[0] * 7 + f.p0[1] * 3) % 1000
-    out = ashlar(lo, course=(2.6, 4.0), length=(4.0, 9.0), d=0.55, seed=seed)
-    return out + scallop_rows(hi, 1.6, 1.9, d=0.4, datum=S1 + RH - ZF, shape=SHINGLE)
+    out = SK.brick_bond(lo, "roman", bl=3.8, bh=0.6, datum=1.8, uoff=(f.p0[0] + f.p0[1]) % 1.9)
+    return out + SK.half_timber(hi, rails=(V2 - 1.0, V2 + 19.6), post_pitch=5.2)
 
 
 def _roof_z(x, y):
@@ -73,15 +75,15 @@ def _outside(p, blk, margin):
 
 def _openings():
     L = []
-    lo = O.window_insert(9.8, 20.2, rise=0, style="pediment", apron=True, qa=True)
-    lo2 = O.window_insert(9.8, 20.2, rise=0, style="pediment", apron=True)
-    up = O.window_insert(9.1, 18.2, rise=0, style="scroll")
-    up_qa = O.window_insert(8.4, 18.2, rise=0, style="scroll", qa=True)
-    attic = O.window_insert(7.0, 11.0, rise=None, style="scroll", casing=0.9, ends=0.4, sill_ext=0.3, clip=True)
+    lo = O.window_fc(9.0, 20.2)
+    lo2 = O.window_fc(9.0, 20.2)
+    up = O.window_fc(8.4, 18.2, pediment=False)
+    up_qa = up
+    attic = O.window_palladian(4.8, 10.0)
     tw = O.window_insert(4.0, 15.0, rise=None, style="crest", casing=0.8, ends=0.3, sill_ext=0.2, clip=True)
     tw3 = O.window_insert(4.0, 12.0, rise=None, style="crest", casing=0.8, ends=0.3, sill_ext=0.2, clip=True)
-    front = O.door_ornate(12.0, 25.2, leaves=2, transom=4.2, head="swan")
-    back = O.door_ornate(10.4, 24.4, leaves=1, transom=4.2, head="pediment")
+    front = O.door_fc(8.6, 25.2, side=2.2)
+    back = O.door_fc(8.0, 24.4, side=1.6)
 
     def add(blk, x, y, v0, sp, name, kind="window"):
         e, u = blk.locate(x, y)
@@ -126,13 +128,14 @@ def build(kit=None):
     pieces = [(MAIN.pts, [0, 1, 2, 3], S_MAIN),
               ([(GX0, -(RAKE - D_EAVE)), (GX1, -(RAKE - D_EAVE)), (GX1, 28.0), (GX0, 28.0)], [1, 3], S_CROSS)]
     specs = [dict(p0=(GX0, 0.0), p1=(GX1, 0.0), slope=S_CROSS, e=0.3)]
-    rf = G.gabled_roof(pieces, Z_EAVE, D_EAVE, specs, texture=["square", "square", "diamond", "diamond"],
+    rf = G.gabled_roof(pieces, Z_EAVE, D_EAVE, specs, texture=SLATE, tex_kw=dict(pitch=1.5, wtab=1.8, d=0.4),
                        skin=SKIN, rake=RAKE, inner_cs=offset(MAIN.cs, -3.0), fascia=FASCIA, hollow=2.6)
     wl = rf["walls"][0]
     gables = [(MAIN, 0, wl["cs"].translate((GX0, Z_EAVE - ZF)))]
+    bprof, bblocks = TW.BELTS["boss"]
     st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="none", siding=_siding, gables=gables,
-                        water_table=True)
-    kit.add("WALLS-1", "Stone", st["shells"][0], group="walls")
+                        water_table=True, prof=bprof, belt_blocks=bblocks)
+    kit.add("WALLS-1", "Tawny", st["shells"][0], group="walls")
     kit.add("BELT", "Cream", st["rings"][0], group="walls")
     tkeep = TURRET.solid(grow=0.2, dz0=-1, dz1=1)
     no_lip = union([box([GX0 - 1.5, -1, ZE - 1], [GX1 + 1.5, 5.0, ZE + 5]), tkeep,
@@ -142,7 +145,7 @@ def build(kit=None):
     tring = slab((offset(TURRET.cs, -0.05) - offset(TURRET.cs, -3.0)) ^ offset(MAIN.cs, -3.05), S1 + RH, ZE + 1.2)
     tring = tring - lip_keep(base, 3.0, S1 + RH)
     kit.add("WALLS-2", "Lavender", st["shells"][1] + lip + tring, group="walls")
-    kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF), group="foundation")
+    kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF, style="coursed"), group="foundation")
     inserts = []
     for o in OPENINGS:
         A = o.local_frame()
@@ -183,24 +186,23 @@ def build(kit=None):
     roof = roof - pockets - slab(offset(TURRET.cs, 1.4), ZE - 1, ZT + 40)
     kit.add("ROOF", "Slate", roof, group="roof")
     for k, (x, y) in enumerate(chims):
-        ch = FT.chimney(w=CH, dpt=CH, h=round((zr + 16.0 - z0) / 0.2) * 0.2, peg=None, pots=3).translate([x, y, z0])
+        ch = TW.chimney("arched", w=CH, d=CH, h=round((zr + 16.0 - z0) / 0.2) * 0.2).translate([x, y, z0])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
-    bb = G.bargeboard(wl["L"], wl["slope"], D_EAVE, skin=SKIN, width=2.4)
+    bb = G.gable_tudor(wl["L"], wl["slope"], D_EAVE, skin=SKIN)
     f = wl["facade"]
     A = f.A.copy()
     A[:, 3] = f.world(0.0, 0.0, RAKE)
-    kit.add("BARGE", "Cream", bb.transform(A), P=inv34(A), group="roof")
+    kit.add("GABLE-truss", "Cream", bb.transform(A), P=inv34(A), group="roof")
     print("roof", round(time.time() - t0, 1))
 
-    # --- the turret: bracketed cornice and a steep witch's-hat spire with hip rolls
+    # --- the turret: dentilled cornice and a steep witch's-hat spire with hip rolls
     tpts = TURRET.pts
-    teave = R.bracketed_cornice(tpts, ZT, R.CORNICE_SMALL,
-                                brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=7.0, pair=0.0, margin=3.4),
+    teave = R.bracketed_cornice(tpts, ZT, R.CORNICE_SMALL, brackets=None,
                                 dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7), lip_t=3.0, deck=(6.0, 8.0))
     kit.add("TURRET-eave", "Cream", teave, P=print_flip(), group="turret")
     zc0 = ZT + 8.0
     SP = 3.0
-    cone, ctex = R.hip_roof([(tpts, list(range(12)))], zc0, SP, 3.0, texture="fish", tex_kw=dict(pitch=1.55, wtab=1.8, d=0.5))
+    cone, ctex = R.hip_roof([(tpts, list(range(12)))], zc0, SP, 3.0, texture=SLATE, tex_kw=dict(pitch=1.55, wtab=1.8, d=0.5))
     inner, _ = R.hip_roof([(tpts, list(range(12)))], zc0 - 2.4 * math.sqrt(1 + SP ** 2), SP, 3.0, texture=None)
     cone = (cone + ctex) - (inner ^ slab(offset(TURRET.cs, -1.0), zc0 - 1, zc0 + 300))
     re = (TAPO + 3.0) / math.cos(math.pi / 12)
@@ -213,7 +215,7 @@ def build(kit=None):
     seat = M.cylinder(1.2, 1.35, 1.35, 32).translate([TC[0], TC[1], zseat - 0.4])
     cone = cone.trim_by_plane([0, 0, -1.0], -zseat) - seat
     kit.add("TURRET-roof", "Slate", cone, group="turret")
-    kit.add("TURRET-finial", "Slate", finial(1.3, 12.0).translate([TC[0], TC[1], zseat - 0.4]), group="turret")
+    kit.add("TURRET-finial", "Slate", TW.finial("spire", 1.3, 12.0).translate([TC[0], TC[1], zseat - 0.4]), group="turret")
     print("turret", round(time.time() - t0, 1))
 
     # --- wraparound porch round the front and west side, chamfered corner
@@ -231,14 +233,15 @@ def build(kit=None):
     H_floor = ZF - 2.0
     post_h = 47.0 - H_floor
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, 47.0 - (-PD + CH_), 11.0)], boards=dict(pitch=1.8),
-                        joined=True, ledger_off=1.5)
+                        joined=True, ledger_off=1.5, post="eastlake", rail="sawn", arcade="fret", skirt="arches",
+                        pier_tex="stone")
     fkeep = slab(offset(base, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     kit.add("PORCH-deck", "Cream", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
     tabs = union([arc for arc, _ in P["arcades"]])
-    fnd = foundation(BLOCKS, 0.0, ZF)
+    fnd = foundation(BLOCKS, 0.0, ZF, style="coursed")
     for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
         kit.add(f"PORCH-frame-{k}", "Cream", fr - tabs - fnd, group="porch")
     for k, (arc, A) in enumerate(P["arcades"]):

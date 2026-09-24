@@ -1,8 +1,10 @@
 """The Ashby — an original HO-scale (1:87.1) Italianate villa, first building of the lineup.
 
-Two-storey square block with a canted bay, low hipped standing-seam roof on deep
-bracketed eaves, a cupola, full-width bracketed front porch, one-storey kitchen ell,
-louvered shutters, brick chimneys and a coursed-stone foundation.
+Two-storey square block of cream common-bond brick with stone quoins and a dentil belt,
+a canted bay, low hipped standing-seam roof on deep bracketed eaves, a V-groove cupola
+with an acorn finial, full-width porch (chamfered posts, vase balusters, scroll frieze,
+panelled skirt), one-storey kitchen ell, panel shutters, stucco chimneys and a smooth
+limestone foundation.
 
 usage: python3 -m hoarch.buildings.villa [check] [export] [views]
 """
@@ -14,9 +16,8 @@ import numpy as np
 from manifold3d import Manifold as M
 
 from hoarch.core import box, compose, inv34, offset, poly, slab, union
-from hoarch import features as FT, openings as O, roof as R
+from hoarch import features as FT, openings as O, roof as R, skins as SK, trimwork as TW
 from hoarch.kit import Kit, print_flip
-from hoarch.ornament import finial
 from hoarch.shell import Block, Opening, foundation, lip_keep, storey_shells, wall_shell
 
 NAME = "Ashby Italianate Villa"
@@ -50,12 +51,13 @@ CUP_C = (67.0, 59.0)
 # ------------------------------------------------------------------ openings
 def _openings():
     L = []
-    lo = O.window_insert(10.0, 24.0, rise=0, style="flat", apron=True)
-    up = O.window_insert(10.0, 21.0, rise=None, style="key")
+    s22 = dict(lites=(2, 2), rows=(2, 2))       # four-over-four sash
+    lo = O.window_insert(10.0, 24.0, rise=0, style="flat", apron=True, **s22)
+    up = O.window_insert(10.0, 21.0, rise=None, style="key", **s22)
     bay_lo = O.window_insert(9.0, 24.0, rise=0, style="flat", casing=0.8, ends=0.2, sill_ext=0.3, clip=True,
-                             apron=True)
-    bay_up = O.window_insert(9.0, 21.0, rise=None, style="key", casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
-    ell_w = O.window_insert(9.0, 21.0, rise=0, style="flat", apron=True)
+                             apron=True, **s22)
+    bay_up = O.window_insert(9.0, 21.0, rise=None, style="key", casing=0.8, ends=0.2, sill_ext=0.3, clip=True, **s22)
+    ell_w = O.window_insert(9.0, 21.0, rise=0, style="flat", apron=True, **s22)
     twin = O.twin_arch_window(14.0, 21.0, balcony=0)
     front = O.door_insert(16.0, 30.0, leaves=2, transom=5.0)
     back = O.door_insert(11.0, 26.0, leaves=1, glass_top=True)
@@ -98,6 +100,11 @@ OPENINGS_S = _openings()
 OPENINGS = [o for o, _ in OPENINGS_S]
 
 
+def _brick(f, b, reg):
+    """Cream common-bond brick: five stretcher courses to every header course."""
+    return SK.brick_bond(reg, "common", datum=1.8)
+
+
 # ------------------------------------------------------------------ build
 def build(kit=None):
     kit = kit or Kit(NAME, COLORS, RENDER_MAT)
@@ -106,12 +113,13 @@ def build(kit=None):
     # one shell per storey with a White belt ring between (the ring is the joint)
     clear = [lip_keep(poly(MAIN.pts) + poly(ELL.pts), 3.0, ZF, 1.2),                 # foundation lip
              lip_keep(poly(MAIN.pts), 3.0, ZW - 1.6, 1.6, inner=0.15, reach=1.2)]    # eave lip
-    S = storey_shells(BLOCKS, OPENINGS, ZF + BELT[0], t=3.0, corners="quoin", clear=clear,
-                      partitions=[((67.0, 3.0), (67.0, 115.0), 2.0, ZF, ZW)])
+    bprof, bblocks = TW.BELTS["dentil"]
+    S = storey_shells(BLOCKS, OPENINGS, ZF + BELT[0], t=3.0, corners="quoin", clear=clear, prof=bprof,
+                      belt_blocks=bblocks, siding=_brick, partitions=[((67.0, 3.0), (67.0, 115.0), 2.0, ZF, ZW)])
     kit.add("WALLS-1", "Sand", S["lower"], group="walls")
     kit.add("BELT", "White", S["ring"], group="walls")
     kit.add("WALLS-2", "Sand", S["upper"], group="walls")
-    kit.add("FOUNDATION", "Stone", foundation(BLOCKS, 0.0, ZF), group="foundation")
+    kit.add("FOUNDATION", "Stone", foundation(BLOCKS, 0.0, ZF, style="limestone"), group="foundation")
     # inserts and shutters
     inserts = []
     for o, sh in OPENINGS_S:
@@ -128,7 +136,7 @@ def build(kit=None):
             h_op = sp["cut"].bounds()[3] - sp["cut"].bounds()[1]
             arched = abs(sp["top"] - h_op) > 3.0 and o.v0 > 20
             hh = (h_op - w_op / 2 - 1.8) if arched else h_op
-            left, right = FT.shutters_for(w_op, h_op, casing=1.1, h=hh)
+            left, right = FT.shutters_for(w_op, h_op, casing=1.1, h=hh, style="panel")
             for side, m in (("L", left), ("R", right)):
                 ms = m.translate([0, 0, 0.32]).transform(A)
                 kit.add(f"SHUTTER-{o.name}-{side}", "Forest", ms, P=inv34(A), key=f"SHUTTER-{hh:.1f}",
@@ -156,8 +164,8 @@ def build(kit=None):
     for k, (x, y) in enumerate(chims):
         z0 = chim_z0(x)
         ztop = flat + 14.0
-        ch = FT.chimney(w=10.5, dpt=10.5, h=ztop - z0, peg=None).translate([x, y, z0])
-        kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
+        ch = TW.chimney("stucco", w=10.5, d=10.5, h=ztop - z0).translate([x, y, z0])
+        kit.add(f"CHIMNEY-{k}", "White", ch, key="CHIMNEY", group="roof")
     # cupola
     cx, cy = CUP_C
     hs = CUP_SIZE / 2
@@ -168,7 +176,8 @@ def build(kit=None):
     for (x, y, nm) in ((cx, cy - hs, "S"), (cx + hs, cy, "E"), (cx, cy + hs, "N"), (cx - hs, cy, "W")):
         e, u = cup.locate(x, y)
         cup_ops.append(Opening(cup, e, u, 4.0, twin, f"cupola-{nm}"))
-    kit.add("CUPOLA-walls", "Sand", wall_shell([cup], cup_ops, t=2.4, belt=None, corners="board", water_table=False),
+    kit.add("CUPOLA-walls", "White", wall_shell([cup], cup_ops, t=2.4, belt=None, corners="board", water_table=False,
+                                                siding=lambda f, b, reg: SK.vgroove(reg, datum=0.6)),
             group="cupola")
     for o in cup_ops:
         A = o.local_frame()
@@ -186,7 +195,7 @@ def build(kit=None):
     zseat = ztip - 0.8                   # the roof's tip is cut flat with a shallow seat for the finial
     seat = M.cylinder(1.0, 1.35, 1.35, 32).translate([cx, cy, zseat - 0.4])
     kit.add("CUPOLA-roof", "Charcoal", (croof + ctex).trim_by_plane([0, 0, -1.0], -zseat) - seat, group="cupola")
-    kit.add("CUPOLA-finial", "Charcoal", finial(1.2, 7.4).translate([cx, cy, zseat - 0.4]), group="cupola")
+    kit.add("CUPOLA-finial", "Charcoal", TW.finial("acorn", 1.2, 7.4).translate([cx, cy, zseat - 0.4]), group="cupola")
     print("roof + cupola", round(time.time() - t0, 1))
     # kitchen ell: eave + low hip roof against the main wall
     main_keep = MAIN.solid(grow=2.0, dz0=-1, dz1=200)         # clear of the belt ring (1.8 proud)
@@ -205,7 +214,8 @@ def build(kit=None):
             dict(a=(0.0, y1), b=(134.0, y1), posts=[1.6, 28.0, 54.5, 79.5, 106.0, 132.4]),
             dict(a=(134.0, y1), b=(134.0, y0), posts=[1.6, 23.9])]
     P = FT.porch_turned([(0.0, y0), (0.0, y1), (134.0, y1), (134.0, y0)], runs, H_floor, post_h,
-                        steps_at=[(1, 67.0, 16.0)], boards=dict(pitch=1.8), joined=True)
+                        steps_at=[(1, 67.0, 16.0)], boards=dict(pitch=1.8), joined=True,
+                        post="chamfered", rail="vase", arcade="scroll", skirt="panels", pier_tex="brick")
     fkeep = slab(offset(poly(MAIN.pts), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])

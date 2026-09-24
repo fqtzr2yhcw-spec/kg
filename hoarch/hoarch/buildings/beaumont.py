@@ -6,9 +6,9 @@ villa is built:
 
 - one upright shell per storey with belt rings between; the tower's third storey is its
   own shell on its own ring;
-- clapboard below and fish-scale shingles on the upright second-floor shell, where the
-  scallops are drawn by the layers;
-- banded slate roofs and a fish-scale spire, all printed upright;
+- beaded lap siding below and staggered-butt shingles on the upright second-floor shell
+  and the tower, where the butts are drawn by the layers;
+- banded hexagon-and-square slate roofs and a hexagon slate spire, all printed upright;
 - a turned porch (round posts and railings printed upright, sawn-work arcade on edge);
 - Queen Anne sashes (a big light ringed by small ones) and separate finials;
 - every detail at nozzle-safe sizes, with flat faces on the 0.2 mm layer grid.
@@ -23,7 +23,7 @@ import time
 import numpy as np
 from manifold3d import Manifold as M
 
-from hoarch import features as FT, openings as O, roof as R
+from hoarch import features as FT, openings as O, roof as R, skins as SK, trimwork as TW
 from hoarch.core import (Facade, box, clapboard, compose, cs_union, frame, inv34, offset, poly, rect, scallop_rows,
                          slab, union)
 from hoarch.kit import Kit, print_flip
@@ -74,8 +74,9 @@ TOWER_FACES = (7, 0, 1, 6)             # the tower faces that stand clear of the
 CORNICE_QA = [(-4.4, 0), (0.9, 0), (0.9, 3.6), (1.3, 3.8), (5.0, 3.8), (5.0, 5.0), (5.4, 5.2), (5.4, 6.0), (-4.4, 6.0)]
 EAVE_H, EAVE_D = 6.0, 5.4
 S_MAIN, S_WING, S_SPIRE = 1.15, 1.0, 3.0
-SLATE = ("square", "square", "square", "fish", "fish")        # banded courses
-SPIRE_SLATE = ("fish", "fish", "diamond", "diamond")
+SLATE = ("hex", "hex", "square")        # banded courses
+SPIRE_SLATE = ("hex", "hex", "hex", "square")
+GABLE_SHINGLE = dict(pitch=1.6, seed=7)
 
 
 # ------------------------------------------------------------------ openings
@@ -134,18 +135,18 @@ OPENINGS = _openings()
 
 
 def _siding(f, b, reg):
-    """Clapboard on the first floor; shingles above, upright so the layers draw them:
-    fish-scale on the second floor, the tower's third storey banded fish-scale and diamond."""
+    """Beaded lap siding on the first floor; staggered-butt shingles above, upright so the
+    layers draw them (the tower's third storey a different random run)."""
     out = []
     lo = reg ^ rect(-1, -1, f.L + 1, S1 - ZF)
     mid = reg ^ rect(-1, S1 - ZF, f.L + 1, ZE - ZF)
     top = reg ^ rect(-1, ZE - ZF, f.L + 1, 999)
     if not lo.is_empty():
-        out.append(clapboard(lo, pitch=1.2, d=0.3, dmin=0.05, datum=1.8))
+        out.append(SK.beaded_lap(lo, datum=1.8))
     if not mid.is_empty():
-        out.append(scallop_rows(mid, 1.6, 1.9, d=0.4, datum=S1 + RH - ZF, shape="fish"))
+        out.append(SK.stagger_shingles(mid, datum=S1 + RH - ZF, seed=3))
     if not top.is_empty():
-        out.append(scallop_rows(top, 1.6, 1.9, d=0.4, datum=ZE + RH - ZF, shape=SPIRE_SLATE))
+        out.append(SK.stagger_shingles(top, datum=ZE + RH - ZF, seed=5))
     return union(out) if out else M()
 
 
@@ -184,14 +185,14 @@ def _dormer(ze):
     ridge_roll = M.cylinder(xb - xf + over, 0.6, 0.6, 16).transform(frame([xf - over, yc, top_z - 0.3], [0, 1.0, 0],
                                                                              [0, 0, 1.0], [1.0, 0, 0]))
     body = body + roofs + ridge_roll
-    # the face: fish-scale pentagon with an arched attic window
+    # the face: shingled pentagon with an arched attic window
     f = Facade((xf, yc + W / 2), (xf, yc - W / 2), zr)
     win = O.window_insert(6.4, 8.2, rise=None, style="scroll", casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
     wu, wv = W / 2, 3.2
     fcs = poly([(0, 0), (W, 0), (W, hw), (W / 2, hw + gh), (0, hw)])
     face = M.extrude(fcs - win["cut"].translate((wu, wv)), t_face).translate([0, 0, -t_face])
     reg = (fcs.offset(-0.5) - win["landing"].translate((wu, wv))) ^ rect(0, 0.6, W, hw + gh)
-    face = face + scallop_rows(reg, 1.6, 1.9, d=0.4, datum=0.6, shape="fish")
+    face = face + SK.stagger_shingles(reg, datum=0.6, seed=11)
     face = f.place(face)
     notch = box([xf - 0.01, yc - W / 2 - 0.01, zr], [xf + t_face + 0.01, yc + W / 2 + 0.01, zr + hw + gh + 5])
     Aw = f.A.copy()
@@ -209,7 +210,7 @@ def _ridge_crest(a, b, z0, h=2.6):
     cr = R.crest_fence(L, h=h, pitch=1.6).transform(frame([0, 0, 1.2], [1.0, 0, 0], [0, 0, 1.0], [0, -1.0, 0]))
     parts.append(cr)
     for u in (0.0, L):
-        parts.append(finial(1.0, 6.0).translate([u, 0, 1.2]))
+        parts.append(TW.finial("urn", 1.0, 6.0).translate([u, 0, 1.2]))
     m = union(parts)
     A = np.eye(3, 4)
     A[:, 0] = [f.u[0], f.u[1], 0.0]
@@ -251,7 +252,7 @@ def build(kit=None):
     tower_keep = TOWER.solid(grow=2.1, dz0=-1, dz1=200)
     # --- main eave ring (upside down), cut round the tower
     eave = R.bracketed_cornice(MAIN.pts, ZE, CORNICE_QA,
-                               brackets=dict(z_top=3.8, h=3.4, d0=0.9, d=3.6, t=0.7, pitch=10.4, pair=1.5, margin=3.6),
+                               brackets=dict(z_top=3.8, h=3.4, d0=0.9, d=3.6, t=0.7, pitch=10.4, pair=1.5, margin=3.6, style="curve"),
                                dents=dict(z=3.0, h=0.8, d0=0.9, d=0.6), panels=dict(z=0.6, h=2.0, d=0.35))
     kit.add("EAVE-main", "Cream", eave - tower_keep, P=print_flip(), group="roof")
     # --- main roof: banded slate hip over the house, a gable roof over the front wing
@@ -290,7 +291,7 @@ def build(kit=None):
     kit.add("ROOF-crest", "Slate", _ridge_crest((X1 / 2, ry0), (X1 / 2, ry1), rz), group="roof")
     for k, (x, y) in enumerate(chims):
         z0 = chim_z0(x, y)
-        ch = FT.chimney(w=10.5, dpt=10.5, h=ridge - 4.0 - z0, peg=None).translate([x, y, z0])
+        ch = TW.chimney("corbel", w=10.5, d=10.5, h=ridge - 4.0 - z0).translate([x, y, z0])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY" if k == 0 else f"CHIMNEY-{k}", group="roof")
     print("roof", round(time.time() - t0, 1))
 
@@ -325,7 +326,7 @@ def build(kit=None):
     tr = cs_union(trim) ^ gcs
     gwall = M.extrude(gcs - attic["cut"].translate((a_u, a_v)), 3.0).translate([0, 0, -3.0])
     reg = (gcs.offset(-0.6) - attic["landing"].translate((a_u, a_v)) - tr.offset(0.3)) ^ rect(0, 2.2, GL, apex)
-    gtex = scallop_rows(reg, 1.6, 1.9, d=0.4, datum=2.2, shape=SPIRE_SLATE)
+    gtex = SK.stagger_shingles(reg, datum=2.2, seed=13)
     kit.add("GABLE", "Gold", gf.place(gwall + gtex), group="roof")
     Ag = gf.A.copy()
     Ag[:, 3] = gf.world(a_u, a_v, 0.0)
@@ -333,9 +334,9 @@ def build(kit=None):
     kit.add("WIN-attic", "Windows_Doors", aworld, P=aP, group="inserts", render=azones)
     kit.add("GABLE-trim", "Cream", gf.place(ext(tr, 0.0, 0.8)), P=inv34(gf.A), group="roof")     # flat on its back
 
-    # --- tower: eave ring, fish-scale spire, separate finial
+    # --- tower: eave ring, slate spire, separate finial
     teave = R.bracketed_cornice(TOWER.pts, TT, R.CORNICE_SMALL,
-                                brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=7.0, pair=1.5, margin=3.0),
+                                brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=7.0, pair=1.5, margin=3.0, style="curve"),
                                 dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7), panels=dict(z=0.6, h=2.4, d=0.35))
     kit.add("TOWER-EAVE", "Cream", teave, P=print_flip(), group="tower")
     tz = TT + 8.0
@@ -345,7 +346,7 @@ def build(kit=None):
     zseat = tip - 2.4
     seat = M.cylinder(1.0, 1.35, 1.35, 32).translate([TC[0], TC[1], zseat - 0.4])
     kit.add("TOWER-SPIRE", "Slate", (spire + stex).trim_by_plane([0, 0, -1.0], -zseat) - seat, group="tower")
-    kit.add("TOWER-FINIAL", "Slate", finial(1.2, 9.0).translate([TC[0], TC[1], zseat - 0.4]), group="tower")
+    kit.add("TOWER-FINIAL", "Slate", TW.finial("urn", 1.2, 9.0).translate([TC[0], TC[1], zseat - 0.4]), group="tower")
     print("tower", round(time.time() - t0, 1))
 
     # --- bay: small bracketed cornice and a slate hip roof
@@ -353,7 +354,7 @@ def build(kit=None):
     # clear of the wing's siding, and stopping short of its corner boards
     bay_keep = MAIN.solid(grow=0.45, dz0=-1, dz1=300) + box([-50, -60, 0], [62.2, 0, 300]) + box([102.4, -60, 0], [200, 0, 300])
     beave = R.bracketed_cornice(bay_path, BAY.z1, CORNICE_QA,
-                                brackets=dict(z_top=3.8, h=3.4, d0=0.9, d=3.6, t=0.7, pitch=6.0, pair=1.5, margin=2.4),
+                                brackets=dict(z_top=3.8, h=3.4, d0=0.9, d=3.6, t=0.7, pitch=6.0, pair=1.5, margin=2.4, style="curve"),
                                 dents=dict(z=3.0, h=0.8, d0=0.9, d=0.6), panels=dict(z=0.6, h=2.0, d=0.35))
     kit.add("BAY-EAVE", "Cream", beave - bay_keep, P=print_flip(), group="bay")
     deck_z = S1 - 0.4
