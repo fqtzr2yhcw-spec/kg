@@ -444,6 +444,12 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
         parts.append(ext(tri, 0.0, 0.4))
         parts.append(ext(tri - tri.offset(-0.7, JoinType.Miter, 4.0), 0.0, 1.0))
         top = v1 + pw * 0.42
+    elif head == "drip":
+        # a plain drip cap: a board with a bevelled top
+        dw = w / 2 + casing + 0.6
+        parts.append(box([-dw, h + casing - 0.01, 0.0], [dw, h + casing + 1.0, 0.8]))
+        parts.append(chamfer_box(-dw - 0.3, h + casing + 1.0, dw + 0.3, h + casing + 1.8, 0.0, 1.2, c=0.4, bottom=0.8))
+        top = h + casing + 1.8
     elif head == "shouldered":
         # a flat lintel whose ends step up into shoulders, with a raised rosette at the centre
         lw = w / 2 + casing + 1.2
@@ -745,3 +751,88 @@ def gravel_deck(cs, z0, t=1.2, stone=0.5, pitch=0.9, seed=11):
             stones.append(M.hull_points([(px - s / 2, py - s / 2, 0), (px + s / 2, py - s / 2, 0), (px - s / 2, py + s / 2, 0),
                                          (px + s / 2, py + s / 2, 0), (px, py, 0.3)]).translate([0, 0, z0 + t - 0.01]))
     return deck + (union(stones) ^ M.extrude(inner, t + 2).translate([0, 0, z0]))
+
+
+def door_batwing(w, h, casing=0.8, bw=None, text=None):
+    """A saloon doorway: an open doorway (a dark panel at the back of the plug for the room
+    beyond) with a pair of louvered batwing doors across its middle, a casing and a lettered
+    head board. Local frame as the windows; prints face-up."""
+    from .openings import CLR, _one_piece
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    sash = [ext(plug_cs, -PLUG, -PLUG + GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -PLUG, 0.0)]
+    v0, v1 = zq(h * 0.22), zq(h * 0.62)
+    lw = (w - 2 * CLR - 1.2) / 2
+    for sg in (-1, 1):
+        a0, a1 = sorted((sg * 0.2, sg * (0.2 + lw)))
+        # the leaf: stiles and rails with louvers between, its top scalloped down to the middle
+        leaf = rect(a0, v0, a1, v1 - 1.0) + poly([(a0, v1 - 1.01), (a1, v1 - 1.01), (a1, v1 if sg < 0 else v1 - 1.0),
+                                                     (a0, v1 - 1.0 if sg < 0 else v1)])
+        louv = cs_union([rect(a0 + 0.5, vv, a1 - 0.5, vv + 0.5) for vv in np.arange(v0 + 1.0, v1 - 2.0, 1.1)])
+        frame_ = leaf - rect(a0 + 0.5, v0 + 0.6, a1 - 0.5, v1 - 1.6)
+        sash.append(ext(frame_, -PLUG + GLASS - 0.01, -0.6))
+        sash.append(ext(louv, -PLUG + GLASS - 0.01, -0.8))
+        hx = a1 if sg < 0 else a0
+        sash.append(ext(rect(min(hx, sg * (w / 2 - CLR)) - 0.01, v0 + 1.0, max(hx, sg * (w / 2 - CLR)) + 0.01, v0 + 2.0) ^ plug_cs,
+                        -PLUG + GLASS - 0.01, -0.8))               # hinge strap to the jamb
+        sash.append(ext(rect(min(hx, sg * (w / 2 - CLR)) - 0.01, v1 - 3.0, max(hx, sg * (w / 2 - CLR)) + 0.01, v1 - 2.0) ^ plug_cs,
+                        -PLUG + GLASS - 0.01, -0.8))
+    parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6)]
+    parts.append(ext((op.offset(casing, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + casing + 1), 0.0, 0.6))
+    top = h + casing
+    hb = w / 2 + casing + 0.8
+    parts.append(box([-hb, top - 0.01, 0.0], [hb, top + 3.2, 0.8]))
+    if text:
+        parts.append(ext(text_cs(text, 2.0, "roman", grow=0.08).translate((0.0, top + 0.6)), 0.79, 1.2))
+    parts.append(chamfer_box(-hb - 0.3, top + 3.2, hb + 0.3, top + 4.0, 0.0, 1.2, c=0.4, bottom=0.8))
+    return _one_piece(sash, parts, op, plug_cs, PLUG, top + 4.0, 0.0)
+
+
+def iron_railing(L, h=7.6, t=0.8, rail=0.8, pitch=2.6):
+    """A flat wrought-iron balcony railing ``L`` long: a bottom and a top rail, upright bars,
+    and a ring between each pair of bars. Local (u along, v up, w its thickness 0..t); prints
+    flat on its back and stands on the balcony edge."""
+    parts = [box([0, 0, 0], [L, rail, t]), box([0, h - rail, 0], [L, h, t])]
+    n = max(2, int(round(L / pitch)))
+    us = [L * k / n for k in range(n + 1)]
+    for u in us:
+        a, b = max(0.0, u - 0.3), min(L, u + 0.3)
+        parts.append(box([a, rail - 0.01, 0], [b, h - rail + 0.01, t]))
+    r = min((L / n) / 2 - 0.5, (h - 2 * rail) / 2 - 0.3)
+    for a, b in zip(us[:-1], us[1:]):
+        c = ((a + b) / 2, h / 2)
+        ring = circle(c, r, 24) - circle(c, r - 0.5, 20)
+        parts.append(ext(ring + rect(c[0] - 0.25, rail - 0.01, c[0] + 0.25, c[1] - r + 0.2) +
+                         rect(c[0] - 0.25, c[1] + r - 0.2, c[0] + 0.25, h - rail + 0.01), 0.0, t))
+    return union(parts)
+
+
+def vertical_sign(text, cap=3.0, board=1.0, margin=1.0, relief=0.4, font="roman", arm=2.4):
+    """A tall projecting sign with its letters stacked one above the other (H O T E L), with
+    two iron arms to the wall. Local: x out from the wall (the arms from x = 0), y up (the
+    sign's foot at y = 0), z its thickness; prints flat on its back."""
+    letters = [c for c in text if c != " "]
+    gap = cap * 0.45
+    H = len(letters) * cap + (len(letters) - 1) * gap + 2 * margin + 1.0
+    Wd = cap * 1.1 + 2 * margin
+    x0 = arm
+    parts = [box([x0, 0, 0], [x0 + Wd, H, board])]
+    ring = rect(x0, 0, x0 + Wd, H) - rect(x0 + 0.7, 0.7, x0 + Wd - 0.7, H - 0.7)
+    parts.append(ext(ring, board - 0.01, board + relief))
+    for k, ch in enumerate(letters):
+        y = H - margin - 0.5 - (k + 1) * cap - k * gap
+        parts.append(ext(text_cs(ch, cap, font, grow=0.1).translate((x0 + Wd / 2, y)), board - 0.01, board + relief))
+    for y in (H * 0.15, H * 0.85):
+        parts.append(box([0.0, y - 0.4, 0.0], [x0 + 0.01, y + 0.4, 0.8]))
+        parts.append(box([0.0, y - 1.4, 0.0], [0.8, y + 1.4, 1.6]))                       # wall plates
+    return union(parts), H
+
+
+def batten_panel(L, W, t=1.2, pitch=3.0, bw=0.8, bh=0.4):
+    """A board-and-batten roof panel, ``L`` along the eave by ``W`` up the slope: a sheet
+    ``t`` thick with battens ``bw`` wide running up the slope every ``pitch``. Own frame (u
+    along the eave, v up the slope, w out); prints flat on its back."""
+    parts = [box([0, 0, 0], [L, W, t])]
+    for u in np.arange(pitch / 2, L - 0.3, pitch):
+        parts.append(chamfer_box(u - bw / 2, 0.0, u + bw / 2, W, t - 0.01, bh, c=0.15))
+    return union(parts)

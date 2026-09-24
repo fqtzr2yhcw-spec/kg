@@ -152,6 +152,39 @@ def diagonal_boards(region, pitch=1.8, groove=0.5, d=0.4, centre=None, angle=45.
 
 
 # ------------------------------------------------------------------ shingles (square butts, no scallops)
+def coursed_shingles(region, pitch=1.8, width=2.0, d=0.42, gap=SLOT, datum=0.0):
+    """Square-butt shingles in regular courses: equal widths, straight butts, the joints
+    broken by half a shingle each course, each course thickening toward its butt (upright
+    wall). The orderly cousin of stagger_shingles."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rows = []
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    k1 = math.ceil((v1 - datum) / pitch) + 1
+    for k in range(k0, k1):
+        vk = datum + k * pitch
+        top = vk + pitch * 2           # two courses: every edge that shows through a joint is on the grid
+        off = (k % 2) * width / 2
+        tabs = []
+        u = u0 - width - off
+        while u < u1 + width:
+            tabs.append(rect(u + gap / 2, vk, u + width - gap / 2, top))
+            u += width
+        row = cs_union(tabs) ^ region ^ rect(u0 - 1, vk, u1 + 1, top)
+        if row.is_empty():
+            continue
+        m = M.extrude(row, d)
+
+        def f(P, vb=vk, span=top - vk):
+            P = np.array(P)
+            tt = np.clip((P[:, 1] - vb) / span, 0, 1)
+            P[:, 2] *= (1 - 0.6 * tt)
+            return P
+        rows.append(m.warp_batch(f))
+    return union(rows)
+
+
 def stagger_shingles(region, pitch=1.6, d=0.42, gap=SLOT, datum=0.0, seed=3, drop=0.4):
     """Staggered-butt square shingles: random widths, every other one hanging ``drop``
     lower, each course thickening toward its butt (upright wall)."""

@@ -685,6 +685,15 @@ def _leaf(style, u, lw, dh, hinge_left):
                  rect(ib[0] - 0.25, ib[3] - 0.25, ib[0] + 0.25, ib[3] + 2), rect(ib[2] - 0.25, ib[3] - 0.25, ib[2] + 0.25, ib[3] + 2)]
         _GLASS_BARS.append(ext((ring + cs_union(ticks)) ^ gl.offset(0.2), -1.21, -0.6))
         panel(rect(pu0, 1.3, pu1, dh * 0.40 - 1.0))
+    elif style == "french":               # glazed nearly full height with a grid of lights (2 x 4)
+        gl = rect(pu0, 2.2, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        b = gl.bounds()
+        m = (b[0] + b[2]) / 2
+        bars = [rect(m - 0.25, b[1], m + 0.25, b[3])]
+        bars += [rect(b[0], b[1] + (b[3] - b[1]) * k / 4 - 0.25, b[2], b[1] + (b[3] - b[1]) * k / 4 + 0.25) for k in (1, 2, 3)]
+        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), -1.21, -0.6))
     elif style == "oval":
         cx, cy = (pu0 + pu1) / 2, dh * 0.7
         rx, ry = (pu1 - pu0) / 2 - 0.2, min(dh * 0.18, top - st - cy)
@@ -764,7 +773,7 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
                     x0 = k * 1.8
                     bars.append(stroke([(x0 - sgn * 8, tb[1] - 8), (x0 + sgn * 8, tb[1] + 8)], RIB, caps=False))
             pat = cs_union(bars)
-        elif tstyle.startswith("number"):
+        elif tstyle.startswith("number") or tstyle.startswith("text"):
             from .storefront import text_cs
             digits = tstyle.split(":", 1)[1] if ":" in tstyle else "12"
             cap = min(2.6, (tb[3] - tb[1]) - 0.6)
