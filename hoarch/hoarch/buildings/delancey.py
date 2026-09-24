@@ -126,7 +126,7 @@ def _parapet(zb):
     for u0, u1 in ((0, 3.2), (L - 3.2, L)):
         parts.append(chamfer_box(u0, 0.0, u1, H, 0.0, 1.0, c=0.3))
     for u0, u1 in ((4.4, 24.0), (L - 24.0, L - 4.4)):
-        parts.append(chamfer_box(u0, 1.2, u1, H - 1.2, 0.0, 0.5, c=0.3))
+        parts.append(chamfer_box(u0, 1.2, u1, H - 1.2, 0.0, 0.6, c=0.3))        # face on the layer grid (prints on its back)
         parts.append(lozenge((u0 + u1) / 2, H / 2, 2.4, 3.2, 0.5, 0.3))
     # the pediment: a raised segmental head over the middle with a cartouche
     mid = L / 2

@@ -10,6 +10,7 @@ balusters and an entablature, and a rock-faced granite foundation.
 
 usage: python3 -m hoarch.buildings.harcourt [check] [export]
 """
+import math
 import os
 import sys
 import time
@@ -246,8 +247,11 @@ def build(kit=None):
                         steps_at=[(1, (px1 - px0) / 2, 14.0)], boards=dict(pitch=1.8), joined=True,
                         post="fluted", rail="urn", arcade="entablature", skirt="square", pier_tex="stone")
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
-    ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
-                      for p in inserts if p is not None])
+    # keep-out boxes round the inserts, their tops and bottoms on the layer grid (the porch
+    # roof is notched by them and prints upside down)
+    ins_keep = union([box([b[0] - 0.2, b[1] - 0.2, math.floor((b[2] - 0.2) / 0.2) * 0.2],
+                          [b[3] + 0.2, b[4] + 0.2, math.ceil((b[5] + 0.2) / 0.2) * 0.2])
+                      for b in (p.solid.bounding_box() for p in inserts if p is not None)])
     kit.add("PORCH-deck", "Limestone", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
     for k, fr in enumerate(sorted(P["frames"], key=lambda m: m.bounding_box()[0])):

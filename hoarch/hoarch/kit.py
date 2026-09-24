@@ -74,6 +74,10 @@ class Kit:
         """Remove detached fragments smaller than ``min_vol`` mm^3 from every part (offcuts
         of texture or trim that a trim left floating). Returns [(part, volume dropped)]."""
         out = []
+        empty = [p for p in self.parts if p.solid.is_empty() or p.solid.volume() < 0.5]
+        for p in empty:                 # a whole part that is only a sliver (an offcut of a join)
+            out.append((p.name, round(max(0.0, p.solid.volume()), 3)))
+            self.parts.remove(p)
         for p in self.parts:
             comps = p.solid.decompose()
             if len(comps) < 2:

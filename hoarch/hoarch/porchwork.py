@@ -58,10 +58,10 @@ def post_tuscan(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
             (1.34, 2.3 + 0.3 * (z1 - 2.3)), (1.22, 2.3 + 0.75 * (z1 - 2.3)), (1.12, z1),
             (1.3, z1 + 0.2), (1.3, z1 + 0.5), (1.12, z1 + 0.7), (1.12, z1 + 0.9)]
     body = _revolve(prof) + _plinth()
-    return body + _top(h, abacus / 2, z1 + 0.9, 1.12, slot)
+    return body + _top(h, abacus / 2, z1 + 0.9, 1.12, slot, seg=36)      # the shaft's facets: no sliver ledge
 
 
-def post_fluted(h, collar=None, abacus=3.2, slot=(1.2, 1.0), n=10):
+def post_fluted(h, collar=None, abacus=3.2, slot=(1.2, 1.0), n=8):
     """Fluted column: a double torus base, a straight shaft with ``n`` flutes, a bell
     capital."""
     z1 = h - 3.4
@@ -139,7 +139,7 @@ def post_spindle(h, collar=None, abacus=2.8, slot=(1.2, 1.0)):
         prof += [(1.05, zb - 0.45), (1.4, zb - 0.1), (1.4, zb + 0.3), (1.05, zb + 0.65)]
     prof += [(1.05, z1)]
     body = _revolve(prof) + _plinth(3.0)
-    return body + _top(h, abacus / 2, z1, 1.05, slot)
+    return body + _top(h, abacus / 2, z1, 1.05, slot, seg=36)
 
 
 def post_eastlake(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
@@ -283,7 +283,7 @@ def frieze_entablature(u0, u1, v_bot, v_top):
     parts = [rect(u0, v_top - 1.6, u1, v_top + 0.05)]
     u = u0 + 0.4
     while u + 0.6 < u1 - 0.3:
-        parts.append(rect(u, v_top - 2.4, u + 0.6, v_top - 1.55))
+        parts.append(rect(u, v_top - 2.5, u + 0.6, v_top - 1.55))      # their feet on the layer grid
         u += 1.1
     return cs_union(parts)
 

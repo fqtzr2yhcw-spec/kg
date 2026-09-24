@@ -245,7 +245,7 @@ def scored_stucco(region, course=3.2, block=6.4, groove=0.5, d=0.3, datum=0.0):
     k = math.floor((v0 - datum) / course) - 1
     while datum + k * course < v1 + course:
         v = datum + k * course
-        gs.append(rect(u0 - 1, v - 0.2, u1 + 1, v + groove - 0.2))          # one layer + a bit: on the grid
+        gs.append(rect(u0 - 1, v - 0.2, u1 + 1, v + 0.2))          # two layers: both edges on the grid
         u = u0 - block + (k % 2) * block / 2
         while u < u1 + block:
             gs.append(rect(u - groove / 2, v, u + groove / 2, v + course))

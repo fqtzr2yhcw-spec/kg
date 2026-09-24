@@ -588,7 +588,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         for k in range(1, n):
             x = u + lw * k / n
             g.append(rect(x - 0.25, 0.9, x + 0.25, top - 0.4))
-        parts[0] = parts[0] - ext(cs_union(g), -0.9, 0.0)
+        parts[0] = parts[0] - ext(cs_union(g), -1.0, 0.0)          # joint floors on the layer grid
         studs = []
         for v in (1.6, dh * 0.35, dh * 0.65, top - 1.0):
             for k in range(n):
@@ -1625,9 +1625,9 @@ def window_sf(w, h, rise=2.2, A=1.4, col=1.2, lites=(1, 2)):
         u = sg * (w / 2 + col / 2 + 0.1)
         parts.append(MD.band(rect(u - col / 2, 1.2, u + col / 2, spring - 1.4), col / 2, [(0.0, 0.6), (0.5, 1.0), (1.0, 1.2)]))
         parts.append(chamfer_box(u - col / 2 - 0.25, 0.0, u + col / 2 + 0.25, 1.4, 0.0, 1.2, c=0.3, bottom=0.0))
-        cap = chamfer_box(u - col / 2 - 0.3, spring - 1.6, u + col / 2 + 0.3, spring, 0.0, 1.3, c=0.4, bottom=0.8)
+        cap = chamfer_box(u - col / 2 - 0.3, spring - 1.6, u + col / 2 + 0.3, spring, 0.0, 1.4, c=0.4, bottom=0.8)
         parts.append(cap)
-        parts.append(ext(cs_union([circle((u + dx, spring - 0.8), 0.3, 12) for dx in (-0.45, 0.0, 0.45)]), 1.29, 1.6))
+        parts.append(ext(cs_union([circle((u + dx, spring - 0.8), 0.3, 12) for dx in (-0.45, 0.0, 0.45)]), 1.39, 1.8))
     ar = op.offset(A + col * 0.5, JoinType.Miter, 4.0)
     parts.append(MD.band(ar, A, MD.ARCHITRAVE, clip=rect(-w - 10, spring - 0.01, w + 10, h + 20) - op))
     ktop = h + A + col * 0.5 + 0.8
@@ -1679,7 +1679,7 @@ def door_sf(w, h, rise=2.6, pil=1.8, A=1.4):
         parts.append(ext(rect(u0, 2.4, u1, vcap), 0.0, 1.0) -
                      union([ext(stroke([(um + dx, 3.4), (um + dx, vcap - 1.2)], 0.5), 0.6, 1.2) for dx in (-0.45, 0.45)]))
         parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 2.4, 0.0, 1.2, c=0.4, bottom=0.0))
-        parts.append(chamfer_box(u0 - 0.3, vcap - 0.2, u1 + 0.3, vcap + 1.4, 0.0, 1.3, c=0.4, bottom=0.8))
+        parts.append(chamfer_box(u0 - 0.3, vcap - 0.2, u1 + 0.3, vcap + 1.4, 0.0, 1.4, c=0.4, bottom=0.8))
     half = uo + 0.3
     parts.append(ext(rect(-half, vcap + 1.2, half, vcap + 3.6), 0.0, CAS))          # into the cornice: one piece
     for uu in (-half * 0.55, 0.0, half * 0.55):
