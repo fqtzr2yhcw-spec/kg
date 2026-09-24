@@ -562,7 +562,8 @@ def _leaf(style, u, lw, dh, hinge_left):
     (a glazed light with muntins over an X-braced panel), half_glass (a light with a muntin
     cross over two small panels), two_panel (two tall raised panels), glazed_tall (glass
     nearly full height under a segmental head), oval (an oval light over a panel with a
-    raised lozenge), four_panel (four raised panels, two over two)."""
+    raised lozenge), four_panel (four raised panels, two over two), store (one big light
+    with a push bar over a low panel and a kick plate)."""
     if style == "arched":
         return _ornate_leaf(u, lw, dh, hinge_left)
     st = min(1.0, lw * 0.16)
@@ -631,6 +632,13 @@ def _leaf(style, u, lw, dh, hinge_left):
         for a, b in ((pu0, m - 0.35), (m + 0.35, pu1)):
             panel(rect(a, 1.3, b, vm - 0.45))
             panel(rect(a, vm + 0.45, b, top - st))
+    elif style == "store":
+        gl = rect(pu0, dh * 0.36, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        parts.append(ext(rect(pu0, dh * 0.5 - 0.3, pu1, dh * 0.5 + 0.3) ^ gl.offset(0.2), -1.2, -0.6))     # push bar
+        panel(rect(pu0, 2.4, pu1, dh * 0.36 - 1.0))
+        parts.append(ext(rect(pu0, 0.8, pu1, 1.8), -0.81, -0.6))                                          # kick plate
     elif style == "oval":
         cx, cy = (pu0 + pu1) / 2, dh * 0.7
         rx, ry = (pu1 - pu0) / 2 - 0.2, min(dh * 0.18, top - st - cy)

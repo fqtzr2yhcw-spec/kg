@@ -237,7 +237,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     return shell + dress
 
 
-CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel")
+CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -250,7 +250,8 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
       chamfer   the two boards mitred into a square post with its outer corner chamfered (Whitby)
       stepped   a narrow second board on the corner side, no cap (Merritt)
       capital   a base plinth and a capital flaring out at 45 degrees (Hollis)
-      panel     a long sunk panel (Ashby's cupola)"""
+      panel     a long sunk panel (Ashby's cupola)
+      beaded    a bead down the middle between a plinth and a cap (the barber shop)"""
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
@@ -279,6 +280,12 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
             parts.append(M.hull_points([(uu, qb - 2.0, ww) for uu in (u0, u1) for ww in (0.0, t)] +
                                        [(uu, qb - 1.6, ww) for uu in (e0, e1) for ww in (0.0, t + 0.4)]))
             parts.append(box([e0, qb - 1.6, 0], [e1, qb, t + 0.4]))
+    if style == "beaded":
+        parts.append(box([far0, qa, 0], [far1, qa + 1.6, t + 0.3]))
+        parts.append(box([far0, qb - 1.0, 0], [far1, qb, t + 0.3]))
+        um = (u0 + u1) / 2
+        if qb - qa > 5.0:
+            parts.append(chamfer_box(um - 0.5, qa + 1.6, um + 0.5, qb - 1.0, t - 0.01, 0.31, c=0.25))
     if style == "panel" and qb - qa > 3.0:
         return union(parts) - box([u0 + 0.5, qa + 1.0, t - 0.2], [u1 - 0.5, qb - 1.0, t + 0.5])
     return union(parts)

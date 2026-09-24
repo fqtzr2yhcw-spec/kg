@@ -60,6 +60,13 @@ def shiplap(region, datum=0.0):
     return _lap(region, 2.2, [(0.0, 0.10), (0.6, 0.10), (0.6, 0.40), (2.2, 0.40)], datum)
 
 
+def rustic_lap(region, datum=0.0):
+    """Rustic (log-cabin) siding: 2.4 mm courses, each board's face rounded like a
+    half-log, so every course casts a soft shadow under a round belly."""
+    return _lap(region, 2.4, [(0.0, 0.12), (0.3, 0.30), (0.7, 0.42), (1.2, 0.46), (1.8, 0.40), (2.2, 0.24),
+                              (2.4, 0.12)], datum)
+
+
 def vgroove(region, datum=0.0):
     """Tongue-and-groove boards with a V joint at every course."""
     return _lap(region, 1.4, [(0.0, 0.40), (1.0, 0.40), (1.2, 0.15), (1.4, 0.40)], datum)

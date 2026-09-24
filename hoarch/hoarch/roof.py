@@ -542,3 +542,18 @@ def frieze_ring(path, z0, h=5.6, t=3.0, face=0.9, brackets=None, tail=1.6, panel
             A[:, 3] = f.world(0.0, 0.0, 0.0) + np.array([0, 0, z0])
             parts.append(union(loc).transform(A))
     return union(parts)
+
+
+def roll_panel(L, W, t=1.2, course=6.0, butt=0.4, lap=0.1):
+    """A flat roof panel of rolled roofing, ``L`` along the eave by ``W`` up the slope and
+    ``t`` thick, in its own frame (u along the eave, v up the slope, w out of the roof).
+    Prints flat on its back. Each course stands ``butt`` proud at its lower edge and thins to
+    ``lap`` where the next course laps over it: wide shallow strips, no seams."""
+    parts = [box([0, 0, 0], [L, W, t])]
+    v = 0.0
+    while v < W - 0.01:
+        v1 = min(W, v + course)
+        parts.append(M.hull_points([(u, vv, t - 0.01) for u in (0.0, L) for vv in (v, v1)] +
+                                   [(u, v, t + butt) for u in (0.0, L)] + [(u, v1, t + lap) for u in (0.0, L)]))
+        v = v1
+    return union(parts)

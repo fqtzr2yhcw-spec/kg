@@ -182,10 +182,18 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         for k in (-1, 0, 1):
             body = body + _pot(0.9, 2.8, "square").translate([k * w * 0.3, 0, sh + 0.4])
         return body
+    if style == "stovepipe":
+        # a sheet-iron flue: a band, and a cone cap flaring at 45 degrees (w = pipe diameter)
+        r = w / 2
+        body = M.cylinder(h - 2.0, r, r, 28) + M.cylinder(0.6, r + 0.3, r + 0.3, 28).translate([0, 0, round(h * 0.55 / 0.2) * 0.2])
+        cap = M.cylinder(1.0, r, r + 1.0, 28).translate([0, 0, h - 2.01]) + \
+            M.cylinder(1.0, r + 1.0, 0.3, 28).translate([0, 0, h - 1.02])
+        return body + cap
     raise ValueError(style)
 
 
-CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party")
+CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
+            "stovepipe")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -229,7 +237,8 @@ def foundation_skin(style, reg, seed=0):
     big rock-faced blocks), parged (Fowler: scored stucco), rusticated (Delancey: long
     channel-jointed blocks), rubble (Whitby: small random stones), boulder (Ardmore: tall
     rock-faced courses), brick (Merritt: running bond over a soldier course), block (Hollis:
-    rock-faced concrete block), coursed (Carrow: long thin coursed stones)."""
+    rock-faced concrete block), coursed (Carrow: long thin coursed stones), plinth (Pemberton:
+    long dressed granite), timber (the barber shop: a timber sill with bolt heads)."""
     from . import skins as S
     if style == "fieldstone":
         return ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=0.55, seed=seed)
@@ -253,6 +262,16 @@ def foundation_skin(style, reg, seed=0):
         return ashlar(reg, course=(1.9, 1.9), length=(5.6, 5.6), d=0.5, seed=seed, rough=0.12)
     if style == "plinth":                # long smooth dressed granite blocks, two courses
         return S.brick_bond(reg, "running", bl=12.0, bh=2.0, mortar=0.5, bed=0.4, d=0.3, uoff=seed % 5)
+    if style == "timber":                # a heavy timber sill: long baulks, butt joints, a row of bolt heads
+        b = reg.bounds()
+        cells, bolts = [], []
+        vm = (b[1] + b[3]) / 2
+        u = b[0] - (seed % 7) * 2.0
+        while u < b[2]:
+            cells.append(rect(u + 0.25, b[1], u + 17.75, b[3]))
+            bolts += [circle((u + 3.0 + 6.0 * k, vm), 0.4, 12) for k in range(3)]
+            u += 18.0
+        return M.extrude(cs_union(cells) ^ reg, 0.35) + M.extrude(cs_union(bolts) ^ reg.offset(-0.3), 0.6)
     if style == "coursed":
         return ashlar(reg, course=(1.2, 1.8), length=(5.0, 11.0), d=0.45, seed=seed, rough=0.1)
     raise ValueError(style)
@@ -288,7 +307,7 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     scroll (the Italianate console), block (a stepped modillion block), curve (a quarter-
     round bracket with a drop), pendant (a scroll over a hanging turned drop), fan (a
     pierced quarter-round), brace (a diagonal stick brace), metal (a pressed-metal bracket:
-    a block head, an ogee and a round drop)."""
+    a block head, an ogee and a round drop), sawn (a flat jigsawn bracket, pierced)."""
     from .ornament import console, side_profile
     if style == "scroll":
         return console(h, d, t, u=u, v_top=v_top, w0=w0)
@@ -316,6 +335,12 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
               [(d - (d - hd) * (3 * s * s - 2 * s ** 3), -h * 0.28 - h * 0.44 * s) for s in np.linspace(0.1, 1, 9)] + \
               [(hd, -h + 0.9), (0.0, -h + 0.9)]
         prof = cs_union([poly(pts), circle((hd * 0.5, -h + 0.9), min(0.8, hd * 0.5), 16)])
+    elif style == "sawn":                # a flat jigsawn bracket: an S-curved edge, a round piercing, a drop
+        pts = [(0, 0), (d, 0), (d, -h * 0.18)] + \
+              [(d - (d - 0.6) * (3 * s * s - 2 * s ** 3), -h * 0.18 - h * 0.82 * s) for s in np.linspace(0.08, 1, 12)] + \
+              [(0.0, -h)]
+        r = min(0.5, 0.16 * min(d, h))
+        prof = cs_union([poly(pts), circle((0.3, -h + 0.3), 0.3, 12)]) - circle((0.42 * d, -0.36 * h), r, 16)
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])
