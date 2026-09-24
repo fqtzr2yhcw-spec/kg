@@ -21,9 +21,11 @@ from hoarch.shell import Block, Opening, foundation, lip_keep, storey_shells, wa
 
 NAME = "Ashby Italianate Villa"
 COLORS = {"Sand": "#D8C49A", "White": "#F2F0EB", "Charcoal": "#3E4247", "Stone": "#8C8A85",
-          "Forest": "#2F4A3A", "Brick": "#8A3B2B"}
+          "Forest": "#2F4A3A", "Brick": "#8A3B2B", "Windows": "#F2F0EB", "Doors": "#F2F0EB"}
+# windows and doors are one part each (glass, sash and frame), on their own plates so the glass
+# and the sash / door can take their colours by filament changes at layer heights
 RENDER_MAT = {"Sand": "siding", "White": "trim", "Charcoal": "roof", "Stone": "stone", "Forest": "accent",
-              "Brick": "brick"}
+              "Brick": "brick", "Windows": "trim", "Doors": "trim"}
 PALETTE = {"siding": ["#D8C49A", 0.6, 0.0], "trim": ["#EEECE7", 0.55, 0.0], "roof": ["#3E4247", 0.5, 0.0],
            "stone": ["#8C8A85", 0.85, 0.0], "accent": ["#2F4A3A", 0.5, 0.0], "brick": ["#8A3B2B", 0.85, 0.0]}
 
@@ -118,11 +120,9 @@ def build(kit=None):
         tag = f"{sp['cut'].bounds()[2] - sp['cut'].bounds()[0]:.1f}x{sp['cut'].bounds()[3] - sp['cut'].bounds()[1]:.1f}"
         key = "DOOR" if o.kind == "door" else "WIN"
         col = "Forest" if o.kind == "door" else "White"
-        inserts.append(kit.add(f"{key}-{o.name}-sash", col, sp["sash"].transform(A), P=inv34(A),
-                               key=f"{key}-{tag}-sash", group="inserts"))
-        if sp["surround"] is not None:
-            inserts.append(kit.add(f"{key}-{o.name}-surround", "White", sp["surround"].transform(A), P=inv34(A),
-                                   key=f"{key}-{tag}-surround-{o.v0 > 20}", group="inserts"))
+        world, P, zones = O.place(sp, A, "White", col)          # one part: glass, sash and frame
+        inserts.append(kit.add(f"{key}-{o.name}", "Doors" if o.kind == "door" else "Windows", world, P=P,
+                               key=f"{key}-{tag}-{o.v0 > 20}", group="inserts", render=zones))
         if sh:
             w_op = sp["cut"].bounds()[2] - sp["cut"].bounds()[0]
             h_op = sp["cut"].bounds()[3] - sp["cut"].bounds()[1]
@@ -172,10 +172,8 @@ def build(kit=None):
             group="cupola")
     for o in cup_ops:
         A = o.local_frame()
-        kit.add(f"WIN-{o.name}-sash", "White", o.spec["sash"].transform(A), P=inv34(A), key="WIN-cupola-sash",
-                group="cupola")
-        kit.add(f"WIN-{o.name}-surround", "White", o.spec["surround"].transform(A), P=inv34(A),
-                key="WIN-cupola-surround", group="cupola")
+        world, P, zones = O.place(o.spec, A, "White", "White")
+        kit.add(f"WIN-{o.name}", "Windows", world, P=P, key="WIN-cupola", group="cupola", render=zones)
     cz = flat + CUP_H
     cup_eave = R.bracketed_cornice(cup.pts, cz, R.CORNICE_SMALL,
                                    brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=7.0, pair=1.5, margin=3.0),
@@ -261,7 +259,7 @@ def exploded_offsets(kit):
         if nm.startswith(("WIN-", "DOOR-", "SHUTTER-")):
             oname = nm.split("-", 1)[1].rsplit("-", 1)[0]
             n = normal.get(oname, np.zeros(2))
-            d[:2] = n * (9.0 if nm.endswith("-sash") else 17.0)
+            d[:2] = n * (9.0 if nm.startswith("SHUTTER-") else 17.0)
             if "cupola" in oname:
                 d[2] = lift["CUPOLA"]
             elif oname.endswith("-2"):

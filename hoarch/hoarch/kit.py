@@ -41,8 +41,9 @@ def rows(xr, yr, zr):
 
 
 class Part:
-    def __init__(self, name, color, solid, P, key, group):
+    def __init__(self, name, color, solid, P, key, group, render=None):
         self.name, self.color, self.solid, self.P, self.key, self.group = name, color, solid, P, key, group
+        self.render = render          # [(colour, solid)] colour zones of a one-piece part, for renders
 
     def printed(self):
         s = self.solid.transform(self.P)
@@ -55,7 +56,7 @@ class Kit:
         self.name, self.colors, self.render_mat = name, colors, render_mat
         self.parts = []
 
-    def add(self, name, color, solid, P=None, key=None, group=""):
+    def add(self, name, color, solid, P=None, key=None, group="", render=None):
         if solid is None or solid.is_empty():
             print("  (empty part skipped)", name)
             return None
@@ -64,7 +65,7 @@ class Kit:
         if len(comps) > 1 and any(c.volume() < 1e-3 for c in comps):
             # boolean leftovers with no volume would set the print's bed height
             solid = M.batch_boolean([c for c in comps if c.volume() >= 1e-3], OpType.Add)
-        p = Part(name, color, solid, I34 if P is None else P, key or name, group)
+        p = Part(name, color, solid, I34 if P is None else P, key or name, group, render)
         self.parts.append(p)
         return p
 
@@ -105,7 +106,9 @@ class Kit:
             if only and not only(p):
                 continue
             off = (offsets or {}).get(p.name, (0, 0, 0))
-            groups[self.render_mat[p.color]].append(p.solid.translate(list(off)))
+            for col, sol in (p.render or [(p.color, p.solid)]):
+                if not sol.is_empty():
+                    groups[self.render_mat[col]].append(sol.translate(list(off)))
         data = {}
         for mat, ms in groups.items():
             vs, fs, o = [], [], 0

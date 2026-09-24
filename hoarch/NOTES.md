@@ -106,6 +106,21 @@ Rich HO detail comes from a few devices repeated at every scale, each shaped to 
     capitals; a frieze of swags round a cartouche under a broken swan-neck pediment with
     an urn (front), or a segmental pediment with a fan (back).
 
+## Windows and doors: one part each (after the Ashby test prints)
+
+Each window or door is ONE part with a flat back, printed face-up:
+
+- The glass is its first two 0.2 mm layers across the opening. The sash (0.4 mm) or the door
+  leaves (0.8 mm) are built on the glass. The surround stands on a base under its whole
+  outline, so the sash sits 0.6-1.0 mm behind the casing.
+- It glues onto the wall face, into the landing cut in the siding (which locates it). No plug:
+  a plug under a wider surround would leave the surround starting in mid-air.
+- Colour by height, if wanted: filament changes at 0.4 mm (glass to sash/door colour) and at
+  0.8 mm for windows or 1.2 mm for doors (to the trim colour). The only side effect is a thin
+  band of sash colour along the back edge of the frame, hidden by the siding.
+- Windows and doors get their own plates (colours "Windows" and "Doors") because their colour
+  heights differ.
+
 ## Printability rules (checked by slicing every plate)
 
 - Anything that would overhang goes in its own part, printed with that face down.

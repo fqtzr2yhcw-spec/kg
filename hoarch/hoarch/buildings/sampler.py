@@ -70,8 +70,8 @@ def build(single=True):
         A = o.local_frame()
         sp = o.spec
         key = "DOOR" if o.kind == "door" else "WIN"
-        kit.add(f"{key}-{o.name}-sash", C("Forest" if o.kind == "door" else "White"), sp["sash"].transform(A), P=inv34(A))
-        kit.add(f"{key}-{o.name}-surround", C("White"), sp["surround"].transform(A), P=inv34(A))
+        world, P, zones = O.place(sp, A, C("White"), C("Forest" if o.kind == "door" else "White"))
+        kit.add(f"{key}-{o.name}", C("Doors" if o.kind == "door" else "Windows"), world, P=P, render=zones)
         if sh:
             b = sp["cut"].bounds()
             w_op, h_op = b[2] - b[0], b[3] - b[1]
