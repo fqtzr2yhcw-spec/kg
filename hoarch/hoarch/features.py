@@ -457,11 +457,13 @@ def shutter(w, h, t=0.8, stile=0.6, louver=1.0, mid=True):
 
 def shutter_panel(w, h, t=0.8, stile=0.6):
     """Raised-panel shutter (Italianate): two panels, each a bevelled field inside the frame."""
-    parts = [ext(rect(0, 0, w, h), 0.0, t - 0.3)]
+    # prints on its back: the field at 0.4 and the panels' bevelled tops at t keep every flat
+    # face on the layer grid (0.5 would sit on a slicing plane)
+    parts = [ext(rect(0, 0, w, h), 0.0, t - 0.4)]
     mid = h * 0.42
     for v0, v1 in ((stile, mid - stile / 2), (mid + stile / 2, h - stile)):
-        if v1 - v0 > 1.5 and w - 2 * stile > 1.0:
-            parts.append(chamfer_box(stile + 0.2, v0 + 0.2, w - stile - 0.2, v1 - 0.2, t - 0.31, 0.3, c=0.2))
+        if v1 - v0 > 1.5 and w - 2 * stile > 1.2:
+            parts.append(chamfer_box(stile + 0.5, v0 + 0.5, w - stile - 0.5, v1 - 0.5, t - 0.41, 0.41, c=0.15))
     frame_cs = rect(0, 0, w, h) - rect(stile, stile, w - stile, h - stile) + rect(0, mid - stile / 2, w, mid + stile / 2)
     parts.append(ext(frame_cs, 0.0, t))
     return union(parts)
@@ -470,13 +472,13 @@ def shutter_panel(w, h, t=0.8, stile=0.6):
 def shutter_board(w, h, t=0.8):
     """Farmhouse board shutter: vertical boards with grooves, a Z brace of battens and a
     diamond cut-out near the top."""
-    parts = [ext(rect(0, 0, w, h), 0.0, t - 0.3)]
+    parts = [ext(rect(0, 0, w, h), 0.0, t - 0.2)]            # flat faces on the layer grid
     n = max(2, int(w / 1.2))
     g = cs_union([rect(w * k / n - 0.25, 0.3, w * k / n + 0.25, h - 0.3) for k in range(1, n)])
     parts[0] = parts[0] - ext(g, 0.2, t)
     bat = cs_union([rect(0.2, 1.0, w - 0.2, 1.9), rect(0.2, h - 1.9, w - 0.2, h - 1.0),
                     stroke([(0.6, 1.8), (w - 0.6, h - 1.8)], 0.8)])
-    parts.append(ext(bat, t - 0.31, t + 0.2))
+    parts.append(ext(bat, t - 0.21, t + 0.2))
     c = (w / 2, h - 3.2)
     dia = poly([(c[0], c[1] + 0.8), (c[0] + 0.55, c[1]), (c[0], c[1] - 0.8), (c[0] - 0.55, c[1])])
     return union(parts) - ext(dia, -1, t + 1)

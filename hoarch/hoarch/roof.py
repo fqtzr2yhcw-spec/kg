@@ -224,7 +224,7 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
         ndir = np.array([-t[0] * s * cth, -t[1] * s * cth, cth])
         # sunk a hair into the roof plane: texture that only touches it comes out as loose pieces
         out.append(tex.translate([0, 0, -0.03]).transform(frame([q[0], q[1], pi.z0], [e[0], e[1], 0.0], vdir, ndir)))
-    tex = union(out)
+    tex = union(out).trim_by_plane([0, 0, 1.0], z_eave)      # the sunk texture stays clear of the eave ring
     if zmax is not None:
         tex = tex.trim_by_plane([0, 0, -1.0], -zmax)
     return tex
