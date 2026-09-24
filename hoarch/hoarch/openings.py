@@ -797,3 +797,303 @@ def door_se(w, h, leaves=2, transom=4.4, pil=2.0, arch_w=1.8, head="pediment"):
     parts.append(MD.anthemion((0.0, vb + rise_p - 0.2), 4.0, 3.0, 0.0, 1.2))
     top = vb + rise_p - 0.2 + 3.0
     return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)
+
+
+# ------------------------------------------------------------------ Gothic Revival surrounds
+# Pointed (two-centred) openings with bar tracery in the sash, a moulded casing, and a drip
+# label (hood mould) that stops on carved label stops at the spring line. The label can carry
+# crockets (curled leaves climbing its back) and a fleur finial, or a crocketed gablet.
+
+def _outline_top(cs, v_min):
+    """The boundary of ``cs`` above v_min, left spring -> apex -> right spring, as an array."""
+    import numpy as np
+    pts = max(cs.to_polygons(), key=lambda L: abs(poly(L).area()))
+    pts = np.asarray(pts, float)
+    if poly(pts.tolist()).area() < 0:
+        pts = pts[::-1]
+    n = len(pts)
+    start = int(np.argmin(pts[:, 1]))                  # rotate so the run above v_min is contiguous
+    pts = np.roll(pts, -start, axis=0)
+    keep = pts[:, 1] > v_min
+    idx = np.nonzero(keep)[0]
+    run = pts[idx[0]:idx[-1] + 1]
+    return run[::-1]                                   # CCW runs right side first: flip to left first
+
+
+def _resample(run, pitch, skip0, skip1):
+    """Points every ``pitch`` along a polyline, skipping ``skip0``/``skip1`` at its two ends,
+    with the unit tangent (along the run) at each. Returns [(p, t)]."""
+    import numpy as np
+    seg = np.diff(run, axis=0)
+    ln = np.hypot(seg[:, 0], seg[:, 1])
+    cum = np.concatenate([[0.0], np.cumsum(ln)])
+    total = cum[-1]
+    out = []
+    s = skip0
+    while s <= total - skip1 + 1e-9:
+        i = min(int(np.searchsorted(cum, s, side="right")) - 1, len(seg) - 1)
+        f = (s - cum[i]) / max(ln[i], 1e-9)
+        out.append((run[i] + f * seg[i], seg[i] / max(ln[i], 1e-9)))
+        s += pitch
+    return out
+
+
+def crockets(outline, v_min, apex_clear=1.6, pitch=2.5, w1=2.0, size=0.65):
+    """Crockets climbing the outer edge of a hood or gablet ``outline`` above v_min: small
+    curled leaves, each a boss with a tip hooked up toward the apex, rooted 0.3 into the
+    hood. Printed face-up to w1. The two sides mirror each other about the apex."""
+    import numpy as np
+    run = _outline_top(outline, v_min)
+    k = int(np.argmax(run[:, 1]))
+    leaves = []
+    for side, part in ((0, run[:k + 1]), (1, run[k:][::-1])):
+        for p, t in _resample(part, pitch, 1.2, apex_clear):
+            nrm = np.array([t[1], -t[0]]) if side == 0 else np.array([-t[1], t[0]])   # outward
+            c = p + nrm * (size - 0.3)
+            tip = p + nrm * (size + 0.55) + t * 0.9
+            leaf = cs_union([circle(tuple(c), size, 16),
+                             poly([tuple(c - t * size * 0.8), tuple(c + nrm * size * 0.9), tuple(tip),
+                                   tuple(c + t * size * 0.2)])])
+            leaves.append(leaf)
+    if not leaves:
+        return None
+    cs = cs_union(leaves).offset(-0.25, JoinType.Round).offset(0.25, JoinType.Round)
+    return stepped(cs, [(0.0, 0.0, w1 - 0.4), (0.2, w1 - 0.4, w1)])
+
+
+def fleur(u, v0, w0=0.0, d=1.6, s=1.0):
+    """Fleur finial standing on (u, v0): a collar, a tall middle petal and two side petals."""
+    cs = cs_union([rect(u - 0.4 * s, v0 - 0.5, u + 0.4 * s, v0 + 1.6 * s),
+                   rect(u - 1.0 * s, v0 + 0.3 * s, u + 1.0 * s, v0 + 1.05 * s),
+                   circle((u, v0 + 1.8 * s), 0.6 * s, 20),
+                   poly([(u - 0.5 * s, v0 + 1.9 * s), (u + 0.5 * s, v0 + 1.9 * s), (u, v0 + 3.1 * s)]),
+                   circle((u - 1.05 * s, v0 + 1.35 * s), 0.5 * s, 16), circle((u + 1.05 * s, v0 + 1.35 * s), 0.5 * s, 16)])
+    return stepped(cs, [(0.0, w0, w0 + d - 0.4), (0.2, w0 + d - 0.4, w0 + d)])
+
+
+def _gothic_bars(inner, w, h, spring, k, lights, mr):
+    """Tracery bars (CrossSection, before clipping to ``inner``) for a pointed light.
+    lights: "twin" (a mullion under two sub-lancets with an oculus in the head),
+            "diamond" (leaded quarries), "cross" (mullion and transom), "plain" (one bar)."""
+    from .core import pointed_cs, pointed_rise
+    from .features import _largest_hole
+    b = 0.55
+    bars = []
+    if lights == "twin":
+        subs = [pointed_cs(-w / 2, 0.0, -2.0, spring, k), pointed_cs(0.0, w / 2, -2.0, spring, k)]
+        for sb in subs:
+            bars.append(sb.offset(b / 2, JoinType.Miter, 4.0) - sb.offset(-b / 2, JoinType.Miter, 4.0))
+        bars.append(rect(-w, mr - b / 2, w, mr + b / 2))
+        spand = inner.offset(-0.5, JoinType.Miter, 4.0) - cs_union(subs).offset(b / 2 + 0.5, JoinType.Miter, 4.0)
+        spand = spand ^ rect(-w, spring, w, h + 5)
+        hole = _largest_hole(spand, (0.0, h), min_r=0.5, max_r=3.0) if not spand.is_empty() else None
+        if hole is not None:
+            (cx, cy), r = hole
+            bars.append(circle((cx, cy), r + 0.45, 32) - circle((cx, cy), max(r - 0.1, 0.3), 32))
+            if r >= 1.3:                                        # cusp it into a quatrefoil
+                q = quatrefoil((cx, cy), r * 0.42, 20)
+                bars.append(circle((cx, cy), r + 0.1, 32) - q.offset(0.0))
+    elif lights == "diamond":
+        ang = math.radians(58.0)
+        pitch = 1.9
+        L = h + w + 10
+        for sgn in (-1, 1):
+            du, dv = math.cos(ang) * sgn, math.sin(ang)
+            for i in range(-int(L / pitch) - 2, int(L / pitch) + 3):
+                u0 = i * pitch
+                a = (u0 - du * L, -dv * L)
+                c = (u0 + du * L, dv * L)
+                nx, ny = -dv * (b / 2) / 1.0, du * (b / 2)
+                bars.append(poly([(a[0] + nx, a[1] + ny), (c[0] + nx, c[1] + ny), (c[0] - nx, c[1] - ny),
+                                  (a[0] - nx, a[1] - ny)]) if sgn > 0 else
+                            poly([(a[0] - nx, a[1] - ny), (c[0] - nx, c[1] - ny), (c[0] + nx, c[1] + ny),
+                                  (a[0] + nx, a[1] + ny)]))
+        bars.append(rect(-w, mr - b / 2, w, mr + b / 2))
+    elif lights == "cross":
+        bars += [rect(-b / 2, -1, b / 2, h + 5), rect(-w, mr - b / 2, w, mr + b / 2)]
+    else:
+        bars.append(rect(-w, mr - b / 2, w, mr + b / 2))
+    return cs_union(bars)
+
+
+def window_gothic(w, h, k=1.0, lights="twin", head="label", arch_w=1.4, hood_w=1.2, crocket=True, finial=True,
+                  stops=True, apron=False, flat=False):
+    """Gothic Revival window: a pointed opening (k: see core.pointed_cs) with tracery,
+    a moulded casing, a sill on two corbels and a sculpted head:
+
+    head "label":  a drip label following the arch, returned at the spring line onto carved
+                   label stops (a block with a rosette over a small drop), crockets climbing
+                   its back and a fleur finial at the apex (``crocket``/``finial``);
+    head "gablet": a steep crocketed gablet over the label, with a quatrefoil in the
+                   tympanum and a fleur on top;
+    head "tudor":  (with ``flat=True``: a square-headed opening) a square drip label whose
+                   ends drop down the sides onto the stops.
+    """
+    from . import moulding as MD
+    from .core import pointed_cs, pointed_rise
+    rise = 0.0 if flat else pointed_rise(w, k)
+    spring = h - rise
+    op = rect(-w / 2, 0.0, w / 2, h) if flat else pointed_cs(-w / 2, w / 2, 0.0, spring, k)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    pl = PLUG
+    frame_w = 0.55
+    inner = plug_cs.offset(-frame_w, JoinType.Miter, 4.0)
+    mr = spring * 0.5 if not flat else h * 0.46
+    sash_parts = [ext(plug_cs, -pl, -pl + GLASS),
+                  ext(plug_cs - inner, -pl, 0.0)]
+    bars = _gothic_bars(inner, w, h, spring if not flat else h, k, lights, mr) ^ inner
+    sash_parts.append(ext(bars, -pl + GLASS, -SASH_REC))
+    A, HB = arch_w, hood_w
+    parts = []
+    above_sill = rect(-w - 20, 0.0, w + 20, h + 60)
+    parts.append(MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.CASING, clip=above_sill - op))
+    parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))      # lip over the sash frame
+    hood_out = op.offset(A + HB, JoinType.Miter, 4.0)
+    ob = hood_out.bounds()
+    v_stop = spring if not flat else h - min(h * 0.28, 6.0)        # where the label turns out onto its stops
+    parts.append(MD.band(hood_out, HB, MD.CROWN, clip=rect(-w - 20, v_stop, w + 20, h + 60)))
+    top = ob[3]
+    if stops:
+        for sg in (-1, 1):
+            u0, u1 = sorted((sg * (w / 2 + A - 0.2), sg * (w / 2 + A + HB + 0.9)))
+            parts.append(MD.run(u0, u1, v_stop, MD.CROWN, 1.2, up=False))
+            uc = sg * (w / 2 + A + HB * 0.5 + 0.35)
+            parts.append(chamfer_box(uc - 0.85, v_stop - 3.0, uc + 0.85, v_stop - 0.9, 0.0, 1.0, c=0.35))
+            parts.append(MD.rosette(uc, v_stop - 1.95, 0.62, 0.8, 0.8))
+            parts.append(MD.pendant(uc, v_stop - 2.8, 1.8, 0.0, 0.8))
+    if head == "gablet" and not flat:
+        gw = w / 2 + A + HB + 0.6
+        gb = spring + 0.2
+        gt = top + 3.2
+        tri = poly([(-gw, gb), (gw, gb), (0.0, gt)])
+        parts.append(MD.band(tri, 1.1, MD.CROWN, clip=rect(-w - 20, gb + 1.1, w + 20, h + 60) - hood_out.offset(-0.2)))
+        tymp = (tri.offset(-1.0, JoinType.Miter, 4.0) - hood_out.offset(0.2, JoinType.Miter, 4.0)) ^ rect(-gw, gb + 1.1, gw, gt)
+        tymp = tymp.offset(-0.3, JoinType.Round).offset(0.3, JoinType.Round)
+        parts.append(ext(tymp, 0.0, CAS))
+        tb = tymp.bounds() if not tymp.is_empty() else None
+        if tb is not None and (tb[3] - tb[1]) > 2.4:
+            qv = tb[3] - 1.5
+            parts.append(ext(quatrefoil((0.0, qv), 0.5, 16), CAS - 0.01, CAS + 0.6))
+        if crocket:
+            cr = crockets(tri, gb + 2.0, apex_clear=1.4, pitch=2.2)
+            if cr is not None:
+                parts.append(cr - ext(hood_out, -1.0, 5.0))
+        if finial:
+            parts.append(fleur(0.0, gt - 0.6, 0.0, 1.6, 0.9))
+            top = gt - 0.6 + 3.1 * 0.9
+        else:
+            top = gt
+    else:
+        if crocket and not flat:
+            cr = crockets(hood_out, spring + 1.4)
+            if cr is not None:
+                parts.append(cr)
+        if finial and not flat:
+            parts.append(fleur(0.0, top - 0.4, 0.0, 1.6, 0.9))
+            top = top - 0.4 + 3.1 * 0.9
+        elif flat:
+            # a carved boss in the middle of a square label
+            parts.append(MD.rosette(0.0, h + A + HB * 0.5, 0.7, 1.0, 1.2))
+    # sill: a moulded nose on two small corbels, or a panelled apron
+    sw = w / 2 + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    bottom = -1.0
+    if apron:
+        aw = w / 2 + A * 0.5
+        parts.append(ext(rect(-aw + 0.6, -3.0, aw - 0.6, -0.8), 0.0, CAS))
+        parts.append(ext(quatrefoil((0.0, -1.9), 0.45, 16), CAS - 0.01, CAS + 0.6))
+        bottom = -3.0
+    else:
+        for sg in (-1, 1):
+            parts.append(chamfer_box(sg * (w / 2 + A * 0.5) - 0.6, -2.4, sg * (w / 2 + A * 0.5) + 0.6, -0.8,
+                                     0.0, 0.8, c=0.3, bottom=0.6))
+        bottom = -2.4
+    return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, bottom)
+
+
+def door_gothic(w, h, k=1.0, shaft=1.6, arch_w=1.6, hood_w=1.3, leaves=2):
+    """Gothic Revival entrance: a pointed doorway with a traceried fanlight (twin sub-arches
+    and a cusped oculus) over boarded leaves carrying long strap hinges with spear ends and a
+    ring boss; the arch is moulded and carried on engaged shafts (colonnettes with bell
+    capitals and moulded bases); a crocketed drip label on carved stops and a fleur finial."""
+    from . import moulding as MD
+    from .core import pointed_cs, pointed_rise
+    rise = pointed_rise(w, k)
+    spring = h - rise
+    op = pointed_cs(-w / 2, w / 2, 0.0, spring, k)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    pl = PLUG
+    # --- plug: boarded leaves below the spring line, glazed tracery in the head
+    head_cs = plug_cs ^ rect(-w, spring + 0.3, w, h + 5)
+    leaf_cs = plug_cs ^ rect(-w, 0.5, w, spring - 0.3)
+    sash = [ext(plug_cs, -pl, -1.0)]
+    boards = ext(leaf_cs, -1.0, -0.6)
+    pitch = 1.6
+    grooves = []
+    n = int(w / pitch) + 2
+    for i in range(-n, n + 1):
+        u = i * pitch
+        if abs(u) < 0.3:
+            continue
+        grooves.append(rect(u - 0.25, 0.9, u + 0.25, spring - 0.8))
+    boards = boards - ext(cs_union(grooves), -0.8, 0.0)
+    sash.append(boards)
+    if leaves == 2:
+        sash.append(ext(rect(-0.3, 0.5, 0.3, spring - 0.3), -1.0, -0.4))           # meeting stile bead
+    # strap hinges: long straps across the boards ending in spears, a ring boss at the handle
+    hl = w / 2 - CLR - 0.6
+    straps = []
+    for v in (2.4, spring - 3.2):
+        for sg in ((-1, 1) if leaves == 2 else (-1,)):
+            u_h = sg * hl
+            u_t = sg * 0.9 if leaves == 2 else hl * 0.55
+            straps.append(stroke([(u_h, v), (u_t, v)], 0.6, caps=False))
+            straps.append(poly([(u_t, v - 0.55), (u_t, v + 0.55), (u_t - sg * 1.1, v)]))
+            straps.append(circle((u_h - sg * 0.2, v), 0.5, 16))
+    sash.append(ext(cs_union(straps) ^ leaf_cs.offset(-0.2), -0.6 - 0.01, -0.2))
+    for sg in ((-1, 1) if leaves == 2 else (1,)):
+        sash.append(ext(circle((sg * 1.1 if leaves == 2 else hl - 1.0, spring * 0.48), 0.45, 16), -0.6 - 0.01, -0.2))
+    # fanlight in the head
+    sash.append(ext(head_cs, -pl, -pl + GLASS))
+    sash = [s_ - ext(head_cs, -pl + GLASS - 0.001, 0.5) if i == 0 else s_ for i, s_ in enumerate(sash)]
+    ring_ = plug_cs - plug_cs.offset(-0.55, JoinType.Miter, 4.0)
+    sash.append(ext(ring_, -pl, 0.0))
+    sash.append(ext(rect(-w, spring - 0.3, w, spring + 0.3) ^ plug_cs, -pl, -0.4))          # transom
+    inner = head_cs.offset(-0.3, JoinType.Miter, 4.0)
+    tr = _gothic_bars(plug_cs.offset(-0.55, JoinType.Miter, 4.0), w - 2 * CLR - 1.1, h - CLR - 0.55, spring, k,
+                      "twin", spring - 5.0) ^ head_cs
+    sash.append(ext(tr, -pl + GLASS - 0.01, -SASH_REC))
+    # --- surround
+    A, HB, S = arch_w, hood_w, shaft
+    parts = []
+    parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))
+    # moulded arch (architrave) from the capitals up
+    arch_clip = rect(-w - 20, spring - 0.2, w + 20, h + 60) - op
+    parts.append(MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=arch_clip))
+    # engaged shafts: a rounded face, bell capital, moulded base
+    SHAFT = [(0.0, 0.6), (0.2, 0.8), (0.45, 1.0), (0.7, 1.2), (1.0, 1.2)]
+    ui = w / 2
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * ui, sg * (ui + A)))
+        parts.append(MD.band(rect(u0, 2.2, u1, spring - 1.6), A / 2, SHAFT))
+        parts.append(chamfer_box(u0 - 0.3, 0.0, u1 + 0.3, 2.2, 0.0, 1.4, c=0.4, bottom=0.0))
+        parts.append(chamfer_box(u0 - 0.35, spring - 1.8, u1 + 0.35, spring - 0.2, 0.0, 1.4, c=0.5, bottom=0.6))
+        parts.append(ext(rect(u0 - 0.1, spring - 2.2, u1 + 0.1, spring - 1.6), 0.0, 1.2))      # necking
+        # outer jamb: a plain chamfered pier outside the shaft
+        v0, v1 = sorted((sg * (ui + A), sg * (ui + A + S)))
+        parts.append(chamfer_box(v0, 0.0, v1, spring - 0.2, 0.0, 0.8, c=0.3, square=("v0",)))
+    # drip label, crockets, stops and fleur
+    hood_out = op.offset(A + HB, JoinType.Miter, 4.0)
+    parts.append(MD.band(hood_out, HB, MD.CROWN, clip=rect(-w - 20, spring - 0.2, w + 20, h + 60)))
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * (w / 2 + A - 0.2), sg * (w / 2 + A + S + 0.9)))
+        parts.append(MD.run(u0, u1, spring - 0.2, MD.CROWN, 1.2, up=False))
+        uc = sg * (w / 2 + A + S * 0.5)
+        parts.append(MD.rosette(uc, spring - 2.6, 0.7, 0.6, 0.8))
+    cr = crockets(hood_out, spring + 1.6, pitch=2.4)
+    if cr is not None:
+        parts.append(cr)
+    top = hood_out.bounds()[3]
+    parts.append(fleur(0.0, top - 0.4, 0.0, 1.6, 1.0))
+    top = top - 0.4 + 3.1
+    return _one_piece(sash, parts, op, plug_cs, PLUG, top, 0.0)

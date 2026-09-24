@@ -90,7 +90,7 @@ def _zones(H, belts, start):
 
 def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=True,
                water_table=True, partitions=(), extra_cut=None, hide_extra=None, corners=None,
-               belt_trim=True, siding=None):
+               belt_trim=True, siding=None, gables=()):
     """Build the one-piece shell with its siding and trim.
 
     ``belt`` = (v_bottom, v_top) of the belt course above each block's base, a list of such
@@ -99,7 +99,10 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     default follows the legacy ``quoins`` flag. ``belt_trim=False`` leaves the belt zone
     bare (storey_shells puts a separate belt ring there).
     ``siding(f, block, region)`` -> texture in the facade's (u, v) frame (v up from the
-    block's base) replaces the default clapboard, e.g. shingles on an upper storey."""
+    block's base) replaces the default clapboard, e.g. shingles on an upper storey.
+    ``gables`` = [(block, edge index, cs)]: a gable wall standing on that facade, cs in the
+    facade's (u, v) frame (v up from the block's base). It is part of the shell, takes the
+    facade's siding and openings, and is ``t`` thick."""
     corners = corners or ("quoin" if quoins else "none")
     belts = [] if belt is None else ([belt] if isinstance(belt[0], (int, float)) else list(belt))
     quoins = corners == "quoin"
@@ -109,6 +112,11 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     outer_all = union(solids)
     voids = union([slab(offset(b.cs, -t), b.z0 - 1, b.z1 + 1) for b in blocks])
     shell = outer_all - voids
+    gable_cs = {}
+    for (gb, gi, gcs) in gables:
+        f = gb.facades()[gi]
+        shell = shell + f.place(M.extrude(gcs, t).translate([0, 0, -t]))
+        gable_cs[(gb.name, gi)] = gcs
     for (p0, p1, th, z0, z1) in partitions:
         f = Facade(p0, p1, z0)
         shell = shell + f.place(box([0, 0, -th / 2], [f.L, z1 - z0, th / 2]))
@@ -137,6 +145,8 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
         H = b.z1 - b.z0
         for i, f in enumerate(facs):
             region = rect(0.0, 0.0, f.L, H)
+            if (b.name, i) in gable_cs:
+                region = region + gable_cs[(b.name, i)]
             # keep-outs: openings' landings, quoin legs, belt, water table
             keep = []
             for o in openings:

@@ -618,7 +618,57 @@ def _spandrel_cs(u0, u1, v_bot, v_top, band=0.8, wood=0.7):
     return solid + drop
 
 
-def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0, cap=3.0):
+def _gothic_spandrel_cs(u0, u1, v_bot, v_top, band=0.8, wood=0.7):
+    """Gothic bay between two posts: a pointed (two-centred) arch with a band, a trefoil
+    pierced in each spandrel where it fits, and a small pendant at the apex. (u, v)."""
+    mid, half = (u0 + u1) / 2, (u1 - u0) / 2
+    rise = (v_top - v_bot) - 0.8
+
+    def pointed(hw, r_scale=1.25, seg=36):
+        # two arcs of radius R springing at v_bot from mid +- hw, meeting at the apex
+        R = hw * 2 * r_scale
+        cL, cR = mid + hw - R, mid - hw + R
+        top = v_bot + math.sqrt(max(R * R - (R - hw) ** 2, 0.0))
+        k = min(1.0, rise / max(top - v_bot, 1e-6))
+        pts = [(mid - hw, v_bot - 5)]
+        for t in np.linspace(0, 1, seg):
+            x = mid - hw + t * hw
+            y = v_bot + k * math.sqrt(max(R * R - (x - cR) ** 2, 0.0))
+            pts.append((x, y))
+        for t in np.linspace(1, 0, seg):
+            x = mid + hw - t * hw
+            y = v_bot + k * math.sqrt(max(R * R - (x - cL) ** 2, 0.0))
+            pts.append((x, y))
+        pts.append((mid + hw, v_bot - 5))
+        return poly(pts)
+    region = rect(u0, v_bot, u1, v_top + 0.05)
+    solid = region - pointed(half - band)
+    free = (rect(u0, v_bot, u1, v_top) - pointed(half)).offset(-wood, JoinType.Round)
+    holes = []
+    for sgn in (-1, 1):
+        side = free ^ (rect(mid, v_bot - 1, u1 + 1, v_top + 1) if sgn > 0 else rect(u0 - 1, v_bot - 1, mid, v_top + 1))
+        if side.is_empty():
+            continue
+        hole = _largest_hole(side, (mid + sgn * half, v_top), min_r=0.9, max_r=2.2)
+        if hole is None:
+            continue
+        (cx, cy), r = hole
+        rr = r * 0.5
+        tre = cs_union([circle((cx + rr * math.cos(a), cy + rr * math.sin(a)), r * 0.52, 20)
+                        for a in (math.pi / 2, math.pi / 2 + 2.094, math.pi / 2 + 4.189)])
+        tre = tre ^ circle((cx, cy), r, 32)
+        tre = tre.offset(-0.26, JoinType.Round).offset(0.26, JoinType.Round)
+        if not tre.is_empty():
+            holes.append(tre)
+    if holes:
+        solid = solid - cs_union(holes)
+    apex = v_bot + rise                                   # the opening's point: hang the drop from it
+    drop = cs_union([rect(mid - 0.35, apex - 1.0, mid + 0.35, apex + 0.3),
+                     poly([(mid - 0.5, apex - 1.0), (mid + 0.5, apex - 1.0), (mid, apex - 2.2)])])
+    return solid + drop
+
+
+def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0, cap=3.0, style="sawn"):
     """Upper porch work for one run: beam with moulded edges, a square block with a rosette
     over every post, a tab into each post's slot, and a sawn-work spandrel (arch, roundels,
     teardrops, crown drop) in every bay. Local: u along, v up from the floor, w out (front at
@@ -636,7 +686,7 @@ def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0,
         u0, u1 = a + cap / 2 + 0.1, b - cap / 2 - 0.1
         if u1 - u0 < 6.0:
             continue
-        sp = _spandrel_cs(u0, u1, vb - drop, vb)
+        sp = (_gothic_spandrel_cs if style == "gothic" else _spandrel_cs)(u0, u1, vb - drop, vb)
         body = ext(sp, tb / 2 - ts, tb / 2)
         rim = ext(sp.offset(-0.55, JoinType.Round).offset(0.05, JoinType.Round), tb / 2 - 0.3, tb / 2 + 1)
         parts.append(body - rim)
@@ -650,8 +700,9 @@ ARCADE_PRINT = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
 
 
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
-                 boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0):
+                 boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0, arcade="sawn"):
     """Porch with turned posts, upright railings and edge-printed arcades.
+    ``arcade``: "sawn" (elliptical arches with roundels) or "gothic" (pointed arches, trefoils).
 
     runs: list of dict(a, b, posts=[u, ...]) in CCW order (u from a along the yard edge);
     posts stand ``inset`` inside the yard edge, and a post at a corner is shared by the two
@@ -730,7 +781,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         if nxt is not None and np.allclose(nxt["a"], r["b"], atol=0.05) and lens[k + 1] > lens[k]:
             u1 = us[-1] - beam / 2 - 0.1
             stops.append((k, k + 1, us[-1]))
-        arc = porch_arcade(u0, u1, us, post_h, beam=beam)
+        arc = porch_arcade(u0, u1, us, post_h, beam=beam, style=arcade)
         arcades.append((arc.transform(A), A))
     # a stopped end meets the covering beam square only at a right angle: clear it of that
     # beam (on any angle) and of the corner post's square capital below the beam

@@ -80,6 +80,31 @@ def arch_cs(u0, u1, v0, spring, rise=None, seg=24):
     return poly(pts)
 
 
+def pointed_cs(u0, u1, v0, spring, k=1.0, seg=24):
+    """Pointed (two-centred) arch opening: rectangle u0..u1 from v0 up to ``spring``, capped
+    by two arcs of radius k * span struck from the opposite springing points (k = 1 is the
+    equilateral arch, k < 1 a drop arch, k > 1 a lancet). Returns the CrossSection."""
+    w = u1 - u0
+    r = max(k, 0.51) * w
+    c_top = (r - w / 2) / r
+    a_top = math.acos(c_top)
+    pts = [(u0, v0), (u1, v0), (u1, spring)]
+    for j in range(1, seg + 1):                     # right side: centre on the left springing
+        a = a_top * j / seg
+        pts.append((u1 - r + r * math.cos(a), spring + r * math.sin(a)))
+    for j in range(seg - 1, 0, -1):                 # left side: centre on the right springing
+        a = a_top * j / seg
+        pts.append((u0 + r - r * math.cos(a), spring + r * math.sin(a)))
+    pts.append((u0, spring))
+    return poly(pts)
+
+
+def pointed_rise(w, k=1.0):
+    """Height of a pointed arch of span w (see pointed_cs) above its springing line."""
+    r = max(k, 0.51) * w
+    return math.sqrt(r * r - (r - w / 2) ** 2)
+
+
 def offset(cs, d, join=JoinType.Miter):
     return cs.offset(d, join, 4.0)
 
@@ -305,6 +330,22 @@ def clapboard(region, pitch=1.2, d=0.3, dmin=0.05, datum=0.0):
     pts.append((datum + k1 * pitch, 0.0))
     strip = M.extrude(poly(pts), (u1 - u0) + 2).transform(frame([u0 - 1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]))
     return strip ^ M.extrude(region, d + 0.2).translate([0, 0, -0.1])
+
+
+def battens(region, pitch=3.2, bw=0.8, d=0.4, datum=0.0):
+    """Board-and-batten siding in facade (u, v): vertical battens ``bw`` wide on a flat field,
+    every ``pitch`` mm (a 10" board with a 2 1/2" batten at HO). The battens are upright ribs
+    on an upright wall, so each prints as a clean column of perimeters; their tops and feet
+    stop on the region's edges. Each batten ends in a small 45 degree bevel at the top."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    k0 = math.floor((u0 - datum) / pitch) - 1
+    k1 = math.ceil((u1 - datum) / pitch) + 1
+    strips = cs_union([rect(datum + k * pitch - bw / 2, v0 - 1, datum + k * pitch + bw / 2, v1 + 1)
+                       for k in range(k0, k1 + 1)])
+    cs = (strips ^ region).offset(-0.2, JoinType.Miter, 4.0).offset(0.2, JoinType.Miter, 4.0)
+    return M.extrude(cs, d)
 
 
 def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=16, shape="fish", taper=0.75):
