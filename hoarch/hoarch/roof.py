@@ -231,10 +231,14 @@ def _halfplane(a, b, c, big=3000.0):
 def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6):
     """One straight run of cresting in its own frame: u = 0..L along, v up, centred across."""
     k = max(1, int(L / pitch))
-    cells = [rect(0, 0, L, bar), rect(0, h * 0.55, L, h * 0.55 + bar * 0.8)]
+
+    def zq(v):                          # printed upright: every rail and tip on the 0.2 mm grid
+        return round(v / 0.2) * 0.2
+    vm = zq(h * 0.55)
+    cells = [rect(0, 0, L, 0.6), rect(0, vm, L, vm + 0.4)]
     for j in range(k + 1):
         u = L * j / k
-        cells.append(rect(u - bar / 2, 0, u + bar / 2, h * (1.0 if j % 2 == 0 else 0.75)))
+        cells.append(rect(u - bar / 2, 0, u + bar / 2, zq(h * (1.0 if j % 2 == 0 else 0.75))))
         if j < k:
             cx = u + L / k / 2
             r = min(L / k, h * 0.5) * 0.36

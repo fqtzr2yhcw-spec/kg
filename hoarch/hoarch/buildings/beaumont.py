@@ -152,7 +152,7 @@ DORMER_HW, DORMER_S = 10.4, 0.9                       # face wall height above t
 def _dormer(ze):
     """Gable dormer on the main roof's west slope (the plane through x = -EAVE_D at ze)."""
     W, xf, yc = DORMER_W, DORMER_X, DORMER_Y
-    zr = ze + S_MAIN * (xf + EAVE_D)                 # roof surface at the face line
+    zr = round((ze + S_MAIN * (xf + EAVE_D)) / 0.2) * 0.2      # roof surface at the face line (on the grid)
     hw, gh = DORMER_HW, DORMER_S * W / 2
     t_face, t_roof, over = 1.6, 1.0, 0.8
     xb = xf + (hw + gh) / S_MAIN + 1.0               # the dormer ridge dies into the main roof
@@ -280,12 +280,13 @@ def build(kit=None):
     roof_all = roof_all - dm["notch"] + dm["body"]
     # ridge: a slot for the separate cresting strip
     ry0, ry1 = 57.9 - EAVE_D, Y1 - 57.9 + EAVE_D
-    roof_all = roof_all - box([X1 / 2 - 0.65, ry0 - 1, ridge - 0.8], [X1 / 2 + 0.65, ry1 + 1, ridge + 10])
+    rz = round((ridge - 0.8) / 0.2) * 0.2
+    roof_all = roof_all - box([X1 / 2 - 0.65, ry0 - 1, rz], [X1 / 2 + 0.65, ry1 + 1, ridge + 10])
     kit.add("ROOF-main", "Slate", roof_all, group="roof")
     kit.add("DORMER", "Gold", dm["face"], group="roof")
     kit.add("WIN-dormer-sash", "Oxblood", dm["sash"], P=dm["P"], group="inserts")
     kit.add("WIN-dormer-surround", "Cream", dm["surround"], P=dm["P"], group="inserts")
-    kit.add("ROOF-crest", "Slate", _ridge_crest((X1 / 2, ry0), (X1 / 2, ry1), ridge - 0.8), group="roof")
+    kit.add("ROOF-crest", "Slate", _ridge_crest((X1 / 2, ry0), (X1 / 2, ry1), rz), group="roof")
     for k, (x, y) in enumerate(chims):
         z0 = chim_z0(x, y)
         ch = FT.chimney(w=10.5, dpt=10.5, h=ridge - 4.0 - z0, peg=None).translate([x, y, z0])
@@ -329,7 +330,7 @@ def build(kit=None):
     Ag[:, 3] = gf.world(a_u, a_v, 0.0)
     kit.add("WIN-attic-sash", "Oxblood", attic["sash"].transform(Ag), P=inv34(Ag), group="inserts")
     kit.add("WIN-attic-surround", "Cream", attic["surround"].transform(Ag), P=inv34(Ag), group="inserts")
-    kit.add("GABLE-trim", "Cream", gf.place(ext(tr, 0.0, 0.8)), group="roof")
+    kit.add("GABLE-trim", "Cream", gf.place(ext(tr, 0.0, 0.8)), P=inv34(gf.A), group="roof")     # flat on its back
 
     # --- tower: eave ring, fish-scale spire, separate finial
     teave = R.bracketed_cornice(TOWER.pts, TT, R.CORNICE_SMALL,
@@ -373,7 +374,7 @@ def build(kit=None):
             dict(a=(-14.0, -28.0), b=(WX0, -28.0), posts=[0.663, 25.0, 50.5, 72.0]),
             dict(a=(WX0, -28.0), b=(WX0, WY0), posts=[1.6])]
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, 59.5, 16.0)], boards=dict(pitch=1.8),
-                        joined=True)
+                        joined=True, ledger_off=1.5)          # the ledger clears the foundation's stones
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     kit.add("PORCH-deck", "Cream", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")

@@ -215,7 +215,8 @@ def porch_posts(L, H, posts_u, pw=2.6, beam=2.2, drop=5.2, t=2.6, cap=True, styl
     return out - union(cuts) if cuts else out
 
 
-def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.4, skirt=1.4, floor=True):
+def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.4, skirt=1.4, floor=True,
+               ledger_off=0.0):
     """Porch deck: brick piers, lattice skirt and fascia along the outer edges, a ledger on
     the house side, and (``floor=True``) the floor slab. With floor=False the floor is left
     to porch_floor() as its own part (its own colour, boards on its bed face).
@@ -230,7 +231,7 @@ def porch_deck(poly_pts, outer_edges, H=14.0, floor_t=1.6, piers_u=None, pier=3.
         f = Facade(pts[i], pts[(i + 1) % len(pts)], 0.0)
         L = f.L
         if i not in outer_edges:   # ledger along the house: the floor rests on it
-            parts.append(f.place(box([0, H - floor_t - skirt, -1.6], [L, ztop, 0.0])))
+            parts.append(f.place(box([0, H - floor_t - skirt, -1.6 - ledger_off], [L, ztop, -ledger_off])))
             continue
         # skirt fascia board under the floor edge, deep enough to carry the lattice, its
         # backing web and the piers when the deck prints upside down without its floor
@@ -567,7 +568,7 @@ def _spandrel_cs(u0, u1, v_bot, v_top, band=0.8, wood=0.7):
     by the post and a curved piercing following the arch toward the crown, with a turned
     drop hanging from the crown. Every bar of wood is at least ``wood`` wide. (u, v)."""
     mid, half = (u0 + u1) / 2, (u1 - u0) / 2
-    rise = (v_top - v_bot) - 0.9
+    rise = (v_top - v_bot) - 0.8          # crown 1.6 under the beam: on the layer grid when printed
 
     def ell(a, b, seg=72):
         return poly([(mid + a * math.cos(t), v_bot + b * math.sin(t)) for t in np.linspace(0, math.pi, seg)] +
@@ -599,7 +600,7 @@ def _spandrel_cs(u0, u1, v_bot, v_top, band=0.8, wood=0.7):
     # turned drop under the crown
     cvb = v_bot + rise - band
     drop = cs_union([rect(mid - 0.35, cvb - 1.0, mid + 0.35, cvb + 0.1), circle((mid, cvb - 1.4), 0.6, 20),
-                     poly([(mid - 0.4, cvb - 1.9), (mid + 0.4, cvb - 1.9), (mid, cvb - 2.6)])])
+                     poly([(mid - 0.4, cvb - 1.8), (mid + 0.4, cvb - 1.8), (mid, cvb - 2.6)])])
     return solid + drop
 
 
@@ -610,8 +611,8 @@ def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0,
     +tb/2). Prints on its top edge, upside down, so both faces print alike."""
     vb = H - beam
     parts = [box([u_start, vb, -tb / 2], [u_end, H, tb / 2])]
-    parts.append(box([u_start, vb, tb / 2 - 0.01], [u_end, vb + 0.45, tb / 2 + 0.3]))       # bead
-    parts.append(box([u_start, H - 0.45, tb / 2 - 0.01], [u_end, H, tb / 2 + 0.3]))         # fillet
+    parts.append(box([u_start, vb, tb / 2 - 0.01], [u_end, vb + 0.4, tb / 2 + 0.3]))        # bead
+    parts.append(box([u_start, H - 0.4, tb / 2 - 0.01], [u_end, H, tb / 2 + 0.3]))          # fillet
     for u in [u for u in posts_u if u_start + 1.0 <= u <= u_end - 1.0]:
         parts.append(box([u - 0.5, vb - 0.8, -0.5], [u + 0.5, vb + 0.01, 0.5]))              # tab
         blk = chamfer_box(u - 1.2, vb + 0.55, u + 1.2, H - 0.55, tb / 2 - 0.01, 0.45, c=0.25)
@@ -635,7 +636,7 @@ ARCADE_PRINT = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
 
 
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
-                 boards=None, beam=2.2, pier=3.4, joined=False):
+                 boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0):
     """Porch with turned posts, upright railings and edge-printed arcades.
 
     runs: list of dict(a, b, posts=[u, ...]) in CCW order (u from a along the yard edge);
@@ -656,7 +657,8 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
                 edges.append((i, r))
     outer = [i for i, _ in edges]
     piers = {i: list(r["posts"]) for i, r in edges}
-    deck = porch_deck(pts, outer, H=H_floor, piers_u=piers, pier=pier, floor=boards is None)
+    deck = porch_deck(pts, outer, H=H_floor, piers_u=piers, pier=pier, floor=boards is None,
+                      ledger_off=ledger_off)
     # post positions (deduplicated at shared corners)
     where = []
     for r in runs:

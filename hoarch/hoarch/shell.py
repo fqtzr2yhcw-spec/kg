@@ -215,7 +215,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
                 dress.append(f.place(wt))
     dress = union(dress)
     # hide dressing that falls inside another block or into an opening
-    hide = union([b.solid(grow=-0.02, dz0=-0.5, dz1=0.5) for b in blocks])
+    hide = union([b.solid(grow=-0.02, dz0=-0.4, dz1=0.4) for b in blocks])     # 0.4: on the layer grid
     open_clear = union([o.facade.place(M.extrude(o.cs_on_facade(o.spec["cut"]).offset(0.05, JoinType.Miter),
                                                  6.0).translate([0, 0, -3.0])) for o in openings])
     lands = union([o.facade.place(M.extrude(o.cs_on_facade(o.spec["landing"]), 4.0).translate([0, 0, -0.05]))

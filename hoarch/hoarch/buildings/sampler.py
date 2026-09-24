@@ -5,7 +5,7 @@ clapboards and corner boards on an upright shell, the belt ring joint between th
 shells, the locating lips, window/door inserts and their fit in the openings, louvered
 shutters, quoins, the belt ring's blocks, the bracketed eave with frieze panels printed
 upside down, the standing-seam hip roof, a panelled brick chimney and a separate turned
-finial, plus a run of the porch: turned posts and railings printed upright, the sawn-work
+finial, plus a run of the porch: turned posts and railings in one upright piece, the sawn-work
 arcade printed on edge, and a piece of the board floor with post sockets.
 
 usage: python3 -m hoarch.buildings.sampler [check] [export] [colour]
@@ -15,11 +15,11 @@ import os
 import sys
 
 import numpy as np
-from manifold3d import Manifold as M
+from manifold3d import JoinType, Manifold as M
 
 from hoarch import features as FT, openings as O, roof as R
 from hoarch.buildings import villa as V
-from hoarch.core import Facade, box, compose, inv34, poly, union
+from hoarch.core import Facade, box, compose, inv34, poly, slab, union
 from hoarch.kit import Kit, print_flip
 from hoarch.ornament import finial
 from hoarch.shell import Block, Opening, foundation, lip_keep, storey_shells
@@ -98,7 +98,7 @@ def build(single=True):
     ch = FT.chimney(w=10.5, dpt=10.5, h=ztip + 6.0 - chim_z0, peg=None).translate([chx, chy, chim_z0])
     kit.add("CHIMNEY", C("Brick"), ch)
     # a free-standing run of the villa's porch in front of the house: floor piece with post
-    # sockets, three turned posts (upright), two railings (upright) and the arcade (on edge)
+    # sockets, three turned posts and two railings in one upright piece, and the arcade (on edge)
     H_floor = ZF - 1.0
     post_h = (ZF + BELT[0] - 0.2) - (H_floor + 5.2)
     y_run = -40.0
@@ -107,19 +107,19 @@ def build(single=True):
     A = f.A.copy()
     A[:, 3] = np.r_[f.p0, H_floor]
     post = FT.turned_post(post_h - 2.2 + 0.4)
-    socks = []
-    for k, u in enumerate(us):
-        p = f.p0 + f.u * u
-        kit.add(f"PORCH-post-{k}", C("White"), post.translate([p[0], p[1], H_floor - 0.4]), key="PORCH-post")
-        socks.append(box([p[0] - 1.68, p[1] - 1.68, H_floor - 0.4], [p[0] + 1.68, p[1] + 1.68, H_floor + 1]))
-    for k, (a, b) in enumerate(zip(us[:-1], us[1:])):
-        rail = FT.railing_section((b - a) - 3.5).translate([a + 1.75, 0, 0])
-        kit.add(f"PORCH-rail-{k}", C("White"), rail.transform(FT.Z_UP_TO_FACADE).transform(A), key="PORCH-rail")
+    # posts and railings as one piece, printed upright (as on the villa)
+    frame = [post.translate([p[0], p[1], H_floor - 0.4]) for p in (f.p0 + f.u * u for u in us)]
+    for a, b in zip(us[:-1], us[1:]):
+        rail = FT.railing_section((b - a) - 1.6, sink=0.4).translate([a + 0.8, 0, 0])
+        frame.append(rail.transform(FT.Z_UP_TO_FACADE).transform(A))
+    frame = union(frame)
+    kit.add("PORCH-frame", C("White"), frame)
+    socks = slab(frame.slice(H_floor - 0.2).offset(0.15, JoinType.Miter, 4.0), H_floor - 0.41, H_floor + 1)
     arc = FT.porch_arcade(us[0] - 1.5, us[-1] + 1.5, us, post_h)
     kit.add("PORCH-arcade", C("White"), arc.transform(A), P=compose(FT.ARCADE_PRINT, inv34(A)))
     fl = FT.porch_floor([(0.0, y_run - 1.6), (SX, y_run - 1.6), (SX, y_run + 8.0), (0.0, y_run + 8.0)], [0, 1, 3],
                         H=H_floor)
-    kit.add("PORCH-floor", C("Stone"), fl - union(socks), P=print_flip())
+    kit.add("PORCH-floor", C("Stone"), fl - socks, P=print_flip())
     return kit
 
 

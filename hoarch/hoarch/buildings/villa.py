@@ -207,16 +207,15 @@ def build(kit=None):
             dict(a=(0.0, y1), b=(134.0, y1), posts=[1.6, 28.0, 54.5, 79.5, 106.0, 132.4]),
             dict(a=(134.0, y1), b=(134.0, y0), posts=[1.6, 23.9])]
     P = FT.porch_turned([(0.0, y0), (0.0, y1), (134.0, y1), (134.0, y0)], runs, H_floor, post_h,
-                        steps_at=[(1, 67.0, 16.0)], boards=dict(pitch=1.8))
+                        steps_at=[(1, 67.0, 16.0)], boards=dict(pitch=1.8), joined=True)
     fkeep = slab(offset(poly(MAIN.pts), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     kit.add("PORCH-deck", "White", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "Stone", P["floor"] - fkeep, P=print_flip(), group="porch")      # gray boards
-    for k, post in enumerate(P["posts"]):
-        kit.add(f"PORCH-post-{k}", "White", post, key="PORCH-post", group="porch")         # upright, round
-    for k, rail in enumerate(P["rails"]):
-        kit.add(f"PORCH-rail-{k}", "White", rail, group="porch")                           # upright
+    # posts and railings: one upright piece each side of the steps (round all the way round)
+    for k, fr in enumerate(sorted(P["frames"], key=lambda m: m.bounding_box()[0])):
+        kit.add(f"PORCH-frame-{k}", "White", fr, group="porch")
     for k, (arc, A) in enumerate(P["arcades"]):
         kit.add(f"PORCH-arcade-{k}", "White", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = union([b.solid(grow=1.45, dz0=-20, dz1=0) for b in BLOCKS])
