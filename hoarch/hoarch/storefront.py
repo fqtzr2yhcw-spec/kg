@@ -129,12 +129,17 @@ def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2
     for a, b in bays:
         g = rect(a + 0.8, bulk + 0.8, b - 0.8, vt - 0.8 - 0.6)
         glass.append(g)
-    # transom lights across the whole width (above the entry too)
-    tl = rect(-W / 2 + col, vt + 0.4, W / 2 - col, H - beam - 0.4)
-    glass_cs = cs_union(glass + [tl])
+    # transom lights between the columns (above the entry too), each run divided into
+    # prism-glass lights of equal width
+    tls, bars = [], []
+    for (a0, a1), (b0, b1) in zip(cols[:-1], cols[1:]):
+        a, b = a1 + 0.4, b0 - 0.4
+        tls.append(rect(a, vt + 0.4, b, H - beam - 0.4))
+        nl = max(1, int(round((b - a) / lite)))
+        bars += [rect(a + (b - a) * k / nl - 0.25, vt, a + (b - a) * k / nl + 0.25, H) for k in range(1, nl)]
+    glass_cs = cs_union(glass + tls)
     sash = [ext(glass_cs, -PLUG, -PLUG + GLASS), ext(plug_cs - glass_cs, -PLUG, 0.0)]
-    # prism-glass muntins in the transom band, and a centre mullion in wide display windows
-    bars = [rect(x - 0.25, vt, x + 0.25, H) for x in np.arange(-W / 2 + col + lite, W / 2 - col - 0.5, lite)]
+    # a centre mullion in wide display windows
     if mullion:
         for a, b in bays:
             if b - a > 18.0:
@@ -154,13 +159,13 @@ def storefront(W, H, entry=14.0, entry_at=0.0, col=2.4, style="fluted", bulk=7.2
         # the sill, and a bead round the display glass
         parts.append(box([a, bulk, 0.0], [b, bulk + 0.8, 0.6]))
         g = rect(a + 0.8, bulk + 0.8, b - 0.8, vt - 0.8 - 0.6)
-        parts.append(ext(g.offset(0.5, JoinType.Miter, 4.0) - g, -0.01, 0.2))
+        parts.append(ext(rect(a, bulk + 0.8, b, vt - 0.8) - g, -0.01, 0.2))      # the glazing stop, wall to wall
     parts.append(box([-W / 2, vt - 0.8, 0.0], [W / 2, vt, 0.4]))              # transom bar
     parts.append(box([-W / 2, H - beam, 0.0], [W / 2, H, 0.4]))               # beam
     parts.append(box([-W / 2, H - beam, 0.0], [W / 2, H - beam + 0.6, 0.6]))  # its bed moulding
     for a, b in cols:
         parts.append(_column(style, a, b, 0.0, H - beam))
-    frame = union(parts)
+    frame = union(parts) ^ ext(plug_cs, -PLUG - 1, 5.0)     # nothing past the plug: no support needed
     sash_m = union(sash)
     ins = sash_m + frame
     n = len(ins.decompose())
@@ -218,7 +223,8 @@ def vestibule(entry, depth, v_top, bulk=7.2, side=0.8, door_h=None, transom=True
 def console(h, d, t, u, v_top, style="scroll"):
     """A small end console under a sign band or cornice (face-up: back at w = 0)."""
     from .trimwork import bracket
-    return bracket(style, h, d, t, u=u, v_top=v_top, w0=0.0)
+    b = bracket(style, h, d, t, u=u, v_top=v_top, w0=0.0)
+    return b ^ box([u - t, v_top - h - 5, 0.0], [u + t, v_top + 5, d + 5])      # its back on the wall plane
 
 
 def sign_band(L, h=6.0, text=None, cap=3.0, font="serif", board=1.0, frame=0.8, relief=0.4, track=0.0,
@@ -279,7 +285,7 @@ def bracket_row(L, us, h, d, t, v_top, style="scroll"):
     return union([console(h, d, t, u, v_top, style=style) for u in us])
 
 
-def name_tablet(W, h, text=None, date=None, cap=2.6, font="serif", head="segment", board=1.2, relief=0.4):
+def name_tablet(W, h, text=None, date=None, cap=2.8, font="serif", head="segment", board=1.2, relief=0.4):
     """A raised name-and-date tablet for the top of a front: a board with a segmental or
     triangular head, a moulded rim, the name and the date in raised letters, and scroll
     shoulders. Local u centred, v from 0 (on the cornice), w out. Prints face-up."""
@@ -292,11 +298,11 @@ def name_tablet(W, h, text=None, date=None, cap=2.6, font="serif", head="segment
     parts.append(ext(outline - outline.offset(-0.8, JoinType.Miter, 4.0), board - 0.01, board + relief))
     y = 1.2
     if date:
-        d = text_cs(date, cap * 0.8, font)
+        d = text_cs(date, max(2.4, cap * 0.85), font, grow=0.1)
         parts.append(ext(d.translate((0.0, y)), board - 0.01, board + relief))
-        y += cap * 0.8 + 1.0
+        y += max(2.4, cap * 0.85) + 1.0
     if text:
-        t = text_cs(text, cap, font)
+        t = text_cs(text, cap, font, grow=0.1)
         parts.append(ext(t.translate((0.0, y)), board - 0.01, board + relief))
     # scroll shoulders at the foot
     for sg in (-1, 1):
