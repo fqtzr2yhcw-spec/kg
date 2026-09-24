@@ -38,7 +38,7 @@ COLORS = {"Sage": "#7F8F6A", "Gold": "#C79A45", "Cream": "#EFE7D2", "Oxblood": "
 # their own plate: it is the one plate printed with supports (under the surrounds)
 RENDER_MAT = {"Sage": "siding", "Gold": "shingle", "Cream": "trim", "Oxblood": "sash", "Slate": "roof",
               "Walnut": "door", "Brick": "brick", "Fieldstone": "stone", "PorchGray": "porchfloor",
-              "Windows_Doors": "trim"}
+              "Windows_Doors": "trim", "Glass": "glass"}     # Glass: the painted glass, renders only
 PALETTE = {"siding": ["#7f8f6a", 0.62, 0.0], "shingle": ["#c79a45", 0.6, 0.0], "trim": ["#efe7d2", 0.55, 0.0],
            "sash": ["#5a1a24", 0.45, 0.0], "roof": ["#43474d", 0.8, 0.0], "door": ["#4a2616", 0.45, 0.0],
            "brick": ["#8a3b2b", 0.85, 0.0], "stone": ["#8d877c", 0.9, 0.0], "porchfloor": ["#6b706f", 0.7, 0.0]}
@@ -196,7 +196,7 @@ def _dormer(ze):
     notch = box([xf - 0.01, yc - W / 2 - 0.01, zr], [xf + t_face + 0.01, yc + W / 2 + 0.01, zr + hw + gh + 5])
     Aw = f.A.copy()
     Aw[:, 3] = f.world(wu, wv, 0.0)
-    wworld, wP, zones = O.place(win, Aw, "Cream", "Oxblood")
+    wworld, wP, zones = O.place(win, Aw, "Cream", "Oxblood", "Glass")
     return dict(body=body, notch=notch, face=face, win=wworld, P=wP, zones=zones)
 
 
@@ -243,7 +243,7 @@ def build(kit=None):
         b = sp["cut"].bounds()
         tag = f"{b[2] - b[0]:.1f}x{b[3] - b[1]:.1f}"
         key = "DOOR" if o.kind == "door" else "WIN"
-        world, P, zones = O.place(sp, A, "Cream", "Walnut" if o.kind == "door" else "Oxblood")
+        world, P, zones = O.place(sp, A, "Cream", "Walnut" if o.kind == "door" else "Oxblood", "Glass")
         inserts.append(kit.add(f"{key}-{o.name}", "Windows_Doors", world, P=P,
                                key=f"{key}-{tag}-{o.v0 > 20}", group="inserts", render=zones))
     print("walls + inserts", round(time.time() - t0, 1))
@@ -329,7 +329,7 @@ def build(kit=None):
     kit.add("GABLE", "Gold", gf.place(gwall + gtex), group="roof")
     Ag = gf.A.copy()
     Ag[:, 3] = gf.world(a_u, a_v, 0.0)
-    aworld, aP, azones = O.place(attic, Ag, "Cream", "Oxblood")
+    aworld, aP, azones = O.place(attic, Ag, "Cream", "Oxblood", "Glass")
     kit.add("WIN-attic", "Windows_Doors", aworld, P=aP, group="inserts", render=azones)
     kit.add("GABLE-trim", "Cream", gf.place(ext(tr, 0.0, 0.8)), P=inv34(gf.A), group="roof")     # flat on its back
 

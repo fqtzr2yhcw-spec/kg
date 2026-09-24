@@ -25,7 +25,7 @@ COLORS = {"Sand": "#D8C49A", "White": "#F2F0EB", "Charcoal": "#3E4247", "Stone":
 # windows and doors are one part each (plug with glass and sash, and the surround), all on
 # their own plate: it is the one plate printed with supports (under the surrounds)
 RENDER_MAT = {"Sand": "siding", "White": "trim", "Charcoal": "roof", "Stone": "stone", "Forest": "accent",
-              "Brick": "brick", "Windows_Doors": "trim"}
+              "Brick": "brick", "Windows_Doors": "trim", "Glass": "glass"}
 PALETTE = {"siding": ["#D8C49A", 0.6, 0.0], "trim": ["#EEECE7", 0.55, 0.0], "roof": ["#3E4247", 0.5, 0.0],
            "stone": ["#8C8A85", 0.85, 0.0], "accent": ["#2F4A3A", 0.5, 0.0], "brick": ["#8A3B2B", 0.85, 0.0]}
 
@@ -120,7 +120,7 @@ def build(kit=None):
         tag = f"{sp['cut'].bounds()[2] - sp['cut'].bounds()[0]:.1f}x{sp['cut'].bounds()[3] - sp['cut'].bounds()[1]:.1f}"
         key = "DOOR" if o.kind == "door" else "WIN"
         col = "Forest" if o.kind == "door" else "White"
-        world, P, zones = O.place(sp, A, "White", col)          # one part: glass, sash and frame
+        world, P, zones = O.place(sp, A, "White", col, "Glass")          # one part: glass, sash and frame
         inserts.append(kit.add(f"{key}-{o.name}", "Windows_Doors", world, P=P,
                                key=f"{key}-{tag}-{o.v0 > 20}", group="inserts", render=zones))
         if sh:
@@ -172,7 +172,7 @@ def build(kit=None):
             group="cupola")
     for o in cup_ops:
         A = o.local_frame()
-        world, P, zones = O.place(o.spec, A, "White", "White")
+        world, P, zones = O.place(o.spec, A, "White", "White", "Glass")
         kit.add(f"WIN-{o.name}", "Windows_Doors", world, P=P, key="WIN-cupola", group="cupola", render=zones)
     cz = flat + CUP_H
     cup_eave = R.bracketed_cornice(cup.pts, cz, R.CORNICE_SMALL,
