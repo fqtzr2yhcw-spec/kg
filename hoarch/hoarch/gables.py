@@ -204,3 +204,60 @@ def gable_truss(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, collar=0.42, finia
                         poly([(L / 2 - 0.5, H + finial - 1.2), (L / 2 + 0.5, H + finial - 1.2), (L / 2, H + finial)])])
         parts.append(ext(fcs, 0.0, d + 0.2))
     return union(parts)
+
+
+def gable_sunburst(L, slope, d_eave, skin=1.8, width=1.4, d=0.8, collar=0.36, finial=4.4):
+    """Folk Victorian gable ornament hung on the rake like a bargeboard: narrow rafters with a
+    scalloped lower edge, a collar across the gable over a frieze of short spindles, and a
+    sunburst (a half-round hub and rays) standing on the collar, with a spike finial."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    depth = skin + width
+    band = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    rafters = cs_union(band) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    H = tip[1]
+    vc = H * collar
+    u_c = vc / s - d_eave
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    parts = [rect(u_c - 0.5, vc, L - u_c + 0.5, vc + 1.1)]                       # collar
+    parts.append(rect(u_c + 0.5, vc - 3.0, L - u_c - 0.5, vc - 2.3))             # rail under the spindles
+    n = max(3, int((L - 2 * u_c) / 1.4))
+    for k in range(n):
+        u = u_c + 1.0 + (L - 2 * u_c - 2.0) * (k + 0.5) / n
+        parts.append(rect(u - 0.28, vc - 2.35, u + 0.28, vc + 0.05))
+    r_hub = min(3.0, (H - vc) * 0.22)
+    hub = (circle((L / 2, vc + 1.1), r_hub, 32) - circle((L / 2, vc + 1.1), r_hub - 0.7, 32)) ^ rect(-5, vc + 1.0, L + 5, H)
+    parts.append(hub)
+    for k in range(1, 10):
+        a = math.pi * k / 10
+        p0 = (L / 2 + (r_hub - 0.3) * math.cos(a), vc + 1.1 + (r_hub - 0.3) * math.sin(a))
+        p1 = (L / 2 + 40 * math.cos(a), vc + 1.1 + 40 * math.sin(a))
+        parts.append(stroke([p0, p1], 0.55 if k % 2 else 0.7))
+    frame_cs = (cs_union(parts) ^ tri) + rafters
+    # scallops along the rafters' lower edge
+    run = float(np.linalg.norm(tip - np.array([-d_eave, 0.0])))
+    scal = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        nrm = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        dirv = (tip - a) / np.linalg.norm(tip - a)
+        m = max(3, int(run / 2.4))
+        for k in range(1, m):
+            p = a + dirv * (run * k / m)
+            sc = circle(tuple(p + nrm * (depth + 0.3)), 0.8, 16)
+            if (sc ^ cs_union(parts)).area() < 0.01:
+                scal.append(sc)
+    if scal:
+        frame_cs = frame_cs - cs_union(scal)
+    frame_cs = frame_cs.offset(-0.26, JoinType.Round).offset(0.26, JoinType.Round)
+    frame_cs = cs_union([pc for pc in frame_cs.decompose() if pc.area() > 2.0])
+    out = [ext(frame_cs, 0.0, d), ext(hub.offset(-0.15), 0.0, d + 0.4)]
+    if finial:
+        fcs = cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 1.2),
+                        circle((L / 2, H + finial * 0.45), 0.8, 20),
+                        poly([(L / 2 - 0.5, H + finial - 1.2), (L / 2 + 0.5, H + finial - 1.2), (L / 2, H + finial)])])
+        out.append(ext(fcs, 0.0, d + 0.2))
+    return union(out)

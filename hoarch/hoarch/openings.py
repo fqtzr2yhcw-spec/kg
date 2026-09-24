@@ -1341,3 +1341,66 @@ def door_stick(w, h, leaves=2, transom=4.0, A=1.4):
         parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 2.4, 0.0, 1.2, c=0.3, bottom=0.0))       # plinths
     top = _stick_head(w, h, A, parts, hood_w=2.0, frieze=2.6)
     return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)
+
+
+# ------------------------------------------------------------------ Folk Victorian
+# Crossetted flat casings, a raised frieze panel and a crown: a low pediment with a fan of
+# rays over a dentil course (head "pediment") or a moulded cap on dentils (head "cap").
+
+def _folk_crown(half, v0, head, parts):
+    from . import moulding as MD
+    parts.append(ext(rect(-half, v0 - 0.01, half, v0 + 2.2), 0.0, CAS))                     # frieze
+    parts.append(chamfer_box(-half + 1.0, v0 + 0.5, half - 1.0, v0 + 1.7, CAS - 0.01, 0.4, c=0.2))
+    parts.append(dentils(-half + 0.2, half - 0.2, v0 + 2.0, 1.2, 0.0, 1.0))            # into frieze and crown
+    vs = v0 + 3.0
+    parts.append(MD.run(-half - 0.8, half + 0.8, vs + 1.2, MD.CROWN, 1.2, up=False))
+    top = vs + 1.2
+    if head == "pediment":
+        rise = (half + 0.8) * 0.42
+        tri = poly([(-half - 0.8, top - 0.01), (half + 0.8, top - 0.01), (0.0, top + rise)])
+        parts.append(MD.band(tri, 1.0, MD.CROWN, clip=rect(-half - 5, top + 0.4, half + 5, top + 20)))
+        tymp = tri.offset(-0.9, JoinType.Miter, 4.0) + \
+            (rect(-half + 0.9, top - 0.4, half - 0.9, top + 1.2) ^ tri.offset(-0.5, JoinType.Miter, 4.0).translate((0.0, -0.6)))
+        parts.append(ext(tymp, 0.0, CAS))
+        hub, rays = sunburst((0.0, top), 0.0, 0.6, rise, n=5, a0=0.35, a1=math.pi - 0.35, ray0=0.5, ray1=0.7)
+        parts.append(ext((rays + hub) ^ tymp.offset(-0.2, JoinType.Miter, 4.0), CAS - 0.01, 1.0))
+        top += rise
+    return top
+
+
+def window_folk(w, h, lites=(1, 1), head="pediment", A=1.2):
+    """Folk Victorian window: 2-over-2 sash, crossetted flat casing with a bead, a frieze
+    with a raised panel, dentils and a crown (a low pediment with a fan, or a moulded cap),
+    and a sill on two small brackets."""
+    from . import moulding as MD
+    op = opening_cs(w, h, 0)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    sash = window_insert(w, h, 0, lites=lites, bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS)]
+    cas = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext(cas, 0.0, CAS))
+    parts.append(ext((op.offset(RIB, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + 1), CAS - 0.01, BEAD))
+    for sg in (-1, 1):                                  # crossettes (ears) at the head
+        u0, u1 = sorted((sg * (w / 2 + A), sg * (w / 2 + A + 0.6)))
+        parts.append(ext(rect(u0, h - 1.2, u1, h + A), 0.0, CAS))
+    top = _folk_crown(w / 2 + A + 0.6, h + A, head, parts)
+    sw = w / 2 + A + 0.5
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(ext(rect(sg * (w / 2 + 0.2) - 0.45, -1.9, sg * (w / 2 + 0.2) + 0.45, -0.9), 0.0, 0.8))
+    return _one_piece([sash], parts, op, plug_cs, PLUG, top, -1.9)
+
+
+def door_folk(w, h, leaves=1, transom=3.6, A=1.4, head="pediment"):
+    """Folk Victorian entrance: the ornate leaf and transom of door_ornate in a crossetted
+    casing on plinths, with the frieze, dentils and pediment crown of window_folk."""
+    op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom)
+    parts = [ext((op - op.offset(-RIB, JoinType.Miter, 4.0)) ^ rect(-w, 0.5, w, h + 1), 0.0, CAS)]
+    parts.append(ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, CAS))
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * w / 2, sg * (w / 2 + A)))
+        parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 2.4, 0.0, 1.2, c=0.3, bottom=0.0))
+        e0, e1 = sorted((sg * (w / 2 + A), sg * (w / 2 + A + 0.6)))
+        parts.append(ext(rect(e0, h - 1.4, e1, h + A), 0.0, CAS))
+    top = _folk_crown(w / 2 + A + 0.6, h + A, head, parts)
+    return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)
