@@ -110,7 +110,7 @@ def build(single=True):
     # posts and railings as one piece, printed upright (as on the villa)
     frame = [post.translate([p[0], p[1], H_floor - 0.4]) for p in (f.p0 + f.u * u for u in us)]
     for a, b in zip(us[:-1], us[1:]):
-        rail = FT.railing_section((b - a) - 1.6, sink=0.4).translate([a + 0.8, 0, 0])
+        rail = FT.railing_section((b - a) - 1.6, sink=0.4, foot_margin=1.6, stiles=False).translate([a + 0.8, 0, 0])
         frame.append(rail.transform(FT.Z_UP_TO_FACADE).transform(A))
     frame = union(frame)
     kit.add("PORCH-frame", C("White"), frame)

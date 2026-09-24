@@ -343,12 +343,33 @@ def slice_check(outdir, ini, layer=0.16, manifest=None):
     def minutes(t):
         return round(sum(int(v) * {"d": 1440, "h": 60, "m": 1, "s": 1 / 60}[u] for v, u in re.findall(r"(\d+)([dhms])", t)))
 
+    def nudge(path, dx, dy):
+        """Shift every object on a plate (our own 3MF) by dx, dy in place."""
+        with zipfile.ZipFile(path) as z:
+            files = {n: z.read(n) for n in z.namelist()}
+        model = files["3D/3dmodel.model"].decode()
+        model = re.sub(r'<vertex x="([-\d.]+)" y="([-\d.]+)"',
+                       lambda mm: f'<vertex x="{float(mm.group(1)) + dx:.4f}" y="{float(mm.group(2)) + dy:.4f}"', model)
+        files["3D/3dmodel.model"] = model.encode()
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+            for n, data in files.items():
+                z.writestr(n, data)
+
     tot_m = tot_g = 0
     for pl in man["plates"]:
         src = os.path.join(outdir, pl["file"])
         gc = os.path.join(tmp, os.path.basename(src).replace(".3mf", ".gcode"))
-        r = subprocess.run(["prusa-slicer", "--export-gcode", "--load", ini, "--dont-arrange", "--layer-height",
-                            str(layer), "--output", gc, src], capture_output=True, text=True, timeout=3600)
+        # PrusaSlicer occasionally fails a sound part with "negative spacing" at one exact
+        # position on the bed (a rounding quirk); a plate that fails is nudged a fraction of a
+        # millimetre and sliced again, and the plate that sliced is the one kept
+        for dx, dy in ((0.0, 0.0), (0.37, 0.23), (-0.29, 0.41), (0.53, -0.31)):
+            if dx or dy:
+                nudge(src, dx, dy)
+            r = subprocess.run(["prusa-slicer", "--export-gcode", "--load", ini, "--dont-arrange", "--layer-height",
+                                str(layer), "--output", gc, src], capture_output=True, text=True, timeout=3600)
+            if os.path.exists(gc) or "negative spacing" not in (r.stdout + r.stderr):
+                break
+            print(f"  {os.path.basename(src)}: slicer rounding failure, nudging the plate", flush=True)
         log = (r.stdout + r.stderr).splitlines()
         warn = []
         for i, line in enumerate(log):

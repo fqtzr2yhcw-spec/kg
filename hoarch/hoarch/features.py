@@ -530,20 +530,23 @@ def baluster(h, rmax=0.55, rmin=0.36, seg=20):
     return M.revolve(poly(prof), seg)
 
 
-def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pitch=8.0):
+def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pitch=8.0, foot_margin=0.5,
+                    stiles=True):
     """Baluster railing between two posts, printed upright. Local frame: u along 0..L, v up
     from the porch floor (= print z), w across, centred. Feet carry the bottom rail
     ``foot`` above the floor; turned balusters; a hand rail with a rounded top.
     ``sink``: the feet run that far below the floor (into sockets), level with the posts'
-    plinths when the railing is printed in one piece with its posts."""
+    plinths when the railing is printed in one piece with its posts. There the posts are the
+    stiles (``stiles=False``) and ``foot_margin`` keeps the end feet clear of the plinths: a
+    foot half over a plinth leaves a sliver PrusaSlicer fails on ("negative spacing")."""
     parts = []
-    nf = max(2, int(L / foot_pitch) + 1)
+    nf = max(2, int((L - 2 * foot_margin + 1.0) / foot_pitch) + 1)
     for j in range(nf):
-        u = 0.5 + (L - 1.0) * j / (nf - 1)
+        u = foot_margin + (L - 2 * foot_margin) * j / (nf - 1)
         parts.append(box([u - 0.5, -0.6, -sink], [u + 0.5, 0.6, foot + 0.01]))
     parts.append(box([0.0, -0.6, foot], [L, 0.6, foot + 0.8]))                        # bottom rail
     vb, vt = foot + 0.8, h - 1.0                   # every flat face on the 0.2 mm layer grid
-    for u in (0.0, L - 0.7):                                                          # end stiles
+    for u in ((0.0, L - 0.7) if stiles else ()):                                     # end stiles
         parts.append(box([u, -0.5, foot], [u + 0.7, 0.5, vt + 0.01]))
     n = max(1, int(round((L - 1.4) / pitch)))
     for j in range(n):
@@ -708,7 +711,11 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             if L < 3.0:
                 continue
             # railing_section is built z-up; facade frames are (u, v up, w out)
-            rs = railing_section(L, rail_h, sink=0.4 if joined else 0.0)
+            if joined:        # end feet clear of the square plinths (they reach further on a slant)
+                ext_ = 1.6 * (abs(f.u[0]) + abs(f.u[1]))
+                rs = railing_section(L, rail_h, sink=0.4, foot_margin=ext_ + 0.8 - clr, stiles=False)
+            else:
+                rs = railing_section(L, rail_h)
             rails.append(rs.translate([a_ + clr, 0, 0]).transform(Z_UP_TO_FACADE).transform(A))
             run_rails.setdefault(k, []).append(rails[-1])
         if len(us) < 2:                         # a lone corner post: its longer neighbour's arcade covers it
