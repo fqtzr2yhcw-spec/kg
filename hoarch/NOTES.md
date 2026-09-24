@@ -213,6 +213,10 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
   the whole chimney an overhang.
 - **Dormers in a mansard** notch right through the band and sit on the eave ring. Keep their
   face, plinth, capital and keystone tops, the notch top and the hood length on the 0.2 grid.
+- **A notched mansard prints upside down**, on its top rim. Upright, each round notch top is
+  a bridge across a leaning band (PrusaSlicer: "collapsing overhang"). Upside down every notch
+  widens as the print rises, the band leans out only 15 degrees, and the slate rows' ledges
+  face up. The bell-cast kick is left smooth: upside down it is a 45 degree face.
 - **Cresting strips** stop half a fence-thickness short of each corner and take only their
   own fence, so no sliver of the crossing strip rides along.
 

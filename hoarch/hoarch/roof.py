@@ -391,7 +391,10 @@ def mansard(path, prof, t=2.6, tex=None):
     The inner face is one straight line parallel to the chord from the bottom point to the
     top one, set in so the band is at least ``t`` thick everywhere. It leans in at about
     the roof's own pitch (15-20 degrees off vertical), which prints fine.
-    ``tex`` = dict(pitch, wtab, d, shape) puts slate rows on every segment, or None.
+    ``tex`` = dict(pitch, wtab, d, shape) puts slate rows on every segment taller than a row
+    (a short bell-cast kick stays smooth, like flashing), or None. The band prints upright,
+    or upside down when dormer notches or other openings have arched tops: then every
+    opening widens as the print rises, and the slate rows' ledges face up.
     Returns (solid, texture, inner) where inner(z) is the inner face offset at height z."""
     P, Mi = _edges(path)
 
@@ -412,7 +415,7 @@ def mansard(path, prof, t=2.6, tex=None):
         tk = dict(pitch=1.6, wtab=1.9, d=0.4, shape="fish")
         tk.update(tex)
         texture = union([slope_texture(path, z0, z1, d0, d1, **tk)
-                         for (d0, z0), (d1, z1) in zip(prof[:-1], prof[1:]) if z1 - z0 >= tk["pitch"]])
+                         for (d0, z0), (d1, z1) in zip(prof[:-1], prof[1:]) if z1 - z0 > tk["pitch"] + 0.01])
         texture = texture.trim_by_plane([0, 0, -1.0], -zb)      # rows stand square to the slope: none above the top
     return solid, texture, inner
 

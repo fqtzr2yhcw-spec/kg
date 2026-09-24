@@ -167,7 +167,8 @@ def build(kit=None):
         dm = FT.dormer(W=15.2, H=12.0, D=10.1, win_w=6.6, win_h=14.0)    # faces and notch top on the grid
         dorm.append((A, dm))
     notches = union([dm["keep"].transform(A) for A, dm in dorm])
-    kit.add("MANSARD", "Slate", (mans + mtex) - tower_hug - notches, group="roof")
+    # printed upside down: the dormer notches' round tops then open upward as the print rises
+    kit.add("MANSARD", "Slate", (mans + mtex) - tower_hug - notches, P=print_flip(), group="roof")
     for k, (A, dm) in enumerate(dorm):
         kit.add(f"DORMER-{k}", "Limestone", dm["body"].transform(A), key="DORMER", group="dormers")
         kit.add(f"DORMER-hood-{k}", "Slate", dm["hood"].transform(A), P=compose(print_flip(), inv34(A)),
