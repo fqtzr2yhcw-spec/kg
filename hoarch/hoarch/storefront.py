@@ -355,7 +355,8 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     """A plain commercial window for a brick front: a narrow brickmould casing round a
     segmental (``rise``) or flat head, sash with ``lites``/``rows``, a stone sill with lugs
     (``sill`` = its projection), and optionally a head: "hood" (a cast-iron segmental hood
-    with ears) or "lintel" (a stone lintel with a keystone). The brick arch of a brick
+    with ears), "lintel" (a stone lintel with a keystone), "archivolt" (a stepped arch band
+    with a keystone and imposts) or "pediment" (frieze, cornice and a triangular pediment). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -373,6 +374,31 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
             u = sg * (w / 2 + casing + hood_w / 2)
             parts.append(chamfer_box(u - hood_w / 2 - 0.2, spring - 1.6, u + hood_w / 2 + 0.2, spring + 0.2, 0.0, 1.2, c=0.3))
         top = h + casing + hood_w
+    elif head == "archivolt":
+        # a moulded arch band round the head in two steps, a keystone and impost blocks
+        spring = h - (rise or 0)
+        clip = rect(-w, spring - 0.01, w, h + 20)
+        outer = op.offset(casing + hood_w, JoinType.Round)
+        parts.append(ext((outer - op.offset(casing, JoinType.Round)) ^ clip, 0.0, 0.6))
+        parts.append(ext((outer - op.offset(casing + hood_w * 0.5, JoinType.Round)) ^ clip, 0.0, 1.0))
+        kt = h + casing + hood_w + 0.8
+        parts.append(ext(poly([(-0.7, h + casing - 0.4), (0.7, h + casing - 0.4), (1.0, kt), (-1.0, kt)]), 0.0, 1.4))
+        for sg in (-1, 1):
+            u = sg * (w / 2 + casing + hood_w / 2)
+            parts.append(chamfer_box(u - hood_w / 2 - 0.3, spring - 1.2, u + hood_w / 2 + 0.3, spring + 0.01, 0.0, 1.2,
+                                     c=0.3))
+        top = kt
+    elif head == "pediment":
+        # a frieze, a cornice and a triangular pediment over the casing
+        pw = w / 2 + casing + 1.0
+        v0 = h + casing
+        parts.append(box([-pw + 0.4, v0 - 0.01, 0.0], [pw - 0.4, v0 + 1.2, 0.6]))
+        parts.append(chamfer_box(-pw, v0 + 1.2, pw, v0 + 1.8, 0.0, 1.0, c=0.3))
+        v1 = v0 + 1.8
+        tri = poly([(-pw, v1 - 0.01), (pw, v1 - 0.01), (0.0, v1 + pw * 0.42)])
+        parts.append(ext(tri, 0.0, 0.4))
+        parts.append(ext(tri - tri.offset(-0.7, JoinType.Miter, 4.0), 0.0, 1.0))
+        top = v1 + pw * 0.42
     elif head == "lintel":
         lw = w / 2 + casing + 1.0
         parts.append(chamfer_box(-lw, h, lw, h + 2.4, 0.0, 0.8, c=0.2))
@@ -386,10 +412,12 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     return _one_piece([sash], parts, op, plug_cs, PLUG, top, bottom)
 
 
-def door_commercial(w, h, transom=4.0, leaf="four_panel", tstyle="number:12", casing=0.8, head="cornice", leaves=1):
+def door_commercial(w, h, transom=4.0, leaf="four_panel", tstyle="number:12", casing=0.8, head="cornice", leaves=1,
+                    text=None):
     """A commercial street door (the upstairs entrance beside a storefront): leaves and a
-    transom (see openings._ornate_door_sash), a flat casing with corner blocks, a stone step
-    and a head: "cornice" (a moulded cap on two small consoles) or None. Prints face-up."""
+    transom (see openings._ornate_door_sash), a flat casing with corner blocks and a head:
+    "cornice" (a moulded cap on two small consoles), "temple" (pilasters, an entablature
+    lettered with ``text``, a segmental pediment) or None. Prints face-up."""
     from .openings import _ornate_door_sash, _one_piece
     op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom, leaf, tstyle)
     parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6)]
@@ -405,6 +433,27 @@ def door_commercial(w, h, transom=4.0, leaf="four_panel", tstyle="number:12", ca
         for sg in (-1, 1):
             parts.append(console(1.8, 1.0, 0.8, sg * (hw - 0.4), top + 1.41, style="scroll"))
         top += 2.2
+    elif head == "temple":
+        # pilasters on plinths, an entablature with ``text`` in raised letters on its frieze,
+        # and a segmental pediment
+        pu = w / 2 + casing + 0.9
+        for sg in (-1, 1):
+            a, b = sorted((sg * (pu - 0.9), sg * (pu + 0.9)))
+            parts.append(chamfer_box(a - 0.2, 0.0, b + 0.2, 2.4, 0.0, 1.2, c=0.3))
+            parts.append(box([a, 2.39, 0.0], [b, top + 0.01, 0.8]) - box([(a + b) / 2 - 0.25, 3.4, 0.6], [(a + b) / 2 + 0.25, top - 1.6, 1.0]))
+            parts.append(chamfer_box(a - 0.3, top - 1.2, b + 0.3, top, 0.0, 1.2, c=0.3))
+        ew = pu + 1.2
+        parts.append(box([-ew, top - 0.01, 0.0], [ew, top + 0.8, 0.8]))                        # architrave
+        parts.append(box([-ew, top + 0.79, 0.0], [ew, top + 3.41, 0.6]))                       # frieze
+        if text:
+            cap = 1.8
+            parts.append(ext(text_cs(text, cap, "serif", grow=0.08).translate((0.0, top + 0.8 + (2.6 - cap) / 2)), 0.59, 1.0))
+        parts.append(chamfer_box(-ew - 0.6, top + 3.4, ew + 0.6, top + 4.4, 0.0, 1.4, c=0.3, bottom=0.8))   # cornice
+        v1 = top + 4.4
+        seg = arch_cs(-ew - 0.6, ew + 0.6, v1 - 0.01, v1 - 0.01, rise=2.8, seg=40)
+        parts.append(ext(seg, 0.0, 0.4))
+        parts.append(ext(seg - seg.offset(-0.8, JoinType.Miter, 4.0), 0.0, 1.2))
+        top = v1 + 2.8
     return _one_piece(sash_parts, parts, op, plug_cs, PLUG, top, 0.0)
 
 
@@ -476,3 +525,54 @@ def boardwalk(L, depth, H, pitch=2.2, crack=0.25, t=1.2, stringers=3, fascia=1.0
         parts.append(box([u0, 0.0, 0.0], [u0 + fascia, depth, top]))                  # end fascias
     parts.append(box([-0.3, depth - 0.2, H - 0.6], [L + 0.3, depth + nose, H]))      # nosing
     return union(parts)
+
+
+def baluster_bottle(h, seg=24):
+    """A bottle baluster: a low round belly, a long neck and a ring under the cap."""
+    from .porchwork import _revolve
+    t = [(0.0, 0.55), (0.1, 0.55), (0.14, 0.62), (0.34, 0.78), (0.52, 0.55), (0.72, 0.38), (0.84, 0.4),
+         (0.88, 0.55), (1.0, 0.55)]
+    return _revolve([(0.0, 0.0)] + [(r, f * h) for f, r in t], seg)
+
+
+def balustrade(L, h=5.6, t=2.6, pitch=1.9, pedestals=(), ped_w=2.6, end=True):
+    """A stone balustrade ``L`` long for the top of a parapet: a plinth rail, bottle
+    balusters, a moulded top rail and solid pedestals (at the ends and at ``pedestals`` =
+    u positions). Local frame: u 0..L, v up from its foot, w into the wall (0..t); prints
+    upright on its foot. The top rail overhangs 0.2 mm (one layer) each side."""
+    parts = [box([0.0, 0.0, 0.0], [L, 1.2, t]),
+             box([-0.2, h - 1.0, -0.2], [L + 0.2, h, t + 0.2]) + box([0.0, h - 1.21, 0.0], [L, h - 0.99, t])]
+    peds = sorted(set(([ped_w / 2, L - ped_w / 2] if end else []) + list(pedestals)))
+    for u in peds:
+        parts.append(box([u - ped_w / 2, 0.0, 0.0], [u + ped_w / 2, h - 0.99, t]))
+    bh = h - 1.2 - 1.2
+    free = []
+    edges = [0.0] + [x for u in peds for x in (u - ped_w / 2, u + ped_w / 2)] + [L]
+    for a, b in zip(edges[::2], edges[1::2]):
+        n = int((b - a - 0.4) / pitch)
+        if n < 1:
+            continue
+        off = a + (b - a - (n - 1) * pitch) / 2
+        free += [off + k * pitch for k in range(n)]
+    bal = baluster_bottle(bh)
+    for u in free:
+        parts.append(bal.translate([u, t / 2, 0.0]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 1.2], [0, 1.0, 0, 0]])))
+    return union(parts)
+
+
+def skylight(W, D, h=4.0, curb=1.6, bars=2.4):
+    """A hipped glass skylight on a curb, for a flat roof (D >= W): glazing bars standing
+    0.3 proud of the glass on its sloping faces (45 degrees at most), a ridge and a curb.
+    Local frame: x 0..W, y 0..D, z up from the roof deck. Prints upright.
+    Returns (solid, glass zone for renders)."""
+    rise = min(W / 2, h)
+    hip = M.hull_points([(x, y, curb) for x in (0.0, W) for y in (0.0, D)] +
+                        [(W / 2, y, curb + rise) for y in (W / 2, D - W / 2)])
+    body = box([0.0, 0.0, 0.0], [W, D, curb + 0.01]) + hip
+    ribs = [box([x - 0.25, -1, curb - 0.01], [x + 0.25, D + 1, curb + h + 1]) for x in np.arange(bars, W - 0.5, bars)]
+    ribs += [box([-1, y - 0.25, curb - 0.01], [W + 1, y + 0.25, curb + h + 1]) for y in np.arange(bars, D - 0.5, bars)]
+    over = M.hull_points([(x, y, curb) for x in (-0.3, W + 0.3) for y in (-0.3, D + 0.3)] +
+                         [(W / 2, y, curb + rise + 0.3) for y in (W / 2 - 0.3, D - W / 2 + 0.3)])
+    frame = union(ribs) ^ over
+    solid = body + frame
+    return solid, hip - frame

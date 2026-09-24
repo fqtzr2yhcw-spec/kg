@@ -7,7 +7,7 @@ FDM (0.4 mm nozzle, 0.20 mm layers), with windows and doors as the standout deta
 Work order for each building: concept → print checks (0 interfering pairs, lint) → renders
 (hero and a close-up) → commit. Export and slicing run in the background while the next
 building is designed. All ten houses are done, and a Main Street line of storefronts has
-started (11 and 12); the lineup render is `out/lineup/cycles/lineup.png`
+started (11 to 13); the lineup render is `out/lineup/cycles/lineup.png`
 (built by merging each building's render data). Every building has 0 interfering part pairs.
 
 | # | Building | Style | Status |
@@ -24,6 +24,7 @@ started (11 and 12); the lineup render is `out/lineup/cycles/lineup.png`
 | 10 | The Carrow | Queen Anne castle: Roman brick first storey, lavender half-timbered second storey, 12-sided turret rising to a dentilled cornice and a witch's-hat spire, diamond-slate hip with a front gable and Tudor truss, Free Classic windows with diamond-paned uppers, Palladian attic window, sidelighted entrance, wraparound Eastlake porch with a chamfered corner | done: 66 parts, print files (8 h 31 m, 160 g) |
 | 11 | The Pemberton Block | Main Street: three-storey brick commercial block, 1868. English-bond front with rowlock arches, a soldier course and a corbel table; cast-iron storefront (fluted columns, panelled bulkheads, prism-glass transoms) with a recessed entry; gilt-lettered sign band under a dentilled store cornice; panelled frieze and pressed-metal bracketed cap (the double cornice); name-and-date tablet on the parapet | print checks clean; export, slicing and print files in progress |
 | 12 | Keller's Barber Shop | Main Street: one-storey false-front shop, 1891. Rustic (half-log) siding on the front, vertical boards on the sides, beaded corner boards; storefront with panelled pilasters, lozenge bulkheads and a single glazed door; striped awning with a pinked hem; sign board; frieze on jigsawn brackets under a red cap; gable date tablet; rolled-roofing gable roof with a stovepipe; plank boardwalk and barber pole | print checks clean; export, slicing and print files in progress |
+| 13 | The Merchants Bank | Main Street: two-storey stone corner bank, 1882. Banded rustication below and fine ashlar above a torus belt; round-arched banking-hall windows under stepped archivolts; pedimented windows upstairs; a temple doorway (pilasters, BANK entablature, segmental pediment, grille doors, ring transom) on the cut corner up granite steps; gilt-lettered frieze under a modillion-and-dentil cap mitred round the corner; bottle-baluster balustrade; glass skylight; coped chimney | print checks clean; export, slicing and print files in progress |
 
 ## Log
 - Uniqueness pass: every building has its own wall skin, porch (post, railing, frieze,
@@ -63,6 +64,7 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Carrow | Roman brick first storey, half-timber second storey and turret | coursed stone | boss | diamond slate (turret too) | arched | spire |
 | Pemberton | English-bond front with rowlock arches, soldier course, end piers and a corbel table; running-bond party walls | granite plinth | sill course | flat deck with seams, parapet coping | party-wall stack with square pots | none (name tablet) |
 | Keller's | rustic (half-log) lap front, vertical beadboard sides and rear | timber sill with bolt heads | none (one storey) | rolled roofing, ridge roll | stovepipe | none (date tablet) |
+| Merchants Bank | banded rustication below, fine ashlar above | polished granite | torus | flat deck with a hipped glass skylight | coped ashlar stack with bell pots | none (balustrade) |
 
 | Building | Porch: post / railing / frieze / skirt / piers; roof edge | Windows and door | Gable, shutters, brackets |
 |---|---|---|---|
@@ -78,6 +80,7 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Carrow | Eastlake / sawn / fret / arches / coursed stone; reeded roof edge | Free Classic windows with diamond uppers, Palladian attic window; Free Classic door | Tudor arch-braced gable; dentil turret cornice |
 | Pemberton | cast-iron storefront: fluted columns, panelled bulkheads, prism transoms; recessed entry with a pair of half-glazed doors | segmental 2-over-2 under rowlock arches, 1-over-1 under stone lintels; street door with four-panel leaf and a numbered transom; rear 1-over-1 | pressed-metal brackets and tails; dentilled caps |
 | Keller's | storefront with panelled pilasters, lozenge bulkheads, wide transom lights; shallow entry with a single glazed door; striped awning; boardwalk | 4-over-4 under flat iron hoods; store door (big light, push bar, kick plate) with a stick transom | jigsawn brackets on the frieze |
+| Merchants Bank | corner entrance up granite steps | round-arched 1-over-1 (two-row lower sash) under archivolts; 1-over-1 (two-row sashes) under pediments; temple doorway, grille leaves, ring transom | scrolled modillions and dentils |
 
 
 | Building | Corners | Other trim of its own |
@@ -94,3 +97,4 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Carrow | none (brick and half-timber) | octagonal chimney pots, Tudor truss |
 | Pemberton | none (end piers in the brick) | brick posts with V fronts behind the storefront columns, gilt sign letters by one filament change |
 | Keller's | beaded boards, full height on the false front | awning stripes by height, barber pole with helical ridges, plank boardwalk |
+| Merchants Bank | none (a cut corner) | bottle-baluster balustrade mitred round the corner, gilt frieze letters by one filament change |

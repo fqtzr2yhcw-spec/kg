@@ -37,6 +37,10 @@ def _pot(r, h, style="plain"):
         body = box([-r, -r, 0], [r, r, h - 0.8]) + box([-r - 0.3, -r - 0.3, h - 0.8], [r + 0.3, r + 0.3, h])
         body = body + _corbel_out(2 * r, 2 * r, h - 0.8, 0.3)
         return body - box([-r + 0.5, -r + 0.5, h - 1.2], [r - 0.5, r - 0.5, h + 1])
+    if style == "bell":                  # a pot flaring like a bell to a thick lip
+        prof = [(0, 0), (r * 1.1, 0), (r * 1.1, 0.4), (r * 0.8, 0.8), (r * 0.8, h * 0.45), (r * 1.2, h - 0.6),
+                (r * 1.2, h), (r * 0.6, h), (r * 0.6, h - 0.8), (0, h - 0.8)]
+        return M.revolve(poly(prof), 28)
     if style == "octagon":               # an eight-sided pot with a band and a flared lip
         prof = [(0, 0), (r * 1.1, 0), (r * 1.1, 0.4), (r * 0.85, 0.8), (r * 0.85, h * 0.5), (r * 1.0, h * 0.5 + 0.2),
                 (r * 1.0, h * 0.5 + 0.6), (r * 0.85, h * 0.5 + 0.8), (r * 0.85, h - 0.6), (r * 1.05, h - 0.4),
@@ -182,6 +186,20 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         for k in (-1, 0, 1):
             body = body + _pot(0.9, 2.8, "square").translate([k * w * 0.3, 0, sh + 0.4])
         return body
+    if style == "coped":
+        from . import skins as S
+        # an ashlar stack: stone courses, a projecting band, a stepped stone coping and a pair
+        # of bell pots
+        sh = h - 3.6
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + \
+            _skin(w, d, 0.0, sh - 2.4, lambda reg, i: S.brick_bond(reg, "running", bl=4.0, bh=1.6, mortar=0.5, bed=0.4,
+                                                                   d=0.3, uoff=1.0 * (i % 2)))
+        body = body + _corbel_out(w, d, sh - 1.6, 0.4) + box([-w / 2 - 0.4, -d / 2 - 0.4, sh - 1.61], [w / 2 + 0.4, d / 2 + 0.4, sh - 0.8])
+        body = body + box([-w / 2 - 0.1, -d / 2 - 0.1, sh - 0.81], [w / 2 + 0.1, d / 2 + 0.1, sh - 0.4]) + \
+            _corbel_out(w + 0.2, d + 0.2, sh - 0.01, 0.4) + box([-w / 2 - 0.5, -d / 2 - 0.5, sh - 0.02], [w / 2 + 0.5, d / 2 + 0.5, sh + 0.4])
+        for k in (-1, 1):
+            body = body + _pot(0.9, 3.2, "bell").translate([k * w * 0.25, 0, sh + 0.39])
+        return body
     if style == "stovepipe":
         # a sheet-iron flue: a band, and a cone cap flaring at 45 degrees (w = pipe diameter)
         r = w / 2
@@ -193,7 +211,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
-            "stovepipe")
+            "stovepipe", "coped")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -238,7 +256,8 @@ def foundation_skin(style, reg, seed=0):
     channel-jointed blocks), rubble (Whitby: small random stones), boulder (Ardmore: tall
     rock-faced courses), brick (Merritt: running bond over a soldier course), block (Hollis:
     rock-faced concrete block), coursed (Carrow: long thin coursed stones), plinth (Pemberton:
-    long dressed granite), timber (the barber shop: a timber sill with bolt heads)."""
+    long dressed granite), timber (the barber shop: a timber sill with bolt heads), polished
+    (the bank: tall polished granite blocks)."""
     from . import skins as S
     if style == "fieldstone":
         return ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=0.55, seed=seed)
@@ -272,6 +291,14 @@ def foundation_skin(style, reg, seed=0):
             bolts += [circle((u + 3.0 + 6.0 * k, vm), 0.4, 12) for k in range(3)]
             u += 18.0
         return M.extrude(cs_union(cells) ^ reg, 0.35) + M.extrude(cs_union(bolts) ^ reg.offset(-0.3), 0.6)
+    if style == "polished":              # polished granite: tall smooth blocks with V joints
+        b = reg.bounds()
+        blocks = []
+        u = b[0] - (seed % 5) * 1.8
+        while u < b[2]:
+            blocks.append(chamfer_box(u + 0.05, b[1], u + 9.55, b[3], 0.0, 0.4, c=0.3, bottom=0.4))
+            u += 9.6
+        return union(blocks) ^ M.extrude(reg, 2.0).translate([0, 0, -0.5])
     if style == "coursed":
         return ashlar(reg, course=(1.2, 1.8), length=(5.0, 11.0), d=0.45, seed=seed, rough=0.1)
     raise ValueError(style)
@@ -296,6 +323,8 @@ BELTS = {
               dict(w=0.6, z=0.8, h=3.0, d0=0.5, d=0.35, c=0.15, pitch=4.0, margin=1.6)),
     "bead": ([(0.0, 0.0), (0.4, 0.4), (0.4, 3.2), (0.7, 3.5), (0.7, 3.9), (0.4, 4.2), (0.4, 4.4)], None),
     "sill": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.4, 3.7), (1.4, 4.4)], None),
+    "torus": ([(0.0, 0.0), (0.4, 0.4), (0.4, 1.0), (0.9, 1.5), (1.2, 1.9), (1.3, 2.3), (1.2, 2.7), (0.9, 3.1),
+               (0.6, 3.4), (0.6, 3.6), (1.0, 4.0), (1.0, 4.4)], None),
     "boss": ([(0.0, 0.0), (0.7, 0.7), (0.7, 3.4), (1.3, 4.0), (1.3, 4.4)],
              dict(w=1.2, z=1.6, h=1.2, d0=0.7, d=0.45, c=0.4, pitch=3.6, margin=2.0)),
 }
@@ -307,7 +336,8 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     scroll (the Italianate console), block (a stepped modillion block), curve (a quarter-
     round bracket with a drop), pendant (a scroll over a hanging turned drop), fan (a
     pierced quarter-round), brace (a diagonal stick brace), metal (a pressed-metal bracket:
-    a block head, an ogee and a round drop), sawn (a flat jigsawn bracket, pierced)."""
+    a block head, an ogee and a round drop), sawn (a flat jigsawn bracket, pierced), modillion
+    (a horizontal console under a cornice, its front rolled under)."""
     from .ornament import console, side_profile
     if style == "scroll":
         return console(h, d, t, u=u, v_top=v_top, w0=w0)
@@ -341,6 +371,9 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
               [(0.0, -h)]
         r = min(0.5, 0.16 * min(d, h))
         prof = cs_union([poly(pts), circle((0.3, -h + 0.3), 0.3, 12)]) - circle((0.42 * d, -0.36 * h), r, 16)
+    elif style == "modillion":           # a scrolled modillion: a horizontal console, its front rolled under
+        r = min(0.5 * h, 0.3 * d)
+        prof = cs_union([poly([(0, 0), (d, 0), (d, -h * 0.5), (0.0, -h)]), circle((d - r, -h * 0.5), r, 16)])
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])

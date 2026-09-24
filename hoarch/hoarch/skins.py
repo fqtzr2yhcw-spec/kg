@@ -67,6 +67,13 @@ def rustic_lap(region, datum=0.0):
                               (2.4, 0.12)], datum)
 
 
+def banded_rustication(region, course=2.4, groove=0.6, d=0.4, datum=0.0):
+    """Banded rustication: smooth stone courses parted by V channels only (no upright
+    joints), as on the ground floor of a bank. The channels' sides are 45 degrees."""
+    g = groove / 2
+    return _lap(region, course, [(0.0, d - g), (g, d), (course - g, d), (course, d - g)], datum)
+
+
 def vgroove(region, datum=0.0):
     """Tongue-and-groove boards with a V joint at every course."""
     return _lap(region, 1.4, [(0.0, 0.40), (1.0, 0.40), (1.2, 0.15), (1.4, 0.40)], datum)
