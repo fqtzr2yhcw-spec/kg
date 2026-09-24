@@ -403,7 +403,8 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     with ears), "lintel" (a stone lintel with a keystone), "archivolt" (a stepped arch band
     with a keystone and imposts), "pediment" (frieze, cornice and a triangular pediment),
     "shouldered" (a flat lintel with shouldered ends and a rosette), "drip" (a bevelled drip
-    cap) or "crested" (a cap with a cresting of little arches). The brick arch of a brick
+    cap), "crested" (a cap with a cresting of little arches) or "triple" (a lintel with a
+    stepped triple keystone). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -449,6 +450,15 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     elif head == "crested":
         hp, top = _crested(w / 2 + casing + 0.8, h + casing)
         parts += hp
+    elif head == "triple":
+        # a flat stone lintel with a stepped triple keystone
+        lw = w / 2 + casing + 1.0
+        v0 = h + casing
+        parts.append(chamfer_box(-lw, v0 - 0.01, lw, v0 + 1.8, 0.0, 0.8, c=0.2))
+        parts.append(chamfer_box(-0.8, v0 - 0.6, 0.8, v0 + 2.6, 0.0, 1.2, c=0.3))
+        for sg in (-1, 1):
+            parts.append(chamfer_box(sg * 1.3 - 0.5, v0 - 0.3, sg * 1.3 + 0.5, v0 + 2.2, 0.0, 1.0, c=0.25))
+        top = v0 + 2.6
     elif head == "drip":
         # a plain drip cap: a board with a bevelled top
         dw = w / 2 + casing + 0.6
@@ -724,16 +734,20 @@ def corrugated_panel(L, W, t=1.0, pitch=1.6, h=0.4, chord=1.3):
     return box([0, 0, 0], [L, W, t]) + (union(ribs) ^ box([0, 0, t - 0.01], [L, W, t + h]))
 
 
-def blade_sign(shape_cs, text=None, cap=1.8, t=1.2, arm=9.0, drop=2.4, relief=0.4, font="serif", hang=None):
+def blade_sign(shape_cs, text=None, cap=1.8, t=1.2, arm=9.0, drop=2.4, relief=0.4, font="serif", hang=None,
+               face=None):
     """A hanging blade sign standing out from a wall: a flat board of outline ``shape_cs``
     (in its own (x, y) plane, top at y = 0, hanging below) with raised ``text`` on its face,
     hung from a scrolled iron arm ``arm`` long with a wall plate. Local frame: x out from the
     wall (0 at the wall), y up, z across. Prints lying on its back (z = 0 on the bed): board,
     arm and plate all start on the bed; the letters stand on the board. ``hang``: the two
     hangers' x offsets from the board's centre (default 1 mm in from its ends); each reaches
-    down to the outline below it."""
+    down to the outline below it. ``face``: a CrossSection in the outline's own coordinates
+    raised ``relief`` on the board (a watch's bezel and hands, say)."""
     b = shape_cs.bounds()
     parts = [ext(shape_cs.translate((arm / 2 - (b[0] + b[2]) / 2, -drop)), 0.0, t)]
+    if face is not None:
+        parts.append(ext((face ^ shape_cs).translate((arm / 2 - (b[0] + b[2]) / 2, -drop)), t - 0.01, t + relief))
     if text:
         tc = text_cs(text, cap, font, grow=0.08)
         cy = -drop + (b[1] + b[3]) / 2 - cap / 2
@@ -1001,3 +1015,236 @@ def hat_cs(w=7.0, h=5.0):
     plume = stroke([(cw - 0.1, -h + 1.3), (cw + 0.8, -h + 2.6 * s), (cw + 0.2, -h + 3.7 * s), (0.4, -h + 4.3 * s),
                     (-1.0, -h + 4.0 * s)], 0.8, caps=True)
     return cs_union([brim, crown, band, plume])
+
+
+def watch_cs(d=6.0):
+    """Outline of a pocket watch for a jeweller's sign: the round case, the winding crown and
+    the bow (a ring) above it; top of the bow at y = 0. Returns (outline, face) where face is
+    the raised bezel ring, hour marks and hands (at ten past ten) for ``blade_sign(face=)``."""
+    r = d / 2
+    cy = -2.2 - r
+    case = circle((0.0, cy), r, 40)
+    crown = rect(-0.6, cy + r - 0.2, 0.6, -1.5)
+    bow = circle((0.0, -0.9), 0.9, 20) - circle((0.0, -0.9), 0.4, 16)
+    face = (circle((0.0, cy), r, 40) - circle((0.0, cy), r - 0.6, 40))
+    for k in range(0, 12, 3):
+        a = math.pi / 2 - k * math.pi / 6
+        face = face + circle((0.0 + (r - 1.1) * math.cos(a), cy + (r - 1.1) * math.sin(a)), 0.3, 10)
+    for a, L, wd in ((math.radians(150), r * 0.45, 0.6), (math.radians(30), r * 0.7, 0.5)):
+        face = face + stroke([(0.0, cy), (L * math.cos(a), cy + L * math.sin(a))], wd)
+    face = face + circle((0.0, cy), 0.45, 12)
+    return cs_union([case, crown, bow]), face
+
+
+def egg_dart(L, h=2.2, pitch=2.8):
+    """An egg-and-dart moulding along u 0..L, v 0..h, as two relief levels (darts, eggs): a
+    row of raised ovals with a slim dart pointing down between each pair (a shell round each
+    egg would be finer than the nozzle at HO scale)."""
+    n = max(1, int(L / pitch))
+    off = (L - n * pitch) / 2 + pitch / 2
+    from .ornament import oval
+    darts, eggs = [], []
+    cy = h / 2
+    for k in range(n):
+        x = off + k * pitch
+        eggs.append(oval((x, cy), 0.6, min(0.85, h * 0.4), 20))
+        if k:
+            xd = x - pitch / 2
+            darts.append(poly([(xd - 0.25, h - 0.15), (xd + 0.25, h - 0.15), (xd + 0.25, h - 0.6), (xd, 0.25),
+                               (xd - 0.25, h - 0.6)]))
+    band = rect(0, 0, L, h)
+    return cs_union(darts) ^ band, cs_union(eggs) ^ band
+
+
+def arched_shopfront(w, spring, door_w=6.4, leaf="twin_arch", bulk=5.0, text=None, cap=1.6, fan=7, font="roman",
+                     casing=0.6):
+    """A shop front filling a round-arched opening ``w`` wide (a semicircular head springing at
+    ``spring``): a display window on the left over a panelled bulkhead, with ``text`` in raised
+    gilt letters on the glass, a door on the right (``leaf``, see openings._leaf) up to a
+    transom bar at the springing, and a fanlight of ``fan`` radial bars round a half hub in
+    the arch. One piece with a slim casing round the opening (the wall's arch band belongs to
+    its skin, see skins.moulded_arch); prints face-up. Local frame: u centred, v from 0, w out."""
+    from .openings import CLR, GLASS as G, _glass_bars, _leaf, _one_piece
+    r = w / 2
+    op = arch_cs(-r, r, 0.0, spring, seg=48)
+    plug_cs = arch_cs(-r + CLR, r - CLR, 0.0, spring, seg=48)
+    pl = PLUG
+    du1 = r - CLR - 0.5
+    du0 = du1 - door_w
+    dh = spring - 0.4
+    parts = [ext(plug_cs, -pl, -1.0)]
+    lp, dlight = _leaf(leaf, du0, door_w, dh, hinge_left=False)
+    parts += lp
+    wu0, wu1 = -r + CLR + 0.5, du0 - 1.2
+    dg = rect(wu0, bulk + 0.6, wu1, dh - 0.5)
+    parts.append(ext(rect(wu0, 0.5, wu1, bulk), -1.0, -0.8))                           # bulkhead
+    parts.append(ext(rect(wu0, 0.5, wu1, bulk).offset(-0.8, JoinType.Miter, 4.0), -0.81, -0.4))
+    parts.append(ext(dg.offset(0.5, JoinType.Miter, 4.0) - dg, -1.0, -0.6))            # display frame
+    fcs = arch_cs(-r + CLR + 0.5, r - CLR - 0.5, spring + 0.4, spring + 0.4, seg=48)
+    fcs = fcs ^ rect(-r, spring + 0.4, r, spring + r + 1)
+    lights = [g for g in (dlight, dg, fcs) if g is not None]
+    glass = cs_union(lights)
+    cut = ext(glass, -pl - 1, 0.0)
+    parts = [p - cut for p in parts] + _glass_bars()
+    parts.append(ext(glass, -pl, -pl + G))
+    parts.append(ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0))
+    parts.append(ext(rect(du0 - 1.2, 0.0, du0, spring) ^ plug_cs, -pl, -0.4))             # mullion
+    parts.append(ext(rect(-r, spring - 0.4, r, spring + 0.4) ^ plug_cs, -pl, -0.4))       # transom bar
+    spokes = [stroke([(0.0, spring), (r * 1.2 * math.cos(math.pi * k / (fan + 1)), spring + r * 1.2 * math.sin(math.pi * k / (fan + 1)))],
+                     0.5, caps=False) for k in range(1, fan + 1)]
+    hub = circle((0.0, spring), 1.9, 32) - circle((0.0, spring), 1.3, 32)
+    parts.append(ext((cs_union(spokes) - circle((0.0, spring), 1.4, 24) + hub) ^ fcs.offset(0.1), -pl + G - 0.01, -0.6))
+    if text:
+        t = text_cs(text, cap, font, grow=0.1)
+        tb = t.bounds()
+        room = wu1 - wu0 - 1.0
+        if tb[2] - tb[0] > room:
+            print(f"  WARNING: glass text {text!r} is {tb[2] - tb[0]:.1f} wide for {room:.1f}")
+        parts.append(ext(t.translate(((wu0 + wu1) / 2, bulk + 0.6 + (dh - 0.5 - bulk - 0.6) * 0.62)) ^ dg,
+                         -pl + G - 0.01, -0.8))
+    sur = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6),
+           ext((op.offset(casing, JoinType.Round) - op) ^ rect(-r - 5, 0.0, r + 5, spring + r + 5), 0.0, 0.4)]
+    return _one_piece(parts, sur, op, plug_cs, pl, spring + r + casing, 0.0)
+
+
+def oriel(w, proj, h, head=2.0, lights=(1, 2, 1), base=None):
+    """A canted oriel window on a corbel for an upper storey: three faces (a front ``w`` - 2
+    ``proj`` wide and two sides at 45 degrees), each with recessed sashes (``lights`` panes
+    across per face) with a meeting rail, a sill course, a frieze and a cornice; below, a
+    corbel narrowing at 45 degrees to the wall. Local frame: u centred, v from 0 at the
+    corbel's foot, w out. A flat back plug of the whole silhouette goes PLUG deep into a cut
+    of the same outline, so the part prints on its back with everything growing up from it.
+    Returns dict(solid, glass, cut, landing, top, roof) - roof a separate hipped roof part
+    whose back sits on the wall face above the oriel."""
+    hw = w / 2
+    base = proj + 1.0 if base is None else base
+    A = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])        # (u, w, v) -> (u, v, w)
+    plan_pts = [(-hw, 0.0), (hw, 0.0), (hw - proj, proj), (-hw + proj, proj)]
+    plan = poly(plan_pts)
+    wpos = rect(-hw - 2, 0.0, hw + 2, proj + 2)
+
+    def prism(cs, v0, v1):
+        return M.extrude(cs, v1 - v0).translate([0, 0, v0]).transform(A)
+    foot = hw - proj - 0.6
+    corbel = M.hull_points([(u, base, ww) for u, ww in plan_pts] + [(u, 0.0, ww) for u in (-foot, foot) for ww in (0.0, 0.4)])
+    parts = [corbel, prism(plan.offset(0.4, JoinType.Miter, 4.0) ^ wpos, base - 0.6, base + 0.01)]      # a bead on the corbel
+    top = base + h + head
+    parts.append(prism(plan, base, top))
+    parts.append(prism(plan.offset(0.4, JoinType.Miter, 4.0) ^ wpos, base + 0.6, base + 1.2))           # sill course
+    parts.append(prism(plan.offset(0.6, JoinType.Miter, 4.0) ^ wpos, top - 0.8, top))                    # cornice
+    parts.append(prism(plan.offset(0.4, JoinType.Miter, 4.0) ^ wpos, top - 1.4, top - 0.79))
+    body = union(parts)
+    cuts, bars, glass = [], [], []
+    v0, v1 = base + 1.6, base + h - 0.8
+    vm = (v0 + v1) / 2
+    faces = [((-hw, 0.0), (-hw + proj, proj)), ((-hw + proj, proj), (hw - proj, proj)), ((hw - proj, proj), (hw, 0.0))]
+    for (p0, p1), nl in zip(faces, lights):
+        du, dw_ = p1[0] - p0[0], p1[1] - p0[1]
+        L = math.hypot(du, dw_)
+        t_ = (du / L, dw_ / L)
+        n_ = (-t_[1], t_[0])
+        F = np.array([[t_[0], 0.0, n_[0], p0[0]], [0.0, 1.0, 0.0, 0.0], [t_[1], 0.0, n_[1], p0[1]]])
+        m0, m1 = 0.7, L - 0.7
+        pw = (m1 - m0 - 0.6 * (nl - 1)) / nl
+        for k in range(nl):
+            a = m0 + k * (pw + 0.6)
+            pane = rect(a, v0, a + pw, v1)
+            cuts.append(ext(pane, -0.4, 1.0).transform(F))
+            glass.append(ext(pane, -0.42, -0.38).transform(F))
+            bars.append(ext(rect(a, vm - 0.3, a + pw, vm + 0.3), -0.41, 0.0).transform(F))
+            bars.append(ext(pane.offset(0.01) - pane.offset(-0.5, JoinType.Miter, 4.0), -0.41, -0.2).transform(F))
+    outside = body - union(cuts) + union(bars)
+    sil = outside.project()
+    solid = outside + ext(sil, -PLUG, 0.01)
+    gz = union(glass) ^ solid
+    roof_pts = [(-hw - 0.6, 0.0), (hw + 0.6, 0.0), (hw - proj + 0.25, proj + 0.6), (-hw + proj - 0.25, proj + 0.6)]
+    rise = proj + 0.6
+    roof = M.hull_points([(u, top, ww) for u, ww in roof_pts] +
+                         [(u, top + rise, 0.0) for u in (-hw + proj, hw - proj)])
+    return dict(solid=solid, glass=gz, cut=sil.offset(0.15, JoinType.Miter, 4.0), landing=sil.offset(0.15, JoinType.Miter, 4.0),
+                top=top, roof=roof)
+
+
+def street_clock(h=40.0, head=6.0, r=1.2):
+    """A four-faced sidewalk clock about ``h`` tall: a stepped plinth, a round column with a
+    collar, a 45 degree skirt flaring to a square head with a round dial seat (0.4 deep, for
+    a separate ``clock_dial``) inside a bezel ring on each face, a cornice, a pyramid cap and
+    a ball finial. Stands on z = 0, prints upright. Returns (solid, [(centre, normal)] of the
+    four dial seats)."""
+    hw = head / 2
+    parts = [box([-2.2, -2.2, 0.0], [2.2, 2.2, 1.2]),
+             M.hull_points([(x, y, 1.19) for x in (-2.2, 2.2) for y in (-2.2, 2.2)] +
+                           [(x, y, 1.8) for x in (-1.6, 1.6) for y in (-1.6, 1.6)]),
+             box([-1.6, -1.6, 1.79], [1.6, 1.6, 3.6]),
+             M.hull_points([(x, y, 3.59) for x in (-1.6, 1.6) for y in (-1.6, 1.6)] +
+                           [(r * math.cos(a), r * math.sin(a), 4.0) for a in np.linspace(0, 2 * math.pi, 24, endpoint=False)])]
+    zc = h - head - 3.0 - 4.2
+    parts.append(M.cylinder(zc - 3.99, r, r, 24).translate([0, 0, 3.99]))
+    zm = 3.6 + (zc - 3.6) * 0.45
+    parts.append(M.cylinder(0.3, r, r + 0.3, 24).translate([0, 0, zm]) + M.cylinder(0.6, r + 0.3, r + 0.3, 24).translate([0, 0, zm + 0.29]))
+    parts.append(M.hull_points([(r * math.cos(a), r * math.sin(a), zc - 0.01) for a in np.linspace(0, 2 * math.pi, 24, endpoint=False)] +
+                               [(x, y, zc + 3.0) for x in (-hw, hw) for y in (-hw, hw)]))
+    zh = zc + 3.0
+    parts.append(box([-hw, -hw, zh - 0.01], [hw, hw, zh + head]))
+    zt = zh + head
+    parts.append(M.hull_points([(x, y, zt - 0.01) for x in (-hw, hw) for y in (-hw, hw)] +
+                               [(x, y, z) for x in (-hw - 0.3, hw + 0.3) for y in (-hw - 0.3, hw + 0.3) for z in (zt + 0.3, zt + 0.6)]))
+    parts.append(M.hull_points([(x, y, zt + 0.59) for x in (-hw - 0.3, hw + 0.3) for y in (-hw - 0.3, hw + 0.3)] +
+                               [(x, y, zt + 0.6 + hw - 0.2) for x in (-0.5, 0.5) for y in (-0.5, 0.5)]))
+    zf = zt + 0.6 + hw - 0.2
+    parts.append(M.cylinder(0.8, 0.35, 0.35, 12).translate([0, 0, zf - 0.01]))
+    parts.append(M.sphere(0.7, 16).translate([0, 0, zf + 1.2]))
+    solid = union(parts)
+    seats = []
+    rd = hw - 0.7
+    zd = zh + head / 2
+    for ang in range(4):
+        a = math.pi / 2 * ang
+        n = np.array([math.cos(a), math.sin(a), 0.0])
+        c = n * hw + np.array([0, 0, zd])
+        R = np.array([[-math.sin(a), 0.0, math.cos(a)], [math.cos(a), 0.0, math.sin(a)], [0.0, 1.0, 0.0]])
+        Tm = np.column_stack([R, c])                       # local (x across, y up, z out) -> world
+        bez = ext(circle((0.0, 0.0), rd + 0.5, 40) - circle((0.0, 0.0), rd, 40), -0.01, 0.3).transform(Tm)
+        seat = ext(circle((0.0, 0.0), rd, 40), -0.4, 0.5).transform(Tm)
+        solid = solid + bez - seat
+        seats.append((c - n * 0.4, n))
+    return solid, seats
+
+
+def clock_dial(r, t=0.6, hands=(10, 10)):
+    """A clock dial for a ``street_clock`` seat: a disc ``t`` thick with raised quarter marks,
+    hands at ``hands`` (hour, minute) and a centre boss 0.4 above it - print white, change to
+    black at ``t``. Local: disc centred at the origin, face up."""
+    parts = [M.cylinder(t, r, r, 40)]
+    for k in range(4):                       # quarter marks (twelve would run together at this size)
+        a = math.pi / 2 - k * math.pi / 2
+        parts.append(ext(stroke([((r - 0.95) * math.cos(a), (r - 0.95) * math.sin(a)),
+                                 ((r - 0.25) * math.cos(a), (r - 0.25) * math.sin(a))], 0.55, caps=False), t - 0.01, t + 0.4))
+    hh, mm = hands
+    for ang, L, wd in ((math.pi / 2 - (hh % 12 + mm / 60) * math.pi / 6, r * 0.5, 0.6),
+                       (math.pi / 2 - mm * math.pi / 30, r * 0.78, 0.5)):
+        parts.append(ext(stroke([(0.0, 0.0), (L * math.cos(ang), L * math.sin(ang))], wd), t - 0.01, t + 0.4))
+    parts.append(ext(circle((0.0, 0.0), 0.45, 12), t - 0.01, t + 0.4))
+    return union(parts)
+
+
+def hex_paving(L, depth, t=1.2, a=1.2, curb=1.6, groove=0.5):
+    """A sidewalk of hexagonal paving tiles (circumradius ``a``, joints ``groove`` wide and
+    0.2 deep) with a plain stone curb ``curb`` wide along its far edge (y = depth). Local: u 0..L
+    along the front, y 0..depth out from the building, top at z = t. Prints flat."""
+    slab_ = M.extrude(rect(0, 0, L, depth), t - 0.2)
+    tiles = []
+    s3 = math.sqrt(3)
+    i = -1
+    while 1.5 * a * i < L + 2 * a:
+        j = -1
+        while s3 * a * j < depth + 2 * a:
+            cx, cy = 1.5 * a * i, s3 * a * (j + 0.5 * (i % 2))
+            tiles.append(poly([(cx + (a - groove / 2 / s3 * 2) * math.cos(k * math.pi / 3),
+                                cy + (a - groove / 2 / s3 * 2) * math.sin(k * math.pi / 3)) for k in range(6)]))
+            j += 1
+        i += 1
+    field = rect(0, 0, L, depth - curb - 0.25)
+    top = M.extrude(cs_union(tiles) ^ field, 0.21).translate([0, 0, t - 0.21])
+    kerb = M.extrude(rect(0, depth - curb, L, depth), 0.21).translate([0, 0, t - 0.21])
+    return slab_ + top + kerb

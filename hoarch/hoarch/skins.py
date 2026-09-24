@@ -283,7 +283,8 @@ def brick_bond(region, bond="flemish", bl=2.4, bh=0.8, mortar=SLOT, bed=0.2, d=0
     "roman"    long, thin Roman brick (pass bl ~ 3.8, bh ~ 0.6) in running bond;
     "stack"    bricks straight above each other (panels, chimneys);
     "monk"     two stretchers and a header in turn, the pattern stepping a third each course;
-    "garden"   Flemish garden wall: three stretchers and a header along each course.
+    "garden"   Flemish garden wall: three stretchers and a header along each course;
+    "header"   all headers, each course half a header on from the one below.
     ``diaper``: in Flemish bond, headers on a diamond lattice stand this much prouder."""
     if region.is_empty():
         return M()
@@ -335,6 +336,11 @@ def brick_bond(region, bond="flemish", bl=2.4, bh=0.8, mortar=SLOT, bed=0.2, d=0
                     cells.append(rect(u + j * bl + mortar / 2, v, u + (j + 1) * bl - mortar / 2, top))
                 cells.append(rect(u + 3 * bl + mortar / 2, v, u + unit - mortar / 2, top))
                 u += unit
+        elif bond == "header":           # all headers, each course half a header on
+            u = u0 - bl + (k % 2) * hl / 2 + uoff
+            while u < u1 + bl:
+                cells.append(rect(u + mortar / 2, v, u + hl - mortar / 2, top))
+                u += hl
         elif bond == "stack":
             u = u0 - bl + uoff
             while u < u1 + bl:
@@ -572,3 +578,72 @@ def corbel_courses(u0, u1, v0, courses=3, bh=0.8, bed=0.2, step=0.25, d0=0.25, b
         parts.append(M.extrude(cs_union(cells), dmax + 0.1))
         top += bh
     return rect(u0, v0, u1, top), union(parts)
+
+
+def terracotta(region, course=2.4, block=6.0, d=0.4, joint=SLOT, datum=0.0, uoff=0.0, band_every=0, disc=0.8):
+    """Terra-cotta facing: long smooth blocks ``d`` proud in courses ``course`` tall, with
+    ``joint``-wide joints broken by half a block each course. Every ``band_every``-th course
+    (counted from ``datum``) is a band of square tiles, each with a raised button rosette (a
+    disc 2 d proud with a boss 2.5 d proud). The top faces are all on the layer grid when
+    ``d`` is (for a front printed face-up)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    cells, discs, bosses = [], [], []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1:
+        v = datum + k * course
+        top = v + course - joint
+        if band_every and k % band_every == 0:
+            s = course
+            u = uoff + (math.floor((u0 - uoff) / s) - 1) * s
+            r = min(disc, (s - joint) / 2 - 0.25)
+            while u < u1 + s:
+                cells.append(rect(u + joint / 2, v, u + s - joint / 2, top))
+                c = (u + s / 2, v + (course - joint) / 2)
+                discs.append(circle(c, r, 20))
+                bosses.append(circle(c, max(0.3, r * 0.45), 12))
+                u += s
+        else:
+            u = u0 - block + (k % 2) * block / 2 + uoff
+            while u < u1 + block:
+                cells.append(rect(u + joint / 2, v, u + block - joint / 2, top))
+                u += block
+        k += 1
+    out = M.extrude(cs_union(cells) ^ region, d)
+    inner = region.offset(-0.2)
+    if discs:
+        out = out + M.extrude(cs_union(discs) ^ inner, 2 * d) + M.extrude(cs_union(bosses) ^ inner, 2.5 * d)
+    return out
+
+
+def moulded_arch(u, v0, w, spring, band=2.4, key=None, d=0.4):
+    """A terra-cotta arch band round a semicircular head (opening ``w`` wide from v0, springing
+    at ``spring``): a flat band ``band`` wide, a roll (a half-round bead) along its inner edge,
+    imposts at the springing, and a keystone (``key`` = a CrossSection laid on it, e.g. a
+    monogram) at the crown. Returns (outline to keep the wall skin off, relief). Relief
+    heights are multiples of ``d`` (face-up friendly)."""
+    from .core import arch_cs
+    r = w / 2
+    ring_o = arch_cs(u - r - band, u + r + band, v0, spring, seg=48)
+    ring_i = arch_cs(u - r, u + r, v0 - 1.0, spring, seg=48)
+    clip = rect(u - r - band - 1, spring, u + r + band + 1, spring + r + band + 1)
+    flat = (ring_o - ring_i) ^ clip
+    bead_cs = (arch_cs(u - r - 0.8, u + r + 0.8, v0, spring, seg=48) - ring_i) ^ clip
+    parts = [M.extrude(flat, d), M.extrude(bead_cs, 2 * d)]
+    outline = ring_o ^ rect(u - r - band - 1, spring - 1.6, u + r + band + 1, spring + r + band + 1)
+    for sg in (-1, 1):                          # impost blocks at the springing
+        a, b = sorted((u + sg * (r - 0.2), u + sg * (r + band + 0.6)))
+        imp = rect(a, spring - 1.6, b, spring)
+        parts.append(M.extrude(imp, 2 * d))
+        outline = outline + imp
+    kw = 2.2
+    kt = spring + r + band + 0.8
+    kcs = poly([(u - kw / 2, spring + r - 0.2), (u + kw / 2, spring + r - 0.2), (u + kw / 2 + 0.5, kt), (u - kw / 2 - 0.5, kt)])
+    parts.append(M.extrude(kcs, 2 * d))
+    outline = outline + kcs
+    if key is not None:
+        kb = key.bounds()
+        kc = key.translate((u - (kb[0] + kb[2]) / 2, (spring + r + kt) / 2 - (kb[1] + kb[3]) / 2))
+        parts.append(M.extrude(kc ^ kcs.offset(-0.3), 3 * d))
+    return outline, union(parts)

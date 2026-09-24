@@ -25,6 +25,13 @@ def _skin(w, d, z0, z1, fn, margin=0.1):
     return union(out)
 
 
+def _corbel_in(w, d, z, r):
+    """A 45 degree weathering from a w x d plinth top at z in to a round shaft of radius r."""
+    g = max(w, d) / 2 - r
+    return M.hull_points([(x, y, z - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                         [(r * math.cos(a), r * math.sin(a), z + g) for a in np.linspace(0, 2 * math.pi, 24, endpoint=False)])
+
+
 def _corbel_out(w, d, z, grow):
     """A 45 degree flare from a w x d outline at z - grow out to (w + 2 grow) at z. The shaft
     below must reach z - grow."""
@@ -76,6 +83,8 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
       ribbed    brick with pilaster ribs on every face, a corbelled crown and T cap (Merritt)
       plain     common brick, one corbel course, a flat cap and one pot (Hollis)
       arched    Roman brick with arched recesses, a deep corbelled crown, three pots (Carrow)
+      and for the Main Street shops: party, stovepipe, coped, hooded, stepped, slab, tapered,
+      twin and round (a round stack with iron bands and a corbelled crown, on a plinth)
     """
     h = zq(h)
     if style == "corbel":
@@ -254,6 +263,23 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         body = body + _corbel_out(w2, d2, h - 2.4, 0.4) + box([-w2 / 2 - 0.4, -d2 / 2 - 0.4, h - 2.41], [w2 / 2 + 0.4, d2 / 2 + 0.4, h - 1.6])
         body = body + box([-w2 / 2 - 0.1, -d2 / 2 - 0.1, h - 1.61], [w2 / 2 + 0.1, d2 / 2 + 0.1, h])
         return body - box([-w2 / 2 + 0.7, -d2 / 2 + 0.7, h - 1.0], [w2 / 2 - 0.7, d2 / 2 - 0.7, h + 1])
+    if style == "round":
+        # a round brick stack (an industrial flue in miniature) on a square plinth, iron bands
+        # round it, a corbelled crown of three rings flaring at 45 degrees, the flue open
+        r = min(w, d) / 2 - 0.4
+        ph = 2.4
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, ph]) + _corbel_in(w, d, ph, r)
+        top = h - 1.8
+        body = body + M.cylinder(top - ph + 0.01, r, r * 0.88, 32).translate([0, 0, ph - 0.01])
+        for z in np.arange(ph + 3.0, top - 2.0, 4.0):
+            rz = r - (r - r * 0.88) * (z - ph) / (top - ph)
+            body = body + M.cylinder(0.4, rz, rz + 0.3, 32).translate([0, 0, z]) + \
+                M.cylinder(0.4, rz + 0.3, rz + 0.3, 32).translate([0, 0, z + 0.39])
+        rt = r * 0.88
+        for k in range(3):
+            body = body + M.cylinder(0.3, rt + 0.3 * k, rt + 0.3 * (k + 1), 32).translate([0, 0, top + 0.6 * k - 0.01]) + \
+                M.cylinder(0.31, rt + 0.3 * (k + 1), rt + 0.3 * (k + 1), 32).translate([0, 0, top + 0.6 * k + 0.29])
+        return body - M.cylinder(3.0, rt - 0.7, rt - 0.7, 24).translate([0, 0, h - 1.4])
     if style == "twin":
         # two small flues side by side, joined at the top by a corbelled brick cap
         fw = w / 2 - 0.4
@@ -279,7 +305,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
-            "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin")
+            "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin", "round")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -329,7 +355,9 @@ def foundation_skin(style, reg, seed=0):
     rock-faced concrete block), coursed (Carrow: long thin coursed stones), plinth (Pemberton:
     long dressed granite), timber (the barber shop: a timber sill with bolt heads), polished
     (the bank: tall polished granite blocks), piers (the general store: stone piers with
-    board skirting)."""
+    board skirting), bossed (the drugstore), cobble (the hotel), herringbone (the bakery),
+    battered (the hardware store), moulded (the millinery: a smooth course under an ogee) and
+    tooled (the jeweler: dressed blocks with a margin round vertically striated faces)."""
     from . import skins as S
     if style == "fieldstone":
         return ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=0.55, seed=seed)
@@ -373,6 +401,25 @@ def foundation_skin(style, reg, seed=0):
         pc = cs_union(piers) ^ reg
         stones = ashlar(pc, course=(0.9, 1.4), length=(1.0, 1.7), d=0.5, seed=seed, rough=0.1)
         return stones + S.beadboard(reg - pc.offset(0.2, JoinType.Miter, 4.0), pitch=1.2, groove=0.5, d=0.25)
+    if style == "tooled":                # dressed blocks (one course, two on a tall base): a smooth
+        b = reg.bounds()                  # margin round a face tooled in fine vertical striations
+        nc = 1 if b[3] - b[1] < 3.6 else 2
+        ch = (b[3] - b[1]) / nc
+        cells = []
+        for j in range(nc):
+            v = b[1] + j * ch
+            u = b[0] - (seed % 5) - j * 4.0
+            while u < b[2]:
+                cells.append(rect(u + 0.25, v + (0.25 if j else 0.0), u + 7.75, v + ch - 0.25))
+                u += 8.0
+        blocks = M.extrude(cs_union(cells) ^ reg, 0.45)
+        grooves = cs_union([rect(x - 0.25, b[1] - 1, x + 0.25, b[3] + 1) for x in np.arange(b[0], b[2] + 1.0, 1.0)])
+        g0 = math.ceil((b[1] + 0.45) / 0.2 - 1e-6) * 0.2          # groove ends on the layer grid
+        g1 = math.floor((b[3] - 0.7) / 0.2 + 1e-6) * 0.2
+        faces = cs_union([c.offset(-0.45, JoinType.Miter, 4.0) for c in cells]) ^ reg ^ rect(b[0] - 1, g0, b[2] + 1, g1)
+        if faces.is_empty():
+            return blocks
+        return blocks - M.extrude(grooves ^ faces, 1.0).translate([0, 0, 0.25])
     if style == "moulded":               # one smooth stone course under a small ogee moulding
         b = reg.bounds()
         top = b[3]
@@ -449,7 +496,7 @@ def foundation_skin(style, reg, seed=0):
     raise ValueError(style)
 
 
-# ------------------------------------------------------------------ belt courses (all 4.4 mm tall)
+# ------------------------------------------------------------------ belt courses (4.4 mm tall; cyma 4.0)
 BELTS = {
     # name: (profile [(d, z)], blocks or None)
     "modillion": ([(0.0, 0.0), (0.4, 0.4), (0.4, 0.8), (0.8, 1.2), (0.8, 2.8), (1.4, 3.4), (1.4, 3.6), (1.8, 4.0), (1.8, 4.4)],
@@ -471,6 +518,8 @@ BELTS = {
     "ovolo": ([(0.0, 0.0), (0.3, 0.3), (0.7, 0.7), (0.9, 1.1), (1.0, 1.6), (0.9, 2.1), (0.7, 2.5), (0.7, 3.4),
                (1.1, 3.8), (1.1, 4.4)], None),
     "string": ([(0.0, 0.0), (0.5, 0.5), (0.5, 3.4), (1.1, 4.0), (1.1, 4.4)], None),
+    "cyma": ([(0.0, 0.0), (0.4, 0.4), (0.7, 0.8), (0.85, 1.2), (0.9, 1.6), (1.0, 2.0), (1.2, 2.3), (1.5, 2.6),
+              (1.5, 3.2), (1.2, 3.5), (1.2, 4.0)], None),
     "roll": ([(0.0, 0.0), (0.4, 0.4), (0.6, 0.8), (0.6, 1.2), (0.4, 1.6), (0.4, 2.8), (1.0, 3.4), (1.0, 4.4)], None),
     "cavetto": ([(0.0, 0.0), (0.3, 0.3), (0.3, 1.2), (0.6, 1.5), (1.0, 2.2), (1.3, 3.2), (1.3, 3.6), (1.6, 3.9),
                  (1.6, 4.4)], None),

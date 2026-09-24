@@ -578,7 +578,9 @@ def _leaf(style, u, lw, dh, hinge_left):
     nearly full height under a segmental head), oval (an oval light over a panel with a
     raised lozenge), four_panel (four raised panels, two over two), store (one big light
     with a push bar over a low panel and a kick plate), grille (a light behind a diagonal
-    iron grille over a raised panel), six_light (six lights over two short panels)."""
+    iron grille over a raised panel), six_light (six lights over two short panels), margin,
+    french, dutch, boards_glass, lozenge, ledged, twin_arch (two round-headed lights over a
+    raised panel)."""
     if style == "arched":
         return _ornate_leaf(u, lw, dh, hinge_left)
     st = min(1.0, lw * 0.16)
@@ -734,6 +736,12 @@ def _leaf(style, u, lw, dh, hinge_left):
         loz = poly([(cx, cy + hy), (cx + hx, cy), (cx, cy - hy), (cx - hx, cy)])
         _GLASS_BARS.append(ext((loz - loz.offset(-0.5, JoinType.Miter, 4.0)) ^ gl.offset(0.2), -1.21, -0.6))
         panel(rect(pu0, 1.3, pu1, dh * 0.36 - 1.0))
+    elif style == "twin_arch":            # two round-headed lights side by side over a raised panel
+        gw = (pu1 - pu0 - 0.6) / 2
+        gl = cs_union([arch_cs(a, a + gw, dh * 0.42, top - st - gw / 2, seg=16) for a in (pu0, pu0 + gw + 0.6)])
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Round) - gl, -0.8, -0.6))
+        panel(rect(pu0, 1.3, pu1, dh * 0.42 - 1.0))
     elif style == "ledged":               # vertical planks on three ledges with Z braces between them
         g = []
         nb = max(2, int(lw / 1.2))
