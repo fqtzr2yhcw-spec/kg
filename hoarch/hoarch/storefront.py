@@ -28,7 +28,8 @@ FONTS = {"serif": "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
          "sans": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
          "grotesque": "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
          "roman": "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
-         "mono": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"}
+         "mono": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+         "italic": "/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf"}
 
 
 def zq(v):
@@ -400,8 +401,9 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     segmental (``rise``) or flat head, sash with ``lites``/``rows``, a stone sill with lugs
     (``sill`` = its projection), and optionally a head: "hood" (a cast-iron segmental hood
     with ears), "lintel" (a stone lintel with a keystone), "archivolt" (a stepped arch band
-    with a keystone and imposts), "pediment" (frieze, cornice and a triangular pediment) or
-    "shouldered" (a flat lintel with shouldered ends and a rosette). The brick arch of a brick
+    with a keystone and imposts), "pediment" (frieze, cornice and a triangular pediment),
+    "shouldered" (a flat lintel with shouldered ends and a rosette), "drip" (a bevelled drip
+    cap) or "crested" (a cap with a cresting of little arches). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -444,6 +446,9 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
         parts.append(ext(tri, 0.0, 0.4))
         parts.append(ext(tri - tri.offset(-0.7, JoinType.Miter, 4.0), 0.0, 1.0))
         top = v1 + pw * 0.42
+    elif head == "crested":
+        hp, top = _crested(w / 2 + casing + 0.8, h + casing)
+        parts += hp
     elif head == "drip":
         # a plain drip cap: a board with a bevelled top
         dw = w / 2 + casing + 0.6
@@ -472,12 +477,27 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     return _one_piece([sash], parts, op, plug_cs, PLUG, top, bottom)
 
 
+def _crested(dw, v0):
+    """A crested head from v0 up, 2 dw wide: a frieze board, a flat cap and a cresting of
+    little arches standing on it. Returns (parts, top)."""
+    parts = [box([-dw + 0.4, v0 - 0.01, 0.0], [dw - 0.4, v0 + 1.6, 0.6]),
+             chamfer_box(-dw, v0 + 1.2, dw, v0 + 2.0, 0.0, 1.0, c=0.3, bottom=0.6)]
+    v1 = v0 + 2.0
+    n = max(3, int(round(2 * dw / 1.4)))
+    r = dw / n - 0.1
+    arcs = [circle((-dw + 2 * dw * (k + 0.5) / n, v1 - 0.01), r, 16) -
+            circle((-dw + 2 * dw * (k + 0.5) / n, v1 - 0.01), max(0.2, r - 0.5), 12) for k in range(n)]
+    parts.append(ext(cs_union(arcs) ^ rect(-dw, v1 - 0.01, dw, v1 + 3), 0.0, 0.6))
+    return parts, v1 + dw / n
+
+
 def door_commercial(w, h, transom=4.0, leaf="four_panel", tstyle="number:12", casing=0.8, head="cornice", leaves=1,
                     text=None):
     """A commercial street door (the upstairs entrance beside a storefront): leaves and a
     transom (see openings._ornate_door_sash), a flat casing with corner blocks and a head:
     "cornice" (a moulded cap on two small consoles), "temple" (pilasters, an entablature
-    lettered with ``text``, a segmental pediment) or None. Prints face-up."""
+    lettered with ``text``, a segmental pediment), "crested" (a cap with a cresting of little
+    arches) or None. Prints face-up."""
     from .openings import _ornate_door_sash, _one_piece
     op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom, leaf, tstyle)
     parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6)]
@@ -493,6 +513,9 @@ def door_commercial(w, h, transom=4.0, leaf="four_panel", tstyle="number:12", ca
         for sg in (-1, 1):
             parts.append(console(1.8, 1.0, 0.8, sg * (hw - 0.4), top + 1.41, style="scroll"))
         top += 2.2
+    elif head == "crested":
+        hp, top = _crested(w / 2 + casing + 0.8, top)
+        parts += hp
     elif head == "temple":
         # pilasters on plinths, an entablature with ``text`` in raised letters on its frieze,
         # and a segmental pediment
@@ -701,12 +724,14 @@ def corrugated_panel(L, W, t=1.0, pitch=1.6, h=0.4, chord=1.3):
     return box([0, 0, 0], [L, W, t]) + (union(ribs) ^ box([0, 0, t - 0.01], [L, W, t + h]))
 
 
-def blade_sign(shape_cs, text=None, cap=1.8, t=1.2, arm=9.0, drop=2.4, relief=0.4, font="serif"):
+def blade_sign(shape_cs, text=None, cap=1.8, t=1.2, arm=9.0, drop=2.4, relief=0.4, font="serif", hang=None):
     """A hanging blade sign standing out from a wall: a flat board of outline ``shape_cs``
     (in its own (x, y) plane, top at y = 0, hanging below) with raised ``text`` on its face,
     hung from a scrolled iron arm ``arm`` long with a wall plate. Local frame: x out from the
     wall (0 at the wall), y up, z across. Prints lying on its back (z = 0 on the bed): board,
-    arm and plate all start on the bed; the letters stand on the board."""
+    arm and plate all start on the bed; the letters stand on the board. ``hang``: the two
+    hangers' x offsets from the board's centre (default 1 mm in from its ends); each reaches
+    down to the outline below it."""
     b = shape_cs.bounds()
     parts = [ext(shape_cs.translate((arm / 2 - (b[0] + b[2]) / 2, -drop)), 0.0, t)]
     if text:
@@ -718,8 +743,15 @@ def blade_sign(shape_cs, text=None, cap=1.8, t=1.2, arm=9.0, drop=2.4, relief=0.
     parts.append(ext(circle((2.4, -1.8), 1.3, 24) - circle((2.4, -1.8), 0.7, 20) + rect(0.0, -1.8, 2.4, -0.4) -
                      rect(0.5, -3.2, 2.4, -1.8), 0.0, 0.8))
     parts.append(box([0.0, -3.0, 0.0], [0.8, 1.0, 1.6]))                                  # wall plate
-    for x in (arm / 2 + (b[0] - (b[0] + b[2]) / 2) + 1.0, arm / 2 + (b[2] - (b[0] + b[2]) / 2) - 1.0):
-        parts.append(box([x - 0.3, -drop + b[3] - 0.2, 0.0], [x + 0.3, 0.0, 0.6]))
+    board = shape_cs.translate((arm / 2 - (b[0] + b[2]) / 2, -drop))
+    xs = (arm / 2 + (b[0] - (b[0] + b[2]) / 2) + 1.0, arm / 2 + (b[2] - (b[0] + b[2]) / 2) - 1.0) if hang is None \
+        else tuple(arm / 2 + dx for dx in hang)
+    for x in xs:
+        y = -drop + b[3] - 0.2
+        col = board ^ rect(x - 0.3, -1e3, x + 0.3, 1e3)
+        if not col.is_empty() and col.bounds()[3] < -drop + b[3] - 0.05:     # the outline is lower here
+            y = col.bounds()[3] - 0.3
+        parts.append(box([x - 0.3, y, 0.0], [x + 0.3, 0.0, 0.6]))
     return union(parts)
 
 
@@ -918,3 +950,54 @@ def shingle_panel(L, W, t=1.2, pitch=1.8, width=2.0):
     from .skins import coursed_shingles
     return box([0, 0, 0], [L, W, t]) + coursed_shingles(rect(0, 0, L, W), pitch=pitch, width=width, d=0.45,
                                                            datum=0.0).translate([0, 0, t - 0.02])
+
+
+def display_bay(w, proj, bulk=6.0, glass_h=18.0, head=2.0, t=0.6, post=0.8, transom=None):
+    """A canted display bay for a shop front, standing out ``proj`` from the wall: a solid
+    bulkhead, three thin glass walls (``t`` thick) with posts at the corners and an optional
+    transom bar, a head slab, and a hipped roof falling back to the wall at 45 degrees. The
+    part also fills the wall opening behind it to PLUG deep (the opening is ``w`` wide and
+    ``bulk + glass_h + head`` tall); the roof's back is on the wall face. Local frame as the
+    storefront (u centred, v up, w out); prints upright on its floor. Returns (solid, glass zone)."""
+    hw = w / 2
+    plan = poly([(-hw, -PLUG), (hw, -PLUG), (hw, 0.0), (hw - proj, proj), (-hw + proj, proj), (-hw, 0.0)])
+    A = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])        # (u, w, v) -> (u, v, w)
+
+    def prism(cs, v0, v1):
+        return M.extrude(cs, v1 - v0).translate([0, 0, v0]).transform(A)
+    v_g1 = bulk + glass_h
+    parts = [prism(plan, 0.0, bulk)]
+    shell = plan - plan.offset(-t, JoinType.Miter, 4.0) - rect(-hw - 1, -PLUG - 1, hw + 1, -0.5)
+    glass = prism(shell, bulk - 0.01, v_g1 + 0.01)
+    corners = cs_union([rect(x - post / 2, y - post / 2, x + post / 2, y + post / 2)
+                        for x, y in ((hw - proj, proj - post / 2), (-hw + proj, proj - post / 2))]) + \
+        rect(-hw, -PLUG, -hw + post, 0.0) + rect(hw - post, -PLUG, hw, 0.0)
+    parts.append(prism(corners ^ plan, bulk - 0.01, v_g1 + 0.01))
+    if transom:
+        parts.append(prism(shell.offset(0.1, JoinType.Miter, 4.0) ^ plan, transom - 0.4, transom + 0.4))
+    parts.append(prism(plan, v_g1, v_g1 + head))
+    parts.append(prism(plan.offset(0.4, JoinType.Miter, 4.0) ^ rect(-hw - 1, 0.0, hw + 1, proj + 1),
+                       v_g1 + head - 0.6, v_g1 + head))
+    top = v_g1 + head
+    # the roof falls back to the wall face at 45 degrees (its back on the wall plane)
+    roof = M.hull_points([(x, top - 0.01, z) for x, z in ((-hw - 0.4, 0.0), (hw + 0.4, 0.0),
+                                                         (hw - proj + 0.2, proj + 0.4), (-hw + proj - 0.2, proj + 0.4))] +
+                         [(x, top + proj + 0.4, 0.0) for x in (-hw + proj, hw - proj)])
+    parts.append(roof.transform(np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0]])))
+    solid = union(parts) + glass
+    return solid, glass
+
+
+def hat_cs(w=7.0, h=5.0):
+    """Outline of a lady's hat for a milliner's sign: a brim curling up at its tips, a crown
+    with a rounded top, a band standing proud of the crown's foot, and an ostrich plume
+    arching over the crown from the band; top of the plume at y = 0."""
+    brim = poly([(-w / 2, -h + 0.9), (-w / 2 + 0.6, -h + 0.3), (-w / 4, -h), (w / 4, -h), (w / 2 - 0.6, -h + 0.3),
+                 (w / 2, -h + 0.9), (w / 4, -h + 0.6), (-w / 4, -h + 0.6)])
+    cw = w * 0.24
+    crown = rect(-cw + 0.8, -h + 0.5, cw - 0.8, -h + 2.4).offset(0.8, JoinType.Round) ^ rect(-w, -h + 0.5, w, 0.0)
+    band = rect(-cw - 0.25, -h + 0.6, cw + 0.25, -h + 1.3)
+    s = h / 5.0
+    plume = stroke([(cw - 0.1, -h + 1.3), (cw + 0.8, -h + 2.6 * s), (cw + 0.2, -h + 3.7 * s), (0.4, -h + 4.3 * s),
+                    (-1.0, -h + 4.0 * s)], 0.8, caps=True)
+    return cs_union([brim, crown, band, plume])

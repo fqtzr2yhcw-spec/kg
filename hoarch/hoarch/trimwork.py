@@ -254,6 +254,20 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         body = body + _corbel_out(w2, d2, h - 2.4, 0.4) + box([-w2 / 2 - 0.4, -d2 / 2 - 0.4, h - 2.41], [w2 / 2 + 0.4, d2 / 2 + 0.4, h - 1.6])
         body = body + box([-w2 / 2 - 0.1, -d2 / 2 - 0.1, h - 1.61], [w2 / 2 + 0.1, d2 / 2 + 0.1, h])
         return body - box([-w2 / 2 + 0.7, -d2 / 2 + 0.7, h - 1.0], [w2 / 2 - 0.7, d2 / 2 - 0.7, h + 1])
+    if style == "twin":
+        # two small flues side by side, joined at the top by a corbelled brick cap
+        fw = w / 2 - 0.4
+        body = M()
+        for sx in (-1, 1):
+            c = sx * (w / 4 + 0.1)
+            body = body + box([c - fw / 2, -d / 2, 0], [c + fw / 2, d / 2, h - 1.6]) + \
+                _skin(fw, d, 0.0, h - 2.2, _brick("running")).translate([c, 0, 0])
+        body = body + box([-w / 2, -d / 2, h - 2.4], [w / 2, d / 2, h - 1.2]) + _corbel_out(w, d, h - 0.8, 0.4) + \
+            box([-w / 2 - 0.4, -d / 2 - 0.4, h - 0.81], [w / 2 + 0.4, d / 2 + 0.4, h])
+        for sx in (-1, 1):
+            c = sx * (w / 4 + 0.1)
+            body = body - box([c - fw / 2 + 0.6, -d / 2 + 0.6, h - 1.0], [c + fw / 2 - 0.6, d / 2 - 0.6, h + 1])
+        return body
     if style == "stovepipe":
         # a sheet-iron flue: a band, and a cone cap flaring at 45 degrees (w = pipe diameter)
         r = w / 2
@@ -265,7 +279,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
-            "stovepipe", "coped", "hooded", "stepped", "slab", "tapered")
+            "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -359,6 +373,15 @@ def foundation_skin(style, reg, seed=0):
         pc = cs_union(piers) ^ reg
         stones = ashlar(pc, course=(0.9, 1.4), length=(1.0, 1.7), d=0.5, seed=seed, rough=0.1)
         return stones + S.beadboard(reg - pc.offset(0.2, JoinType.Miter, 4.0), pitch=1.2, groove=0.5, d=0.25)
+    if style == "moulded":               # one smooth stone course under a small ogee moulding
+        b = reg.bounds()
+        top = b[3]
+        face = chamfer_box(b[0] - 1.0, b[1], b[2] + 1.0, top - 1.2, 0.0, 0.3, c=0.2, bottom=0.3)
+        prof = [(b[1] + 0.0, 0.0)]
+        mould = M.hull_points([(x, top - 1.6, 0.0) for x in (b[0], b[2])] + [(x, top - 1.2, 0.4) for x in (b[0], b[2])] +
+                              [(x, top - 0.6, 0.6) for x in (b[0], b[2])] + [(x, top, 0.3) for x in (b[0], b[2])] +
+                              [(x, top, 0.0) for x in (b[0], b[2])])
+        return (face + mould) ^ M.extrude(reg, 2.0).translate([0, 0, -0.5])
     if style == "battered":              # a smooth dressed base course with a bevelled weathering on top
         b = reg.bounds()
         top = b[3]
@@ -445,6 +468,8 @@ BELTS = {
               dict(w=0.6, z=0.8, h=3.0, d0=0.5, d=0.35, c=0.15, pitch=4.0, margin=1.6)),
     "bead": ([(0.0, 0.0), (0.4, 0.4), (0.4, 3.2), (0.7, 3.5), (0.7, 3.9), (0.4, 4.2), (0.4, 4.4)], None),
     "sill": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.4, 3.7), (1.4, 4.4)], None),
+    "ovolo": ([(0.0, 0.0), (0.3, 0.3), (0.7, 0.7), (0.9, 1.1), (1.0, 1.6), (0.9, 2.1), (0.7, 2.5), (0.7, 3.4),
+               (1.1, 3.8), (1.1, 4.4)], None),
     "string": ([(0.0, 0.0), (0.5, 0.5), (0.5, 3.4), (1.1, 4.0), (1.1, 4.4)], None),
     "roll": ([(0.0, 0.0), (0.4, 0.4), (0.6, 0.8), (0.6, 1.2), (0.4, 1.6), (0.4, 2.8), (1.0, 3.4), (1.0, 4.4)], None),
     "cavetto": ([(0.0, 0.0), (0.3, 0.3), (0.3, 1.2), (0.6, 1.5), (1.0, 2.2), (1.3, 3.2), (1.3, 3.6), (1.6, 3.9),
@@ -464,7 +489,8 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     round bracket with a drop), pendant (a scroll over a hanging turned drop), fan (a
     pierced quarter-round), brace (a diagonal stick brace), metal (a pressed-metal bracket:
     a block head, an ogee and a round drop), sawn (a flat jigsawn bracket, pierced), modillion
-    (a horizontal console under a cornice, its front rolled under)."""
+    (a horizontal console under a cornice, its front rolled under), knee, volute, beaded (a
+    console whose sloping front is a string of three beads)."""
     from .ornament import console, side_profile
     if style == "scroll":
         return console(h, d, t, u=u, v_top=v_top, w0=w0)
@@ -511,6 +537,12 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
         prof = cs_union([poly([(0, 0), (d, 0), (d, -r1), (d * 0.45, -h + r2), (0.0, -h)]),
                          circle((d - r1, -r1), r1, 20), circle((d * 0.45, -h + r2), r2, 16)])
         prof = prof - circle((d - r1, -r1), r1 * 0.4, 12)
+    elif style == "beaded":              # a console whose sloping front is a string of three beads
+        a, b = (d, -h * 0.25), (0.35 * d, -h)
+        r = 0.5 * math.hypot(a[0] - b[0], a[1] - b[1]) / 3
+        prof = cs_union([poly([(0, 0), (d, 0), a, b, (0.0, -h)])] +
+                        [circle((a[0] + (b[0] - a[0]) * (k + 0.5) / 3, a[1] + (b[1] - a[1]) * (k + 0.5) / 3), r, 16)
+                         for k in range(3)])
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])

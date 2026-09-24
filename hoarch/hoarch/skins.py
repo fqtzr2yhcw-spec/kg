@@ -152,6 +152,55 @@ def diagonal_boards(region, pitch=1.8, groove=0.5, d=0.4, centre=None, angle=45.
 
 
 # ------------------------------------------------------------------ shingles (square butts, no scallops)
+def pressed_metal(region, pw=5.0, ph=4.0, d=0.4, datum=0.0, uoff=0.0):
+    """A pressed-metal front: a grid of raised panels (bevelled all round, so they also
+    print upright) each with a round boss standing 2 d proud, between flat stiles and
+    rails. Panel tops sit on the layer grid when ``datum`` and ``ph`` do."""
+    if region.is_empty():
+        return M()
+    from .ornament import chamfer_box
+    u0, v0, u1, v1 = region.bounds()
+    cells, bosses = [], []
+    for j in range(math.floor((v0 - datum) / ph) - 1, math.ceil((v1 - datum) / ph) + 1):
+        vb = datum + j * ph
+        for i in range(math.floor((u0 - uoff) / pw) - 1, math.ceil((u1 - uoff) / pw) + 1):
+            ub = uoff + i * pw
+            cells.append(chamfer_box(ub + 0.4, vb + 0.4, ub + pw - 0.4, vb + ph - 0.4, 0.0, d, c=0.2, bottom=d))
+            bosses.append(circle((ub + pw / 2, vb + ph / 2), 0.6, 16))
+    out = union(cells) + M.extrude(cs_union(bosses), 2 * d)
+    return out ^ M.extrude(region, d + 1.0).translate([0, 0, -0.1])
+
+
+def octagon_slates(region, pitch=1.6, width=2.0, d=0.35, clip=0.5, gap=SLOT, datum=0.0):
+    """Octagon-cut slates: square slates in courses, their two bottom corners clipped, the
+    joints broken by half a slate each course; each course thickens toward its butt."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rows = []
+    for k in range(math.floor((v0 - datum) / pitch) - 1, math.ceil((v1 - datum) / pitch) + 1):
+        vk = datum + k * pitch
+        top = vk + pitch * 2
+        off = (k % 2) * width / 2
+        tabs = []
+        u = u0 - width - off
+        while u < u1 + width:
+            a, b = u + gap / 2, u + width - gap / 2
+            tabs.append(poly([(a + clip, vk), (b - clip, vk), (b, vk + clip), (b, top), (a, top), (a, vk + clip)]))
+            u += width
+        row = cs_union(tabs) ^ region ^ rect(u0 - 1, vk, u1 + 1, top)
+        if row.is_empty():
+            continue
+
+        def f(P, vb=vk, span=top - vk):
+            P = np.array(P)
+            tt = np.clip((P[:, 1] - vb) / span, 0, 1)
+            P[:, 2] *= (1 - 0.6 * tt)
+            return P
+        rows.append(M.extrude(row, d).warp_batch(f))
+    return union(rows)
+
+
 def coursed_shingles(region, pitch=1.8, width=2.0, d=0.42, gap=SLOT, datum=0.0):
     """Square-butt shingles in regular courses: equal widths, straight butts, the joints
     broken by half a shingle each course, each course thickening toward its butt (upright
@@ -233,7 +282,8 @@ def brick_bond(region, bond="flemish", bl=2.4, bh=0.8, mortar=SLOT, bed=0.2, d=0
     "common"   (American) running bond with a course of headers every ``header_every``;
     "roman"    long, thin Roman brick (pass bl ~ 3.8, bh ~ 0.6) in running bond;
     "stack"    bricks straight above each other (panels, chimneys);
-    "monk"     two stretchers and a header in turn, the pattern stepping a third each course.
+    "monk"     two stretchers and a header in turn, the pattern stepping a third each course;
+    "garden"   Flemish garden wall: three stretchers and a header along each course.
     ``diaper``: in Flemish bond, headers on a diamond lattice stand this much prouder."""
     if region.is_empty():
         return M()
@@ -276,6 +326,14 @@ def brick_bond(region, bond="flemish", bl=2.4, bh=0.8, mortar=SLOT, bed=0.2, d=0
                 cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, top))
                 cells.append(rect(u + bl + mortar / 2, v, u + 2 * bl - mortar / 2, top))
                 cells.append(rect(u + 2 * bl + mortar / 2, v, u + unit - mortar / 2, top))
+                u += unit
+        elif bond == "garden":           # Flemish garden wall: three stretchers and a header, the
+            unit = 3 * bl + hl            # header centred over the middle stretcher of the course below
+            u = u0 - 2 * unit + (k % 2) * unit / 2 + uoff
+            while u < u1 + unit:
+                for j in range(3):
+                    cells.append(rect(u + j * bl + mortar / 2, v, u + (j + 1) * bl - mortar / 2, top))
+                cells.append(rect(u + 3 * bl + mortar / 2, v, u + unit - mortar / 2, top))
                 u += unit
         elif bond == "stack":
             u = u0 - bl + uoff

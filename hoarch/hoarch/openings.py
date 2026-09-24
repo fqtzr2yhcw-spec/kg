@@ -724,6 +724,16 @@ def _leaf(style, u, lw, dh, hinge_left):
         lb = lo.bounds()
         parts.append(ext(cs_union([rect(x - 0.25, lb[1] + 0.4, x + 0.25, lb[3] - 0.4)
                                    for x in np.arange(lb[0] + 1.0, lb[2] - 0.5, 1.0)]), -0.61, -0.4))
+    elif style == "lozenge":              # a tall light with a lozenge of bars in it, over a panel
+        gl = rect(pu0, dh * 0.36, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        c = gl.bounds()
+        cx, cy = (c[0] + c[2]) / 2, (c[1] + c[3]) / 2
+        hx, hy = (c[2] - c[0]) / 2 - 0.3, (c[3] - c[1]) / 2 - 0.3
+        loz = poly([(cx, cy + hy), (cx + hx, cy), (cx, cy - hy), (cx - hx, cy)])
+        _GLASS_BARS.append(ext((loz - loz.offset(-0.5, JoinType.Miter, 4.0)) ^ gl.offset(0.2), -1.21, -0.6))
+        panel(rect(pu0, 1.3, pu1, dh * 0.36 - 1.0))
     elif style == "ledged":               # vertical planks on three ledges with Z braces between them
         g = []
         nb = max(2, int(lw / 1.2))
@@ -772,7 +782,8 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
     """The leaves and transom of a door (the plug part): leaf style (see _leaf) and a
     transom of style sunburst, plain (with an oval boss), stick (a row of narrow lights),
     diamond (a diamond grid), leaded (a border of small squares), ring (a ring on a cross of
-    bars), twin (one bar), cross (a cross of bars), heart or "number:<digits>" (the street number in
+    bars), twin (one bar), cross (a cross of bars), heart, scallop (three little arches) or
+    "number:<digits>" (the street number in
     raised gilt figures on the glass). One transom style per building."""
     op = rect(-w / 2, 0, w / 2, h)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
@@ -841,6 +852,11 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
         elif tstyle == "cross":                  # a cross of bars: four lights
             cy = (tb[1] + tb[3]) / 2
             pat = rect(-RIB / 2, tb[1] - 1, RIB / 2, tb[3] + 1) + rect(tb[0] - 1, cy - RIB / 2, tb[2] + 1, cy + RIB / 2)
+        elif tstyle == "scallop":                # a row of three small round arch bars on the transom's foot
+            p = (tb[2] - tb[0]) / 3
+            r = min(p / 2 - 0.1, (tb[3] - tb[1]) - 0.5)
+            pat = cs_union([circle((tb[0] + p * (k + 0.5), tb[1]), r + RIB / 2, 28) -
+                            circle((tb[0] + p * (k + 0.5), tb[1]), r - RIB / 2, 28) for k in range(3)])
         elif tstyle == "leaded":
             inner = tcs.offset(-1.1, JoinType.Miter, 4.0)
             bars = [inner.offset(RIB / 2, JoinType.Miter, 4.0) - inner.offset(-RIB / 2, JoinType.Miter, 4.0)]
