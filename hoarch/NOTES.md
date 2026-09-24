@@ -180,14 +180,39 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
 
 - `core.py`: units, primitives, mitred profile sweeps (`sweep_ring`, `sweep_run`),
   facades, textures (clapboard, fish-scale, ashlar, brick, lattice).
-- `openings.py`: window, door and twin-arch inserts (sash + surround), balcony.
+- `openings.py`: one-piece window, door and twin-arch inserts (plug + surround), balcony;
+  Italianate, Queen Anne and brick-house ("voussoir": long-and-short stone voussoirs and a
+  keystone) heads.
 - `ornament.py`: console brackets, dentils, keystones, fan crest, rosettes, finials,
   spandrels, chimney pots.
 - `shell.py`: wall shell from plan blocks (openings, siding, quoins or corner boards, belt
   course, water table), per-storey shells with belt ring and lips, foundation.
-- `roof.py`: bracket and dentil runs, slope textures, hip roofs by planes, cresting.
+- `roof.py`: bracket and dentil runs, slope textures, hip roofs by planes, cresting and
+  flat-printed cresting strips. **Mansards**: `mansard` builds a hollow band on a convex plan
+  from any outer profile (straight with a bell-cast kick, or a concave tower cap), its inner
+  face parallel to the chord so it prints upright with banded slate rows; `mansard_top` is the
+  moulded curb ring (upside down, locating lip and a 45 degree seat in its profile) and a
+  separate standing-seam deck plate that drops onto the seat.
 - `features.py`: dormer, tower cap, chimney, porch (deck, arcade panels, roof, steps).
 - `kit.py`: parts with colour and print orientation, fit check, single-colour plate
-  packing, 3MF/STL export, slice check, flat-lay and exploded render data.
+  packing, 3MF/STL export, slice check, flat-lay and exploded render data, `drop_specks`
+  (removes detached offcuts under 2 mm^3 that trims leave floating).
 - `lint.py`: sub-nozzle detail check of every part in its print orientation.
 - `render.py`: Cycles renders driven by a palette/views JSON.
+
+## Second Empire (the Harcourt)
+
+- **Mansard over a bracketed eave.** The eave ring prints upside down and the mansard band
+  upright, so neither can carry a lip into the other (both joint faces are bed faces). The
+  band is located by what passes through it instead: its opening hugs the centre tower
+  (0.5 mm clear of the brick). A band with nothing through it is glued, aligned by its edges.
+- **Flat top = curb + deck.** The curb ring and the deck are separate parts. One piece would
+  only touch along faces (curb, lip, deck and dentils as loose shells). The deck drops onto a
+  45 degree seat in the curb, so both print without support, and the deck can be a roof colour.
+- **Chimneys on a deck** stand in 0.6 mm pockets, not on pegs: a peg under a chimney makes
+  the whole chimney an overhang.
+- **Dormers in a mansard** notch right through the band and sit on the eave ring. Keep their
+  face, plinth, capital and keystone tops, the notch top and the hood length on the 0.2 grid.
+- **Cresting strips** stop half a fence-thickness short of each corner and take only their
+  own fence, so no sliver of the crossing strip rides along.
+

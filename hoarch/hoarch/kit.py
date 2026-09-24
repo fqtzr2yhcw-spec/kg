@@ -70,6 +70,21 @@ class Kit:
         return p
 
     # -------------------------------------------------------------- checks
+    def drop_specks(self, min_vol=2.0):
+        """Remove detached fragments smaller than ``min_vol`` mm^3 from every part (offcuts
+        of texture or trim that a trim left floating). Returns [(part, volume dropped)]."""
+        out = []
+        for p in self.parts:
+            comps = p.solid.decompose()
+            if len(comps) < 2:
+                continue
+            small = [c for c in comps if c.volume() < min_vol]
+            if small:
+                big = [c for c in comps if c.volume() >= min_vol]
+                p.solid = M.batch_boolean(big, OpType.Add) if len(big) > 1 else big[0]
+                out.append((p.name, round(sum(c.volume() for c in small), 3)))
+        return out
+
     def interference(self, tol=0.05, ignore=()):
         bbs = [np.array(p.solid.bounding_box()) for p in self.parts]
         bad = []

@@ -240,18 +240,20 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
                 continue
             a0, a1 = -a_lim + 2 * a_lim * k / n, -a_lim + 2 * a_lim * (k + 1) / n
             ro = r1 + (0.8 if (k - n // 2) % 2 == 0 else 0.0)
-            g = math.asin(SLOT / 2 / r0)
+            g = math.asin(0.3 / r0)                     # 0.6 joints: clear of a nozzle width
             arc = [a0 + g + (a1 - a0 - 2 * g) * j / 6 for j in range(7)]
             pts = [(ro * math.sin(a), cy + ro * math.cos(a)) for a in arc]
             pts += [(r0 * math.sin(a), cy + r0 * math.cos(a)) for a in reversed(arc)]
             stones.append(poly(pts))
-        face = cs_union(stones) ^ rect(-w, spring - 0.2, w, h + 20)
+        ktop = round((cy + r1 + 1.2) / 0.2) * 0.2
+        kv0 = cy + r0 - 0.2
+        kcs = poly([(-0.65, kv0), (0.65, kv0), (0.95, ktop), (-0.95, ktop)])
+        face = (cs_union(stones) ^ rect(-w, spring - 0.2, w, h + 20)) - kcs.offset(0.6, JoinType.Miter, 4.0)
         if clip:
             face = face ^ rect(-w / 2 - casing - ends, -1, w / 2 + casing + ends, h + 20)
         face = face.offset(-0.25, JoinType.Miter, 4.0).offset(0.25, JoinType.Miter, 4.0)   # no specks
         parts.append(stepped(face, [(0.0, 0.0, 0.8), (0.2, 0.8, 1.0)]))
-        ktop = cy + r1 + 1.2
-        parts.append(keystone(0.0, cy + r0 - 0.2, ktop - (cy + r0 - 0.2), 1.3, 1.9, 0.0, 1.6))
+        parts.append(keystone(0.0, kv0, ktop - kv0, 1.3, 1.9, 0.0, 1.6))
         top = ktop
     else:  # flat cornice cap
         cw = w / 2 + casing + 0.8

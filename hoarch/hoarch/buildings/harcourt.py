@@ -155,7 +155,8 @@ def build(kit=None):
     tower_hug = TOWER.solid(grow=0.5, dz0=-1, dz1=200)          # the mansard notch hugs the tower (brick 0.25 proud)
     # --- main eave: single large brackets over frieze panels (upside down)
     eave = R.bracketed_cornice(MAIN.pts, ZE, EAVE,
-                               brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, t=0.9, pitch=9.6, margin=4.0),
+                               brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, t=0.9, pitch=9.6, margin=4.0,
+                                             skip=lambda p: TX0 - 3.2 < p[0] < TX1 + 3.2 and p[1] < TY1 + 3.2),
                                dents=dict(z=4.4, h=0.8, d0=0.9, d=0.7), panels=dict(z=0.6, h=3.0, d=0.4))
     kit.add("EAVE-main", "Limestone", eave - tower_keep, P=print_flip(), group="roof")
     # --- mansard band (upright) with dormer notches; it drops round the tower, which locates it
@@ -163,7 +164,7 @@ def build(kit=None):
     dorm = []
     for k, (x, y) in enumerate(DORMERS):
         A = _dormer_frame(x, y)
-        dm = FT.dormer(W=15.0, H=12.0, D=10.0, win_w=6.6, win_h=14.0)
+        dm = FT.dormer(W=15.2, H=12.0, D=10.1, win_w=6.6, win_h=14.0)    # faces and notch top on the grid
         dorm.append((A, dm))
     notches = union([dm["keep"].transform(A) for A, dm in dorm])
     kit.add("MANSARD", "Slate", (mans + mtex) - tower_hug - notches, group="roof")
@@ -182,10 +183,10 @@ def build(kit=None):
     T = R.mansard_top(MAIN.pts, MANSARD[-1][0], MZ1, t_top)
     zdeck = T["z_top"]
     chims = [(14.0, 56.0), (114.0, 56.0)]
-    pads = union([box([x - 5.7, y - 5.7, zdeck - 0.01], [x + 5.7, y + 5.7, zdeck + 1]) for x, y in chims])
-    pegs = union([box([x - 3.05, y - 3.05, zdeck - 5], [x + 3.05, y + 3.05, zdeck + 1]) for x, y in chims])
+    # each chimney stands in a 0.6 mm pocket in the deck, which locates it (no peg to overhang)
+    pads = union([box([x - 5.7, y - 5.7, zdeck - 0.6], [x + 5.7, y + 5.7, zdeck + 1]) for x, y in chims])
     kit.add("ROOF-curb", "Limestone", T["ring"] - tower_hug, P=print_flip(), group="roof")
-    kit.add("ROOF-deck", "Slate", T["deck"] - tower_hug - pads - pegs, group="roof")
+    kit.add("ROOF-deck", "Slate", T["deck"] - tower_hug - pads, group="roof")
     top_path = T["path"]
     crest = R.cresting(top_path, zdeck, h=2.4, pitch=1.6, d_off=-1.0)
     for i, seg, A, L in R.cresting_strips(crest, top_path, zdeck, -1.0):
@@ -193,7 +194,7 @@ def build(kit=None):
             if piece.volume() > 1.0:
                 kit.add(f"CREST-{i}{'ab'[j] if j < 2 else j}", "Iron", piece, P=inv34(A), group="roof")
     for k, (x, y) in enumerate(chims):
-        ch = FT.chimney(w=10.5, dpt=10.5, h=16.0, peg=(5.8, 5.8, 2.0)).translate([x, y, zdeck])
+        ch = FT.chimney(w=10.5, dpt=10.5, h=16.6, peg=None).translate([x, y, zdeck - 0.6])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
     print("roof", round(time.time() - t0, 1))
 
@@ -220,7 +221,7 @@ def build(kit=None):
 
     # --- east bay: flat roof with its cornice (upside down) and cresting
     main_keep = MAIN.solid(grow=0.45, dz0=-1, dz1=300)
-    broof = R.flat_roof(BAY, keep=main_keep)
+    broof = max(R.flat_roof(BAY, keep=main_keep).decompose(), key=lambda m: m.volume())   # drop the offcut by the wall
     kit.add("BAY-roof", "Limestone", broof, P=print_flip(), group="bay")
     bz = BAY.z1 + R.CORNICE_SMALL[-1][1]
     bcrest = R.cresting(BAY.pts, bz, h=2.4, pitch=1.6, d_off=3.0) - MAIN.solid(grow=1.0, dz0=-1, dz1=300)
@@ -266,6 +267,7 @@ def build(kit=None):
     A[:, 3] = f.world(u, -ZF, 1.4)
     kit.add("STOOP-back", "Granite", FT.steps(14.0, ZF - 0.6, 3).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
+    print("specks dropped:", kit.drop_specks())
     return kit
 
 

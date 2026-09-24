@@ -36,11 +36,11 @@ def dormer(W=17.2, H=13.5, D=10.5, win_w=7.4, win_h=16.0, wall=2.0, hood_t=0.85)
     for s in (-1, 1):
         pu = s * (R - 0.8)
         dress.append(ext(rect(pu - 0.8, 0.0, pu + 0.8, H - 0.6), 0.0, 0.5))
-        dress.append(ext(rect(pu - 1.0, H - 1.4, pu + 1.0, H - 0.3), 0.0, 0.75))          # capital
-        dress.append(ext(rect(pu - 1.0, 0.0, pu + 1.0, 0.9), 0.0, 0.7))                   # plinth
+        dress.append(ext(rect(pu - 1.0, H - 1.4, pu + 1.0, H - 0.2), 0.0, 0.75))          # capital
+        dress.append(ext(rect(pu - 1.0, 0.0, pu + 1.0, 0.8), 0.0, 0.7))                   # plinth
     arch_band = (circle((0, H), R, 48) - circle((0, H), R - 1.2, 48)) ^ rect(-R, H - 0.3, R, H + R + 1)
     dress.append(ext(arch_band, 0.0, 0.5))
-    dress.append(keystone(0.0, H + R - 2.1, 2.05, 1.0, 1.5, 0.0, 0.9))
+    dress.append(keystone(0.0, H + R - 2.2, 2.2, 1.0, 1.5, 0.0, 0.9))
     cas = (win["cut"].offset(0.8, JoinType.Round) - win["cut"]).translate((0, v_sill))
     dress.append(ext(cas ^ rect(-R, v_sill, R, H + R), 0.0, 0.45))
     dress.append(ext(rect(-win_w / 2 - 1.3, v_sill - 0.8, win_w / 2 + 1.3, v_sill), 0.0, 0.9))

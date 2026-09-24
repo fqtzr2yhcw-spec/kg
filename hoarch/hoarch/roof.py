@@ -281,7 +281,8 @@ CORNICE_SMALL = [(-4.4, 0), (0.8, 0), (0.8, 4.0), (1.2, 4.2), (1.3, 4.6), (3.2, 
 def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_h=1.6, deck=None, panels=None):
     """A cornice ring swept along ``path`` with brackets and dentils (prints upside down).
 
-    brackets = dict(z_top, h, d0, d, t, pitch, pair=0, margin=2.5) (z_top relative to z0)
+    brackets = dict(z_top, h, d0, d, t, pitch, pair=0, margin=2.5, skip=None) (z_top relative to z0;
+               skip(p) -> True drops the bracket at world point p, e.g. where a tower cuts the ring)
     dents    = dict(z, h, d0, d, tooth=0.6, gap=0.5) (z relative to z0). Put their top at the
                soffit (z + h = soffit height): the ring prints upside down, and dentils that stop
                short of the soffit hang over a gap and get support.
@@ -293,7 +294,7 @@ def bracketed_cornice(path, z0, prof, brackets=None, dents=None, lip_t=3.0, lip_
         b = dict(pair=0.0, margin=2.5)
         b.update(brackets)
         parts.append(edge_brackets(path, z0 + b["z_top"], b["h"], b["d0"], b["d"], b["t"], b["pitch"],
-                                   margin=b["margin"], pair=b["pair"]))
+                                   margin=b["margin"], pair=b["pair"], skip=b.get("skip")))
     if brackets and panels:
         b = dict(pair=0.0, margin=2.5)
         b.update(brackets)
@@ -355,16 +356,19 @@ def hip_roof(pieces, z_eave, slope, d_eave, texture="seam", flat_top=None, tex_k
     return solid, tex
 
 
-def cresting_strips(crest, path, z, d_off):
+def cresting_strips(crest, path, z, d_off, t=0.6):
     """Split a cresting loop (from ``cresting``) into one flat-printable strip per edge.
-    Returns [(edge_index, solid, frame 3x4)] -- print each with inv34(frame)."""
+    Each strip stops short of the corners and takes only its own fence (``t`` thick), so
+    no sliver of the crossing fence rides along. Returns [(edge_index, solid, frame 3x4,
+    length)] -- print each with inv34(frame)."""
     P, Mi = _edges(path)
     out = []
     n = len(P)
     for i in range(n):
         a, b = P[i] + d_off * Mi[i], P[(i + 1) % n] + d_off * Mi[(i + 1) % n]
         f = Facade(a, b, z)
-        clip = f.place(box([0.25, -1, -0.6], [f.L - 0.25, 5, 0.6]))
+        e = t / 2 + 0.05
+        clip = f.place(box([e, -1, -t / 2 - 0.01], [f.L - e, 5, t / 2 + 0.01]))
         seg = crest ^ clip
         if not seg.is_empty():
             out.append((i, seg, f.A.copy(), f.L))
