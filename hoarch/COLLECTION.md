@@ -14,8 +14,8 @@ building is designed. At the end: a lineup render of the whole collection.
 | 2 | The Ashby | Italianate villa | done: print files |
 | 3 | The Harcourt | Second Empire | done: sculpted windows and door, re-sliced (13 h 27 m, 313 g) |
 | 4 | The Fowler | Octagon house: two-layer eave, red standing-seam roof, octagonal cupola, three-face veranda, shutters | concept done, 78 parts, 0 interferences; slicing |
-| 4b | The Whitby | Carpenter Gothic cottage: steep cross gables, lacy bargeboards, board-and-batten, lancet windows, Gothic porch | planned |
-| 6 | The Delancey | San Francisco Italianate row house: two-storey slanted bay, false-front bracketed cornice, tall stoop | planned |
+| 5 | The Whitby | Carpenter Gothic cottage: steep cross gables, lacy bargeboards, board-and-batten, lancet windows, Gothic porch | planned |
+| 6 | The Delancey | San Francisco Italianate row house: two-storey slanted bay with colonettes, rusticated front, two-layer cornice with flat roof, pedimented parapet, tall stoop, stone basement | concept done, 31 parts, 0 interferences |
 | 7 | The Ardmore | Richardsonian Romanesque: rock-faced stone, round tower with conical roof, great arched entry | planned |
 | 8 | The Merritt | Stick style: stickwork panels, gable trusses, braced porch | planned |
 | 9 | The Hollis | Folk Victorian farmhouse: L-plan, spindlework porch, gable ornaments | planned |
@@ -24,3 +24,4 @@ building is designed. At the end: a lineup render of the whole collection.
 ## Log
 - Harcourt: sculpted Second Empire windows (pediment, drip hood) and grand door; ornament that only touched its frame now overlaps 0.2 mm (a surround in pieces now warns).
 - Fowler: new two-layer eave (roof.frieze_ring under the bracketed cornice), door_se with an entablature hood.
+- Delancey: colonettes on the bay corners, channel rustication siding, parapet printed on its back, stoop fitted round the stone base.
