@@ -171,3 +171,120 @@ def chimney_pot(r, h, seg=24):
     prof = [(0, 0), (r * 1.1, 0), (r * 1.1, h * 0.12), (r * 0.9, h * 0.18), (r * 0.8, h * 0.7), (r, h * 0.85),
             (r, h), (ri, h), (ri, h - 0.8), (0, h - 0.8)]
     return M.revolve(poly(prof), seg)
+
+
+# ------------------------------------------------------------------ flowing ornament (2D, for face-up relief)
+# Queen Anne / Eastlake sawn and carved work drawn as outlines in the (u, v) plane and
+# built up in flat terraces (w), so it prints face-up with crisp curves and no overhangs.
+# Every band is at least RIB wide and every gap at least SLOT.
+
+def bezier(p0, p1, p2, p3, n=24):
+    """Points on a cubic Bezier curve."""
+    P = [np.asarray(p, float) for p in (p0, p1, p2, p3)]
+    t = np.linspace(0.0, 1.0, n + 1)[:, None]
+    return (1 - t) ** 3 * P[0] + 3 * (1 - t) ** 2 * t * P[1] + 3 * (1 - t) * t ** 2 * P[2] + t ** 3 * P[3]
+
+
+def stroke(pts, width, caps=True):
+    """A band of constant width along a polyline, with round joins (and round ends)."""
+    pts = np.asarray(pts, float)
+    h = width / 2
+    parts = []
+    for a, b in zip(pts[:-1], pts[1:]):
+        d = b - a
+        L = float(np.hypot(*d))
+        if L < 1e-9:
+            continue
+        n = np.array([-d[1], d[0]]) / L * h
+        parts.append(poly([tuple(a + n), tuple(b + n), tuple(b - n), tuple(a - n)]))
+    joins = pts if caps else pts[1:-1]
+    parts += [circle(tuple(p), h, 12) for p in joins]
+    return cs_union(parts)
+
+
+def volute(c, r_out, turns=1.0, band=RIB, gap=SLOT, a0=0.0, sense=1, seg=40):
+    """Spiral scroll: a band winding inward from radius r_out (its outer edge) with ``gap``
+    between turns, ending in a round eye. a0 = angle where the band starts (radians);
+    sense = +1 winds counter-clockwise inward, -1 clockwise."""
+    pitch = band + gap
+    pts = []
+    n = max(8, int(seg * turns))
+    r_end = r_out - band / 2 - pitch * turns
+    for k in range(n + 1):
+        t = turns * k / n
+        r = r_out - band / 2 - pitch * t
+        if r < band / 2:
+            break
+        a = a0 + sense * 2 * math.pi * t
+        pts.append((c[0] + r * math.cos(a), c[1] + r * math.sin(a)))
+    eye = circle(c, max(band * 0.7, r_end + band / 2 if r_end > 0 else band * 0.7), 16)
+    return cs_union([stroke(pts, band), eye]) if len(pts) > 1 else eye
+
+
+def sunburst(c, r_hub, r0, r1, n=5, a0=0.0, a1=math.pi, ray0=RIB, ray1=None):
+    """Sunburst fan: (hub, rays). The hub is a disc sector of radius r_hub; n rays run from
+    r0 to r1, ray0 wide at r0 widening to ray1 at r1 (default: in proportion)."""
+    ray1 = ray0 * r1 / r0 if ray1 is None else ray1
+    hub = [c]
+    for k in range(25):
+        a = a0 + (a1 - a0) * k / 24
+        hub.append((c[0] + r_hub * math.cos(a), c[1] + r_hub * math.sin(a)))
+    rays = []
+    for k in range(n):
+        a = a0 + (a1 - a0) * (k + 0.5) / n
+        ca, sa = math.cos(a), math.sin(a)
+        nx, ny = -sa, ca
+        p0 = (c[0] + r0 * ca, c[1] + r0 * sa)
+        p1 = (c[0] + r1 * ca, c[1] + r1 * sa)
+        rays.append(poly([(p0[0] + nx * ray0 / 2, p0[1] + ny * ray0 / 2), (p1[0] + nx * ray1 / 2, p1[1] + ny * ray1 / 2),
+                          (p1[0] - nx * ray1 / 2, p1[1] - ny * ray1 / 2), (p0[0] - nx * ray0 / 2, p0[1] - ny * ray0 / 2)]))
+    return poly(hub), cs_union(rays)
+
+
+def oval(c, rx, ry, seg=32):
+    return poly([(c[0] + rx * math.cos(2 * math.pi * k / seg), c[1] + ry * math.sin(2 * math.pi * k / seg))
+                 for k in range(seg)])
+
+
+def quatrefoil(c, r, seg=16):
+    """Four-lobed boss: four discs of radius r round a centre (a Gothic/Eastlake motif)."""
+    d = r * 0.85
+    return cs_union([circle((c[0] + dx * d, c[1] + dy * d), r, seg) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))]
+                    + [circle(c, r, seg)])
+
+
+def bullseye(u, v, s, w0, d):
+    """Victorian corner block: a square block with a turned bullseye (two stepped discs)."""
+    b = round(d * 0.5 / 0.2) * 0.2                  # every level on the 0.2 mm layer grid
+    m = b + round((d - b) * 0.5 / 0.2) * 0.2
+    blk = chamfer_box(u - s / 2, v - s / 2, u + s / 2, v + s / 2, w0, b, c=0.2)
+    return (blk + ext(circle((u, v), s * 0.36, 20), w0 + b - 0.01, w0 + m)
+            + ext(circle((u, v), max(0.3, s * 0.17), 16), w0 + m - 0.01, w0 + d))
+
+
+def swag(u0, u1, v_top, sag, width=0.6, seg=16):
+    """Hanging garland: a band drooping ``sag`` between two points at v_top."""
+    pts = [(u0 + (u1 - u0) * k / seg, v_top - sag * (1 - (2 * k / seg - 1) ** 2)) for k in range(seg + 1)]
+    return stroke(pts, width)
+
+
+def urn_cs(u, v0, h, wmax):
+    """Urn finial in silhouette: plinth, bowl, neck, lid and ball (all at least RIB across)."""
+    s = h / 4.0
+    parts = [rect(u - wmax * 0.42, v0, u + wmax * 0.42, v0 + 0.5 * s),                   # plinth
+             rect(u - max(RIB, wmax * 0.2) / 2, v0 + 0.45 * s, u + max(RIB, wmax * 0.2) / 2, v0 + 0.9 * s),
+             oval((u, v0 + 1.55 * s), wmax / 2, 0.75 * s),                                  # bowl
+             rect(u - wmax * 0.46, v0 + 2.05 * s, u + wmax * 0.46, v0 + 2.35 * s),         # lip
+             rect(u - max(RIB, wmax * 0.22) / 2, v0 + 2.3 * s, u + max(RIB, wmax * 0.22) / 2, v0 + 2.9 * s),
+             circle((u, v0 + 3.35 * s), max(RIB * 0.6, 0.45 * s), 16)]                      # ball
+    return cs_union(parts)
+
+
+def scroll_bracket(u, v_top, h, d, band=0.6, sense=1):
+    """Sawn scroll bracket hanging under a sill or shelf (outline in u, v): a band that
+    leaves the underside, sweeps down and curls into a ball. sense = +1 curls toward +u."""
+    p0 = (u, v_top)
+    p3 = (u + sense * d * 0.55, v_top - h + d * 0.45)
+    pts = bezier(p0, (u, v_top - h * 0.55), (u + sense * d * 0.1, v_top - h), p3, 16)
+    return cs_union([stroke(pts, band), circle(p3, max(0.45, d * 0.3), 16),
+                     rect(u - band / 2 - 0.25, v_top - 0.5, u + band / 2 + 0.25, v_top)])

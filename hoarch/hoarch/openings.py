@@ -15,8 +15,9 @@ import math
 
 from manifold3d import JoinType
 
-from .core import RIB, SLOT, arch_cs, cs_union, poly, rect, union
-from .ornament import chamfer_box, console, dentils, ext, fan_crest, keystone, rosette_block, stepped
+from .core import RIB, SLOT, arch_cs, circle, cs_union, poly, rect, union
+from .ornament import (bezier, bullseye, chamfer_box, console, dentils, ext, fan_crest, keystone, oval, quatrefoil,
+                       rosette_block, scroll_bracket, stepped, stroke, sunburst, swag, urn_cs, volute)
 
 CLR = 0.15      # plug clearance per side
 PLUG = 1.6      # plug depth into a 3.0 mm wall (8 x 0.2 mm layers)
@@ -70,6 +71,10 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
                   clip=False, apron=False, consoles=None, qa=False):
     """Italianate window: segmental- or round-arched head, eared casing,
     bracketed sill, moulded hood with keystone; ``style`` in {"crest", "key", "flat"}.
+    Queen Anne styles (see _window_qa): "pediment" (segmental pediment with a sunburst on
+    bullseye corner blocks, a shaped apron with a drop), "blocks" (the same without the
+    pediment, for a head with no headroom) and "scroll" (an eyebrow hood whose ends roll
+    into volutes, keystone and fan crest, a sill on scroll brackets).
     ``apron``: a panelled apron under the sill instead of the two sill brackets.
     ``consoles``: scroll consoles carrying a flat cap (default on for "flat").
     ``qa``: Queen Anne upper sash, a big centre light ringed by small border lights.
@@ -130,6 +135,8 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     parts.append(ext(cas, 0.0, CAS))
     bead = (op.offset(RIB, JoinType.Round) - op) ^ rect(-w, 0.0, w, h + 1)
     parts.append(ext(bead, CAS, BEAD))
+    if style in ("pediment", "scroll", "blocks"):
+        return _window_qa(w, h, rise, spring, op, cas_out, casing, style, apron, clip, parts, sash_parts)
     # ears: small outward steps at the spring line (a flat cap on consoles has none)
     consoles = (style == "flat") if consoles is None else consoles
     ear_h = 1.1
@@ -328,3 +335,253 @@ def balcony(width, depth, rail_h=3.4, drop=3.0):
 # print transform for balcony(): local (u, v, w) -> print (u, -v, depth - w) is a mirror,
 # so use (u, v, w) -> (u, -v, depth - w) composed with a flip of v: (-u, v, depth - w)... kept
 # explicit in the builder where depth is known.
+
+
+# ------------------------------------------------------------------ Queen Anne surrounds
+# Flowing sawn and carved work drawn as outlines and built up in flat terraces, so the
+# surround still prints face-up: every level sits inside the one below, curves come out
+# as clean perimeters, relief heights are on the 0.2 mm grid.
+
+def _pediment_head(half, v_base, rise_in=2.4, band=0.9, sun=True):
+    """Segmental pediment: a shelf, a curved cornice band and a sunburst in the tympanum.
+    half = half-span of the shelf's body; v_base = shelf bottom. Returns (parts, top)."""
+    parts = []
+    shelf = rect(-half - 0.3, v_base, half + 0.3, v_base + 0.6)
+    parts.append(ext(shelf, 0.0, 1.4))
+    parts.append(ext(rect(-half, v_base - 0.2, half, v_base + 0.1), 0.0, 1.0))
+    vs = v_base + 0.6
+    arc, cy, r0 = _arc_band(2 * (half - band), vs, rise_in, 0.0, band)
+    arc = arc ^ rect(-half - 1, vs - 0.01, half + 1, vs + rise_in + band + 1)
+    parts.append(stepped(arc, [(0.0, 0.0, 1.2), (0.25, 1.2, 1.6)]))
+    tymp = arch_cs(-(half - band), half - band, vs - 0.01, vs, rise=rise_in, seg=40)
+    parts.append(ext(tymp, 0.0, CAS))
+    if sun and rise_in >= 2.0:
+        n = 5 if rise_in >= 2.8 else 3
+        hub, rays = sunburst((0.0, vs), 0.8 if n == 3 else 1.0, 1.25 if n == 3 else 1.7, rise_in - 0.3, n=n,
+                             a0=0.3 if n == 3 else 0.15, a1=math.pi - (0.3 if n == 3 else 0.15),
+                             ray1=0.8 if n == 3 else None)
+        inner = tymp.offset(-0.35, JoinType.Round)
+        parts.append(ext(hub ^ inner, CAS - 0.01, 1.2))
+        parts.append(ext(rays ^ inner, CAS - 0.01, 1.0))
+    return parts, vs + rise_in + band
+
+
+def _drop_apron(w, casing):
+    """Shaped apron under the sill: its lower edge sweeps down in two curves to a centre
+    drop, with a quatrefoil boss and two small discs on the field."""
+    aw = w / 2 + casing - 0.1
+    top, side = -0.9, -2.3
+    tip = side - 1.2
+    right = bezier((aw, side), (aw * 0.5, side), (aw * 0.2, tip), (0.0, tip), 12)
+    pts = [(-aw, top), (aw, top)] + [tuple(p) for p in right] + [(-p[0], p[1]) for p in right[::-1][1:]]
+    field = poly(pts)
+    parts = [ext(field, 0.0, 0.4),
+             ext(rect(-aw - 0.2, top - 0.4, aw + 0.2, top), 0.0, 0.8),                    # bead under the sill
+             ext(circle((0.0, tip - 0.3), 0.55, 20), 0.0, 0.8),                             # drop
+             ext(quatrefoil((0.0, (top + side) / 2 - 0.2), 0.42), 0.4 - 0.01, 0.8)]
+    for sg in (-1, 1):
+        parts.append(ext(circle((sg * aw * 0.6, (top + side) / 2 - 0.1), 0.35, 16), 0.4 - 0.01, 0.6))
+    return parts, tip - 0.85
+
+
+def _scroll_hood(w, h, rise, spring, casing):
+    """Eyebrow hood: a curved band over the head whose ends roll down into volutes, a
+    keystone and a small fan crest. Works over flat (rise 0) and arched heads."""
+    parts = []
+    if rise == 0:
+        half = w / 2 + casing + 0.5
+        vs = h + 0.6
+        arc, cy, r0 = _arc_band(2 * half, vs, 1.9, 0.0, 0.9)
+        crown = vs + 1.9 + 0.9
+        field = arch_cs(-half, half, h + casing - 0.2, vs, rise=1.9, seg=40)
+        parts.append(ext(field, 0.0, CAS))
+    else:
+        arc, cy, r0 = _arc_band(w, spring, rise, casing - 0.15, 0.9)
+        half = r0 + 0.45
+        vs = spring
+        crown = cy + r0 + 0.9
+    arc = arc ^ rect(-half - 2, vs - 0.01, half + 2, crown + 1)
+    parts.append(stepped(arc, [(0.0, 0.0, 1.2), (0.25, 1.2, 1.6)]))
+    ends = []
+    for sg in (-1, 1):
+        xe = sg * (half + 0.45 - 0.45)           # centre line of the band at its foot
+        c = (xe + sg * 0.35, vs - 0.75)
+        ends.append(volute(c, 0.95, turns=0.9, band=0.55, gap=SLOT, a0=math.pi / 2 if sg > 0 else math.pi / 2,
+                           sense=-1 if sg > 0 else 1))
+        ends.append(stroke([(xe, vs + 0.05), (xe, vs - 0.3)], 0.9))
+    parts.append(ext(cs_union(ends), 0.0, 1.2))
+    ktop = crown + 0.5
+    parts.append(keystone(0.0, h - 0.2 if rise == 0 else h - 0.2, ktop - h + 0.2, 1.1, 1.6, 0.0, 1.8))
+    parts.append(fan_crest(0.0, ktop - 0.05, 1.3, 0.0, 1.4))
+    return parts, ktop + 1.3
+
+
+def _window_qa(w, h, rise, spring, op, cas_out, casing, style, apron, clip, parts, sash_parts):
+    """The Queen Anne window surrounds (see window_insert)."""
+    # sill
+    sw = w / 2 + casing + 0.4
+    parts.append(ext(rect(-sw, -0.9, sw, 0.0), 0.0, 1.2))
+    parts.append(ext(rect(-sw - 0.2, -SLOT, sw + 0.2, 0.0), 1.2, 1.4))
+    if style in ("pediment", "blocks"):
+        # bullseye corner blocks, segmental pediment with a sunburst (or, where there is no
+        # headroom, "blocks": just a moulded shelf), shaped apron with a drop
+        s_ = casing + 0.6
+        cu = w / 2 + casing / 2
+        for sg in (-1, 1):
+            parts.append(bullseye(sg * cu, h + casing / 2, s_, 0.0, 1.2))
+        half = w / 2 + casing + (0.3 if not clip else 0.0)
+        if style == "pediment":
+            head, top = _pediment_head(half, h + casing + 0.2, rise_in=2.4 if not clip else 2.0)
+            parts += head
+        else:
+            parts.append(ext(rect(-half - 0.3, h + casing + 0.2, half + 0.3, h + casing + 0.8), 0.0, 1.4))
+            parts.append(ext(rect(-half, h + casing, half, h + casing + 0.3), 0.0, 1.0))
+            top = h + casing + 0.8
+        if apron:
+            ap, bottom = _drop_apron(w, casing)
+            parts += ap
+        else:
+            bottom = -0.9
+    else:
+        # rounded ears, scroll hood, sill on two scroll brackets with a pendant between
+        for sg in (-1, 1):
+            u0 = sg * (w / 2 + casing)
+            v_ear = spring if rise else h
+            ear = cs_union([rect(min(u0, u0 + sg * 0.55), v_ear - 1.3, max(u0, u0 + sg * 0.55), v_ear + casing),
+                            circle((u0, v_ear - 1.3), 0.55, 16)])
+            parts.append(ext(ear, 0.0, CAS))
+        head, top = _scroll_hood(w, h, rise, spring, casing)
+        parts += head
+        br = []
+        for sg in (-1, 1):
+            br.append(scroll_bracket(sg * (w / 2 + casing / 2 - 0.1), -0.9, 2.0, 1.3, band=0.6, sense=sg))
+        parts.append(ext(cs_union(br), 0.0, 0.8))
+        parts.append(ext(cs_union([stroke([(0.0, -0.9), (0.0, -1.5)], 0.5), circle((0.0, -1.75), 0.45, 16)]), 0.0, 0.6))
+        bottom = -2.9
+    parts.append(ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, CAS))      # lip over the sash frame
+    sur = union(parts)
+    sash = union(sash_parts)
+    land = footprint(sur, op)
+    return dict(insert=sash + sur, sash=sash, surround=sur, cut=op, landing=land, top=top, bottom=bottom)
+
+
+def _ornate_leaf(u, lw, dh, hinge_left):
+    """One ornate door leaf (face at w -0.8): a round-headed glazed light with a bead and
+    spandrel rosettes, a beaded lock rail, a raised lower panel with a quatrefoil boss,
+    and a knob. Returns (solids, glass_cs)."""
+    st = min(1.0, lw * 0.16)
+    parts = [ext(rect(u, 0.5, u + lw, dh - 0.3), -1.0, -0.8)]
+    pu0, pu1 = u + st, u + lw - st
+    g0 = 0.5 + dh * 0.42
+    gtop = dh - 0.3 - 1.0
+    r = (pu1 - pu0) / 2
+    light = arch_cs(pu0, pu1, g0, gtop - r)
+    parts.append(ext(light.offset(0.5, JoinType.Round) - light, -0.8, -0.6))
+    for sg in (-1, 1):                                    # rosettes in the arch's spandrels
+        cx = (pu0 + pu1) / 2 + sg * (r + 0.05)
+        parts.append(ext(circle((cx - sg * 0.1, gtop - 0.05), 0.35, 12), -0.8, -0.6))
+    parts.append(ext(rect(u + 0.4, g0 - 1.0, u + lw - 0.4, g0 - 0.45), -0.8, -0.6))           # lock rail bead
+    pnl = rect(pu0, 1.4, pu1, g0 - 1.6)
+    parts.append(stepped(pnl, [(0.0, -0.8, -0.6), (0.3, -0.6, -0.4)]))
+    pb = pnl.bounds()
+    qr = min(0.55, (pb[2] - pb[0]) * 0.11)
+    parts.append(ext(quatrefoil(((pb[0] + pb[2]) / 2, (pb[1] + pb[3]) / 2), qr), -0.4 - 0.01, -0.2))
+    kx = u + lw - 0.55 if hinge_left else u + 0.55
+    parts.append(ext(circle((kx, g0 - 2.4), 0.35, 12), -0.8, -0.4))
+    return parts, light
+
+
+def door_ornate(w, h, leaves=2, transom=4.2, head="swan", pil=1.6):
+    """Queen Anne entrance: ornate leaves (round-headed lights, quatrefoil panels), a
+    sunburst transom, panelled pilasters on plinths with bullseye capitals, and either
+    ``head="swan"``: a frieze with a cartouche and swags, a cornice and a broken swan-neck
+    pediment with an urn, or ``head="pediment"``: a segmental pediment with a sunburst.
+    Local frame as the windows (u centred, v from the sill, w out of the wall)."""
+    op = rect(-w / 2, 0, w / 2, h)
+    plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
+    dh = h - transom
+    mid = SLOT if leaves > 1 else 0.0
+    lw = (w - 2 * CLR - 1.0 - mid * (leaves - 1)) / leaves
+    u = -w / 2 + CLR + 0.5
+    parts, lights = [], []
+    for i in range(leaves):
+        lp, light = _ornate_leaf(u, lw, dh, hinge_left=(i == 0))
+        parts += lp
+        lights.append(light)
+        u += lw + mid
+    glass = cs_union(lights)
+    cut = ext(glass, -PLUG - 1, 0.0)
+    parts = [p - cut for p in [ext(plug_cs, -PLUG, -1.0)] + parts]
+    parts.append(ext(glass, -PLUG, -PLUG + GLASS))
+    ring = plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0)
+    parts.append(ext(ring, -PLUG, 0.0))
+    if transom > 0:
+        tcs = rect(-w / 2 + CLR + 0.5, dh + 0.2, w / 2 - CLR - 0.5, h - CLR - 0.5)
+        parts = [p - ext(tcs, -PLUG - 1, -0.99) for p in parts]
+        parts.append(ext(tcs, -PLUG, -PLUG + GLASS))
+        parts.append(ext(rect(-w / 2, dh - 0.3, w / 2, dh + 0.3), -PLUG, -0.4))           # transom bar
+        tb = tcs.bounds()
+        hub, rays = sunburst((0.0, tb[1]), 1.0, 1.6, max(tb[2], tb[3] - tb[1]) + 2.0, n=7, a0=0.2, a1=math.pi - 0.2,
+                             ray0=RIB, ray1=RIB + 0.1)
+        parts.append(ext((hub + rays) ^ tcs, -PLUG + GLASS - 0.01, -0.6))
+    sash_parts, parts = parts, []
+    # opening lip and inner bead
+    parts.append(ext((op - op.offset(-RIB, JoinType.Miter, 4.0)) ^ rect(-w, 0.5, w, h + 1), 0.0, CAS))
+    parts.append(ext((op.offset(RIB, JoinType.Miter, 4.0) - op) ^ rect(-w, 0, w, h + 1), CAS, BEAD))
+    # pilasters with a sunk, round-ended flute; plinths; bullseye capitals
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * w / 2, sg * (w / 2 + pil)))
+        um = (u0 + u1) / 2
+        body = ext(rect(u0, 2.2, u1, h + 0.2), 0.0, 0.8)
+        flute = ext(stroke([(um, 3.4), (um, h - 1.2)], 0.6), 0.4, 1.0)
+        parts.append(body - flute)
+        parts.append(chamfer_box(u0 - 0.15, 0.0, u1 + 0.15, 2.2, 0.0, 1.0, c=0.4))
+        parts.append(bullseye(um, h + 2.2 - (pil + 0.4) / 2, pil + 0.4, 0.0, 1.2))
+    cw = w / 2 + pil + 0.5
+    if head == "swan":
+        # frieze: cartouche and swags between rosettes
+        parts.append(ext(rect(-w / 2, h, w / 2, h + 2.2), 0.0, CAS))
+        parts.append(ext(oval((0.0, h + 1.1), 1.4, 0.85), CAS - 0.01, 1.0))
+        parts.append(ext(oval((0.0, h + 1.1), 0.75, 0.42), 1.0 - 0.01, 1.2))
+        sw_ = []
+        for sg in (-1, 1):
+            a, b = sg * 1.25, sg * (w / 2 - 0.5)
+            sw_.append(swag(min(a, b), max(a, b), h + 1.75, 0.9, 0.6))
+            parts.append(ext(circle((b, h + 1.75), 0.42, 16), CAS - 0.01, 1.2))
+        parts.append(ext(cs_union(sw_), CAS - 0.01, 1.0))
+        # cornice
+        parts.append(ext(rect(-cw, h + 2.2, cw, h + 2.8), 0.0, 1.4))
+        parts.append(ext(rect(-cw - 0.3, h + 2.8, cw + 0.3, h + 3.2), 0.0, 1.8))
+        vc = h + 3.2
+        necks, fields, ros = [], [], []
+        for sg in (-1, 1):
+            p0 = (sg * (cw - 0.45), vc + 0.4)
+            p3 = (sg * 2.1, vc + 3.1)
+            pts = bezier(p0, (sg * cw * 0.55, vc + 0.4), (sg * cw * 0.5, vc + 3.1), p3, 28)
+            necks.append(stroke(pts, 0.8))
+            fields.append(poly([tuple(p) for p in pts] + [(p3[0], vc), (p0[0], vc)]))
+            necks.append(volute((p3[0], p3[1] - 0.6), 0.95, turns=0.85, band=0.55, a0=math.pi / 2,
+                                sense=1 if sg > 0 else -1))
+            ros.append(circle((sg * (cw * 0.62), vc + 1.0), 0.45, 16))
+        parts.append(ext(cs_union(fields), 0.0, CAS))
+        parts.append(ext(cs_union(necks), 0.0, 1.2))
+        parts.append(ext(cs_union([stroke(bezier((sg * (cw - 0.45), vc + 0.4), (sg * cw * 0.55, vc + 0.4),
+                                                 (sg * cw * 0.5, vc + 3.1), (sg * 2.1, vc + 3.1), 28), 0.5)
+                                   for sg in (-1, 1)]), 1.2 - 0.01, 1.6))
+        parts.append(ext(cs_union(ros), CAS - 0.01, 1.0))
+        parts.append(ext(urn_cs(0.0, vc, 3.4, 1.9), 0.0, 1.2))
+        parts.append(ext(circle((0.0, vc + 3.4 * 3.35 / 4), 0.38, 16), 1.2 - 0.01, 1.4))
+        top = vc + 3.6
+    else:
+        parts.append(ext(rect(-w / 2, h, w / 2, h + 2.2), 0.0, CAS))
+        parts.append(ext(cs_union([swag(-w / 2 + 0.6, -0.4, h + 1.6, 0.7, 0.6), swag(0.4, w / 2 - 0.6, h + 1.6, 0.7, 0.6),
+                                   circle((0.0, h + 1.5), 0.5, 16)]), CAS - 0.01, 1.0))
+        head_, top = _pediment_head(cw - 0.3, h + 2.2, rise_in=3.0)
+        parts += head_
+        parts.append(ext(cs_union([stroke([(0.0, top - 0.2), (0.0, top + 0.5)], 0.6), circle((0.0, top + 0.85), 0.5, 16)]),
+                         0.0, 1.2))
+        top += 1.35
+    sur = union(parts)
+    sash = union(sash_parts)
+    land = footprint(sur, op)
+    return dict(insert=sash + sur, sash=sash, surround=sur, cut=op, landing=land, top=top, bottom=0.0)

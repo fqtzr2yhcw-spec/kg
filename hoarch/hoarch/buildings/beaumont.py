@@ -77,19 +77,21 @@ SPIRE_SLATE = ("fish", "fish", "diamond", "diamond")
 # ------------------------------------------------------------------ openings
 def _openings():
     L = []
-    lo = O.window_insert(9.8, 20.2, rise=0, style="flat", apron=True)
-    lo_qa = O.window_insert(9.8, 20.2, rise=0, style="flat", apron=True, qa=True)
-    up = O.window_insert(9.1, 18.2, rise=0, style="flat")
-    up_qa = O.window_insert(8.4, 18.2, rise=0, style="flat", qa=True)
-    small = O.window_insert(8.4, 15.4, rise=0, style="flat")
+    # first floor: segmental pediments with sunbursts over shaped aprons; second floor:
+    # scroll hoods with volutes over bracketed sills; ornate Queen Anne entrances
+    lo = O.window_insert(9.8, 20.2, rise=0, style="pediment", apron=True)
+    lo_qa = O.window_insert(9.8, 20.2, rise=0, style="pediment", apron=True, qa=True)
+    up = O.window_insert(9.1, 18.2, rise=0, style="scroll")
+    up_qa = O.window_insert(8.4, 18.2, rise=0, style="scroll", qa=True)
+    small = O.window_insert(8.4, 15.4, rise=0, style="scroll")
     tk = dict(casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
-    tw1 = O.window_insert(8.4, 20.2, rise=0, style="flat", qa=True, **tk)
-    tw2 = O.window_insert(8.4, 18.2, rise=0, style="flat", **tk)
-    tw3 = O.window_insert(7.6, 14.0, rise=None, style="key", **tk)
-    bay_s = O.window_insert(7.6, 18.2, rise=0, style="flat", **tk)
-    bay_f = O.window_insert(11.2, 18.2, rise=0, style="flat", qa=True, **tk)
-    front = O.door_insert(15.4, 25.2, leaves=2, transom=4.2)
-    back = O.door_insert(11.2, 24.4, leaves=1, transom=4.2)
+    tw1 = O.window_insert(8.4, 20.2, rise=0, style="pediment", apron=True, qa=True, **tk)
+    tw2 = O.window_insert(8.4, 18.2, rise=0, style="scroll", **tk)
+    tw3 = O.window_insert(7.6, 14.0, rise=None, style="scroll", **tk)
+    bay_s = O.window_insert(7.6, 18.2, rise=0, style="blocks", apron=True, **tk)
+    bay_f = O.window_insert(11.2, 18.2, rise=0, style="blocks", apron=True, qa=True, **tk)
+    front = O.door_ornate(15.4, 25.2, leaves=2, transom=4.2, head="swan")
+    back = O.door_ornate(11.2, 24.4, leaves=1, transom=4.2, head="pediment")
 
     def add(block, x, y, v0, sp, name, kind="window"):
         e, u = block.locate(x, y)
@@ -98,7 +100,7 @@ def _openings():
     add(MAIN, 45.5, 0, 0.4, front, "front-door", "door")                     # front of the main block
     add(MAIN, 45.5, 0, V2, up, "S45-2")
     add(MAIN, WX0, -10.5, V2, up, "wingW-2")                                 # wing, west side
-    for x in (75.3, 89.3):                                                   # wing front, above the bay
+    for x in (73.3, 91.3):                                                   # wing front, above the bay
         add(MAIN, x, WY0, V2, up_qa, f"wingS{x:.0f}-2")
     for y in (-10.5, 28.0, 115.5):                                           # east side
         add(MAIN, X1, y, V1, lo, f"E{y:.0f}-1")
@@ -180,8 +182,8 @@ def _dormer(ze):
     body = body + roofs + ridge_roll
     # the face: fish-scale pentagon with an arched attic window
     f = Facade((xf, yc + W / 2), (xf, yc - W / 2), zr)
-    win = O.window_insert(6.4, 8.2, rise=None, style="key", casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
-    wu, wv = W / 2, 2.6
+    win = O.window_insert(6.4, 8.2, rise=None, style="scroll", casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
+    wu, wv = W / 2, 3.2
     fcs = poly([(0, 0), (W, 0), (W, hw), (W / 2, hw + gh), (0, hw)])
     face = M.extrude(fcs - win["cut"].translate((wu, wv)), t_face).translate([0, 0, -t_face])
     reg = (fcs.offset(-0.5) - win["landing"].translate((wu, wv))) ^ rect(0, 0.6, W, hw + gh)
@@ -297,7 +299,7 @@ def build(kit=None):
     apex = shoulder + GL / 2 * S_WING
     gcs = poly([(0, 0), (GL, 0), (GL, shoulder), (GL / 2, apex), (0, shoulder)])
     gf = Facade((WX0, WY0), (X1, WY0), gz)
-    attic = O.window_insert(7.0, 9.2, rise=None, style="key", casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
+    attic = O.window_insert(7.0, 9.2, rise=None, style="scroll", casing=0.8, ends=0.2, sill_ext=0.3, clip=True)
     a_u, a_v = GL / 2, 3.0
     # gable trim: bargeboards under the rake, a sunburst in the peak, a collar tie
     trim = []
@@ -370,14 +372,14 @@ def build(kit=None):
             dict(a=(-28.0, -14.0), b=(-14.0, -28.0), posts=[0.663, 19.799 - 0.663]),
             dict(a=(-14.0, -28.0), b=(WX0, -28.0), posts=[0.663, 25.0, 50.5, 72.0]),
             dict(a=(WX0, -28.0), b=(WX0, WY0), posts=[1.6])]
-    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, 59.5, 16.0)], boards=dict(pitch=1.8))
+    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, 59.5, 16.0)], boards=dict(pitch=1.8),
+                        joined=True)
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     kit.add("PORCH-deck", "Cream", P["deck"] - fkeep, P=print_flip(), group="porch")
     kit.add("PORCH-floor", "PorchGray", P["floor"] - fkeep, P=print_flip(), group="porch")
-    for k, post in enumerate(P["posts"]):
-        kit.add(f"PORCH-post-{k}", "Cream", post, key="PORCH-post", group="porch")
-    for k, rail in enumerate(P["rails"]):
-        kit.add(f"PORCH-rail-{k}", "Cream", rail, group="porch")
+    # posts and railings as one piece (printed upright on plinths and railing feet)
+    for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
+        kit.add(f"PORCH-frame-{k}", "Cream", fr, group="porch")
     for k, (arc, A) in enumerate(P["arcades"]):
         kit.add(f"PORCH-arcade-{k}", "Cream", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = union([b.solid(grow=1.45, dz0=-20, dz1=0) for b in BLOCKS]) + TOWER.solid(grow=1.45, dz0=-20, dz1=300)

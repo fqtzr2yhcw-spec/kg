@@ -518,15 +518,17 @@ def baluster(h, rmax=0.55, rmin=0.36, seg=20):
     return M.revolve(poly(prof), seg)
 
 
-def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8):
+def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0):
     """Baluster railing between two posts, printed upright. Local frame: u along 0..L, v up
     from the porch floor (= print z), w across, centred. Feet carry the bottom rail
-    ``foot`` above the floor; turned balusters; a hand rail with a rounded top."""
+    ``foot`` above the floor; turned balusters; a hand rail with a rounded top.
+    ``sink``: the feet run that far below the floor (into sockets), level with the posts'
+    plinths when the railing is printed in one piece with its posts."""
     parts = []
     nf = max(2, int(L / 8.0) + 1)
     for j in range(nf):
         u = 0.5 + (L - 1.0) * j / (nf - 1)
-        parts.append(box([u - 0.5, -0.6, 0.0], [u + 0.5, 0.6, foot + 0.01]))
+        parts.append(box([u - 0.5, -0.6, -sink], [u + 0.5, 0.6, foot + 0.01]))
     parts.append(box([0.0, -0.6, foot], [L, 0.6, foot + 0.8]))                        # bottom rail
     vb, vt = foot + 0.8, h - 1.0                   # every flat face on the 0.2 mm layer grid
     for u in (0.0, L - 0.7):                                                          # end stiles
@@ -633,7 +635,7 @@ ARCADE_PRINT = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
 
 
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
-                 boards=None, beam=2.2, pier=3.4):
+                 boards=None, beam=2.2, pier=3.4, joined=False):
     """Porch with turned posts, upright railings and edge-printed arcades.
 
     runs: list of dict(a, b, posts=[u, ...]) in CCW order (u from a along the yard edge);
@@ -641,7 +643,10 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
     runs (give it at u = L - inset on one run and u = inset on the next). The longer run's
     arcade covers a shared corner post; the shorter one stops against it.
     Returns dict(deck, floor, posts=[world solid], rails=[world solid], arcades=[(world solid,
-    A)], roof, steps=[(local, A)], sockets=[(x, y)])."""
+    A)], roof, steps=[(local, A)], sockets=[(x, y)]).
+    ``joined``: the posts and railings of each connected chain of runs are one piece
+    (``frames``), printed upright on the plinths and the railing feet, which drop into
+    sockets in the floor; ``posts`` and ``rails`` are then empty."""
     pts = ccw(poly_pts)
     edges = []
     for i in range(len(pts)):
@@ -666,11 +671,13 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
     floor = None
     if boards is not None:
         floor = porch_floor(pts, outer, H=H_floor, **boards)
-        socks = union([box([p[0] - 1.68, p[1] - 1.68, H_floor - 0.4], [p[0] + 1.68, p[1] + 1.68, H_floor + 1])
-                       for p in where])
-        floor = floor - socks
+        if not joined:
+            socks = union([box([p[0] - 1.68, p[1] - 1.68, H_floor - 0.4], [p[0] + 1.68, p[1] + 1.68, H_floor + 1])
+                           for p in where])
+            floor = floor - socks
     # railings and arcades per run
     rails, arcades, stops = [], [], []
+    run_rails = {}
     lens = [Facade(r["a"], r["b"]).L for r in runs]
     for k, r in enumerate(runs):
         f = Facade(r["a"], r["b"], 0.0)
@@ -678,8 +685,9 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         A = f.A.copy()
         A[:, 3] = np.r_[f.p0 - f.n * inset, H_floor]
         skip = [(u - w / 2, u + w / 2) for (ri, u, w) in steps_at if ri == k]
-        # the square plinths stay square to the plan: on a slanted run they reach further
-        clr = max(1.75, 1.6 * (abs(f.u[0]) + abs(f.u[1])) + 0.15)
+        # the square plinths stay square to the plan: on a slanted run they reach further;
+        # a joined railing runs into the round shafts instead
+        clr = 0.8 if joined else max(1.75, 1.6 * (abs(f.u[0]) + abs(f.u[1])) + 0.15)
         for a_, b_ in zip(us[:-1], us[1:]):
             if any(not (b_ <= s0 or a_ >= s1) for s0, s1 in skip):
                 continue
@@ -687,7 +695,9 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             if L < 3.0:
                 continue
             # railing_section is built z-up; facade frames are (u, v up, w out)
-            rails.append(railing_section(L, rail_h).translate([a_ + clr, 0, 0]).transform(Z_UP_TO_FACADE).transform(A))
+            rs = railing_section(L, rail_h, sink=0.4 if joined else 0.0)
+            rails.append(rs.translate([a_ + clr, 0, 0]).transform(Z_UP_TO_FACADE).transform(A))
+            run_rails.setdefault(k, []).append(rails[-1])
         if len(us) < 2:                         # a lone corner post: its longer neighbour's arcade covers it
             arcades.append((None, A))
             continue
@@ -715,5 +725,31 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
     arcades = [(a, A) for a, A in arcades if a is not None]
     roof = _porch_roof(pts, runs, H_floor + post_h, over)
     st = _porch_steps(runs, steps_at, H_floor)
+    frames = []
+    if joined:
+        # chains of runs that meet end to end; each chain's posts and railings are one piece
+        chains, cur = [], [0]
+        for k in range(1, len(runs)):
+            if np.allclose(runs[k - 1]["b"], runs[k]["a"], atol=0.05):
+                cur.append(k)
+            else:
+                chains.append(cur)
+                cur = [k]
+        chains.append(cur)
+        for ch in chains:
+            mine = []
+            for k in ch:
+                f = Facade(runs[k]["a"], runs[k]["b"], 0.0)
+                for u in runs[k]["posts"]:
+                    p = f.p0 + f.u * u - f.n * inset
+                    if not any(np.allclose(p, q, atol=0.05) for q in mine):
+                        mine.append(p)
+            pieces = [post.translate([p[0], p[1], H_floor - 0.4]) for p in mine]
+            pieces += [r for k in ch for r in run_rails.get(k, [])]
+            frames += union(pieces).decompose()           # a post with no railing stays its own piece
+        if floor is not None:                             # sockets for the plinths and the railing feet
+            foot = cs_union([fr.slice(H_floor - 0.2) for fr in frames])
+            floor = floor - slab(foot.offset(0.15, JoinType.Miter, 4.0), H_floor - 0.41, H_floor + 1)
+        posts, rails = [], []
     return dict(deck=deck, floor=floor, posts=posts, rails=rails, arcades=arcades, roof=roof, steps=st,
-                sockets=[tuple(p) for p in where])
+                sockets=[tuple(p) for p in where], frames=frames)
