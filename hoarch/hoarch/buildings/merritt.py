@@ -1,17 +1,22 @@
-"""The Merritt -- an original HO-scale (1:87.1) Stick-style house for the lineup.
+"""The Merritt -- an original HO-scale (1:87.1) Stick-style house for the lineup. Rev B: the
+house-size plan (170 x 140 mm, storeys of 42 and 38 mm) and built-up cornices at every level.
 
-Tall and steep: a front-gabled main block with a cross-gabled wing, deep eaves on diagonal
-knee braces, and an open truss in every gable (collar tie, king post with a drop, struts and a
-fan of sticks). The clapboard walls are framed by applied stickwork: corner and field
-verticals, bands under the sills and X-braced dado panels, over a parged foundation and a
-cleated belt, under a roof of staggered shakes with a ribbed chimney. Windows have
-crossed-stick casings, pent hoods on knee braces over stick friezes and four-over-one sash;
-the entrance has crossbuck doors under a stick transom; a braced porch (square stick posts,
-X-braced railings, a slatted skirt on brick piers) runs across the front.
+Tall and steep: a front-gabled main block with a cross-gabled wing and an open truss in every
+gable (collar tie, king post with a drop, struts and a fan of sticks). The clapboard walls are
+framed by applied stickwork: corner and field verticals, bands under the sills and X-braced
+dado panels, over a parged foundation, under a roof of staggered shakes with a ribbed chimney.
+Windows have crossed-stick casings, pent hoods on knee braces over stick friezes and
+four-over-one sash; the entrance has crossbuck doors under a stick transom; a braced porch
+(square stick posts, X-braced railings, a slatted skirt on brick piers) runs across the front.
+
+- Between the storeys a three-part cornice: an oxide-red frieze of stick frames with little
+  knee braces in their corners, a cream block course and a cream cavetto crown.
+- At the eave (along the eave walls and across the gable ends under the trusses): an
+  oxide-red frieze of X-braced stick panels, a cream cable course, a cream soffit on diagonal
+  knee braces and a cream bevel crown.
 
 usage: python3 -m hoarch.buildings.merritt [check] [export]
 """
-import math
 import os
 import sys
 import time
@@ -20,65 +25,69 @@ import numpy as np
 from manifold3d import JoinType, Manifold as M
 
 from hoarch.core import box, clapboard, compose, cs_union, inv34, offset, poly, rect, slab, union
-from hoarch import features as FT, gables as G, openings as O, roof as R, trimwork as TW
+from hoarch import cornice as CO, features as FT, gables as G, openings as O, roof as R, trimwork as TW
 from hoarch.kit import Kit, print_flip
-from hoarch.ornament import ext, stroke
+from hoarch.ornament import stroke
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
 NAME = "Merritt Stick Style House"
 COLORS = {"PorchDeck": "#EDE3C8", "Planks": "#6F5034",       # the planked porch deck: two colours, one change
           "Sage": "#8C9670", "Cream": "#EDE3C8", "Charcoal": "#3D3F42", "Fieldstone": "#8D877C",
-          "Brick": "#8A3B2B", "PorchGray": "#6B706F", "Windows_Doors": "#EDE3C8"}
+          "Brick": "#8A3B2B", "PorchGray": "#6B706F", "Oxide": "#7A3B2A", "Windows_Doors": "#EDE3C8"}
 RENDER_MAT = {"PorchDeck": "trim", "Planks": "planks",
               "Sage": "siding", "Cream": "trim", "Charcoal": "roof", "Fieldstone": "stone", "Brick": "brick",
-              "PorchGray": "porchfloor", "Windows_Doors": "trim", "Sash": "sash", "Door": "door", "Glass": "glass"}
+              "PorchGray": "porchfloor", "Oxide": "accent", "Windows_Doors": "trim", "Sash": "sash", "Door": "door",
+              "Glass": "glass"}
 PALETTE = {"siding": ["#8C9670", 0.65, 0.0], "trim": ["#EDE3C8", 0.55, 0.0], "roof": ["#3D3F42", 0.8, 0.0],
            "stone": ["#8D877C", 0.9, 0.0], "brick": ["#8A3B2B", 0.85, 0.0], "porchfloor": ["#6B706F", 0.7, 0.0],
-           "sash": ["#5A1A24", 0.45, 0.0], "door": ["#5A1A24", 0.45, 0.0]}
+           "sash": ["#5A1A24", 0.45, 0.0], "door": ["#5A1A24", 0.45, 0.0], "accent": ["#7A3B2A", 0.6, 0.0]}
+
+# ------------------------------------------------------------------ cornices (unique to the Merritt)
+LEDGE = 1.4
+JOINT = dict(pitch=12.0, margin=4.0, layers=[
+    dict(kind="frieze", h=4.8, b=1.2, orn="stickwork", role="Oxide"),
+    dict(kind="course", h=1.6, b=1.4, orn="blocks", role="Cream"),
+    dict(kind="crown", h=2.2, b=1.4, P=3.6, orn="cavetto", role="Cream")])
+EAVE = dict(pitch=12.0, margin=4.0, layers=[
+    dict(kind="frieze", h=5.6, b=1.2, orn="xbrace", role="Oxide"),
+    dict(kind="course", h=1.6, b=1.4, orn="cable", role="Cream"),
+    dict(kind="bed", h=2.0, b=1.4, P=6.4, role="Cream", brackets=dict(style="brace", t=0.9, reach=0.6)),
+    dict(kind="crown", h=2.4, b=1.4, P=7.0, orn="bevel", role="Cream")])
+RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2
+HE = CO.band_height(EAVE)
 
 # ------------------------------------------------------------------ levels (on the 0.2 mm grid)
-ZF = 10.0
-S1 = ZF + 36.0
-RH = 4.4
-ZE = S1 + RH + 32.0
+ZF = 14.0
+S1 = ZF + 42.0
+ZE = S1 + RJ + 38.0
+ZW = ZE + HE                    # the wall top behind the eave cornice; the roof sits here
 FASCIA = 2.0
-Z_EAVE = ZE + FASCIA
-D_EAVE, RAKE, SKIN = 4.0, 4.4, 1.8
+Z_EAVE = ZW + FASCIA
+D_EAVE, RAKE, SKIN = 7.4, 7.8, 1.8
 SLOPE = 1.3
-V1 = 6.0
-V2 = S1 + RH + 4.2 - ZF         # the aprons clear the belt
+V1 = 8.0
+V2 = S1 + RJ + 5.0 - ZF
 
 # ------------------------------------------------------------------ plan
-MW, MD_ = 60.0, 84.0
-WY0, WY1, WX1 = 20.0, 60.0, 96.0
-MAIN = Block("main", [(0, 0), (MW, 0), (MW, MD_), (0, MD_)], ZF, ZE)
-WING = Block("wing", [(MW - 3.0, WY0), (WX1, WY0), (WX1, WY1), (MW - 3.0, WY1)], ZF, ZE)
+MW, MD_ = 100.0, 140.0
+WY0, WY1, WX1 = 34.0, 100.0, 170.0
+MAIN = Block("main", [(0, 0), (MW, 0), (MW, MD_), (0, MD_)], ZF, ZW)
+WING = Block("wing", [(MW - 3.0, WY0), (WX1, WY0), (WX1, WY1), (MW - 3.0, WY1)], ZF, ZW)
 BLOCKS = [MAIN, WING]
-EAVE_EDGES = {("main", 1), ("main", 3), ("wing", 0), ("wing", 2)}
-
-
-def _brace(u, H, d_eave):
-    """A diagonal knee brace under the eave, in facade (u, v, w): from a foot on the wall up
-    and out to the soffit (22 degrees off vertical: it prints upright)."""
-    return M.hull_points([(u + du, v, w) for du in (-0.4, 0.4) for (v, w) in
-                          ((H - 7.4, 0.0), (H - 6.6, 0.0), (H - 7.4, 0.9), (H - 1.0, d_eave - 0.4), (H - 0.2, d_eave - 0.4),
-                           (H - 0.2, d_eave - 1.2))])
 
 
 def _siding(f, b, reg):
     """Clapboard framed by applied stickwork: boards framing every window, bands at the
-    floor lines and under the eaves, X braces in the wall panels between windows, and knee
-    braces under the eaves."""
-    H = b.z1 - b.z0
+    floor lines and under the eave cornice, and X braces in the wall panels between windows.
+    Nothing in the eave's cornice band; the verticals run on up into the gables."""
     L = f.L
     edge = _edge_of(b, f)
-    eave = (b.name, edge) in EAVE_EDGES
+    reg = reg - rect(-1, ZE - LEDGE - 0.6 - b.z0, L + 1, ZW - b.z0)
     tex = clapboard(reg, pitch=1.2, d=0.3, dmin=0.05, datum=1.8)
     lands = [o.cs_on_facade(o.spec["landing"]).bounds() for o in OPENINGS if o.block is b and o.edge == edge]
     vs = sorted({0.6, L - 0.6} | {round(x, 2) for lb in lands for x in (lb[0] - 0.9, lb[2] + 0.9) if 1.0 < x < L - 1.0})
-    top2 = H - 8.0 if eave else H
-    storeys = [(2.0, S1 - ZF - 2.2), (S1 + RH - ZF + 1.2, top2)]
-    sticks = [rect(u - 0.5, 1.8, u + 0.5, H + 60) for u in vs]
+    storeys = [(2.0, S1 - ZF - 2.2), (S1 + RJ - ZF + 1.2, ZE - LEDGE - 1.6 - ZF)]
+    sticks = [rect(u - 0.5, 1.8, u + 0.5, 400) for u in vs]
     for (lo, hi) in storeys:
         sticks.append(rect(-1, hi, L + 1, hi + 1.0))
         sticks.append(rect(-1, lo - 1.0, L + 1, lo))
@@ -89,19 +98,17 @@ def _siding(f, b, reg):
             if busy:
                 continue
             sticks += [stroke([(a_ + 0.5, lo), (c_ - 0.5, hi)], 0.8), stroke([(a_ + 0.5, hi), (c_ - 0.5, lo)], 0.8)]
-    if not eave:
-        sticks.append(rect(-1, H, L + 1, H + 1.0))          # the eave line carried across the gable
     cs = (cs_union(sticks) ^ reg).offset(-0.3, JoinType.Miter, 4.0).offset(0.3, JoinType.Miter, 4.0)
-    out = tex + M.extrude(cs, 0.6)
-    if eave:
-        braces = []
-        for u in [x for x in vs if 1.5 < x < L - 1.5] + [2.4, L - 2.4]:
-            foot = rect(u - 0.6, H - 7.6, u + 0.6, H)
-            if (foot - reg).area() < 0.05:           # clear of every window's trim
-                braces.append(_brace(u, H, D_EAVE))
-        if braces:
-            out = out + union(braces)
-    return out
+    return tex + M.extrude(cs, 0.6)
+
+
+def add_rings(kit, rings, prefix, group):
+    """Each cornice ring as its own part."""
+    for r in rings:
+        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
+        for j, pc in enumerate(pcs):
+            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
+            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
 
 
 def _edge_of(b, f):
@@ -125,34 +132,34 @@ def _pieces():
 
 def _openings():
     L = []
-    front_door = O.door_stick(12.0, 26.0)
-    back_door = O.door_stick(10.0, 24.0, leaves=1, transom=3.4)
+    front_door = O.door_stick(13.0, 30.0)
+    back_door = O.door_stick(11.0, 27.0, leaves=1, transom=3.6)
     s41 = dict(lites=(1, 2), rows=(1, 2), qa=False)            # four-over-one sash
-    lo = O.window_stick(8.4, 21.0, **s41)
-    lo_wide = O.window_stick(10.0, 21.0, lites=(1, 3), rows=(1, 2), qa=False)     # six-over-one
-    up = O.window_stick(8.4, 20.0, **s41)
-    attic = O.window_stick(6.0, 11.0, apron=False, **s41)
+    lo = O.window_stick(9.6, 24.0, **s41)
+    lo_wide = O.window_stick(11.4, 24.0, lites=(1, 3), rows=(1, 2), qa=False)     # six-over-one
+    up = O.window_stick(9.6, 21.0, **s41)
+    attic = O.window_stick(7.2, 14.0, apron=False, **s41)
 
     def add(blk, x, y, v0, sp, name, kind="window"):
         e, u = blk.locate(x, y)
         L.append(Opening(blk, e, u, v0, sp, name, kind))
 
-    va = ZE - ZF + 2.0
-    add(MAIN, 18.0, 0.0, 0.4, front_door, "front-door", "door")
-    add(MAIN, 44.0, 0.0, V1, lo_wide, "front-1")
-    for x in (15.0, 45.0):
+    va = ZW - ZF + 3.0
+    add(MAIN, 30.0, 0.0, 0.4, front_door, "front-door", "door")
+    add(MAIN, 72.0, 0.0, V1, lo_wide, "front-1")
+    for x in (25.0, 75.0):
         add(MAIN, x, 0.0, V2, up, f"front-2-{int(x)}")
-    for x in (MW / 2 - 7.0, MW / 2 + 7.0):
+    for x in (MW / 2 - 11.0, MW / 2 + 11.0):
         add(MAIN, x, 0.0, va, attic, f"front-attic-{int(x)}")
-    for y in (14.0, 42.0, 70.0):
+    for y in (24.0, 70.0, 116.0):
         add(MAIN, 0.0, y, V1, lo, f"west-1-{int(y)}")
         add(MAIN, 0.0, y, V2, up, f"west-2-{int(y)}")
-    for y in (9.0, 73.0):
+    for y in (15.0, 122.0):
         add(MAIN, MW, y, V1, lo, f"east-1-{int(y)}")
         add(MAIN, MW, y, V2, up, f"east-2-{int(y)}")
-    add(MAIN, 45.0, MD_, 0.4, back_door, "back-door", "door")
-    add(MAIN, 15.0, MD_, V1, lo, "back-1")
-    for x in (15.0, 45.0):
+    add(MAIN, 75.0, MD_, 0.4, back_door, "back-door", "door")
+    add(MAIN, 25.0, MD_, V1, lo, "back-1")
+    for x in (25.0, 75.0):
         add(MAIN, x, MD_, V2, up, f"back-2-{int(x)}")
     add(MAIN, MW / 2, MD_, va, attic, "back-attic")
     xm = (MW + WX1) / 2 + 1.5
@@ -160,7 +167,7 @@ def _openings():
     add(WING, xm, WY0, V2, up, "wing-front-2")
     add(WING, xm, WY1, V1, lo, "wing-back-1")
     add(WING, xm, WY1, V2, up, "wing-back-2")
-    for y in (WY0 + 10.0, WY1 - 10.0):
+    for y in (WY0 + 16.0, WY1 - 16.0):
         add(WING, WX1, y, V1, lo, f"wing-east-1-{int(y)}")
     add(WING, WX1, (WY0 + WY1) / 2, V2, up, "wing-east-2")
     add(WING, WX1, (WY0 + WY1) / 2, va, attic, "wing-attic")
@@ -179,15 +186,20 @@ def build(kit=None):
     rf = G.gabled_roof(_pieces(), Z_EAVE, D_EAVE, specs, texture="stagger", tex_kw=dict(pitch=1.6, wtab=1.9, d=0.4),
                        skin=SKIN, rake=RAKE, inner_cs=offset(base, -3.0), fascia=FASCIA)
     gables = [(g["blk"], g["edge"], wl["cs"].translate((g["u0"], Z_EAVE - ZF))) for g, wl in zip(specs, rf["walls"])]
-    bprof, bblocks = TW.BELTS["cleat"]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="stepped", siding=_siding, gables=gables, prof=bprof,
-                        belt_blocks=bblocks)
+    undress = [slab(offset(base, 8.0), ZE - LEDGE - 0.6, ZW + 0.01)]
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="stepped", siding=_siding, gables=gables,
+                        prof=CO.joint_profile(RJ, LEDGE), belt_blocks=None, water_table=False, undress=undress)
     kit.add("WALLS-1", "Sage", st["shells"][0], group="walls")
-    kit.add("BELT", "Cream", st["rings"][0], group="walls")
-    no_lip = union([box([-1, -1, ZE - 1], [MW + 1, 5.0, ZE + 5]), box([-1, MD_ - 5.0, ZE - 1], [MW + 1, MD_ + 1, ZE + 5]),
-                    box([WX1 - 5.0, WY0 - 1, ZE - 1], [WX1 + 1, WY1 + 1, ZE + 5])])
-    lip = (_corbel(base, 3.0, ZE) + lip_ring(base, 3.0, ZE)) - no_lip
-    kit.add("WALLS-2", "Sage", st["shells"][1] + lip, group="walls")
+    kit.add("JOINT", "Sage", st["rings"][0], group="walls")
+    no_lip = union([box([-1, -1, ZW - 1], [MW + 1, 5.0, ZW + 5]), box([-1, MD_ - 5.0, ZW - 1], [MW + 1, MD_ + 1, ZW + 5]),
+                    box([WX1 - 5.0, WY0 - 1, ZW - 1], [WX1 + 1, WY1 + 1, ZW + 5])])
+    lip = (_corbel(base, 3.0, ZW) + lip_ring(base, 3.0, ZW)) - no_lip
+    eave_path = max(base.to_polygons(), key=lambda L_: abs(poly(L_).area()))
+    kit.add("WALLS-2", "Sage", st["shells"][1] + lip + CO.ledge(eave_path, ZE, LEDGE), group="walls")
+    rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
+    add_rings(kit, rings, "CORNICE-J", "cornice")
+    rings, _ = CO.level(eave_path, ZE, EAVE)
+    add_rings(kit, rings, "CORNICE-E", "cornice")
     kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF, style="parged"), group="foundation")
     inserts = []
     for o in OPENINGS:
@@ -205,27 +217,27 @@ def build(kit=None):
     zr = Z_EAVE + SLOPE * (MW / 2 + D_EAVE)
     zw = Z_EAVE + SLOPE * ((WY1 - WY0) / 2 + D_EAVE)
     x_meet = MW - ((zw - Z_EAVE) / SLOPE - D_EAVE) - 1.0
-    caps = union([G.ridge_cap((MW / 2, -RAKE), (MW / 2, MD_ + RAKE), zr, SLOPE, ZE),
-                  G.ridge_cap((x_meet, (WY0 + WY1) / 2), (WX1 + RAKE, (WY0 + WY1) / 2), zw, SLOPE, ZE)])
+    caps = union([G.ridge_cap((MW / 2, -RAKE), (MW / 2, MD_ + RAKE), zr, SLOPE, ZW),
+                  G.ridge_cap((x_meet, (WY0 + WY1) / 2), (WX1 + RAKE, (WY0 + WY1) / 2), zw, SLOPE, ZW)])
     walls_env = union([wl["facade"].place(M.extrude(wl["cs"].offset(0.15), 4.0).translate([0, 0, -3.15]))
                        for wl in rf["walls"]])
     roof = rf["body"] + rf["tex"] + rf["skins"] + rf["skin_tex"] + (caps - walls_env)
-    roof = roof - lip_keep(base, 3.0, ZE)
-    CH = 8.0
-    chims = [(MW / 2, 58.0)]
+    roof = roof.trim_by_plane([0, 0, 1.0], ZW) - lip_keep(base, 3.0, ZW)
+    CH = 10.0
+    chims = [(MW / 2, 96.0)]
     z_low = zr - SLOPE * (CH / 2) - 0.2
     z0 = round((z_low - 2.4) / 0.2) * 0.2
-    solid_env, _ = R.hip_roof(_pieces(), Z_EAVE, SLOPE, D_EAVE, texture=None, zlo=ZE)
+    solid_env, _ = R.hip_roof(_pieces(), Z_EAVE, SLOPE, D_EAVE, texture=None, zlo=ZW)
     for (x, y) in chims:
         roof = roof + G.chimney_seat(solid_env, x, y, CH / 2, zr + 1.0)
     g = CH / 2 + 0.8                         # clear of the chimney's pilaster ribs
     pockets = union([box([x - g, y - g, z0], [x + g, y + g, zr + 40]) for x, y in chims])
     kit.add("ROOF", "Charcoal", roof - pockets, group="roof")
     for k, (x, y) in enumerate(chims):
-        ch = TW.chimney("ribbed", w=CH, d=CH, h=round((zr + 12.0 - z0) / 0.2) * 0.2).translate([x, y, z0])
+        ch = TW.chimney("ribbed", w=CH, d=CH, h=round((zr + 16.0 - z0) / 0.2) * 0.2).translate([x, y, z0])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
     for k, (g, wl) in enumerate(zip(specs, rf["walls"])):
-        tr = G.gable_truss(wl["L"], wl["slope"], D_EAVE, skin=SKIN, width=1.6)
+        tr = G.gable_truss(wl["L"], wl["slope"], D_EAVE, skin=SKIN, width=2.0)
         f = wl["facade"]
         A = f.A.copy()
         A[:, 3] = f.world(0.0, 0.0, RAKE)
@@ -233,14 +245,14 @@ def build(kit=None):
     print("roof", round(time.time() - t0, 1))
 
     # --- braced porch across the front
-    PD = 16.0
+    PD = 24.0
     ppoly = [(0.0, -PD), (MW, -PD), (MW, 0.0), (0.0, 0.0)]
     runs = [dict(a=(0.0, 0.0), b=(0.0, -PD), posts=[3.2, PD - 1.6]),
-            dict(a=(0.0, -PD), b=(MW, -PD), posts=[1.6, 11.0, 25.0, 42.0, MW - 1.6]),
+            dict(a=(0.0, -PD), b=(MW, -PD), posts=[1.6, 20.0, 40.0, 60.0, 80.0, MW - 1.6]),
             dict(a=(MW, -PD), b=(MW, 0.0), posts=[1.6, PD - 3.2])]
-    H_floor = ZF - 1.0
-    post_h = 43.6 - H_floor
-    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, 18.0, 12.0)],
+    H_floor = ZF - 1.4
+    post_h = S1 - 2.0 - 5.6 - H_floor              # the roof tucks under the joint's ledge
+    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, 30.0, 16.0)],
                         planks=dict(pitch=1.7, border=1.6, diagonal=True),
                         joined=True, ledger_off=1.5, arcade="braced", post="stick", rail="x", skirt="slats",
                         pier_tex="parged", roof_edge="sticks")
@@ -263,11 +275,11 @@ def build(kit=None):
     kit.add("PORCH-roof-tin", "Charcoal", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "Fieldstone", sm.transform(A) - fkeep, group="porch")
-    e, u = MAIN.locate(45.0, MD_)
+    e, u = MAIN.locate(75.0, MD_)
     f = MAIN.facades()[e]
     A = f.A.copy()
     A[:, 3] = f.world(u, -ZF, 1.4)
-    kit.add("STOOP-back", "Fieldstone", FT.steps(13.0, ZF - 0.6, 3).transform(A), group="porch")
+    kit.add("STOOP-back", "Fieldstone", FT.steps(15.0, ZF - 0.6, 5).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
     print("specks dropped:", kit.drop_specks())
     return kit

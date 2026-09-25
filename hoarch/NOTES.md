@@ -287,3 +287,76 @@ roof into 127, and `drop_specks` then threw the small ones away. Every wall skin
 facing and roof texture is now sunk 0.02-0.03 mm into its surface (`shell.wall_shell`,
 `shell.foundation`, `roof.hip_texture`, `trimwork._skin`), and ornament keeps the 0.2 mm
 overlap rule. Mount shutters just proud of the deepest siding (Dutch lap butts stand 0.46).
+
+## Size standard (houses 21 to 30, Rev C)
+
+The first cut of the second batch read as skinny next to the reference kits. Both references
+are true HO: the pink house is 206 x 137 mm with a 40.6 mm storey pitch, and the tan house is
+216 x 147 mm with storeys about 46 mm tall. They are simply mansion-sized. The houses now match:
+
+- The main block is 180 to 210 mm long, so a house fills most of a 256 x 256 bed (P1S, P2S).
+  The deepest parts still fit it.
+- The first storey is 42 mm and the second 38 mm, over a 12 to 14 mm foundation. The joint
+  band between them is about 10 mm; its height comes from the cornice there (next section).
+- Windows are 8.4 mm wide, 24 mm tall downstairs and 21 mm upstairs, spaced well apart. A
+  window no longer fills its storey's height or its wall's width.
+- Porch posts are 20 to 30 mm apart, and round towers and porches use fewer facets.
+
+## Built-up cornices (`cornice.py`)
+
+Every level has a cornice: each storey joint, each eave, and the tower and bay tops. As in
+the reference kits, a cornice is several rings stacked round the wall. Each ring is its own
+part in its own colour. No two cornice levels in the collection are alike: see the cornice
+table in `COLLECTION.md`.
+
+- **The wall carries it.** Where the cornice goes, the wall is a plain band standing on a
+  45° ledge (`ledge`, `joint_profile`). The band has no siding and no openings.
+  - `wall_shell(undress=...)` keeps the siding and corner boards out of the band.
+  - The next storey, or the roof, sits on the band as before.
+- **The rings wrap the band** 0.15 mm off the wall, stacked low to high:
+  - a *frieze*: panels, medallions, swags, fret, triglyphs and so on;
+  - a *course*: dentils, egg and dart, cable, billets and so on;
+  - a *bed* with brackets or modillions hanging in front of the rings below;
+  - a *crown* moulding.
+- **Print orientation.** The frieze and course print upright, with their relief stepped back
+  0.2 mm a layer underneath. The bed and crown print upside down, so they widen toward the bed.
+- **Spacing.** One pitch and margin per level, so the frieze ornaments centre between the
+  brackets above them.
+- **Towers.** A ring that meets a tower rising through its level is cut back to it. Each
+  remaining piece is its own part.
+- **Fitting order.** Each ring drops over its band from above, so the joint rings go on before
+  the storey above them and the eave rings before the roof.
+- **Rings that wrap a tower.** An eave cornice can also wrap a tower (the Beaumont, Harcourt,
+  Ardmore and Carrow). A closed ring could not be fitted, because the tower's top storey and
+  its ledge are in the way. `CO.tower_cuts` and `CO.blades` part the rings with 0.3 mm cuts:
+  - at the inside corners where the tower meets the house;
+  - where a tower face runs on flush with a wall;
+  - once through the tower's far side.
+
+  No piece then wraps more than half the tower, and each one fits on from the side.
+- **The roof.** It sits on the band's top. Its eave projects past the crown, so the crown
+  shows under it.
+- **Gable ornaments** are trimmed where they meet the roof.
+- **End gables.** Where the gable ornament hangs off a rake, the rake overhangs further than
+  the eave.
+- `CO.signature(spec)` gives a level's pattern. `CO.specs_of(module)` collects a building's
+  levels for the uniqueness check.
+
+## Framed windows v2
+
+- Every sash has a frame lining, from 0.55 mm wide on narrow lights to 0.9 mm on a
+  full-size window (`openings.sash_frame`).
+- The frame has stiles, and the upper and lower sashes meet at a 0.8 mm meeting rail.
+- The houses use 1.3 mm casings with a back band (`casing=1.3, band=True`).
+  `window_commercial(band=True)` gives shop windows one too.
+- Renders colour the sash zone in the trim colour and the glass dark.
+- For dark glass in a print, change filament at 0.4 mm on the `Windows_Doors` plate (the
+  glass is the first two layers, printed face-up).
+
+## Flat faces off the slicing planes at export (`kit.unmid`)
+
+Upright ornament (frieze reliefs, course teeth) meets the 0.2 mm grid wherever its curves
+fall. A flat face exactly on a slicing plane (0.1 + 0.2k above the bed) slices to
+zero-thickness slivers. `Part.printed()` now runs `unmid`, which lifts every vertex within
+0.012 mm of a slicing plane by 0.06 mm. Nothing visible moves, and the print checks no
+longer report mid-layer faces.

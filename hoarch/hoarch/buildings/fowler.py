@@ -1,12 +1,20 @@
-"""The Fowler -- an original HO-scale (1:87.1) octagon house of the 1850s for the lineup.
+"""The Fowler -- an original HO-scale (1:87.1) octagon house of the 1850s for the lineup. Rev B: the
+house-size plan (an octagon 148 mm across the flats, storeys of 42 and 38 mm) and built-up
+cornices at every level.
 
 Two storeys on an octagonal plan with scored-stucco walls (the grout walls of Fowler's
-octagons, lined out as stone) and corner boards on a brick foundation, a double belt
-course, a two-layer eave (a panelled frieze course under a cornice of pierced fan brackets),
-a low red 5V-crimp metal roof, an octagonal shiplap cupola with a ball finial, and a
-veranda wrapping five faces on Tuscan columns with Chippendale railings, a scalloped
-valance and a diamond skirt. Greek Revival six-over-six windows under peaked caps with
-louvered shutters, a sidelighted entrance under an entablature, and banded chimneys.
+octagons, lined out as stone) and corner boards on a brick foundation, a low red 5V-crimp metal
+roof, an octagonal shiplap cupola with a ball finial, and a veranda wrapping five faces on
+Tuscan columns with Chippendale railings, a scalloped valance and a diamond skirt. Greek
+Revival six-over-six windows under peaked caps with louvered shutters, a sidelighted entrance
+under an entablature, and banded chimneys.
+
+- Between the storeys a three-part cornice: a green frieze of bead wreaths tied with ribbons,
+  a white pellet course and a white ovolo crown.
+- At the eave a four-part cornice: a green frieze of spoked paterae, a white dentil course, a
+  white soffit on paired pierced fan brackets and a white torus crown.
+- Round the cupola: a white frieze of sunk lunettes with beads, a green soffit on fan brackets
+  and a white bevel crown.
 
 usage: python3 -m hoarch.buildings.fowler [check] [export]
 """
@@ -18,8 +26,8 @@ import time
 import numpy as np
 from manifold3d import Manifold as M
 
-from hoarch.core import box, compose, cs_union, inv34, ngon, offset, poly, slab, union
-from hoarch import features as FT, openings as O, roof as R, skins as SK, trimwork as TW
+from hoarch.core import box, compose, inv34, ngon, offset, rect, slab, union
+from hoarch import cornice as CO, features as FT, openings as O, roof as R, skins as SK, trimwork as TW
 from hoarch.kit import Kit, print_flip
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells, wall_shell
 
@@ -35,24 +43,40 @@ PALETTE = {"siding": ["#E3CF94", 0.6, 0.0], "trim": ["#F2F0EB", 0.55, 0.0], "roo
            "accent": ["#2F4A3A", 0.5, 0.0], "stone": ["#8D877C", 0.9, 0.0], "brick": ["#8A3B2B", 0.85, 0.0],
            "porchfloor": ["#6B706F", 0.7, 0.0], "sash": ["#2E3B33", 0.45, 0.0], "door": ["#4A2616", 0.45, 0.0]}
 
+# ------------------------------------------------------------------ cornices (unique to the Fowler)
+LEDGE = 1.4
+JOINT = dict(pitch=12.0, margin=4.0, layers=[
+    dict(kind="frieze", h=4.8, b=1.2, orn="wreaths", role="Forest"),
+    dict(kind="course", h=1.6, b=1.4, orn="pellets", role="White"),
+    dict(kind="crown", h=2.2, b=1.4, P=3.6, orn="ovolo", role="White")])
+EAVE = dict(pitch=12.0, margin=4.2, pair=1.9, layers=[
+    dict(kind="frieze", h=5.6, b=1.2, orn="paterae", role="Forest"),
+    dict(kind="course", h=1.6, b=1.4, orn="dentil", role="White", tooth=0.9, gap=0.6),
+    dict(kind="bed", h=2.2, b=1.4, P=6.6, role="White", brackets=dict(style="fan", t=0.8, reach=0.6)),
+    dict(kind="crown", h=2.8, b=1.4, P=7.2, orn="torus", role="White")])
+CUPOLA_C = dict(pitch=8.0, margin=2.6, pair=1.4, layers=[
+    dict(kind="frieze", h=4.2, b=1.2, orn="lunettes", role="White"),
+    dict(kind="bed", h=1.8, b=1.4, P=4.8, role="Forest", brackets=dict(style="fan", t=0.7, reach=0.7)),
+    dict(kind="crown", h=2.0, b=1.4, P=5.4, orn="bevel", role="White")])
+RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2
+HE = CO.band_height(EAVE)
+
 # ------------------------------------------------------------------ levels (on the 0.2 mm grid)
-ZF = 12.0
-S1 = ZF + 38.0
-RH = 4.4
-ZE = S1 + RH + 34.0
-FR_H = 5.6                       # frieze course (lower eave layer)
-EAVE = R.EAVE_DEEP
-Z_EAVE_TOP = ZE + FR_H + EAVE[-1][1]
-V1, V2 = 6.0, S1 + RH + 3.0 - ZF
-ROOF_SLOPE, D_EAVE = 0.45, 7.0
+ZF = 14.0
+S1 = ZF + 42.0
+ZE = S1 + RJ + 38.0
+ZW = ZE + HE
+FASCIA = 1.8
+Z_EAVE = ZW + FASCIA
+V1, V2 = 8.0, S1 + RJ + 5.0 - ZF
+ROOF_SLOPE, D_EAVE = 0.45, 7.6
 
 # ------------------------------------------------------------------ plan
-C = (60.0, 60.0)
-APO = 50.0
-MAIN = Block("main", ngon(C, APO), ZF, ZE)
+C = (80.0, 80.0)
+APO = 74.0
+MAIN = Block("main", ngon(C, APO), ZF, ZW)
 BLOCKS = [MAIN]
-CUP_APO, CUP_H = 15.0, 20.0
-BRK = dict(pitch=9.0, margin=4.2, pair=1.9, t=0.8)
+CUP_APO, CUP_H = 21.0, 26.0
 ROOF_TEX = "crimp"
 
 
@@ -64,10 +88,10 @@ def _mid(k, pts=None):
 
 def _openings():
     L = []
-    lo = O.window_greek(9.6, 22.0)                   # six-over-six
-    up = O.window_greek(9.0, 19.0)
-    front = O.door_greek(12.0, 25.0, side=2.6)
-    back = O.door_greek(10.0, 24.0, side=1.8)
+    lo = O.window_greek(9.6, 24.0)                   # six-over-six
+    up = O.window_greek(9.0, 21.0)
+    front = O.door_greek(13.0, 30.0, side=3.0)
+    back = O.door_greek(11.0, 27.0, side=2.0)
 
     def add(x, y, v0, sp, name, kind="window", shut=True):
         e, u = MAIN.locate(x, y)
@@ -100,7 +124,17 @@ def _eave_dist(x, y, apo):
 
 
 def _stucco(f, b, reg):
-    return SK.scored_stucco(reg, datum=1.8)
+    """Scored stucco; nothing in the eave's cornice band."""
+    return SK.scored_stucco(reg - rect(-1, ZE - b.z0, f.L + 1, 999), datum=1.8)
+
+
+def add_rings(kit, rings, prefix, group):
+    """Each cornice ring as its own part."""
+    for r in rings:
+        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
+        for j, pc in enumerate(pcs):
+            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
+            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
 
 
 def build(kit=None):
@@ -108,13 +142,17 @@ def build(kit=None):
     kit.parts.clear()
     t0 = time.time()
     clear = [lip_keep(MAIN.cs, 3.0, ZF, 1.2)]
-    bprof, bblocks = TW.BELTS["double"]
-    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", clear=clear, siding=_stucco, prof=bprof,
-                        belt_blocks=bblocks)
+    undress = [slab(offset(MAIN.cs, 8.0), ZE - LEDGE - 0.6, ZW + 0.01)]
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="board", clear=clear, siding=_stucco,
+                        prof=CO.joint_profile(RJ, LEDGE), belt_blocks=None, water_table=False, undress=undress)
     kit.add("WALLS-1", "Butter", st["shells"][0], group="walls")
-    kit.add("BELT", "White", st["rings"][0], group="walls")
-    # the top shell carries a lip for the frieze course (the eave's lower layer)
-    kit.add("WALLS-2", "Butter", st["shells"][1] + _corbel(MAIN.cs, 3.0, ZE) + lip_ring(MAIN.cs, 3.0, ZE), group="walls")
+    kit.add("JOINT", "Butter", st["rings"][0], group="walls")
+    lip = _corbel(MAIN.cs, 3.0, ZW) + lip_ring(MAIN.cs, 3.0, ZW)
+    kit.add("WALLS-2", "Butter", st["shells"][1] + lip + CO.ledge(MAIN.pts, ZE, LEDGE), group="walls")
+    rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
+    add_rings(kit, rings, "CORNICE-J", "cornice")
+    rings, _ = CO.level(MAIN.pts, ZE, EAVE)
+    add_rings(kit, rings, "CORNICE-E", "cornice")
     kit.add("FOUNDATION", "Brick", foundation(BLOCKS, 0.0, ZF, style="brick"), group="foundation")
     inserts = []
     for o, shut in OPENINGS_S:
@@ -137,60 +175,59 @@ def build(kit=None):
                         group="shutters")
     print("walls + inserts", round(time.time() - t0, 1))
 
-    # --- two-layer eave: an upright frieze course, then the bracketed cornice upside down
-    kit.add("EAVE-frieze", "White", R.frieze_ring(MAIN.pts, ZE, h=FR_H, brackets=BRK), group="roof")
-    eave = R.bracketed_cornice(MAIN.pts, ZE + FR_H, EAVE,
-                               brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, style="fan", **BRK),
-                               dents=dict(z=4.4, h=0.8, d0=0.9, d=0.7))
-    kit.add("EAVE-cornice", "White", eave, P=print_flip(), group="roof")
-    # --- low octagonal standing-seam roof, flat on top for the cupola, two chimneys
-    ze = Z_EAVE_TOP
-    run_ = (APO + D_EAVE) - (CUP_APO + 2.0)
+    # --- low octagonal 5V-crimp roof on the band, flat on top for the cupola, two chimneys
+    ze = Z_EAVE
+    run_ = (APO + D_EAVE) - (CUP_APO + 3.0)
     flat = round((ze + ROOF_SLOPE * run_) / 0.2) * 0.2
-    roof, tex = R.hip_roof([(MAIN.pts, list(range(8)))], ze, ROOF_SLOPE, D_EAVE, texture=ROOF_TEX, flat_top=flat)
-    chims = [(C[0] - 26.0, C[1] + 14.0), (C[0] + 26.0, C[1] + 14.0)]
+    roof, tex = R.hip_roof([(MAIN.pts, list(range(8)))], ze, ROOF_SLOPE, D_EAVE, texture=ROOF_TEX, flat_top=flat, zlo=ZW)
+    CW = 12.0
+    chims = [(C[0] - 38.0, C[1] + 20.0), (C[0] + 38.0, C[1] + 20.0)]
 
     def chim_z0(x, y):
-        return ze + ROOF_SLOPE * (_eave_dist(x, y, APO + D_EAVE) - 7.5) - 3.0
-    pockets = union([box([x - 5.65, y - 5.65, chim_z0(x, y)], [x + 5.65, y + 5.65, flat + 30]) for x, y in chims])
-    kit.add("ROOF-main", "TinRed", (roof + tex) - pockets, group="roof")
+        return round((ze + ROOF_SLOPE * (_eave_dist(x, y, APO + D_EAVE) - CW * 0.72) - 3.0) / 0.2) * 0.2
+    pockets = union([box([x - CW / 2 - 0.4, y - CW / 2 - 0.4, chim_z0(x, y)], [x + CW / 2 + 0.4, y + CW / 2 + 0.4, flat + 30])
+                     for x, y in chims])
+    kit.add("ROOF-main", "TinRed", (roof + tex) - pockets - lip_keep(MAIN.cs, 3.0, ZW), group="roof")
     for k, (x, y) in enumerate(chims):
         z0 = chim_z0(x, y)
-        ch = TW.chimney("banded", w=10.5, d=10.5, h=flat + 12.0 - z0).translate([x, y, z0])
+        ch = TW.chimney("banded", w=CW, d=CW, h=round((flat + 14.0 - z0) / 0.2) * 0.2).translate([x, y, z0])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
     print("roof", round(time.time() - t0, 1))
 
-    # --- octagonal cupola: arched windows on every face, bracketed eave, cap and finial
-    cup = Block("cupola", ngon(C, CUP_APO), flat, flat + CUP_H)
-    cwin = O.window_greek(5.6, 9.0, lites=(2, 2), rows=(1, 1), A=0.9)
+    # --- octagonal cupola: arched windows on every face, its own cornice, a crimp cap and finial
+    cze = flat + CUP_H
+    czw = cze + CO.band_height(CUPOLA_C)
+    cup = Block("cupola", ngon(C, CUP_APO), flat, czw)
+    cwin = O.window_greek(7.0, 11.0, lites=(2, 2), rows=(1, 1), A=0.9)
     cup_ops = []
     for k in range(8):
         m = _mid(k, cup.pts)
         e, u = cup.locate(m[0], m[1])
-        cup_ops.append(Opening(cup, e, u, 2.6, cwin, f"cupola-{k}"))
-    kit.add("CUPOLA-walls", "Butter", wall_shell([cup], cup_ops, t=2.4, belt=None, corners="board", water_table=False,
-                                                 siding=lambda f, b, reg: SK.shiplap(reg, datum=0.6)), group="cupola")
+        cup_ops.append(Opening(cup, e, u, 3.6, cwin, f"cupola-{k}"))
+    cup_und = [slab(offset(cup.cs, 8.0), cze - LEDGE - 0.6, czw + 0.01)]
+    cwalls = wall_shell([cup], cup_ops, t=2.4, belt=None, corners="board", water_table=False, undress=cup_und,
+                        siding=lambda f, b, reg: SK.shiplap(reg - rect(-1, cze - b.z0, f.L + 1, 999), datum=0.6))
+    clip = _corbel(cup.cs, 2.4, czw) + lip_ring(cup.cs, 2.4, czw)
+    kit.add("CUPOLA-walls", "Butter", cwalls + CO.ledge(cup.pts, cze, LEDGE, t=2.4) + clip, group="cupola")
     for o in cup_ops:
         A = o.local_frame()
         world, P, zones = O.place(o.spec, A, "White", "Sash", "Glass")
         kit.add(f"WIN-{o.name}", "Windows_Doors", world, P=P, key="WIN-cupola", group="cupola", render=zones)
-    cz = flat + CUP_H
-    cup_eave = R.bracketed_cornice(cup.pts, cz, R.CORNICE_SMALL,
-                                   brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=6.0, pair=1.4, margin=2.6,
-                                                 style="fan"),
-                                   dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7), lip_t=2.4, deck=(6.0, 8.0))
-    kit.add("CUPOLA-eave", "White", cup_eave, P=print_flip(), group="cupola")
-    croof, ctex = R.hip_roof([(cup.pts, list(range(8)))], cz + 8.0, 0.7, 4.0, texture=ROOF_TEX,
-                             tex_kw=dict(seam_pitch=3.6))
-    rr = CUP_APO + 4.0
-    zseat = round((cz + 8.0 + 0.7 * rr - 1.0) / 0.2) * 0.2
-    seat = M.cylinder(1.0, 1.35, 1.35, 32).translate([C[0], C[1], zseat - 0.4])
-    kit.add("CUPOLA-roof", "TinRed", (croof + ctex).trim_by_plane([0, 0, -1.0], -zseat) - seat, group="cupola")
-    kit.add("CUPOLA-finial", "TinRed", TW.finial("ball", 1.2, 8.0).translate([C[0], C[1], zseat - 0.4]), group="cupola")
+    rings, _ = CO.level(cup.pts, cze, CUPOLA_C, t=2.4)
+    add_rings(kit, rings, "CORNICE-CUP", "cupola")
+    cd = CUPOLA_C["layers"][-1]["P"] + 0.6
+    croof, ctex = R.hip_roof([(cup.pts, list(range(8)))], czw + 1.4, 0.7, cd, texture=ROOF_TEX,
+                             tex_kw=dict(seam_pitch=3.6), zlo=czw)
+    rr = CUP_APO + cd
+    zseat = round((czw + 1.4 + 0.7 * rr - 1.0) / 0.2) * 0.2
+    seat = M.cylinder(1.0, 1.5, 1.5, 32).translate([C[0], C[1], zseat - 0.4])
+    kit.add("CUPOLA-roof", "TinRed", (croof + ctex).trim_by_plane([0, 0, -1.0], -zseat) - seat
+            - lip_keep(cup.cs, 2.4, czw), group="cupola")
+    kit.add("CUPOLA-finial", "TinRed", TW.finial("ball", 1.4, 9.6).translate([C[0], C[1], zseat - 0.4]), group="cupola")
     print("cupola", round(time.time() - t0, 1))
 
     # --- veranda round the three front faces, its ends on the lines of the side faces
-    D = 18.0
+    D = 24.0
     V = [np.array(p) for p in MAIN.pts]
     Op = [np.array(p) for p in R.offset_path(MAIN.pts, D)]
     def nrm(k):
@@ -205,13 +242,14 @@ def build(kit=None):
     runs = []
     for i, (a, b) in enumerate(seq):
         Lr = float(np.linalg.norm(np.array(b) - np.array(a)))
-        posts = {0: [3.2, Lr - 1.6], 1: [1.6, Lr / 2, Lr - c135], 2: [c135, Lr / 2 - 9.5, Lr / 2 + 9.5, Lr - c135],
-                 3: [c135, Lr / 2, Lr - 1.6], 4: [1.6, Lr - 3.2]}[i]
+        posts = {0: [3.2, Lr - 1.6], 1: [1.6, Lr / 3, 2 * Lr / 3, Lr - c135],
+                 2: [c135, Lr / 2 - 12.0, Lr / 2 + 12.0, Lr - c135],
+                 3: [c135, Lr / 3, 2 * Lr / 3, Lr - 1.6], 4: [1.6, Lr - 3.2]}[i]
         runs.append(dict(a=a, b=b, posts=posts))
     Lf = float(np.linalg.norm(np.array(seq[2][1]) - np.array(seq[2][0])))
-    steps_at = [(2, Lf / 2, 15.0)]
-    H_floor = ZF - 1.0
-    post_h = (S1 - 0.2) - (H_floor + 5.2)
+    steps_at = [(2, Lf / 2, 18.0)]
+    H_floor = ZF - 1.4
+    post_h = S1 - 2.0 - 5.6 - H_floor              # the roof tucks under the joint's ledge
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=steps_at,
                         planks=dict(pitch=1.6, border=0.0),
                         joined=True, ledger_off=1.5, post="tuscan", rail="chippendale", arcade="valance",
@@ -241,7 +279,7 @@ def build(kit=None):
     f = MAIN.facades()[e]
     A = f.A.copy()
     A[:, 3] = f.world(u, -ZF, 1.4)
-    kit.add("STOOP-back", "Brick", FT.steps(14.0, ZF - 0.6, 3).transform(A), group="porch")
+    kit.add("STOOP-back", "Brick", FT.steps(17.0, ZF - 0.6, 5).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
     print("specks dropped:", kit.drop_specks())
     return kit

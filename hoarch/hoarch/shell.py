@@ -90,7 +90,7 @@ def _zones(H, belts, start):
 
 def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=True,
                water_table=True, partitions=(), extra_cut=None, hide_extra=None, corners=None,
-               belt_trim=True, siding=None, gables=()):
+               belt_trim=True, siding=None, gables=(), undress=()):
     """Build the one-piece shell with its siding and trim.
 
     ``belt`` = (v_bottom, v_top) of the belt course above each block's base, a list of such
@@ -103,7 +103,9 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     block's base) replaces the default clapboard, e.g. shingles on an upper storey.
     ``gables`` = [(block, edge index, cs)]: a gable wall standing on that facade, cs in the
     facade's (u, v) frame (v up from the block's base). It is part of the shell, takes the
-    facade's siding and openings, and is ``t`` thick."""
+    facade's siding and openings, and is ``t`` thick.
+    ``undress`` = solids kept clear of all dressing (siding, corner boards, quoins, beads): the
+    bands a built-up cornice wraps (hoarch.cornice)."""
     corners = corners or ("quoin" if quoins else "none")
     belts = [] if belt is None else ([belt] if isinstance(belt[0], (int, float)) else list(belt))
     quoins = corners in ("quoin", "quoin_even")
@@ -233,6 +235,8 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     dress = dress - hide - open_clear - lands
     if hide_extra is not None:
         dress = dress - hide_extra
+    for u_ in undress:
+        dress = dress - u_
     # dress must not overhang past a shorter block's roof line where it meets a taller one: fine as is
     return shell + dress
 

@@ -397,7 +397,7 @@ def applied(landing, top=None, bottom=None):
 
 # ------------------------------------------------------------------ commercial windows and doors
 def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casing=0.6, head=None, hood_w=1.2,
-                      upper=None):
+                      upper=None, band=False):
     """A plain commercial window for a brick front: a narrow brickmould casing round a
     segmental (``rise``) or flat head, sash with ``lites``/``rows``, a stone sill with lugs
     (``sill`` = its projection), and optionally a head: "hood" (a cast-iron segmental hood
@@ -414,7 +414,8 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     keystone and drop label stops, over a tympanum with a boss on a flat head) or "gablet" (a little
     boarded gable with raking boards, a spike and a drop) or "incised" (an Eastlake head board incised
     with a sunflower between grooves, under a cap with ears) or "lambrequin" (a head board hanging in
-    pointed and round tongues over the window). ``upper``: see window_insert. The brick arch of a brick
+    pointed and round tongues over the window). ``upper``: see window_insert. ``band``: a raised back-band on the
+    casing's outer edge, a stepped frame that reads from arm's length. The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -422,6 +423,11 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     sash = window_insert(w, h, rise if rise else 0, lites=lites, rows=rows, bare=True, upper=upper)["insert"]
     parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6)]
     parts.append(ext((op.offset(casing, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + casing + 1), 0.0, 0.4))
+    if band:
+        # a stepped casing: a raised back-band on the outer edge (the house-size frame)
+        bb = (op.offset(casing, JoinType.Miter, 4.0) - op.offset(casing - 0.6, JoinType.Miter, 4.0)) ^ \
+            rect(-w, 0.0, w, h + casing + 1)
+        parts.append(ext(bb, 0.39, 0.8))
     top = h + casing
     if head == "lambrequin":
         # a head board whose lower edge hangs over the window in a lambrequin (pointed and round
@@ -471,7 +477,7 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
         v0 = h + casing
         gw = w / 2 + casing + 0.8
         apex = v0 + 0.8 + gw * 0.9
-        tri = poly([(-gw, v0 + 0.8), (gw, v0 + 0.8), (0.0, apex)])
+        tri = poly([(-gw, v0 + 0.79), (gw, v0 + 0.79), (0.0, apex)])          # (overlapping the eave board)
         parts.append(ext(rect(-gw - 0.3, v0 - 0.01, gw + 0.3, v0 + 0.8), 0.0, 0.8))
         parts.append(ext(tri, 0.0, 0.4))
         parts.append(ext(tri - tri.offset(-0.8, JoinType.Miter, 4.0), 0.0, 0.8))

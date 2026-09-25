@@ -48,11 +48,20 @@ def footprint(surround, op, grow=0.15):
     return cs_union([surround.project().offset(grow, JoinType.Miter, 4.0), op.offset(grow, JoinType.Miter, 4.0)])
 
 
+def _drop_flat(m):
+    """Drop zero-volume slivers (flat leftovers where two mouldings only touch)."""
+    pcs = m.decompose()
+    if len(pcs) < 2:
+        return m
+    keep = [c for c in pcs if abs(c.volume()) > 0.01]
+    return union(keep) if keep and len(keep) < len(pcs) else m
+
+
 def _one_piece(sash_parts, sur_parts, op, plug_cs, pl, top, bottom, land_extra=None):
     """Join the plug (glass and sash) and the surround into one part (see the module notes).
     Returns the insert dict; ``glass``/``sash``/``frame`` are its colour zones for renders."""
-    sur = union(sur_parts)
-    sash = union(sash_parts)
+    sur = _drop_flat(union(sur_parts))
+    sash = _drop_flat(union(sash_parts))
     loose = [round(c.volume(), 2) for c in (sur + sash).decompose()]
     if len(loose) > 1:
         print("  WARNING: one-piece insert falls into", len(loose), "pieces", sorted(loose)[:6])
@@ -97,6 +106,12 @@ def _arc_band(w_in, spring, rise, r_in_extra, thick, u_ext=0.0, seg=32):
     return band, cy, r0
 
 
+def sash_frame(w):
+    """Width of a sash's frame lining for a ``w`` wide opening (0.55 on the narrowest
+    lights, 0.9 on a full-size window)."""
+    return min(0.9, max(0.55, 0.11 * w))
+
+
 def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare=False, ends=0.9, sill_ext=0.6,
                   clip=False, apron=False, consoles=None, qa=False, rows=(1, 1), upper=None):
     """Italianate window: segmental- or round-arched head, eared casing,
@@ -118,7 +133,10 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     pl, rec = PLUG, SASH_REC
     parts = []
     # --- glass + sash ring + bars ---------------------------------------------------
-    frame_w = 0.55
+    # the frame lining flush with the wall face, then the sash stiles a step back: bold
+    # enough to read as a framed window from arm's length (the reference kits' look)
+    frame_w = sash_frame(w)
+    stile = min(0.7, max(RIB, 0.08 * w))
     glass = ext(plug_cs, -pl, -pl + GLASS)
     ring = ext(plug_cs - plug_cs.offset(-frame_w, JoinType.Miter, 4.0), -pl, 0.0)
     parts += [glass, ring]
@@ -126,7 +144,7 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     bars = []
     lo, up = lites
     mr = h * 0.46                              # meeting rail height
-    bars.append(rect(-w, mr - 0.3, w, mr + 0.3))
+    bars.append(rect(-w, mr - 0.4, w, mr + 0.4))
     for n, v0, v1 in ((lo, 0, mr), (up, mr, h)):
         for i in range(1, n):
             u = -w / 2 + w * i / n
@@ -184,7 +202,7 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     sash = cs_union(bars) ^ inner
     parts.append(ext(sash, -pl + GLASS, -rec))
     # upper sash frame (a second frame line just inside the ring reads as the sash stile)
-    parts.append(ext(inner - inner.offset(-RIB, JoinType.Miter, 4.0), -pl + GLASS, -rec))
+    parts.append(ext(inner - inner.offset(-stile, JoinType.Miter, 4.0), -pl + GLASS, -rec))
     if bare:
         ins = union(parts)
         return dict(insert=ins, sash=ins, surround=None, cut=op, landing=op.offset(0.2, JoinType.Miter, 4.0),
@@ -1442,7 +1460,7 @@ def window_gothic(w, h, k=1.0, lights="twin", head="label", arch_w=1.4, hood_w=1
     op = rect(-w / 2, 0.0, w / 2, h) if flat else pointed_cs(-w / 2, w / 2, 0.0, spring, k)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
     pl = PLUG
-    frame_w = 0.55
+    frame_w = sash_frame(w)
     inner = plug_cs.offset(-frame_w, JoinType.Miter, 4.0)
     mr = spring * 0.5 if not flat else h * 0.46
     sash_parts = [ext(plug_cs, -pl, -pl + GLASS),

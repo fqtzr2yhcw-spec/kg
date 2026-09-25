@@ -1,5 +1,7 @@
 """Laurel & Myrtle -- an original HO-scale (1:87.1) pair of San Francisco Italianate row houses,
-after the user's photo of a cream house and a sage house side by side.
+after the user's photo of a cream house and a sage house side by side. Rev B: the house-size
+plan (two houses 96 x 136 mm, storeys of 46 and 42 mm), framed windows, and built-up cornices at
+every level.
 
 Two houses built as one model, mirror images in plan with their doors side by side in the
 middle, each on a panelled wooden raised basement and each with its own trim:
@@ -18,7 +20,11 @@ middle, each on a panelled wooden raised basement and each with its own trim:
 
 Each house climbs a tall stoop with panelled cheek walls and newel posts, and an iron area
 railing of spear-headed bars fences the ground in front of each bay. The flat roofs are the
-cornice rings' decks (a filament change gives them a dark top).
+cornice rings' decks (a filament change gives them a dark top). Built-up cornices, each house
+its own: between the storeys the Laurel's gold panelled frieze, cream egg-and-dart course and
+gold crown, the Myrtle's forest key-block frieze, sage cable course and forest crown; under
+each main cornice a frieze and a course of its own (the Laurel's gold medallions over cream
+dentils, the Myrtle's forest tulips over sage pellets).
 
 usage: python3 -m hoarch.buildings.twins [check] [export]
 """
@@ -30,8 +36,9 @@ import time
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from hoarch.core import arch_cs, box, circle, compose, cs_union, inv34, poly, rect, slab, union
-from hoarch import extras as EX, features as FT, openings as O, roof as R, skins as SK, storefront as SF, trimwork as TW
+from hoarch.core import arch_cs, box, circle, compose, cs_union, inv34, offset, poly, rect, slab, union
+from hoarch import cornice as CO, extras as EX, features as FT, openings as O, roof as R, skins as SK, storefront as SF, \
+    trimwork as TW
 from hoarch.kit import Kit, print_flip
 from hoarch.ornament import chamfer_box, ext, stroke
 from hoarch.porchwork import _clamp45
@@ -44,25 +51,45 @@ RENDER_MAT = {"Cream": "siding", "Gold": "gold", "Sage": "sage", "Forest": "fore
               "Brick": "brick", "Slate": "roof", "Iron": "iron", "Windows_Doors": "trim", "Sash": "sash",
               "Door": "door", "Glass": "glass"}
 
-# ------------------------------------------------------------------ levels (on the 0.2 mm grid)
-ZF = 18.0                       # the raised basement
-S1 = ZF + 40.0
-RH = 4.4
-ZE = S1 + RH + 38.0
-V1 = 6.0
-V2 = S1 + RH + 4.0 - ZF
+# ------------------------------------------------------------------ cornices (each house its own)
+LEDGE = 1.4
+JOINTS = {"L": dict(pitch=11.0, margin=3.6, layers=[
+              dict(kind="frieze", h=4.4, b=1.2, orn="panels", role="Gold"),
+              dict(kind="course", h=1.6, b=1.4, orn="eggdart", role="Cream"),
+              dict(kind="crown", h=2.2, b=1.4, P=3.6, orn="ogee_fillet", role="Gold")]),
+          "M": dict(pitch=11.0, margin=3.6, layers=[
+              dict(kind="frieze", h=4.4, b=1.2, orn="keys", role="Forest"),
+              dict(kind="course", h=1.6, b=1.4, orn="cable", role="Sage"),
+              dict(kind="crown", h=2.2, b=1.4, P=3.6, orn="stepped", role="Forest")])}
+FRIEZES = {"L": dict(pitch=11.0, margin=3.6, layers=[        # under each house's bracketed cornice
+               dict(kind="frieze", h=5.2, b=1.2, orn="medallions", role="Gold"),
+               dict(kind="course", h=1.6, b=1.4, orn="dentil", role="Cream", tooth=1.0, gap=0.6)]),
+           "M": dict(pitch=11.0, margin=3.6, layers=[
+               dict(kind="frieze", h=5.2, b=1.2, orn="tulips", role="Forest"),
+               dict(kind="course", h=1.6, b=1.4, orn="pellets", role="Sage")])}
+RJ = round((LEDGE + 0.4 + CO.band_height(JOINTS["L"])) / 0.2) * 0.2
+HF = CO.band_height(FRIEZES["L"])
 
-# ------------------------------------------------------------------ plan: two halves 60 wide, 76 deep
-HW, D = 60.0, 76.0
-BD = 8.0                        # the bays' depth; their cants are at 45 degrees
-PH = 28.4                       # portico: column height above the floor
-PD = 7.6                        # portico depth (front of its cornice)
-DOOR_W, DOOR_H = 11.6, 26.0
-NST, TREAD = 9, 2.2             # stoop risers and tread
-LAND = 8.0                      # stoop landing depth
-SW = 10.4                       # stoop half-width inside the cheek walls
-UC = 8.4                        # portico columns either side of the door
-CHEEK = 1.6
+# ------------------------------------------------------------------ levels (on the 0.2 mm grid)
+ZF = 22.0                       # the raised basement
+S1 = ZF + 46.0
+RH = RJ
+ZE = S1 + RJ + 42.0             # the frieze ledge's top
+ZC = ZE + HF                    # the wall top: the bracketed cornice ring sits here
+V1 = 8.0
+V2 = S1 + RJ + 5.0 - ZF
+
+# ------------------------------------------------------------------ plan: two halves 96 wide, 136 deep
+HW, D = 96.0, 136.0
+BD = 12.8                       # the bays' depth; their cants are at 45 degrees
+PH = 33.0                       # portico: column height above the floor
+PD = 10.0                       # portico depth (front of its cornice)
+DOOR_W, DOOR_H = 14.0, 32.0
+NST, TREAD = 10, 2.4            # stoop risers and tread
+LAND = 10.0                     # stoop landing depth
+SW = 12.0                       # stoop half-width inside the cheek walls
+UC = 10.0                       # portico columns either side of the door (2 inside the cheeks)
+CHEEK = 1.8
 
 
 def _half(tag):
@@ -70,10 +97,10 @@ def _half(tag):
     m = tag == "M"
     X = (lambda x: 2 * HW - x) if m else (lambda x: x)
     x0, x1 = sorted((X(0.0), X(HW)))
-    b0, b1 = sorted((X(3.4), X(33.4)))
-    main = Block(f"main{tag}", [(x0, 0), (x1, 0), (x1, D), (x0, D)], ZF, ZE)
-    bay = Block(f"bay{tag}", [(b0, 3.0), (b0, 0.0), (b0 + BD, -BD), (b1 - BD, -BD), (b1, 0.0), (b1, 3.0)], ZF, ZE)
-    H = dict(tag=tag, X=X, x0=x0, x1=x1, main=main, bay=bay, door_x=X(46.0), chim=(X(8.0), 50.0),
+    b0, b1 = sorted((X(6.0), X(56.0)))
+    main = Block(f"main{tag}", [(x0, 0), (x1, 0), (x1, D), (x0, D)], ZF, ZC)
+    bay = Block(f"bay{tag}", [(b0, 3.0), (b0, 0.0), (b0 + BD, -BD), (b1 - BD, -BD), (b1, 0.0), (b1, 3.0)], ZF, ZC)
+    H = dict(tag=tag, X=X, x0=x0, x1=x1, main=main, bay=bay, door_x=X(76.0), chim=(X(14.0), 90.0),
              party=HW)
     if not m:
         H.update(name="Laurel", wall="Cream", trim="Gold", siding=SK.narrow_lap, corners="banded", belt="tablet",
@@ -94,7 +121,8 @@ def _openings(H):
     X = H["X"]
 
     def win(w, h):
-        return SF.window_commercial(w, h, rise=H["rise"](w), lites=H["lites"], rows=H["rows"], sill=1.0, head=H["head"])
+        return SF.window_commercial(w, h, rise=H["rise"](w), lites=H["lites"], rows=H["rows"], sill=1.2, head=H["head"],
+                                    casing=1.3, band=True)
 
     def add(blk, x, y, v0, sp, name, kind="window"):
         e, u = blk.locate(x, y)
@@ -102,23 +130,23 @@ def _openings(H):
 
     bay, main = H["bay"], H["main"]
     Q = [np.array(p) for p in bay.pts]
-    for k, (w1, tag) in ((1, (4.8, "c0")), (2, (7.2, "f")), (3, (4.8, "c1"))):
+    for k, (w1, tag) in ((1, (7.2, "c0")), (2, (10.4, "f")), (3, (7.2, "c1"))):
         mm = (Q[k] + Q[k + 1]) / 2
-        add(bay, mm[0], mm[1], V1, win(w1, 26.0), f"bay{tag}-1")
-        add(bay, mm[0], mm[1], V2, win(w1, 24.0), f"bay{tag}-2")
-    door = SF.door_commercial(DOOR_W, DOOR_H, transom=5.0, leaf=H["leaf"], tstyle=H["tstyle"], head=None, leaves=2)
+        add(bay, mm[0], mm[1], V1, win(w1, 28.0), f"bay{tag}-1")
+        add(bay, mm[0], mm[1], V2, win(w1, 26.0), f"bay{tag}-2")
+    door = SF.door_commercial(DOOR_W, DOOR_H, transom=5.6, leaf=H["leaf"], tstyle=H["tstyle"], head=None, leaves=2)
     add(main, H["door_x"], 0.0, 0.0, door, "door", "door")
-    add(main, H["door_x"], 0.0, V2, win(7.2, 24.0), "over-door-2")
+    add(main, H["door_x"], 0.0, V2, win(8.4, 26.0), "over-door-2")
     xs = X(0.0)                                        # the outer side wall
-    for y in (22.0, 50.0):
-        add(main, xs, y, V1, win(7.2, 24.0), f"side{y:.0f}-1")
-        add(main, xs, y, V2, win(7.2, 22.0), f"side{y:.0f}-2")
-    add(main, X(44.0), D, 0.0, SF.door_commercial(8.0, 24.0, transom=4.0, leaf=H["leaf"], tstyle=H["tstyle"], head=None),
+    for y in (36.0, 80.0, 118.0):
+        add(main, xs, y, V1, win(8.4, 26.0), f"side{y:.0f}-1")
+        add(main, xs, y, V2, win(8.4, 24.0), f"side{y:.0f}-2")
+    add(main, X(72.0), D, 0.0, SF.door_commercial(10.0, 30.0, transom=4.4, leaf=H["leaf"], tstyle=H["tstyle"], head=None),
         "back-door", "door")
-    for x in (14.0, 30.0):
-        add(main, X(x), D, V1, win(7.2, 24.0), f"back{x:.0f}-1")
-    for x in (14.0, 30.0, 46.0):
-        add(main, X(x), D, V2, win(7.2, 22.0), f"back{x:.0f}-2")
+    for x in (22.0, 48.0):
+        add(main, X(x), D, V1, win(8.4, 26.0), f"back{x:.0f}-1")
+    for x in (22.0, 48.0, 74.0):
+        add(main, X(x), D, V2, win(8.4, 24.0), f"back{x:.0f}-2")
     return L
 
 
@@ -282,13 +310,13 @@ def pediment(H):
     """The Laurel's pediment over its bay: a triangle with a raking cornice and a round
     oculus, standing on the cornice. Built lying on its back (prints face-up); returns
     (solid in (u, v, w), half-width)."""
-    hw, rise = 12.0, 7.4
+    hw, rise = 18.0, 10.4
     tri = poly([(-hw, 0.0), (hw, 0.0), (0.0, rise)])
     body = ext(tri, -2.4, 0.0)
     rim = tri - tri.offset(-1.0)
     body = body + ext(rim, -0.01, 0.6) + ext(rect(-hw, 0.0, hw, 1.0), -0.01, 0.6)
     c = (0.0, rise * 0.4)
-    body = body + ext(circle(c, 1.8, 32) - circle(c, 1.2, 32), -0.01, 0.6) - ext(circle(c, 1.2, 32), -0.6, 1.0)
+    body = body + ext(circle(c, 2.6, 32) - circle(c, 1.8, 32), -0.01, 0.6) - ext(circle(c, 1.8, 32), -0.6, 1.0)
     return body, hw
 
 
@@ -322,31 +350,40 @@ def build(kit=None):
         def siding(f, b, reg, H=H):
             if abs(f.p0[0] - party) < 0.05 and abs(f.p1[0] - party) < 0.05:
                 return M()
+            reg = reg - rect(-1, ZE - b.z0, f.L + 1, ZC - b.z0)          # nothing behind the frieze band
             return H["siding"](reg, datum=0.0)
-        bprof, bblocks = TW.BELTS[H["belt"]]
-        st = stacked_shells(blocks, H["openings"], [S1], t=3.0, corners=H["corners"], siding=siding, prof=bprof,
-                            belt_blocks=bblocks, water_table=False, hide_extra=keep)
+        hcs = cs_union([b.cs for b in blocks])
+        undress = [slab(offset(hcs, 8.0), ZE - LEDGE - 0.6, ZC + 0.01)]
+        st = stacked_shells(blocks, H["openings"], [S1], t=3.0, corners=H["corners"], siding=siding,
+                            prof=CO.joint_profile(RJ, LEDGE), belt_blocks=None, water_table=False, hide_extra=keep,
+                            undress=undress)
         # colonnettes on the bay's two outer corners, a storey each
         cols1, cols2 = [], []
         for k in (2, 3):
             p = np.array(H["bay"].pts[k])
             sup = (lambda hh: corinthian(hh, 0.9)) if tg == "L" else (lambda hh: fluted(hh, 0.9))
             cols1.append(sup(S1 - ZF).translate([p[0], p[1], ZF]))
-            cols2.append(sup(ZE - S1 - RH - 0.6).translate([p[0], p[1], S1 + RH]))
+            cols2.append(sup(ZE - LEDGE - 0.6 - S1 - RH).translate([p[0], p[1], S1 + RH]))
         canopy, land = portico_canopy(H)
         Ad = _door_frame(H, z=ZF)
         walls1 = st["shells"][0] + union(cols1) - land.transform(Ad)
         kit.add(f"{tg}-WALLS-1", H["wall"], walls1, group=f"walls-{tg}")
-        kit.add(f"{tg}-BELT", H["trim"], st["rings"][0] - keep, group=f"walls-{tg}")
+        kit.add(f"{tg}-JOINT", H["wall"], st["rings"][0] - keep, group=f"walls-{tg}")
         H["outline"] = st["outlines"][0]
         H["walls1"] = walls1
-        H["walls2"] = st["shells"][1] + union(cols2)
+        H["walls2"] = st["shells"][1] + union(cols2) + (CO.ledge(H["outline"], ZE, LEDGE) - keep)
+        kgrow = keep.translate([-0.1 if tg == "L" else 0.1, 0, 0])      # rings stop at the party wall
+        for lvl, z0, spec in (("J", S1 + LEDGE + 0.4, JOINTS[tg]), ("F", ZE, FRIEZES[tg])):
+            rings, _ = CO.level(H["outline"], z0, spec, cut=kgrow)
+            for r_ in rings:
+                kit.add(f"{tg}-CORNICE-{lvl}-{r_['name']}", r_["role"], r_["solid"], P=print_flip() if r_["flip"] else None,
+                        group=f"cornice-{tg}")
         for o in H["openings"]:
             A = o.local_frame()
             sp = o.spec
             b = sp["cut"].bounds()
             key = "DOOR" if o.kind == "door" else "WIN"
-            world, P, zones = O.place(sp, A, "Windows_Doors", "Door" if o.kind == "door" else "Sash", "Glass")
+            world, P, zones = O.place(sp, A, "Windows_Doors", "Door" if o.kind == "door" else "Windows_Doors", "Glass")
             kit.add(f"{key}-{o.name}", "Windows_Doors", world, P=P, key=f"{key}-{tg}-{b[2] - b[0]:.1f}x{b[3] - b[1]:.1f}",
                     group=f"inserts-{tg}", render=zones)
     print("walls + inserts", round(time.time() - t0, 1))
@@ -357,26 +394,26 @@ def build(kit=None):
         party = H["party"]
         skip = lambda p: abs(p[0] - party) < 3.0
         if tg == "L":
-            eave = R.bracketed_cornice(outline, ZE, EAVE_L,
-                                       brackets=dict(z_top=5.2, h=5.8, d0=1.0, d=4.8, t=1.0, pitch=7.0, pair=2.2, margin=3.0,
+            eave = R.bracketed_cornice(outline, ZC, EAVE_L,
+                                       brackets=dict(z_top=5.2, h=5.2, d0=1.0, d=4.8, t=1.0, pitch=7.0, pair=2.2, margin=3.0,
                                                      style="acanthus", skip=skip),
                                        dents=dict(z=4.4, h=0.8, d0=1.0, d=0.6), deck=(6.6, 7.8))
-            ztop = ZE + EAVE_L[-1][1]
+            ztop = ZC + EAVE_L[-1][1]
         else:
-            eave = R.bracketed_cornice(outline, ZE, EAVE_M,
-                                       brackets=dict(z_top=6.0, h=6.4, d0=0.8, d=4.4, t=1.8, pitch=8.0, margin=3.0,
+            eave = R.bracketed_cornice(outline, ZC, EAVE_M,
+                                       brackets=dict(z_top=6.0, h=6.0, d0=0.8, d=4.4, t=1.8, pitch=8.0, margin=3.0,
                                                      style="twin", skip=skip),
                                        deck=(7.2, 8.4))
-            ztop = ZE + EAVE_M[-1][1]
+            ztop = ZC + EAVE_M[-1][1]
         cx, cy = H["chim"]
-        pocket = box([cx - 5.0, cy - 4.0, ztop - 0.6], [cx + 5.0, cy + 4.0, ztop + 1])
+        pocket = box([cx - 7.0, cy - 5.6, ztop - 0.6], [cx + 7.0, cy + 5.6, ztop + 1])
         eave = eave - keep - pocket - H["walls2"]
         # printed upside down, the first 0.8 mm are the roof deck and the fascia's top fillet:
         # a filament change there gives a dark roof over a trim-coloured cornice
         deck = eave ^ slab(poly(outline).offset(20.0), ztop - 0.8, ztop + 1)
         kit.add(f"{tg}-EAVE-roof", H["trim"], eave, P=print_flip(), group=f"roof-{tg}",
                 render=[("Slate", deck), (H["trim"], eave - deck)])
-        ch = TW.chimney(H["chimney"], w=9.2, d=7.2, h=16.0).translate([cx, cy, ztop - 0.6])
+        ch = TW.chimney(H["chimney"], w=13.2, d=10.4, h=22.0).translate([cx, cy, ztop - 0.6])
         kit.add(f"{tg}-CHIMNEY", "Brick" if tg == "M" else "Stone", ch, group=f"roof-{tg}")
         # the pediment (Laurel) or the cresting (Myrtle) over the front
         Q = [np.array(p) for p in H["bay"].pts]
@@ -441,13 +478,13 @@ def build(kit=None):
         kit.add(f"{tg}-STOOP-back", "Stone", FT.steps(10.0, ZF - 0.2, 8, tread=2.2, cheek=1.2).transform(A) - fnd - H["walls1"],
                 group=f"stoop-{tg}")
     # iron area railings in front of the bays: a front run to the stoop and a return to the house
-    FY = -21.2
+    FY = -26.0
     for H in HALVES:
         tg = H["tag"]
         if tg == "L":
-            runs = [((0.0, FY), (1.0, 0.0), H["door_x"] - SW - CHEEK), ((0.0, FY), (0.0, 1.0), -1.8 - FY)]
+            runs = [((0.0, FY), (1.0, 0.0), H["door_x"] - SW - CHEEK - 0.4), ((0.0, FY), (0.0, 1.0), -1.8 - FY)]
         else:
-            x_in = H["door_x"] + SW + CHEEK
+            x_in = H["door_x"] + SW + CHEEK + 0.4
             runs = [((x_in, FY), (1.0, 0.0), 2 * HW - x_in), ((2 * HW, -1.8), (0.0, -1.0), -1.8 - FY)]
         for k, ((x, y), (ux, uy), L_) in enumerate(runs):
             A = np.array([[ux, 0.0, uy, x], [uy, 0.0, -ux, y], [0.0, 1.0, 0.0, 0.0]])

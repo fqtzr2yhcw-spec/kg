@@ -13,17 +13,21 @@ usage: python3 -m hoarch.buildings.sampler [check] [export] [colour]
 """
 import os
 import sys
+from types import SimpleNamespace
 
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
 from hoarch import features as FT, openings as O, roof as R
-from hoarch.buildings import villa as V
+from hoarch.buildings import villa as _villa
 from hoarch.core import Facade, box, compose, inv34, poly, slab, union
 from hoarch.kit import Kit, print_flip
 from hoarch.ornament import finial
 from hoarch.shell import Block, Opening, foundation, lip_keep, storey_shells
 
+# the Ashby's Rev B storey heights, frozen: the plate tests the details, not the house's size
+V = SimpleNamespace(ZF=12.0, BELT=(41.0, 45.4), ZW=90.0, V1=5.0, V2=48.6, Z_EAVE_TOP=97.6, D_EAVE=7.0, ROOF_SLOPE=0.5,
+                    COLORS=_villa.COLORS, RENDER_MAT=_villa.RENDER_MAT)
 NAME = "Ashby detail test plate"
 SX, S = 34.0, 30.0                 # front wide enough for a shuttered window between quoins
 ZF, BELT, ZW = V.ZF, V.BELT, V.ZW

@@ -40,6 +40,30 @@ def rows(xr, yr, zr):
     return out
 
 
+def unmid(m, layer=0.2, tol=0.012, shift=0.06):
+    """Nudge every vertex lying on a slicing plane (a layer centre, 0.1 + 0.2 k above the bed
+    at 0.2 mm layers) ``shift`` up, so no flat face sits exactly where the slicer cuts (which
+    gives zero-thickness slivers and "negative spacing" failures). ``m`` is in print pose with
+    its bottom at z = 0. Ornament on upright parts (cornice friezes and courses) meets the
+    grid wherever its curves happen to fall; this settles all of it at export."""
+    mesh = m.to_mesh()
+    v = np.asarray(mesh.vert_properties, dtype=np.float64).copy()
+    ph = (v[:, 2] - layer / 2) / layer
+    on = np.abs(ph - np.round(ph)) * layer < tol
+    if not on.any():
+        return m
+    v[on, 2] += shift
+    from manifold3d import Mesh
+    kw = {}
+    mf, mt = np.asarray(mesh.merge_from_vert), np.asarray(mesh.merge_to_vert)
+    if len(mf):
+        kw = dict(merge_from_vert=np.ascontiguousarray(mf, dtype=np.uint32),
+                  merge_to_vert=np.ascontiguousarray(mt, dtype=np.uint32))
+    out = M(Mesh(vert_properties=np.ascontiguousarray(v, dtype=np.float32),
+                 tri_verts=np.ascontiguousarray(mesh.tri_verts, dtype=np.uint32), **kw))
+    return out if not out.is_empty() else m
+
+
 class Part:
     def __init__(self, name, color, solid, P, key, group, render=None):
         self.name, self.color, self.solid, self.P, self.key, self.group = name, color, solid, P, key, group
@@ -48,7 +72,7 @@ class Part:
     def printed(self):
         s = self.solid.transform(self.P)
         b = s.bounding_box()
-        return s.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]])
+        return unmid(s.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]]))
 
 
 class Kit:

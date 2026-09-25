@@ -1,10 +1,18 @@
 """The Ashby — an original HO-scale (1:87.1) Italianate villa, first building of the lineup.
+Rev C: the house-size plan (180 x 156 mm, storeys of 42 and 38 mm), framed windows spaced along
+the walls, and built-up cornices at every level.
 
-Two-storey square block of cream common-bond brick with stone quoins and a dentil belt,
-a canted bay, low hipped standing-seam roof on deep bracketed eaves, a V-groove cupola
-with an acorn finial, full-width porch (chamfered posts, vase balusters, scroll frieze,
-panelled skirt), one-storey kitchen ell, panel shutters, stucco chimneys and a smooth
-limestone foundation.
+Two-storey square block of cream common-bond brick with stone quoins and a canted bay. Between
+the storeys a three-part cornice: a green frieze of sunk-margin coffers with diamond bosses, a
+white egg-and-dart course and a white torus crown. At the eave a four-part cornice: a green
+frieze carrying a running vine (rinceau), a white dentil course, a white soffit on paired
+Italianate scroll brackets and a green cyma crown. A low hipped standing-seam roof with a flat
+top carries a V-groove cupola with twin arched lights under its own cornice (a white frieze of
+round eyes under keystones, a green soffit on paired scrolls, a white ovolo crown) and an acorn
+finial. A full-width porch (chamfered posts, vase balusters, scroll frieze, panelled skirt, a
+planked floor and a standing-seam roof), a one-storey kitchen ell behind with its own cornice
+(a green frieze of pearls, a white billet course, a white cavetto crown) and a low hip, panel
+shutters, stucco chimneys and a smooth limestone foundation.
 
 usage: python3 -m hoarch.buildings.villa [check] [export] [views]
 """
@@ -15,10 +23,10 @@ import time
 import numpy as np
 from manifold3d import Manifold as M
 
-from hoarch.core import box, compose, inv34, offset, poly, slab, union
-from hoarch import features as FT, openings as O, roof as R, skins as SK, trimwork as TW
+from hoarch.core import box, compose, inv34, offset, poly, rect, slab, union
+from hoarch import cornice as CO, features as FT, openings as O, roof as R, skins as SK, trimwork as TW
 from hoarch.kit import Kit, print_flip
-from hoarch.shell import Block, Opening, foundation, lip_keep, storey_shells, wall_shell
+from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells, wall_shell
 
 NAME = "Ashby Italianate Villa"
 COLORS = {"PorchDeck": "#F2F0EB", "Planks": "#6F5034",       # the planked porch deck: two colours, one change
@@ -28,73 +36,104 @@ COLORS = {"PorchDeck": "#F2F0EB", "Planks": "#6F5034",       # the planked porch
 # their own plate: it is the one plate printed with supports (under the surrounds)
 RENDER_MAT = {"PorchDeck": "trim", "Planks": "planks",
               "Sand": "siding", "White": "trim", "Charcoal": "roof", "Stone": "stone", "Forest": "accent",
-              "Brick": "brick", "Windows_Doors": "trim", "Glass": "glass"}
+              "Brick": "brick", "Windows_Doors": "trim", "Door": "door", "Glass": "glass"}
 PALETTE = {"siding": ["#D8C49A", 0.6, 0.0], "trim": ["#EEECE7", 0.55, 0.0], "roof": ["#3E4247", 0.5, 0.0],
            "stone": ["#8C8A85", 0.85, 0.0], "accent": ["#2F4A3A", 0.5, 0.0], "brick": ["#8A3B2B", 0.85, 0.0]}
 
-# ------------------------------------------------------------------ massing (mm, plan x east / y north, front = south)
-ZF = 12.0                         # foundation / first floor
-H2 = 78.0                         # two-storey wall height
-ZW = ZF + H2                      # wall top
-BELT = (41.0, 45.4)              # first-floor shell top / belt ring top, above ZF
-MAIN = Block("main", [(0, 0), (134, 0), (134, 34), (146, 46), (146, 72), (134, 84), (134, 118), (0, 118)], ZF, ZW)
-ELL = Block("ell", [(74, 118), (128, 118), (128, 170), (74, 170)], ZF, ZF + BELT[0])
-BLOCKS = [MAIN, ELL]
-V1, V2 = 5.0, 48.6               # sill heights above the wall base
+# ------------------------------------------------------------------ cornices (unique to the Ashby)
+LEDGE = 1.4
+JOINT = dict(pitch=13.0, margin=4.4, layers=[
+    dict(kind="frieze", h=4.6, b=1.2, orn="coffers", role="Forest"),
+    dict(kind="course", h=1.6, b=1.4, orn="eggdart", role="White"),
+    dict(kind="crown", h=2.2, b=1.4, P=3.6, orn="torus", role="White")])
+EAVE = dict(pitch=13.0, margin=4.4, pair=2.2, layers=[
+    dict(kind="frieze", h=6.0, b=1.2, orn="rinceau", role="Forest"),
+    dict(kind="course", h=1.6, b=1.4, orn="dentil", role="White", tooth=0.9, gap=0.6),
+    dict(kind="bed", h=2.2, b=1.4, P=6.6, role="White", brackets=dict(style="scroll", t=0.9, reach=0.6)),
+    dict(kind="crown", h=3.0, b=1.4, P=7.4, orn="cyma", role="Forest")])
+ELL_C = dict(pitch=11.0, margin=3.6, layers=[
+    dict(kind="frieze", h=4.2, b=1.2, orn="pearls", role="Forest"),
+    dict(kind="course", h=1.4, b=1.4, orn="billet", role="White"),
+    dict(kind="crown", h=2.0, b=1.4, P=4.0, orn="cavetto", role="White")])
+CUPOLA_C = dict(pitch=9.0, margin=3.0, pair=1.6, layers=[
+    dict(kind="frieze", h=4.2, b=1.2, orn="oculi", role="White"),
+    dict(kind="bed", h=1.8, b=1.4, P=4.8, role="Forest", brackets=dict(style="scroll", t=0.8, reach=0.7)),
+    dict(kind="crown", h=2.2, b=1.4, P=5.6, orn="ovolo", role="White")])
+RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2      # the joint (belt ring) height
+HE = CO.band_height(EAVE)
 
-EAVE = R.EAVE_DEEP
-Z_EAVE_TOP = ZW + EAVE[-1][1]
+# ------------------------------------------------------------------ levels (on the 0.2 mm grid)
+ZF = 14.0                         # foundation / first floor
+S1 = ZF + 42.0                    # first-storey shell top = the joint ring's foot
+ZE = S1 + RJ + 38.0               # the eave ledge's top
+ZW = ZE + HE                      # the wall top behind the eave cornice; the roof sits here
+FASCIA = 1.8
+Z_EAVE = ZW + FASCIA
 ROOF_SLOPE = 0.5
-D_EAVE = 7.0
-CUP_SIZE, CUP_H = 34.0, 22.0
-CUP_C = (67.0, 59.0)
+D_EAVE = 7.8                      # covers the crown (7.4)
+V1 = 8.0
+V2 = S1 + RJ + 5.0 - ZF
+ELL_ZE = ZF + 32.0                # the ell's ledge
+ELL_ZW = ELL_ZE + CO.band_height(ELL_C)
+
+# ------------------------------------------------------------------ massing (mm, plan x east / y north, front = south)
+W, D = 180.0, 156.0
+BAY_Y = (48.0, 108.0)             # the canted bay on the east, 14 deep
+MAIN = Block("main", [(0, 0), (W, 0), (W, BAY_Y[0]), (W + 14, BAY_Y[0] + 14), (W + 14, BAY_Y[1] - 14), (W, BAY_Y[1]),
+                      (W, D), (0, D)], ZF, ZW)
+ELL = Block("ell", [(104, D), (168, D), (168, D + 50), (104, D + 50)], ZF, ELL_ZW)
+BLOCKS = [MAIN, ELL]
+CUP_SIZE, CUP_H = 44.0, 28.0
+CUP_C = (90.0, 78.0)
+DOOR_X = 90.0
 
 
 # ------------------------------------------------------------------ openings
 def _openings():
     L = []
-    s22 = dict(lites=(2, 2), rows=(2, 2))       # four-over-four sash
-    lo = O.window_insert(10.0, 24.0, rise=0, style="flat", apron=True, **s22)
-    up = O.window_insert(10.0, 21.0, rise=None, style="key", **s22)
-    bay_lo = O.window_insert(9.0, 24.0, rise=0, style="flat", casing=0.8, ends=0.2, sill_ext=0.3, clip=True,
-                             apron=True, **s22)
-    bay_up = O.window_insert(9.0, 21.0, rise=None, style="key", casing=0.8, ends=0.2, sill_ext=0.3, clip=True, **s22)
-    ell_w = O.window_insert(9.0, 21.0, rise=0, style="flat", apron=True, **s22)
-    twin = O.twin_arch_window(14.0, 21.0, balcony=0)
-    front = O.door_insert(16.0, 30.0, leaves=2, transom=5.0)
-    back = O.door_insert(11.0, 26.0, leaves=1, glass_top=True)
+    s22 = dict(lites=(2, 2), rows=(2, 2), casing=1.3)       # four-over-four sash
+    lo = O.window_insert(9.6, 24.0, rise=0, style="flat", apron=True, **s22)
+    up = O.window_insert(9.6, 21.0, rise=None, style="key", **s22)
+    bay_lo = O.window_insert(9.0, 24.0, rise=0, style="flat", ends=0.2, sill_ext=0.3, clip=True, apron=True,
+                             lites=(2, 2), rows=(2, 2), casing=0.9)
+    bay_up = O.window_insert(9.0, 21.0, rise=None, style="key", ends=0.2, sill_ext=0.3, clip=True,
+                             lites=(2, 2), rows=(2, 2), casing=0.9)
+    ell_w = O.window_insert(8.4, 19.0, rise=0, style="flat", apron=True, **s22)
+    twin = O.twin_arch_window(16.0, 22.0, balcony=0)
+    front = O.door_insert(17.0, 32.0, leaves=2, transom=5.4)
+    back = O.door_insert(11.0, 24.6, leaves=1, glass_top=True)
 
     def add(block, x, y, v0, sp, name, kind="window", shutters=False):
         e, u = block.locate(x, y)
         L.append((Opening(block, e, u, v0, sp, name, kind), shutters))
 
     # front (south)
-    for x in (27.0, 107.0):
+    for x in (26.0, 58.0, 122.0, 154.0):
         add(MAIN, x, 0, V1, lo, f"S{x:.0f}-1", shutters=True)
         add(MAIN, x, 0, V2, up, f"S{x:.0f}-2", shutters=True)
-    add(MAIN, 67.0, 0, 0.4, front, "front-door", "door")
-    add(MAIN, 67.0, 0, V2, twin, "S67-2")
+    add(MAIN, DOOR_X, 0, 0.4, front, "front-door", "door")
+    add(MAIN, DOOR_X, 0, V2, twin, "S90-2")
     # east, with the canted bay
-    for y in (17.0, 101.0):
-        add(MAIN, 134, y, V1, lo, f"E{y:.0f}-1", shutters=True)
-        add(MAIN, 134, y, V2, up, f"E{y:.0f}-2", shutters=True)
-    for (x, y, nm) in ((146, 59, "front"), (140, 40, "c1"), (140, 78, "c2")):
+    for y in (22.0, 134.0):
+        add(MAIN, W, y, V1, lo, f"E{y:.0f}-1", shutters=True)
+        add(MAIN, W, y, V2, up, f"E{y:.0f}-2", shutters=True)
+    ym = (BAY_Y[0] + BAY_Y[1]) / 2
+    for (x, y, nm) in ((W + 14, ym, "front"), (W + 7, BAY_Y[0] + 7, "c1"), (W + 7, BAY_Y[1] - 7, "c2")):
         add(MAIN, x, y, V1, bay_lo, f"bay-{nm}-1")
         add(MAIN, x, y, V2, bay_up, f"bay-{nm}-2")
     # west
-    for y in (30.0, 88.0):
+    for y in (36.0, 78.0, 120.0):
         add(MAIN, 0, y, V1, lo, f"W{y:.0f}-1", shutters=True)
         add(MAIN, 0, y, V2, up, f"W{y:.0f}-2", shutters=True)
-    # rear (north) of the main block, clear of the ell
-    for x in (25.5, 51.5):
-        add(MAIN, x, 118, V1, lo, f"N{x:.0f}-1", shutters=True)
-        add(MAIN, x, 118, V2, up, f"N{x:.0f}-2", shutters=True)
+    # rear (north) of the main block, clear of the ell and its roof
+    for x in (26.0, 58.0):
+        add(MAIN, x, D, V1, lo, f"N{x:.0f}-1", shutters=True)
+        add(MAIN, x, D, V2, up, f"N{x:.0f}-2", shutters=True)
     # kitchen ell
-    for y in (131.6, 155.5):
-        add(ELL, 128, y, V1 + 1, ell_w, f"ellE{y:.0f}", shutters=True)
-    add(ELL, 74, 150.0, V1 + 1, ell_w, "ellW150", shutters=True)
-    add(ELL, 89.0, 170, V1 + 1, ell_w, "ellN89", shutters=True)
-    add(ELL, 114.0, 170, 0.4, back, "back-door", "door")
+    add(ELL, 168, 181.0, 7.0, ell_w, "ellE181", shutters=True)
+    add(ELL, 104, 186.0, 7.0, ell_w, "ellW186", shutters=True)
+    add(ELL, 122.0, D + 50, 7.0, ell_w, "ellN122", shutters=True)
+    add(ELL, 150.0, D + 50, 0.4, back, "back-door", "door")
     return L
 
 
@@ -103,8 +142,19 @@ OPENINGS = [o for o, _ in OPENINGS_S]
 
 
 def _brick(f, b, reg):
-    """Cream common-bond brick: five stretcher courses to every header course."""
-    return SK.brick_bond(reg, "common", datum=1.8)
+    """Cream common-bond brick: five stretcher courses to every header course. Nothing in the
+    cornice bands (the joint's is the belt ring; the eave's and the ell's are cut out here)."""
+    top = (ELL_ZE if b is ELL else ZE) - b.z0
+    return SK.brick_bond(reg - rect(-1, top, f.L + 1, 999), "common", datum=1.8)
+
+
+def add_rings(kit, rings, prefix, group):
+    """Each cornice ring as its own part (a ring cut back from a block may fall into pieces)."""
+    for r in rings:
+        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
+        for j, pc in enumerate(pcs):
+            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
+            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
 
 
 # ------------------------------------------------------------------ build
@@ -112,16 +162,41 @@ def build(kit=None):
     kit = kit or Kit(NAME, COLORS, RENDER_MAT)
     kit.parts.clear()
     t0 = time.time()
-    # one shell per storey with a White belt ring between (the ring is the joint)
+    # one shell per storey; the joint ring carries the storey cornice's band
     clear = [lip_keep(poly(MAIN.pts) + poly(ELL.pts), 3.0, ZF, 1.2),                 # foundation lip
              lip_keep(poly(MAIN.pts), 3.0, ZW - 1.6, 1.6, inner=0.15, reach=1.2)]    # eave lip
-    bprof, bblocks = TW.BELTS["dentil"]
-    S = storey_shells(BLOCKS, OPENINGS, ZF + BELT[0], t=3.0, corners="quoin", clear=clear, prof=bprof,
-                      belt_blocks=bblocks, siding=_brick, partitions=[((67.0, 3.0), (67.0, 115.0), 2.0, ZF, ZW)])
-    kit.add("WALLS-1", "Sand", S["lower"], group="walls")
-    kit.add("BELT", "White", S["ring"], group="walls")
-    kit.add("WALLS-2", "Sand", S["upper"], group="walls")
+    undress = [slab(offset(MAIN.cs, 8.0), ZE - LEDGE - 0.6, ZW + 0.01),
+               slab(offset(ELL.cs, 8.0) - offset(MAIN.cs, 2.0), ELL_ZE - LEDGE - 0.6, ELL_ZW + 0.01)]
+    st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="quoin", clear=clear, siding=_brick,
+                        prof=CO.joint_profile(RJ, LEDGE), belt_blocks=None, water_table=False, undress=undress,
+                        partitions=[((DOOR_X, 3.0), (DOOR_X, D - 3.0), 2.0, ZF, ZW)])
+    main_keep = MAIN.solid(grow=0.8, dz0=-2, dz1=400)
+    ell_ledge = CO.ledge(ELL.pts, ELL_ZE, LEDGE) - main_keep
+    ell_lip = (_corbel(ELL.cs, 3.0, ELL_ZW) + lip_ring(ELL.cs, 3.0, ELL_ZW)) - MAIN.solid(grow=0.2, dz0=-2, dz1=400)
+    kit.add("WALLS-1", "Sand", st["shells"][0] + ell_ledge + ell_lip, group="walls")
+    kit.add("JOINT", "Sand", st["rings"][0], group="walls")
+    lip = _corbel(MAIN.cs, 3.0, ZW) + lip_ring(MAIN.cs, 3.0, ZW)
+    kit.add("WALLS-2", "Sand", st["shells"][1] + lip + CO.ledge(MAIN.pts, ZE, LEDGE), group="walls")
     kit.add("FOUNDATION", "Stone", foundation(BLOCKS, 0.0, ZF, style="limestone"), group="foundation")
+
+    # the kitchen ell's low hip (under the joint cornice, which is cut back to it)
+    ell_d = ELL_C["layers"][-1]["P"] + 0.6
+    ell_ze = ELL_ZW + 1.4
+    eroof, etex = R.hip_roof([(ELL.pts, [1, 2, 3])], ell_ze, ROOF_SLOPE, ell_d, texture="seam", zlo=ELL_ZW)
+    ell_env, _ = R.hip_roof([(ELL.pts, [1, 2, 3])], ell_ze + 0.5, ROOF_SLOPE, ell_d + 0.5, texture=None,
+                            zlo=ELL_ZW - 1.0)
+    joint_keep = slab(offset(MAIN.cs, 2.0), S1 - 2.2, S1 + RJ + 0.2)        # the joint band and its ledge
+    kit.add("ROOF-ell", "Charcoal", (eroof + etex) - MAIN.solid(grow=0.8, dz0=-2, dz1=400) - joint_keep
+            - lip_keep(ELL.cs, 3.0, ELL_ZW), group="roof")
+
+    # the cornices: at the joint (cut back to the ell's roof), at the eave, round the ell
+    rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT, cut=ell_env)
+    add_rings(kit, rings, "CORNICE-J", "cornice")
+    rings, _ = CO.level(MAIN.pts, ZE, EAVE)
+    add_rings(kit, rings, "CORNICE-E", "cornice")
+    rings, _ = CO.level(ELL.pts, ELL_ZE, ELL_C, cut=main_keep)
+    add_rings(kit, rings, "CORNICE-ELL", "cornice")
+
     # inserts and shutters
     inserts = []
     for o, sh in OPENINGS_S:
@@ -129,8 +204,7 @@ def build(kit=None):
         sp = o.spec
         tag = f"{sp['cut'].bounds()[2] - sp['cut'].bounds()[0]:.1f}x{sp['cut'].bounds()[3] - sp['cut'].bounds()[1]:.1f}"
         key = "DOOR" if o.kind == "door" else "WIN"
-        col = "Forest" if o.kind == "door" else "White"
-        world, P, zones = O.place(sp, A, "White", col, "Glass")          # one part: glass, sash and frame
+        world, P, zones = O.place(sp, A, "Windows_Doors", "Door" if o.kind == "door" else "Windows_Doors", "Glass")
         inserts.append(kit.add(f"{key}-{o.name}", "Windows_Doors", world, P=P,
                                key=f"{key}-{tag}-{o.v0 > 20}", group="inserts", render=zones))
         if sh:
@@ -138,85 +212,78 @@ def build(kit=None):
             h_op = sp["cut"].bounds()[3] - sp["cut"].bounds()[1]
             arched = abs(sp["top"] - h_op) > 3.0 and o.v0 > 20
             hh = (h_op - w_op / 2 - 1.8) if arched else h_op
-            left, right = FT.shutters_for(w_op, h_op, casing=1.1, h=hh, style="panel")
+            left, right = FT.shutters_for(w_op, h_op, casing=1.3, h=hh, style="panel")
             for side, m in (("L", left), ("R", right)):
                 ms = m.translate([0, 0, 0.32]).transform(A)
                 kit.add(f"SHUTTER-{o.name}-{side}", "Forest", ms, P=inv34(A), key=f"SHUTTER-{hh:.1f}",
                         group="shutters")
-    print("walls + inserts", round(time.time() - t0, 1))
-    # main eave + roof
-    eave = R.bracketed_cornice(MAIN.pts, ZW, EAVE,
-                               brackets=dict(z_top=5.2, h=5.0, d0=0.9, d=5.6, t=0.8, pitch=12.0, pair=1.9, margin=4.5),
-                               dents=dict(z=4.4, h=0.8, d0=0.9, d=0.7), panels=dict(z=0.6, h=3.0, d=0.4))
-    kit.add("EAVE-main", "White", eave, P=print_flip(), group="roof")
-    rect_p = [(0, 0), (134, 0), (134, 118), (0, 118)]
-    bay_p = [(120, 34), (134, 34), (146, 46), (146, 72), (134, 84), (120, 84)]
-    z_eave = Z_EAVE_TOP
-    i_top = 43.2                          # flat deck at +21.6: a layer line
-    flat = z_eave + ROOF_SLOPE * i_top
-    roof, tex = R.hip_roof([(rect_p, [0, 1, 2, 3]), (bay_p, [1, 2, 3])], z_eave, ROOF_SLOPE, D_EAVE,
-                           texture="seam", flat_top=flat)
-    # chimney pockets
-    chims = [(22.0, 59.0), (112.0, 59.0)]
-    def chim_z0(x):   # 3 mm below the lowest roof point under the chimney
-        return z_eave + ROOF_SLOPE * (min(x + D_EAVE, 134 + D_EAVE - x) - 5.25) - 3.0
+    print("walls + cornices + inserts", round(time.time() - t0, 1))
 
-    pockets = union([box([x - 5.65, y - 5.65, chim_z0(x)], [x + 5.65, y + 5.65, flat + 20]) for x, y in chims])
-    kit.add("ROOF-main", "Charcoal", (roof + tex) - pockets, group="roof")
+    # --- the main roof: a low standing-seam hip with a flat top for the cupola
+    rect_p = [(0, 0), (W, 0), (W, D), (0, D)]
+    bay_p = [(W - 14, BAY_Y[0]), (W, BAY_Y[0]), (W + 14, BAY_Y[0] + 14), (W + 14, BAY_Y[1] - 14), (W, BAY_Y[1]),
+             (W - 14, BAY_Y[1])]
+    i_top = 56.4                          # the flat deck 28.2 over the eave: a layer line
+    flat = Z_EAVE + ROOF_SLOPE * i_top
+    roof, tex = R.hip_roof([(rect_p, [0, 1, 2, 3]), (bay_p, [1, 2, 3])], Z_EAVE, ROOF_SLOPE, D_EAVE,
+                           texture="seam", flat_top=flat, zlo=ZW)
+    CW = 12.0
+    chims = [(30.0, 78.0), (150.0, 78.0)]
+
+    def chim_z0(x, y):   # 3 mm below the lowest roof point under the chimney
+        i = min(x + D_EAVE, W + D_EAVE - x, y + D_EAVE, D + D_EAVE - y) - CW / 2
+        return round((Z_EAVE + ROOF_SLOPE * i - 3.0) / 0.2) * 0.2
+
+    pockets = union([box([x - CW / 2 - 0.4, y - CW / 2 - 0.4, chim_z0(x, y)], [x + CW / 2 + 0.4, y + CW / 2 + 0.4, flat + 20])
+                     for x, y in chims])
+    kit.add("ROOF-main", "Charcoal", (roof + tex) - pockets - lip_keep(MAIN.cs, 3.0, ZW), group="roof")
     for k, (x, y) in enumerate(chims):
-        z0 = chim_z0(x)
-        ztop = flat + 14.0
-        ch = TW.chimney("stucco", w=10.5, d=10.5, h=ztop - z0).translate([x, y, z0])
+        z0 = chim_z0(x, y)
+        ch = TW.chimney("stucco", w=CW, d=CW, h=round((flat + 16.0 - z0) / 0.2) * 0.2).translate([x, y, z0])
         kit.add(f"CHIMNEY-{k}", "White", ch, key="CHIMNEY", group="roof")
-    # cupola
+
+    # --- the cupola: V-groove walls, twin arched lights, its own cornice and a low hip
     cx, cy = CUP_C
     hs = CUP_SIZE / 2
-    cup = Block("cupola", [(cx - hs, cy - hs), (cx + hs, cy - hs), (cx + hs, cy + hs), (cx - hs, cy + hs)],
-                flat, flat + CUP_H)
-    twin = O.twin_arch_window(10.0, 14.0, casing=0.9, balcony=0)
+    cze = flat + CUP_H                    # the cupola's ledge
+    czw = cze + CO.band_height(CUPOLA_C)
+    cup = Block("cupola", [(cx - hs, cy - hs), (cx + hs, cy - hs), (cx + hs, cy + hs), (cx - hs, cy + hs)], flat, czw)
+    twin = O.twin_arch_window(12.0, 17.0, casing=1.0, balcony=0)
     cup_ops = []
     for (x, y, nm) in ((cx, cy - hs, "S"), (cx + hs, cy, "E"), (cx, cy + hs, "N"), (cx - hs, cy, "W")):
         e, u = cup.locate(x, y)
-        cup_ops.append(Opening(cup, e, u, 4.0, twin, f"cupola-{nm}"))
-    kit.add("CUPOLA-walls", "White", wall_shell([cup], cup_ops, t=2.4, belt=None, corners="panel", water_table=False,
-                                                siding=lambda f, b, reg: SK.vgroove(reg, datum=0.6)),
-            group="cupola")
+        cup_ops.append(Opening(cup, e, u, 4.4, twin, f"cupola-{nm}"))
+    cup_und = [slab(offset(cup.cs, 8.0), cze - LEDGE - 0.6, czw + 0.01)]
+    cwalls = wall_shell([cup], cup_ops, t=2.4, belt=None, corners="panel", water_table=False,
+                        siding=lambda f, b, reg: SK.vgroove(reg, datum=0.6), undress=cup_und)
+    clip = _corbel(cup.cs, 2.4, czw) + lip_ring(cup.cs, 2.4, czw)
+    kit.add("CUPOLA-walls", "White", cwalls + CO.ledge(cup.pts, cze, LEDGE, t=2.4) + clip, group="cupola")
     for o in cup_ops:
         A = o.local_frame()
-        world, P, zones = O.place(o.spec, A, "White", "White", "Glass")
+        world, P, zones = O.place(o.spec, A, "Windows_Doors", "Windows_Doors", "Glass")
         kit.add(f"WIN-{o.name}", "Windows_Doors", world, P=P, key="WIN-cupola", group="cupola", render=zones)
-    cz = flat + CUP_H
-    cup_eave = R.bracketed_cornice(cup.pts, cz, R.CORNICE_SMALL,
-                                   brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=7.0, pair=1.5, margin=3.0),
-                                   dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7), lip_t=2.4, deck=(6.0, 8.0),
-                                   panels=dict(z=0.6, h=2.4, d=0.4))
-    kit.add("CUPOLA-eave", "White", cup_eave, P=print_flip(), group="cupola")
-    croof, ctex = R.hip_roof([(cup.pts, [0, 1, 2, 3])], cz + 8.0, 0.62, 4.5, texture="seam",
-                             tex_kw=dict(seam_pitch=3.6))
-    ztip = cz + 8.0 + 0.62 * (hs + 4.5)
-    zseat = ztip - 0.8                   # the roof's tip is cut flat with a shallow seat for the finial
-    seat = M.cylinder(1.0, 1.35, 1.35, 32).translate([cx, cy, zseat - 0.4])
-    kit.add("CUPOLA-roof", "Charcoal", (croof + ctex).trim_by_plane([0, 0, -1.0], -zseat) - seat, group="cupola")
-    kit.add("CUPOLA-finial", "Charcoal", TW.finial("acorn", 1.2, 7.4).translate([cx, cy, zseat - 0.4]), group="cupola")
+    rings, _ = CO.level(cup.pts, cze, CUPOLA_C, t=2.4)
+    add_rings(kit, rings, "CORNICE-CUP", "cupola")
+    cd = CUPOLA_C["layers"][-1]["P"] + 0.6
+    croof, ctex = R.hip_roof([(cup.pts, [0, 1, 2, 3])], czw + 1.4, 0.62, cd, texture="seam", tex_kw=dict(seam_pitch=3.6),
+                             zlo=czw)
+    ztip = czw + 1.4 + 0.62 * (hs + cd)
+    zseat = round((ztip - 0.8) / 0.2) * 0.2          # the roof's tip is cut flat with a shallow seat for the finial
+    seat = M.cylinder(1.0, 1.5, 1.5, 32).translate([cx, cy, zseat - 0.4])
+    kit.add("CUPOLA-roof", "Charcoal", (croof + ctex).trim_by_plane([0, 0, -1.0], -zseat) - seat
+            - lip_keep(cup.cs, 2.4, czw), group="cupola")
+    kit.add("CUPOLA-finial", "Charcoal", TW.finial("acorn", 1.4, 9.0).translate([cx, cy, zseat - 0.4]), group="cupola")
     print("roof + cupola", round(time.time() - t0, 1))
-    # kitchen ell: eave + low hip roof against the main wall
-    main_keep = MAIN.solid(grow=2.0, dz0=-1, dz1=200)         # clear of the belt ring (1.8 proud)
-    ell_eave = R.bracketed_cornice(ELL.pts, ELL.z1, R.CORNICE_SMALL,
-                                   brackets=dict(z_top=4.6, h=4.2, d0=0.8, d=2.4, t=0.7, pitch=8.0, margin=2.4),
-                                   dents=dict(z=3.8, h=0.8, d0=0.8, d=0.7),
-                                   panels=dict(z=0.6, h=2.4, d=0.4)) - main_keep
-    kit.add("EAVE-ell", "White", ell_eave, P=print_flip(), group="roof")
-    eroof, etex = R.hip_roof([(ELL.pts, [1, 2, 3])], ELL.z1 + 8.0, ROOF_SLOPE, 4.5, texture="seam")
-    kit.add("ROOF-ell", "Charcoal", (eroof + etex) - main_keep, group="roof")
-    # front porch: full width, turned posts, upright railings, sawn-work arcades, steps at the door
-    H_floor = ZF - 1.0
-    post_h = (ZF + BELT[0] - 0.2) - (H_floor + 5.2)          # roof tucks under the belt ring
-    y0, y1 = -1.4, -27.0
-    runs = [dict(a=(0.0, y0), b=(0.0, y1), posts=[1.7, 24.0]),
-            dict(a=(0.0, y1), b=(134.0, y1), posts=[1.6, 28.0, 54.5, 79.5, 106.0, 132.4]),
-            dict(a=(134.0, y1), b=(134.0, y0), posts=[1.6, 23.9])]
-    P = FT.porch_turned([(0.0, y0), (0.0, y1), (134.0, y1), (134.0, y0)], runs, H_floor, post_h,
-                        steps_at=[(1, 67.0, 16.0)], planks=dict(pitch=2.2, border=1.6), joined=True,
+
+    # --- front porch: full width, chamfered posts, vase railings, scroll arcades, steps at the door
+    H_floor = ZF - 1.4
+    post_h = S1 - 2.0 - 5.6 - H_floor                         # the roof tucks under the joint's ledge
+    y0, y1 = -1.4, -30.0
+    runs = [dict(a=(0.0, y0), b=(0.0, y1), posts=[1.7, 27.0]),
+            dict(a=(0.0, y1), b=(W, y1), posts=[1.6, 27.0, 52.0, 75.0, 105.0, 128.0, 153.0, W - 1.6]),
+            dict(a=(W, y1), b=(W, y0), posts=[1.6, 26.9])]
+    P = FT.porch_turned([(0.0, y0), (0.0, y1), (W, y1), (W, y0)], runs, H_floor, post_h,
+                        steps_at=[(1, DOOR_X, 18.0)], planks=dict(pitch=2.2, border=1.6), joined=True,
                         post="chamfered", rail="vase", arcade="scroll", skirt="panels", pier_tex="limestone",
                         roof_edge="modillion")
     fkeep = slab(offset(poly(MAIN.pts), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
@@ -230,7 +297,7 @@ def build(kit=None):
         kit.add(f"PORCH-frame-{k}", "White", fr, group="porch")
     for k, (arc, A) in enumerate(P["arcades"]):
         kit.add(f"PORCH-arcade-{k}", "White", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
-    bld_keep = union([b.solid(grow=1.45, dz0=-20, dz1=0) for b in BLOCKS])
+    bld_keep = MAIN.solid(grow=1.45, dz0=-20, dz1=0)
     proof = P["roof"] - bld_keep - ins_keep
     ptop = proof.bounding_box()[5]
     cap = proof.trim_by_plane([0, 0, 1.0], ptop - 0.8)          # standing-seam tin cap, its own colour
@@ -244,54 +311,14 @@ def build(kit=None):
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "Stone", sm.transform(A) - fkeep, group="porch")
     # back stoop
-    e, u = ELL.locate(114.0, 170)
+    e, u = ELL.locate(150.0, D + 50)
     f = ELL.facades()[e]
     A = f.A.copy()
     A[:, 3] = f.world(u, -ZF, 1.4)
-    kit.add("STOOP-back", "Stone", FT.steps(14.0, ZF - 0.6, 3).transform(A), group="porch")
+    kit.add("STOOP-back", "Stone", FT.steps(15.0, ZF - 0.6, 4).transform(A), group="porch")
+    print("specks dropped:", kit.drop_specks())
     print("ell + porch", round(time.time() - t0, 1))
     return kit
-
-
-def exploded_offsets(kit):
-    """Per-part (dx, dy, dz) that pull the kit apart along its assembly directions:
-    foundation, first-floor shell, belt ring and second-floor shell apart, inserts out
-    of their openings, roof and cupola up, porch forward."""
-    normal = {}
-    for o, _ in OPENINGS_S:
-        normal[o.name] = o.facade.n
-    for nm, n in (("S", (0, -1)), ("E", (1, 0)), ("N", (0, 1)), ("W", (-1, 0))):
-        normal[f"cupola-{nm}"] = np.array(n, float)
-    UP = 30.0                                    # second storey lift
-    lift = {"FOUNDATION": -24, "WALLS-1": 0, "BELT": UP / 2, "WALLS-2": UP, "EAVE-main": UP + 26,
-            "ROOF-main": UP + 50, "CHIMNEY": UP + 84, "CUPOLA": UP + 84, "CUPOLA-eave": UP + 104,
-            "CUPOLA-roof": UP + 120, "CUPOLA-finial": UP + 136, "EAVE-ell": 20, "ROOF-ell": 38}
-    out = {}
-    for p in kit.parts:
-        nm = p.name
-        d = np.zeros(3)
-        if nm.startswith(("WIN-", "DOOR-", "SHUTTER-")):
-            oname = nm.split("-", 1)[1].rsplit("-", 1)[0]
-            n = normal.get(oname, np.zeros(2))
-            d[:2] = n * (9.0 if nm.startswith("SHUTTER-") else 17.0)
-            if "cupola" in oname:
-                d[2] = lift["CUPOLA"]
-            elif oname.endswith("-2"):
-                d[2] = UP
-            if oname.startswith(("S", "front")) and not oname.endswith("-2"):
-                d[:2] += n * 36          # clear of the porch
-        elif nm.startswith("PORCH-"):
-            d[1] = -46
-            d[2] = {"PORCH-roof": 26, "PORCH-roof-tin": 36}.get(nm, 0)
-            if nm.startswith("PORCH-steps"):
-                d[1] -= 12
-        elif nm == "STOOP-back":
-            d[1] = 18
-        else:
-            key = nm if nm in lift else nm.split("-")[0]
-            d[2] = lift.get(key, 0)
-        out[nm] = tuple(d)
-    return out
 
 
 if __name__ == "__main__":
@@ -308,7 +335,6 @@ if __name__ == "__main__":
         print("bed:", kit.bed_check())
     kit.render_npz(os.path.join(OUT, "villa.npz"))
     if "views" in sys.argv:
-        kit.render_npz(os.path.join(OUT, "villa_exploded.npz"), offsets=exploded_offsets(kit))
         small = ("WIN-", "DOOR-", "SHUTTER-")
         kit.flatlay_npz(os.path.join(OUT, "villa_flat_big.npz"), only=lambda p: not p.name.startswith(small),
                         width=470.0, gap=8.0)

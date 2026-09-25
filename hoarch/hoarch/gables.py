@@ -448,11 +448,13 @@ def gable_wheel(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, collar=0.34, finia
     return ext(frame, 0.0, d) + ext(fcs, 0.0, d + 0.2)
 
 
-def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
+def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0, fan_v=None, clear=None, fan_r=None):
     """Free Classic gable ornament hung on the rake: raking boards, a cornice board across the
     gable's foot closing it into a pediment, and in the tympanum a half-round fan (a moulded
     rim, rays and a hub) standing on the cornice; a spike over the apex (the Larkspur). Flat,
-    prints face-up; place at w = rake."""
+    prints face-up; place at w = rake. ``fan_v``: raise the fan's centre (a sunburst over an
+    attic window), ``clear``: a cross-section (the window and its frame) the fan keeps off,
+    ``fan_r``: the fan's radius."""
     s = slope
     c = math.hypot(1.0, s)
     tip = np.array([L / 2, s * (L / 2 + d_eave)])
@@ -466,13 +468,16 @@ def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
     tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
     vb = 1.8
     parts = [rect(-d_eave, 0.0, L + d_eave, vb)]                                   # the cornice across the foot
-    R = min(L * 0.24, (H - vb) * 0.62)
+    fv = vb if fan_v is None else fan_v
+    R = fan_r or min(L * 0.24, (H - vb) * 0.62)
     cx = L / 2
-    half = circle((cx, vb), R, 48) ^ rect(-5, vb - 0.01, L + 5, H)
-    rim = half - circle((cx, vb), R - 0.8, 48)
-    rays = cs_union([stroke([(cx, vb), (cx + R * math.cos(a), vb + R * math.sin(a))], 0.55)
+    half = circle((cx, fv), R, 48) ^ rect(-5, fv - 0.01, L + 5, H)
+    rim = half - circle((cx, fv), R - 0.8, 48)
+    rays = cs_union([stroke([(cx, fv), (cx + R * math.cos(a), fv + R * math.sin(a))], 0.55)
                      for a in np.linspace(math.pi / 8, 7 * math.pi / 8, 7)]) ^ half
-    hub = circle((cx, vb), min(1.4, R * 0.3), 24) ^ rect(-5, vb - 0.01, L + 5, H)
+    hub = circle((cx, fv), min(1.4, R * 0.3), 24) ^ rect(-5, fv - 0.01, L + 5, H)
+    if clear is not None:
+        rim, rays, hub = rim - clear, rays - clear, hub - clear
     parts += [rim, rays, hub]
     frame = (cs_union(parts) ^ tri) + rafters
     out = [ext(frame, 0.0, d), ext(rim.offset(-0.15) + hub.offset(-0.15), 0.0, d + 0.4),
@@ -522,11 +527,13 @@ def gable_pendant(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
     return union(out)
 
 
-def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=0.8, finial=5.0):
+def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=0.8, finial=5.0, collar=0.42):
     """Deep gingerbread bargeboards (the Camellia): each rafter board's foot cut into a row of
     cusps with a ball at every point and pierced with keyholes, a collar tie across the gable
     with a diamond-lattice panel above it up to the apex, a teardrop pendant under the collar
-    and a spike over the apex. Flat, prints face-up; place at w = rake."""
+    and a spike over the apex. ``collar``: the collar tie's height as a fraction of the gable's
+    (raise it to keep the pendant clear of an attic window). Flat, prints face-up; place at
+    w = rake."""
     s = slope
     c = math.hypot(1.0, s)
     tip = np.array([L / 2, s * (L / 2 + d_eave)])
@@ -563,7 +570,7 @@ def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=0.8, finial=5.0):
         rafters = rafters - cs_union(holes)
     # collar tie, lattice above it, pendant below it
     inner = tri.offset(-depth * c * 0.62, JoinType.Miter, 4.0)
-    vc = H * 0.42
+    vc = H * collar
     collar = rect(-d_eave, vc - 0.6, L + d_eave, vc + 0.6) ^ tri
     panel = inner ^ rect(-d_eave, vc + 0.5, L + d_eave, H)
     parts = [rafters, collar]
@@ -682,11 +689,12 @@ def gable_star(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4):
     return union(out)
 
 
-def gable_arcade(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4):
+def gable_arcade(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4, band_at=0.34):
     """An arcaded gable (the Magnolia): raking boards and, across the gable, a band pierced
     with a row of little round-headed arches, a drop hung under each pier between them, a
-    king post from the band to the apex carrying a ring, and a spike over the apex. Flat,
-    prints face-up; place at w = rake."""
+    king post from the band to the apex carrying a ring, and a spike over the apex.
+    ``band_at``: the band's height as a fraction of the gable's (raise it clear of an attic
+    window). Flat, prints face-up; place at w = rake."""
     s = slope
     c = math.hypot(1.0, s)
     tip = np.array([L / 2, s * (L / 2 + d_eave)])
@@ -699,7 +707,7 @@ def gable_arcade(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4):
         band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
     rafters = cs_union(band) ^ tri
     cx = L / 2
-    vb = H * 0.34
+    vb = H * band_at
     bh = 3.2
     inner = tri.offset(-depth * c * 0.5, JoinType.Miter, 4.0)
     arc_band = (rect(-d_eave, vb, L + d_eave, vb + bh) ^ tri)
