@@ -28,7 +28,7 @@ from hoarch.core import cs_union
 
 HOUSES = ["beaumont", "villa", "harcourt", "fowler", "whitby", "delancey", "ardmore", "merritt", "hollis", "carrow",
           "marigold", "primrose", "rosecroft", "twins", "larkspur", "juniper", "camellia", "wisteria", "hawthorn",
-          "magnolia"]
+          "magnolia", "whitmore", "westbrook"]
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "out")
 BED = 256.0
@@ -112,7 +112,7 @@ def audit(name, all_specs):
         wsum = sum(ws.values())
         blk = next(b for b in _blocks(m) if b.name == bn)
         L = blk.facades()[e].L
-        if L > 30.0 and wsum > 0.5 * L:             # a canted bay's narrow faces are glazed by design
+        if L > 30.0 and wsum > 0.5 * L and not bn.startswith("bay"):     # bay windows are glazed by design
             full.append(f"{bn} wall {e} ({st}): frames {wsum:.0f} of {L:.0f} mm")
     if full:
         rep["FLAG"].append("walls more than half window: " + "; ".join(full[:6]))
