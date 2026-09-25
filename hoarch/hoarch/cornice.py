@@ -845,7 +845,7 @@ def level(path, z0, spec, cut=None, t=3.0):
             raise ValueError(kind)
         if cut is not None:
             m = m - cut
-        rings.append(dict(role=L_["role"], solid=m, flip=flip, name=L_.get("name", kind)))
+        rings.append(dict(role=L_["role"], solid=m, flip=flip, name=L_.get("name", kind), z0=z, z1=z + h))
         z += h
     return rings, z
 
@@ -895,6 +895,44 @@ def tower_cuts(path, centre, near, wall=None, away=None, tower=None, house=None)
         d = np.asarray(away, float) / np.linalg.norm(away)
         cuts.append((tuple(c + d * (wall - 3.0)), tuple(d)))
     return cuts
+
+
+def add_level(kit, rings, prefix, group, min_vol=2.0):
+    """Add a level's rings to ``kit`` as at most two parts, each printing in one pose with at
+    most one filament change: the upright rings (frieze, course) as ``prefix-lower`` and the
+    upside-down ones (bed, crown) as ``prefix-upper``. Two rings of one colour make a
+    one-colour part; a pose with a single ring keeps that ring's name. A ring cut into pieces
+    (round a tower) gives one part per piece, ``-0``, ``-1``, ... Colour zones go to the
+    renders; the change height is counted in the print pose (upright: from the lower ring's
+    foot; upside down: from the crown's top)."""
+    from .kit import print_flip
+    added = []
+    for flip in (False, True):
+        grp = sorted([r for r in rings if r["flip"] == flip], key=lambda r: r["z0"])
+        if not grp:
+            continue
+        # at most two rings per part and one change: split a longer run (not used by any spec)
+        runs = [grp[i:i + 2] for i in range(0, len(grp), 2)]
+        for run in runs:
+            name = run[0]["name"] if len(run) == 1 else ("upper" if flip else "lower")
+            solid = union([r["solid"] for r in run]) if len(run) > 1 else run[0]["solid"]
+            first = run[-1] if flip else run[0]           # the ring printed first (on the bed)
+            second = [r for r in run if r is not first]
+            change = None
+            if second and second[0]["role"] != first["role"]:
+                change = (round((first["z1"] - first["z0"]) / 0.2) * 0.2, second[0]["role"])
+            pcs = sorted([p_ for p_ in solid.decompose() if p_.volume() > min_vol], key=lambda m_: -m_.volume())
+            for j, pc in enumerate(pcs):
+                nm = f"{prefix}-{name}" + (f"-{j}" if len(pcs) > 1 else "")
+                zones = None
+                if change is not None:
+                    bb = pc.bounding_box()
+                    zones = [(r["role"], pc ^ box([bb[0] - 1, bb[1] - 1, r["z0"] - (10.0 if r is run[0] else 0.0)],
+                                                   [bb[3] + 1, bb[4] + 1, r["z1"] + (10.0 if r is run[-1] else 0.0)]))
+                             for r in run]
+                added.append(kit.add(nm, first["role"], pc, P=print_flip() if flip else None, group=group,
+                                     render=zones, change=change))
+    return added
 
 
 def band_height(spec):

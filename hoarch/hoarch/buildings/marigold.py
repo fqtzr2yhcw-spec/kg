@@ -29,7 +29,7 @@ import time
 import numpy as np
 from manifold3d import Manifold as M
 
-from hoarch.core import box, compose, cs_union, inv34, offset, poly, rect, slab, union
+from hoarch.core import box, compose, inv34, offset, poly, rect, slab, union
 from hoarch import cornice as CO, extras as EX, features as FT, gables as G, lace as LC, openings as O, roof as R, \
     skins as SK, storefront as SF, trimwork as TW
 from hoarch.kit import Kit, print_flip
@@ -166,8 +166,7 @@ def build(kit=None):
     lip = (_corbel(MAIN.cs, 3.0, ZW) + lip_ring(MAIN.cs, 3.0, ZW)) - no_lip
     kit.add("WALLS", "Turquoise", walls + lip + CO.ledge(MAIN.pts, ZE, LEDGE), group="walls")
     rings, _ = CO.level(MAIN.pts, ZE, EAVE)
-    for r_ in rings:
-        kit.add(f"CORNICE-{r_['name']}", r_["role"], r_["solid"], P=print_flip() if r_["flip"] else None, group="cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     fnd = foundation([MAIN], 0.0, ZF, style="coquina")
     kit.add("FOUNDATION", "Stone", fnd, group="foundation")
     inserts = []

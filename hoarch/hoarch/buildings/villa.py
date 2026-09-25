@@ -148,15 +148,6 @@ def _brick(f, b, reg):
     return SK.brick_bond(reg - rect(-1, top, f.L + 1, 999), "common", datum=1.8)
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part (a ring cut back from a block may fall into pieces)."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 # ------------------------------------------------------------------ build
 def build(kit=None):
     kit = kit or Kit(NAME, COLORS, RENDER_MAT)
@@ -191,11 +182,11 @@ def build(kit=None):
 
     # the cornices: at the joint (cut back to the ell's roof), at the eave, round the ell
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT, cut=ell_env)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     rings, _ = CO.level(MAIN.pts, ZE, EAVE)
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     rings, _ = CO.level(ELL.pts, ELL_ZE, ELL_C, cut=main_keep)
-    add_rings(kit, rings, "CORNICE-ELL", "cornice")
+    CO.add_level(kit, rings, "CORNICE-ELL", "cornice")
 
     # inserts and shutters
     inserts = []
@@ -263,7 +254,7 @@ def build(kit=None):
         world, P, zones = O.place(o.spec, A, "Windows_Doors", "Windows_Doors", "Glass")
         kit.add(f"WIN-{o.name}", "Windows_Doors", world, P=P, key="WIN-cupola", group="cupola", render=zones)
     rings, _ = CO.level(cup.pts, cze, CUPOLA_C, t=2.4)
-    add_rings(kit, rings, "CORNICE-CUP", "cupola")
+    CO.add_level(kit, rings, "CORNICE-CUP", "cupola")
     cd = CUPOLA_C["layers"][-1]["P"] + 0.6
     croof, ctex = R.hip_roof([(cup.pts, [0, 1, 2, 3])], czw + 1.4, 0.62, cd, texture="seam", tex_kw=dict(seam_pitch=3.6),
                              zlo=czw)

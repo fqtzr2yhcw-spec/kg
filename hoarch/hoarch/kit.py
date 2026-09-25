@@ -65,9 +65,10 @@ def unmid(m, layer=0.2, tol=0.012, shift=0.06):
 
 
 class Part:
-    def __init__(self, name, color, solid, P, key, group, render=None):
+    def __init__(self, name, color, solid, P, key, group, render=None, change=None):
         self.name, self.color, self.solid, self.P, self.key, self.group = name, color, solid, P, key, group
         self.render = render          # [(colour, solid)] colour zones of a one-piece part, for renders
+        self.change = change          # (height in print pose, colour): one filament change, or None
 
     def printed(self):
         s = self.solid.transform(self.P)
@@ -80,16 +81,21 @@ class Kit:
         self.name, self.colors, self.render_mat = name, colors, render_mat
         self.parts = []
 
-    def add(self, name, color, solid, P=None, key=None, group="", render=None):
+    def add(self, name, color, solid, P=None, key=None, group="", render=None, change=None):
+        """``change`` = (h, colour2): the part prints in ``color`` up to h mm (in its print pose)
+        and in colour2 above, one filament change. Such parts get plates of their own."""
         if solid is None or solid.is_empty():
             print("  (empty part skipped)", name)
             return None
         assert color in self.colors, color
+        if change is not None:
+            assert change[1] in self.colors, change
+            assert abs(change[0] / 0.2 - round(change[0] / 0.2)) < 1e-6, change      # on the layer grid
         comps = solid.decompose()
         if len(comps) > 1 and any(c.volume() < 1e-3 for c in comps):
             # boolean leftovers with no volume would set the print's bed height
             solid = M.batch_boolean([c for c in comps if c.volume() >= 1e-3], OpType.Add)
-        p = Part(name, color, solid, I34 if P is None else P, key or name, group, render)
+        p = Part(name, color, solid, I34 if P is None else P, key or name, group, render, change)
         self.parts.append(p)
         return p
 
@@ -206,7 +212,7 @@ class Kit:
         for p in self.parts:
             pm = p.printed()
             b = np.array(pm.bounding_box())
-            sig = (p.key, round(pm.volume(), 1), tuple(np.round(b[3:] - b[:3], 1)))
+            sig = (p.key, round(pm.volume(), 1), tuple(np.round(b[3:] - b[:3], 1)), p.change)
             groups.setdefault(sig, []).append((p, pm))
         out, names = [], defaultdict(int)
         for sig, members in groups.items():
@@ -236,20 +242,24 @@ class Kit:
         by_col = defaultdict(list)
         for p in self.parts:
             fn, pm = fname_of[p.name]
-            by_col[p.color].append((fn, p, pm))
+            by_col[(p.color, p.change)].append((fn, p, pm))
         n = 0
-        for col in self.colors:
-            if col not in by_col:
-                continue
-            packed = pack(by_col[col])
+        keys = sorted(by_col, key=lambda k: (list(self.colors).index(k[0]), k[1] is not None,
+                                             (k[1] or (0.0, ""))[0], (k[1] or (0.0, ""))[1]))
+        for key in keys:
+            col, chg = key
+            packed = pack(by_col[key])
+            tag = col if chg is None else f"{col}_then_{chg[1]}_at_{chg[0]:.1f}mm"
             for k, placed in enumerate(packed, start=1):
                 n += 1
-                base = f"{n:02d}_{col}" + (f"_{k}of{len(packed)}" if len(packed) > 1 else "")
+                base = f"{n:02d}_{tag}" + (f"_{k}of{len(packed)}" if len(packed) > 1 else "")
                 write_3mf(os.path.join(outdir, "plates", base + ".3mf"), [(nm, m) for (nm, _, m) in placed], base)
                 preview(os.path.join(outdir, "previews", base + ".png"), placed, self.colors[col], base)
                 hmax = max(m.bounding_box()[5] for (_, _, m) in placed)
                 man["plates"].append({"file": f"plates/{base}.3mf", "preview": f"previews/{base}.png", "colour": col,
                                       "hex": self.colors[col], "objects": len(placed),
+                                      "change": None if chg is None else {"at_mm": chg[0], "to": chg[1],
+                                                                          "to_hex": self.colors[chg[1]]},
                                       "parts": sorted({nm for (nm, _, _) in placed}), "layer_mm": layer,
                                       "max_height_mm": round(hmax, 1),
                                       "volume_cm3": round(sum(m.volume() for (_, _, m) in placed) / 1000, 1)})

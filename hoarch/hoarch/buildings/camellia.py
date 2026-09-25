@@ -33,7 +33,7 @@ import time
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from hoarch.core import box, circle, compose, cs_union, inv34, ngon, offset, poly, rect, scallop_rows, slab, union
+from hoarch.core import box, compose, cs_union, inv34, ngon, offset, poly, rect, scallop_rows, slab, union
 from hoarch import cornice as CO, features as FT, gables as G, openings as O, roof as R, skins as SK, \
     storefront as SF, trimwork as TW
 from hoarch.kit import Kit, print_flip
@@ -255,15 +255,6 @@ def forecourt(w, d, t=1.2, sockets=()):
     return out
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part (a ring cut by a tower may fall into pieces)."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 def build(kit=None):
     kit = kit or Kit(NAME, COLORS, RENDER_MAT)
     kit.parts.clear()
@@ -309,13 +300,13 @@ def build(kit=None):
     # to the tower), round the tower's top and the bay's
     jpath = st["outlines"][0]
     rings, _ = CO.level(jpath, S1 + LEDGE + 0.4, JOINT)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     rings, zt_ = CO.level(eave_path, ZE, EAVE, cut=TOWER.solid(grow=1.1, dz0=-2, dz1=2))
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     rings, _ = CO.level(TOWER.pts, ZT, TOWER_C)
-    add_rings(kit, rings, "CORNICE-T", "tower")
+    CO.add_level(kit, rings, "CORNICE-T", "tower")
     rings, _ = CO.level(BAY.pts, BAY_LEDGE, BAY_C, cut=PAV.solid(grow=0.7, dz0=-2, dz1=2))
-    add_rings(kit, rings, "CORNICE-B", "bay")
+    CO.add_level(kit, rings, "CORNICE-B", "bay")
     fnd = foundation(BLOCKS, 0.0, ZF, style="diamond")
     kit.add("FOUNDATION", "Brownstone", fnd, group="foundation")
     inserts = []

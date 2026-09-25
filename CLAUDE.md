@@ -18,8 +18,9 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
 - A house should fill the P1S/P2S bed. Make buildings big, not skinny.
 - Plates:
   - Single-colour plates, so a part prints on any printer.
-  - A few colours in one part are fine if the sliced part has only a few colour changes (about
-    3). The waste is negligible. The Ashby Villa windows were done this way.
+  - A part may be two colours, as long as that is only one colour change (a filament change at
+    one layer height). Waste is negligible. The Ashby Villa windows were done this way.
+  - Single-colour parts are fine too when they're easy.
   - Count colour changes per part, not colours.
 - Supports:
   - None, except under window and door frames.
