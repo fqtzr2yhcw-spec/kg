@@ -413,7 +413,8 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     raised oval tablet and end blocks under a thin cap) or "keyarch" (a half-round hood with a
     keystone and drop label stops, over a tympanum with a boss on a flat head) or "gablet" (a little
     boarded gable with raking boards, a spike and a drop) or "incised" (an Eastlake head board incised
-    with a sunflower between grooves, under a cap with ears). ``upper``: see window_insert. The brick arch of a brick
+    with a sunflower between grooves, under a cap with ears) or "lambrequin" (a head board hanging in
+    pointed and round tongues over the window). ``upper``: see window_insert. The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -422,7 +423,28 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6)]
     parts.append(ext((op.offset(casing, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + casing + 1), 0.0, 0.4))
     top = h + casing
-    if head == "incised":
+    if head == "lambrequin":
+        # a head board whose lower edge hangs over the window in a lambrequin (pointed and round
+        # tongues in turn), under a cap on two little blocks (the Magnolia)
+        v0 = h + casing
+        lw = w / 2 + casing + 0.6
+        hb = 2.4
+        n = max(3, int(round(2 * lw / 1.6)))
+        p_ = 2 * lw / n
+        tongues = []
+        for k in range(n):
+            uc = -lw + p_ * (k + 0.5)
+            if k % 2 == 0:
+                tongues.append(poly([(uc - p_ / 2, v0 + 0.01), (uc + p_ / 2, v0 + 0.01), (uc, v0 - 1.0)]))
+            else:
+                tongues.append(circle((uc, v0), p_ / 2, 16) ^ rect(uc - p_, v0 - 2, uc + p_, v0 + 0.02))
+        board = rect(-lw, v0, lw, v0 + hb) + cs_union(tongues)
+        parts.append(ext(board, 0.0, 0.8))
+        parts.append(chamfer_box(-lw - 0.4, v0 + hb - 0.01, lw + 0.4, v0 + hb + 0.8, 0.0, 1.2, c=0.3, bottom=0.8))
+        for sg in (-1, 1):
+            parts.append(chamfer_box(sg * (lw - 0.5) - 0.5, v0 + 0.4, sg * (lw - 0.5) + 0.5, v0 + hb, 0.0, 1.0, c=0.2))
+        top = v0 + hb + 0.8
+    elif head == "incised":
         # an Eastlake head board incised with a sunflower (a sunk ring round a boss, with sunk
         # rays) between sunk grooves, under a thin cap with square ears (the Hawthorn)
         v0 = h + casing

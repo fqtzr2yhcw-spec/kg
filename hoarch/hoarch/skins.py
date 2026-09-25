@@ -354,7 +354,9 @@ def brick_bond(region, bond="flemish", bl=2.4, bh=0.8, mortar=SLOT, bed=0.2, d=0
     "stack"    bricks straight above each other (panels, chimneys);
     "monk"     two stretchers and a header in turn, the pattern stepping a third each course;
     "garden"   Flemish garden wall: three stretchers and a header along each course;
-    "header"   all headers, each course half a header on from the one below.
+    "header"   all headers, each course half a header on from the one below;
+    "cross"    English cross bond: header and stretcher courses in turn, alternate stretcher
+               courses half a brick on, so the joints make crosses.
     ``diaper``: in Flemish bond, headers on a diamond lattice stand this much prouder."""
     if region.is_empty():
         return M()
@@ -390,6 +392,17 @@ def brick_bond(region, bond="flemish", bl=2.4, bh=0.8, mortar=SLOT, bed=0.2, d=0
                 while u < u1 + bl:
                     cells.append(rect(u + mortar / 2, v, u + hl - mortar / 2, top))
                     u += hl
+        elif bond == "cross":            # English cross bond: header and stretcher courses in turn, each
+            if k % 2 == 1:                # stretcher course half a brick on from the one before (the Magnolia)
+                u = u0 - bl + uoff + hl / 2
+                while u < u1 + bl:
+                    cells.append(rect(u + mortar / 2, v, u + hl - mortar / 2, top))
+                    u += hl
+            else:
+                u = u0 - 2 * bl + ((k // 2) % 2) * hl + uoff
+                while u < u1 + bl:
+                    cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, top))
+                    u += bl
         elif bond == "monk":             # two stretchers and a header in turn, stepping each course
             unit = 2 * bl + hl
             u = u0 - 2 * unit + (k % 3) * unit / 3 + uoff

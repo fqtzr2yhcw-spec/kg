@@ -238,7 +238,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
 
 
 CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope",
-                 "notched", "banded", "cabled", "reveal", "rosette", "lozenge", "blocked", "incised")
+                 "notched", "banded", "cabled", "reveal", "rosette", "lozenge", "blocked", "incised", "dentilled")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -264,7 +264,8 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
                 foot and head (the Juniper)
       lozenge   a plain board on a plinth carrying raised lozenges every 5.6 mm (the Camellia)
       blocked   a board with small raised blocks at alternate edges every 2.4 mm (the Wisteria)
-      incised   an Eastlake board incised with a groove ending in drilled roundels (the Hawthorn)"""
+      incised   an Eastlake board incised with a groove ending in drilled roundels (the Hawthorn)
+      dentilled a plain board edged with a row of small dentils (the Magnolia)"""
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
@@ -354,6 +355,13 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
                 parts.append(chamfer_box(far0, va, far1, vb, t - 0.01, 0.35, c=0.15))
                 um = (far0 + far1) / 2
                 parts.append(M.cylinder(0.3, 0.7, 0.55, 20).translate([um, (va + vb) / 2, t + 0.33]))
+    if style == "dentilled":            # a plain board edged on its outer side with a row of small dentils (the Magnolia)
+        parts.append(box([far0, qa, 0], [far1, qa + 1.2, t + 0.3]))
+        e0, e1 = span(w - 0.2, w + 0.5)
+        v = qa + 1.6
+        while v + 0.6 < qb - 0.4:
+            parts.append(box([e0, v, 0], [e1, v + 0.6, t + 0.2]))
+            v += 1.2
     if style == "incised":              # an Eastlake board on a plinth, incised with a sunk groove ending in drilled roundels, a cap block (the Hawthorn)
         parts.append(box([far0, qa, 0], [far1, qa + 1.2, t + 0.3]))
         parts.append(box([far0, qb - 1.0, 0], [far1, qb, t + 0.3]))

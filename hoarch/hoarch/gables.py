@@ -680,3 +680,51 @@ def gable_star(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4):
                         poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
         out.append(ext(fcs, 0.0, d + 0.2))
     return union(out)
+
+
+def gable_arcade(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4):
+    """An arcaded gable (the Magnolia): raking boards and, across the gable, a band pierced
+    with a row of little round-headed arches, a drop hung under each pier between them, a
+    king post from the band to the apex carrying a ring, and a spike over the apex. Flat,
+    prints face-up; place at w = rake."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    H = tip[1]
+    depth = skin + width
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    band = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    rafters = cs_union(band) ^ tri
+    cx = L / 2
+    vb = H * 0.34
+    bh = 3.2
+    inner = tri.offset(-depth * c * 0.5, JoinType.Miter, 4.0)
+    arc_band = (rect(-d_eave, vb, L + d_eave, vb + bh) ^ tri)
+    ib = (inner ^ rect(-50, vb + bh - 0.2, 50, vb + bh)).bounds()     # the band's width at its top
+    span_ = ib[2] - ib[0]
+    n = max(3, int(span_ / 2.6))
+    p_ = span_ / n
+    holes, drops = [], []
+    for k in range(n):
+        u = ib[0] + p_ * (k + 0.5)
+        ow = min(0.8, p_ / 2 - 0.35)
+        holes.append(cs_union([rect(u - ow, vb + 0.6, u + ow, vb + bh - 0.6 - ow), circle((u, vb + bh - 0.6 - ow), ow, 16)]))
+    for k in range(1, n):
+        u = ib[0] + p_ * k
+        drops.append(cs_union([rect(u - 0.35, vb - 1.2, u + 0.35, vb + 0.01), circle((u, vb - 1.5), 0.55, 16),
+                               poly([(u - 0.4, vb - 1.9), (u + 0.4, vb - 1.9), (u, vb - 2.8)])]))
+    post = rect(cx - 0.5, vb + bh - 0.01, cx + 0.5, H) ^ tri               # a king post up to the apex
+    vr = (vb + bh + H - depth * c) / 2
+    ring = circle((cx, vr), 1.4, 28) - circle((cx, vr), 0.7, 20)          # carrying a ring half way up
+    parts = [rafters, arc_band - cs_union(holes), post, ring] + drops
+    frame = cs_union(parts)
+    frame = cs_union([pc for pc in frame.decompose() if pc.area() > 2.0])
+    out = [ext(frame, 0.0, d)]
+    if finial:
+        fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.0),
+                        poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
+        out.append(ext(fcs, 0.0, d + 0.2))
+    return union(out)

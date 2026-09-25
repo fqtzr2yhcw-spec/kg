@@ -285,6 +285,19 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
             g += 0.4
         body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, sh + 1.59], [w / 2 + 0.8, d / 2 + 0.8, h])
         return body - box([-w / 2 + 1.0, -d / 2 + 1.0, h - 1.0], [w / 2 - 1.0, d / 2 - 1.0, h + 1])
+    if style == "pilastered":
+        # brick with a raised pilaster at each corner and a sunk panel between on every face,
+        # a corbelled band over the panels and a stone cap with a drip (the Magnolia)
+        sh = zq(h - 2.4)
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + _skin(w, d, 0.0, sh - 0.2, _brick("running"))
+        zp0, zp1 = zq(sh * 0.45), zq(sh - 1.6)
+        for f in _faces(w, d):
+            L_ = f.L
+            body = body - f.place(ext(rect(1.2, zp0, L_ - 1.2, zp1), -0.4, 1.0))
+        body = body + _corbel_out(w, d, sh + 0.4, 0.4) + box([-w / 2 - 0.4, -d / 2 - 0.4, sh - 0.01], [w / 2 + 0.4, d / 2 + 0.4, sh + 0.8])
+        body = body + _corbel_out(w + 0.8, d + 0.8, sh + 1.2, 0.4) + \
+            box([-w / 2 - 0.8, -d / 2 - 0.8, sh + 0.79], [w / 2 + 0.8, d / 2 + 0.8, h])
+        return body - box([-w / 2 + 1.0, -d / 2 + 1.0, h - 1.0], [w / 2 - 1.0, d / 2 - 1.0, h + 1])
     if style == "octagon":
         # a square brick base, a 45 degree weathering to an octagonal shaft with a sunk band,
         # and a two-step corbelled octagonal crown (the Hawthorn)
@@ -495,7 +508,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
             "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin", "round", "fluted", "crowned",
-            "dogtooth", "roundel", "chequer", "clustered", "lozenge", "cross", "tulip", "octagon")
+            "dogtooth", "roundel", "chequer", "clustered", "lozenge", "cross", "tulip", "octagon", "pilastered")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -671,6 +684,23 @@ def foundation_skin(style, reg, seed=0):
             j += 1
         blocks = M.extrude(cs_union(cells) ^ reg, 0.45)
         return blocks - M.extrude(cs_union(pits) ^ reg, 1.0).translate([0, 0, 0.25])
+    if style == "vjoint":                # smooth ashlar blocks with every edge chamfered, so the joints read as V grooves (the Magnolia)
+        b = reg.bounds()
+        out, v, j = [], b[1], 0
+        ch = 2.4
+        slab_ = M.extrude(reg, 1.0)
+        while v < b[3]:
+            u = b[0] - (j % 2) * 2.6
+            while u < b[2]:
+                L_ = 5.2
+                x0, y0, x1, y1 = u + 0.1, v + 0.1, u + L_ - 0.1, v + ch - 0.1
+                pts = [(x, y, 0.0) for x in (x0, x1) for y in (y0, y1)] + \
+                      [(x, y, 0.4) for x in (x0 + 0.4, x1 - 0.4) for y in (y0 + 0.4, y1 - 0.4)]
+                out.append(M.hull_points(pts) ^ slab_)
+                u += L_
+            v += ch
+            j += 1
+        return union(out)
     if style == "ledgestone":            # thin stacked ledge stones: long low slabs in courses of 0.8 to 1.2, joints staggered (the Hawthorn)
         b = reg.bounds()
         rng = np.random.default_rng(seed + 31)
@@ -907,6 +937,10 @@ BELTS = {
     # a stepped band with small blocks in pairs (the Myrtle)
     "twinblock": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.0, 3.3), (1.0, 3.8), (1.3, 4.1), (1.3, 4.4)],
                   dict(w=0.7, z=1.0, h=1.6, d0=0.5, d=0.4, c=0.2, pitch=5.6, pair=1.5, margin=2.6)),
+    # a brick corbel table: three courses each stepping out, a row of dentil headers under the
+    # top one (the Magnolia)
+    "corbel": ([(0.0, 0.0), (0.2, 0.2), (0.2, 1.0), (0.5, 1.3), (0.5, 2.2), (0.8, 2.5), (0.8, 3.4), (1.1, 3.7),
+                (1.1, 4.4)], dict(w=0.9, z=2.4, h=0.8, d0=0.8, d=0.35, c=0.12, pitch=1.6, margin=0.8)),
     # a fascia carrying a raised zigzag between fillets (the Hawthorn)
     "zigzag": ([(0.0, 0.0), (0.4, 0.4), (0.4, 0.8), (0.6, 1.0), (0.6, 3.2), (0.9, 3.5), (0.9, 4.4)],
                dict(kind="zigzag", w0=0.6, z0=1.4, z1=2.8, pitch=1.6, margin=0.6)),
@@ -940,7 +974,8 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     console whose sloping front is a string of three beads), fret, ladder, acanthus (an S
     console with a lobed front and an open eye), twin (two slim consoles on one head) and cove
     (a square head over a concave sweep), tongue (a long slim taper with a round end), ring
-    (a sawn bracket pierced with a round eye) and comma (a round head curling down to a point)."""
+    (a sawn bracket pierced with a round eye), comma (a round head curling down to a point) and
+    stepped (a corbel of three steps)."""
     from .ornament import console, side_profile
     if style == "scroll":
         return console(h, d, t, u=u, v_top=v_top, w0=w0)
@@ -1033,6 +1068,9 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
               [(d - R_ + R_ * math.cos(a), -hd - R_ + R_ * math.sin(a)) for a in np.linspace(0.0, -math.pi / 2, 12)][1:] + \
               [(0.6, -hd - R_), (0.6, -h), (0.0, -h)]
         prof = poly(pts)
+    elif style == "stepped":            # a corbel of three steps, each shorter and further out (the Magnolia)
+        prof = poly([(0.0, 0.0), (d, 0.0), (d, -h * 0.3), (d * 0.66, -h * 0.3), (d * 0.66, -h * 0.62), (d * 0.33, -h * 0.62),
+                     (d * 0.33, -h), (0.0, -h)])
     elif style == "comma":              # a sawn bracket curling like a comma: a round head tapering down to a point (the Wisteria)
         R_ = min(d, h) * 0.42
         cx_, cy_ = d - R_, -R_

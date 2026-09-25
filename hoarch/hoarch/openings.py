@@ -136,6 +136,12 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
         for j in range(1, nr):
             v = v0 + (v1 - v0) * j / nr
             bars.append(rect(-w, v - RIB / 2, w, v + RIB / 2))
+    if upper == "cross":             # a cross of bars in the upper sash with a small ring at the crossing (the Magnolia)
+        top_ = spring if rise > 0 else h
+        cy_ = (mr + top_) / 2
+        rr = min(0.9, (top_ - mr) * 0.2)
+        bars.append((rect(-RIB / 2, mr, RIB / 2, top_ + 1) + rect(-w, cy_ - RIB / 2, w, cy_ + RIB / 2)) - circle((0.0, cy_), rr, 20))
+        bars.append(circle((0.0, cy_), rr + RIB / 2, 20) - circle((0.0, cy_), rr - RIB / 2, 20))
     if upper == "fan":               # a fan of five bars radiating from the middle of the meeting rail (the Hawthorn)
         top_ = spring if rise > 0 else h
         for a_ in np.linspace(math.radians(30), math.radians(150), 5):
@@ -598,7 +604,8 @@ def _leaf(style, u, lw, dh, hinge_left):
     cameo (a round-headed light over a panel with a raised oval), ellipse (an upright
     elliptical light over a panel with a raised square) and trefoil (a light with a
     three-lobed head over a raised panel) and hexlight (a tall hexagonal light over a panel with
-    two raised blocks) and shouldered (a light under a shouldered head over two raised panels)."""
+    two raised blocks), shouldered (a light under a shouldered head over two raised panels) and
+    wheel (a round light with six spokes over a tall raised panel)."""
     if style == "arched":
         return _ornate_leaf(u, lw, dh, hinge_left)
     st = min(1.0, lw * 0.16)
@@ -850,6 +857,17 @@ def _leaf(style, u, lw, dh, hinge_left):
         rx, ry = min(0.9, (b[2] - b[0]) * 0.3), min(1.4, (b[3] - b[1]) * 0.3)
         parts.append(ext(poly([(cxm + rx * math.cos(a), cym + ry * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 24, endpoint=False)]),
                          -0.41, -0.2))
+    elif style == "wheel":                # a round light with six spokes over a tall raised panel (the Magnolia)
+        cx = (pu0 + pu1) / 2
+        r = (pu1 - pu0) / 2 - 0.2
+        cy = top - st - r - 0.6
+        gl = circle((cx, cy), r, 36)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Round) - gl, -0.8, -0.6))
+        spokes = cs_union([stroke([(cx, cy), (cx + r * math.cos(a_), cy + r * math.sin(a_))], 0.45, caps=False)
+                           for a_ in np.linspace(0, 2 * math.pi, 6, endpoint=False)] + [circle((cx, cy), 0.5, 12)])
+        _GLASS_BARS.append(ext(spokes ^ gl.offset(0.2), -1.21, -0.6))
+        panel(rect(pu0, 1.3, pu1, cy - r - 1.4))
     elif style == "shouldered":           # a light under a shouldered head (stepped in at its top corners) over two raised panels (the Hawthorn)
         cx = (pu0 + pu1) / 2
         hw = (pu1 - pu0) / 2
@@ -922,7 +940,7 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
     diamond (a diamond grid), leaded (a border of small squares), ring (a ring on a cross of
     bars), twin (one bar), cross (a cross of bars), heart, scallop (three little arches),
     chevron, beads, grid (two rows of four lights), quatrefoil (four linked rings), wave, star,
-    fret (a square-wave bar), lozenge (a bar with a lozenge ring), bowtie or
+    fret (a square-wave bar), lozenge (a bar with a lozenge ring), bowtie, archbar or
     "number:<digits>" (the street number in
     raised gilt figures on the glass). One transom style per building."""
     op = rect(-w / 2, 0, w / 2, h)
@@ -1030,6 +1048,13 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
             amp = min(0.8, (tb[3] - tb[1]) * 0.25)
             pts = [(x, cy + amp * math.sin((x - tb[0]) / (tb[2] - tb[0]) * 4 * math.pi)) for x in np.linspace(tb[0] - 0.5, tb[2] + 0.5, 33)]
             pat = stroke(pts, RIB, caps=False)
+        elif tstyle == "archbar":                # a segmental arch of bar springing from the light's foot, a boss at its crown
+            span_ = (tb[2] - tb[0]) / 2 - 0.2
+            rise_ = (tb[3] - tb[1]) - 0.6
+            R_ = (span_ ** 2 + rise_ ** 2) / (2 * rise_)
+            cyc = tb[1] + rise_ - R_
+            pat = (circle((0.0, cyc), R_ + RIB / 2, 64) - circle((0.0, cyc), R_ - RIB / 2, 64)) ^ rect(tb[0] - 1, tb[1], tb[2] + 1, tb[3] + 1)
+            pat = pat + circle((0.0, tb[1] + rise_ - 0.1), 0.55, 16)
         elif tstyle == "bowtie":                 # two triangles of bars meeting point to point at the middle
             cy = (tb[1] + tb[3]) / 2
             hh = (tb[3] - tb[1]) / 2 - 0.3
