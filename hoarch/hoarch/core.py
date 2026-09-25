@@ -380,6 +380,9 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 c, q = u + wtab / 2, r * 0.5
                 tabs.append(poly([(c - r + q, vk), (c + r - q, vk), (c + r, vk + q), (c + r, top), (c - r, top),
                                   (c - r, vk + q)]))
+            elif shp == "cove":           # square shingles with a concave notch cut in each butt
+                c = u + wtab / 2
+                tabs.append(rect(u + gap / 2, vk, u + wtab - gap / 2, top) - circle((c, vk - 0.05), max(0.3, r - 0.5), seg))
             elif shp == "stagger":        # square butts of random width, some shorter than their neighbours
                 h_ = (int(u * 7.3 + k * 3.1) % 5)
                 low = 0.4 if h_ % 2 else 0.0

@@ -84,7 +84,8 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
       plain     common brick, one corbel course, a flat cap and one pot (Hollis)
       arched    Roman brick with arched recesses, a deep corbelled crown, three pots (Carrow)
       and for the Main Street shops: party, stovepipe, coped, hooded, stepped, slab, tapered,
-      twin and round (a round stack with iron bands and a corbelled crown, on a plinth)
+      twin and round (a round stack with iron bands and a corbelled crown, on a plinth);
+      fluted (the cottage: sunk flutes down each face, a band, a corbelled cap and a pot)
     """
     h = zq(h)
     if style == "corbel":
@@ -263,6 +264,20 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         body = body + _corbel_out(w2, d2, h - 2.4, 0.4) + box([-w2 / 2 - 0.4, -d2 / 2 - 0.4, h - 2.41], [w2 / 2 + 0.4, d2 / 2 + 0.4, h - 1.6])
         body = body + box([-w2 / 2 - 0.1, -d2 / 2 - 0.1, h - 1.61], [w2 / 2 + 0.1, d2 / 2 + 0.1, h])
         return body - box([-w2 / 2 + 0.7, -d2 / 2 + 0.7, h - 1.0], [w2 / 2 - 0.7, d2 / 2 - 0.7, h + 1])
+    if style == "fluted":
+        # brick, three sunk flutes down each face, a stone band and a corbelled cap with a pot
+        sh = h - 3.0
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh])
+        body = body + _skin(w, d, 0.0, 1.8, _brick("running"))
+        for f in _faces(w, d):
+            n = 3
+            for k in range(n):
+                u = f.L * (k + 1) / (n + 1)
+                body = body - f.place(box([u - 0.35, 2.6, -0.4], [u + 0.35, sh - 1.8, 0.05]))
+        body = body + box([-w / 2 - 0.3, -d / 2 - 0.3, 1.8], [w / 2 + 0.3, d / 2 + 0.3, 2.4])
+        body = body + _corbel_out(w, d, sh + 0.6, 0.6) + box([-w / 2 - 0.6, -d / 2 - 0.6, sh + 0.59], [w / 2 + 0.6, d / 2 + 0.6, sh + 1.4])
+        pot = M.cylinder(1.6, 1.0, 0.8, 20).translate([0, 0, sh + 1.39]) + M.cylinder(0.4, 0.8, 1.1, 20).translate([0, 0, sh + 2.98])
+        return body + pot - M.cylinder(4.0, 0.5, 0.5, 16).translate([0, 0, sh + 0.4])
     if style == "round":
         # a round brick stack (an industrial flue in miniature) on a square plinth, iron bands
         # round it, a corbelled crown of three rings flaring at 45 degrees, the flue open
@@ -305,7 +320,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
-            "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin", "round")
+            "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin", "round", "fluted")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -356,8 +371,9 @@ def foundation_skin(style, reg, seed=0):
     long dressed granite), timber (the barber shop: a timber sill with bolt heads), polished
     (the bank: tall polished granite blocks), piers (the general store: stone piers with
     board skirting), bossed (the drugstore), cobble (the hotel), herringbone (the bakery),
-    battered (the hardware store), moulded (the millinery: a smooth course under an ogee) and
-    tooled (the jeweler: dressed blocks with a margin round vertically striated faces)."""
+    battered (the hardware store), moulded (the millinery: a smooth course under an ogee),
+    tooled (the jeweler: dressed blocks with a margin round vertically striated faces) and
+    coquina (the gingerbread cottage: shell-stone blocks with pitted faces)."""
     from . import skins as S
     if style == "fieldstone":
         return ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=0.55, seed=seed)
@@ -401,6 +417,27 @@ def foundation_skin(style, reg, seed=0):
         pc = cs_union(piers) ^ reg
         stones = ashlar(pc, course=(0.9, 1.4), length=(1.0, 1.7), d=0.5, seed=seed, rough=0.1)
         return stones + S.beadboard(reg - pc.offset(0.2, JoinType.Miter, 4.0), pitch=1.2, groove=0.5, d=0.25)
+    if style == "coquina":               # shell-stone blocks in regular courses, their faces pitted
+        b = reg.bounds()
+        rng = np.random.default_rng(seed + 7)
+        cells, pits = [], []
+        ch = 1.6
+        j = 0
+        v = b[1]
+        while v < b[3]:
+            u = b[0] - (j % 2) * 1.6 - 0.8
+            while u < b[2]:
+                cell = rect(u + 0.25, v + (0.25 if j else 0.0), u + 3.15, v + ch - 0.25)
+                cells.append(cell)
+                for _ in range(3):              # diamond pits: no level edge to leave a face off the grid
+                    pc = (u + rng.uniform(0.8, 2.6), v + rng.uniform(0.7, ch - 0.7))
+                    q = rng.uniform(0.38, 0.46)
+                    pits.append(poly([(pc[0], pc[1] - q), (pc[0] + q, pc[1]), (pc[0], pc[1] + q), (pc[0] - q, pc[1])]))
+                u += 3.2
+            v += ch
+            j += 1
+        blocks = M.extrude(cs_union(cells) ^ reg, 0.45)
+        return blocks - M.extrude(cs_union(pits) ^ reg, 1.0).translate([0, 0, 0.25])
     if style == "tooled":                # dressed blocks (one course, two on a tall base): a smooth
         b = reg.bounds()                  # margin round a face tooled in fine vertical striations
         nc = 1 if b[3] - b[1] < 3.6 else 2

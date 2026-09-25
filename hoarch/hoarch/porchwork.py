@@ -123,6 +123,20 @@ def post_stick(h, collar=None, abacus=3.0, slot=(1.2, 1.0), w=2.2):
     return body + _top(h, abacus / 2, h - 1.8, s, slot, shape="square")
 
 
+def post_boxed(h, collar=None, abacus=3.0, slot=(1.2, 1.0), w=2.2):
+    """A boxed square post: a raised flat panel on each face between a base block and a
+    necking ring, under a moulded capital."""
+    s = w / 2
+    body = _plinth() + box([-s, -s, 1.0], [s, s, h - 1.8])
+    body = body + box([-s - 0.3, -s - 0.3, 1.19], [s + 0.3, s + 0.3, 2.6])                       # base block
+    z0, z1 = 3.0, h - 4.2
+    if z1 - z0 > 2.0:
+        for ax in range(4):
+            body = body + box([-s + 0.35, s - 0.01, z0], [s - 0.35, s + 0.3, z1]).rotate([0, 0, 90 * ax])
+    body = body + box([-s - 0.3, -s - 0.3, h - 3.8], [s + 0.3, s + 0.3, h - 3.2])                # necking ring
+    return body + _top(h, abacus / 2, h - 1.8, s, slot, shape="square")
+
+
 def post_spindle(h, collar=None, abacus=2.8, slot=(1.2, 1.0)):
     """Folk Victorian turned spindle post: a slim shaft ringed with bead-and-reel turnings
     along its length (a bead at the railing's hand rail)."""
@@ -176,7 +190,8 @@ def post_turned(h, collar=None, **kw):
 
 
 POSTS = {"turned": post_turned, "tuscan": post_tuscan, "fluted": post_fluted, "chamfered": post_chamfered,
-         "clustered": post_clustered, "stick": post_stick, "spindle": post_spindle, "eastlake": post_eastlake}
+         "clustered": post_clustered, "stick": post_stick, "spindle": post_spindle, "eastlake": post_eastlake,
+         "boxed": post_boxed}
 
 
 # ------------------------------------------------------------------ railing fills (between the rails)
@@ -231,6 +246,9 @@ def fill_flat(style, L, vb, vt):
             left = [(u - w, vb + t * H) for t, w in prof]
             right = [(u + w, vb + t * H) for t, w in reversed(prof)]
             parts.append(poly(left + right))
+    elif style == "lace":
+        from .lace import lace_panel_cs
+        parts.append(lace_panel_cs(L, vb, vt))
     else:
         raise ValueError(style)
     cs = cs_union(parts) ^ rect(0.0, vb - 0.05, L, vt + 0.05)
@@ -405,6 +423,14 @@ def skirt_fill(style, reg, d=1.2):
             spring = top - r
             if spring - (v0 + 0.8) > 0.4:
                 holes.append(cs_union([rect(a, v0 + 0.8, b, spring), circle(((a + b) / 2, spring), r, 24)]))
+        board = reg - cs_union(holes) if holes else reg
+        return M.extrude(board, d)
+    if style == "rings":                # a board pierced with a row of round holes
+        L = u1 - u0
+        n = max(1, int(round(L / 2.6)))
+        vm = (v0 + v1) / 2
+        r = min(0.9, (v1 - v0) / 2 - 0.7, L / n / 2 - 0.5)
+        holes = [circle((u0 + L * (i + 0.5) / n, vm), r, 20) for i in range(n)] if r > 0.35 else []
         board = reg - cs_union(holes) if holes else reg
         return M.extrude(board, d)
     if style == "diamond":              # a board pierced with a row of diamonds (steep sides print clean)

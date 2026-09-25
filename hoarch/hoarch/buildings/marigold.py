@@ -1,0 +1,270 @@
+"""The Marigold -- an original HO-scale (1:87.1) gingerbread cottage, after the user's photo of a
+turquoise cottage with gold lace trim.
+
+A one-storey front-gabled cottage in turquoise ogee-lap siding on a coquina-stone base, with
+reeded corner boards. The steep front gable is the show piece: a deep gold lace bargeboard
+with a cusped edge, scrolls curling at its feet, a pendant and a fleur finial; a lace band
+across the gable's foot with pierced corners rising up the rakes; a round medallion under the
+apex; and a round-headed window under a gold fan hood with a sunburst and scroll ears. Across
+the whole front, a porch on orange boxed posts with gold lace arches (scrolls, eyelets and
+pendants), gold lace railings, a scalloped fascia and a planked floor; orange round-headed
+windows under halo mouldings; a door with a lace-grilled light under a fan hood. Cove-cut
+shingles on the roof, a fluted chimney. Add-ons: a white picket fence with an arched gate, a
+blue rocking chair, flower boxes, and a pink bicycle with a basket.
+
+Colour comes from the part split: turquoise walls, gold lace, orange posts, windows and doors,
+grey roofs. The porch deck prints planks first (one filament change); the flower boxes change
+to pink for the flowers.
+
+usage: python3 -m hoarch.buildings.marigold [check] [export]
+"""
+import math
+import os
+import sys
+import time
+
+import numpy as np
+from manifold3d import Manifold as M
+
+from hoarch.core import box, compose, cs_union, inv34, offset, poly, rect, slab, union
+from hoarch import extras as EX, features as FT, gables as G, lace as LC, openings as O, roof as R, skins as SK, \
+    storefront as SF, trimwork as TW
+from hoarch.kit import Kit, print_flip
+from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, wall_shell
+
+NAME = "The Marigold Cottage"
+COLORS = {"Turquoise": "#3FB5AE", "Gold": "#E7B52B", "Orange": "#E2772C", "Roof": "#4C5056", "Stone": "#CDBFA3",
+          "PorchDeck": "#E2772C", "Planks": "#7A5A3A", "Brick": "#9A4A36", "White": "#F2F0EA", "Blue": "#3E6FB5",
+          "Pink": "#E57FA4", "FlowerBox": "#3FB5AE", "Windows_Doors": "#E2772C"}
+RENDER_MAT = {"Turquoise": "siding", "Gold": "gold", "Orange": "orange", "Roof": "roof", "Stone": "stone",
+              "PorchDeck": "orange", "Planks": "planks", "Brick": "brick", "White": "white", "Blue": "blue",
+              "Pink": "pink", "FlowerBox": "siding", "Blooms": "pink", "Windows_Doors": "orange", "Sash": "sash",
+              "Door": "door", "Glass": "glass"}
+
+# ------------------------------------------------------------------ levels (on the 0.2 mm grid)
+ZF = 5.0
+ZE = ZF + 32.0                  # wall top: the roof sits here
+FASCIA = 1.6
+Z_EAVE = ZE + FASCIA
+D_EAVE, RAKE, SKIN = 2.6, 3.2, 1.8
+S = 1.7                         # a 60 degree gable, as in the photo
+
+# ------------------------------------------------------------------ plan
+W, D = 40.0, 52.0
+MAIN = Block("main", [(0, 0), (W, 0), (W, D), (0, D)], ZF, ZE)
+V_GW = ZE - ZF + 4.2            # the gable window's foot (block-relative), clear of the lace band
+GW_W, GW_H = 5.4, 14.0
+PD = 16.0                       # porch depth
+
+
+def _siding(f, b, reg):
+    return SK.ogee_lap(reg, datum=0.0)
+
+
+def _gable_specs():
+    return [dict(p0=(0.0, 0.0), p1=(W, 0.0), slope=S, edge=0, u0=0.0),
+            dict(p0=(W, D), p1=(0.0, D), slope=S, edge=2, u0=0.0)]
+
+
+def _roof_pieces():
+    r = RAKE - D_EAVE
+    return [([(0.0, -r), (W, -r), (W, D + r), (0.0, D + r)], [1, 3], S)]
+
+
+def _openings():
+    L = []
+
+    def add(x, y, v0, sp, name, kind="window"):
+        e, u = MAIN.locate(x, y)
+        L.append(Opening(MAIN, e, u, v0, sp, name, kind))
+
+    win = SF.window_commercial(6.0, 18.0, rise=3.0, lites=(2, 2), rows=(1, 2), sill=1.0, head="halo")
+    add(W / 2, 0.0, 0.0, SF.door_commercial(6.4, 22.0, transom=0.0, leaf="lace", tstyle="plain", head="fanhood"),
+        "front-door", "door")
+    for x in (9.0, W - 9.0):
+        add(x, 0.0, 6.0, win, f"F{x:.0f}")
+    gw = SF.window_commercial(GW_W, GW_H, rise=GW_W / 2, lites=(1, 1), rows=(1, 1), sill=0.8, head=None)
+    add(W / 2, 0.0, V_GW, gw, "gable")
+    add(W / 2, D, V_GW, gw, "back-gable")
+    for x in (0.0, W):
+        for y in (12.0, 26.0, 40.0):
+            add(x, y, 6.0, win, f"S{x:.0f}-{y:.0f}")
+    add(W - 12.0, D, 0.0, SF.door_commercial(6.4, 22.0, transom=0.0, leaf="lace", tstyle="plain", head=None),
+        "back-door", "door")
+    add(12.0, D, 6.0, win, "B12")
+    return L
+
+
+OPENINGS = _openings()
+
+
+def _gable_trim():
+    """The front gable's applied gold trim, in the front facade frame (u from x = 0, v up
+    from the block base): the lace band across the gable's foot with its corners (kept inside
+    the gable wall), and the gable window's fan hood."""
+    v0 = ZE - ZF + 0.2
+    screen = LC.gable_screen(W, S, v0=v0)
+    wall = poly([(0.0, 0.0), (W, 0.0), (W, v0 + 0.1), (W / 2, v0 + 0.1 + S * W / 2), (0.0, v0 + 0.1)]).offset(-0.5)
+    screen = screen ^ M.extrude(wall, 5.0).translate([0, 0, -1.0])
+    hood = LC.fan_hood(GW_W, GW_H - GW_W / 2).translate([W / 2, V_GW, 0.0])
+    return screen, hood
+
+
+SCREEN, HOOD = _gable_trim()
+FLOWER_V = 1.2                   # flower boxes hang under the front windows' sills
+
+
+def _applied():
+    out = []
+    for name, m in (("SCREEN", SCREEN), ("HOOD", HOOD)):
+        land = m.project().offset(0.15)
+        out.append(Opening(MAIN, 0, 0.0, 0.0, SF.applied(land), name, "trim"))
+    for x in (9.0, W - 9.0):
+        out.append(Opening(MAIN, 0, 0.0, 0.0, SF.applied(rect(x - 3.6, FLOWER_V, x + 3.6, FLOWER_V + 2.2)),
+                           f"BOX{x:.0f}", "trim"))
+    return out
+
+
+def build(kit=None):
+    kit = kit or Kit(NAME, COLORS, RENDER_MAT)
+    kit.parts.clear()
+    t0 = time.time()
+    specs = _gable_specs()
+    rf = G.gabled_roof(_roof_pieces(), Z_EAVE, D_EAVE, specs, texture="cove", skin=SKIN, rake=RAKE,
+                       inner_cs=offset(MAIN.cs, -3.0), fascia=FASCIA, tex_kw=dict(pitch=1.6, wtab=2.2))
+    gables = [(MAIN, g["edge"], wl["cs"].translate((g["u0"], Z_EAVE - ZF))) for g, wl in zip(specs, rf["walls"])]
+    walls = wall_shell([MAIN], OPENINGS + _applied(), t=3.0, belt=None, corners="reeded", water_table=False,
+                       siding=_siding, gables=gables)
+    no_lip = union([box([-1, -1, ZE - 1], [W + 1, 5.0, ZE + 5]), box([-1, D - 5.0, ZE - 1], [W + 1, D + 1, ZE + 5])])
+    lip = (_corbel(MAIN.cs, 3.0, ZE) + lip_ring(MAIN.cs, 3.0, ZE)) - no_lip
+    kit.add("WALLS", "Turquoise", walls + lip, group="walls")
+    fnd = foundation([MAIN], 0.0, ZF, style="coquina")
+    kit.add("FOUNDATION", "Stone", fnd, group="foundation")
+    inserts = []
+    for o in OPENINGS:
+        A = o.local_frame()
+        sp = o.spec
+        b = sp["cut"].bounds()
+        key = "DOOR" if o.kind == "door" else "WIN"
+        world, P, zones = O.place(sp, A, "Windows_Doors", "Door" if o.kind == "door" else "Sash", "Glass")
+        inserts.append(kit.add(f"{key}-{o.name}", "Windows_Doors", world, P=P,
+                               key=f"{key}-{o.name.split('-')[0][:1]}-{b[2] - b[0]:.1f}x{b[3] - b[1]:.1f}",
+                               group="inserts", render=zones))
+    f = MAIN.facades()[0]
+    Af = f.A.copy()
+    Af[:, 3] = f.world(0.0, 0.0, 0.0)
+    for name, m in (("GABLE-screen", SCREEN), ("GABLE-hood", HOOD)):
+        kit.add(name, "Gold", m.transform(Af), P=inv34(Af), group="gable")
+    print("walls + inserts", round(time.time() - t0, 1))
+
+    # --- the roof: one hollow body with its rake skins, a fluted chimney near the back
+    walls_env = union([wl["facade"].place(M.extrude(wl["cs"].offset(0.15), 3.8).translate([0, 0, -3.15]))   # + siding
+                       for wl in rf["walls"]])
+    zr = Z_EAVE + S * (W / 2 + D_EAVE)
+    ridge = G.ridge_cap((W / 2, -RAKE), (W / 2, D + RAKE), zr, S, ZE)
+    roof = rf["body"] + rf["tex"] + rf["skins"] + rf["skin_tex"] + (ridge - walls_env)
+    roof = roof - lip_keep(MAIN.cs, 3.0, ZE)
+    CH = 5.0
+    cx, cy = W / 2, D - 12.0
+    z_low = zr - S * (CH / 2) - 0.2
+    z0 = round((z_low - 2.4) / 0.2) * 0.2
+    solid_env, _ = R.hip_roof(_roof_pieces(), Z_EAVE, S, D_EAVE, texture=None, zlo=ZE)
+    roof = roof + G.chimney_seat(solid_env, cx, cy, CH / 2, zr + 1.0)
+    pocket = box([cx - CH / 2 - 0.4, cy - CH / 2 - 0.4, z0], [cx + CH / 2 + 0.4, cy + CH / 2 + 0.4, zr + 40])
+    kit.add("ROOF", "Roof", roof - pocket, group="roof")
+    ch = TW.chimney("fluted", w=CH, d=CH, h=round((zr + 9.0 - z0) / 0.2) * 0.2).translate([cx, cy, z0])
+    kit.add("CHIMNEY", "Brick", ch, group="roof")
+    for k, (g, wl) in enumerate(zip(specs, rf["walls"])):
+        bb = LC.lace_bargeboard(wl["L"], wl["slope"], D_EAVE, skin=SKIN)
+        fw = wl["facade"]
+        A = fw.A.copy()
+        A[:, 3] = fw.world(0.0, 0.0, RAKE)
+        kit.add(f"BARGE-{k}", "Gold", bb.transform(A), P=inv34(A), key="BARGE", group="gable")
+    print("roof", round(time.time() - t0, 1))
+
+    # --- the porch across the front: boxed posts, lace arches and railings, planked floor
+    PX0, PX1 = -1.0, W + 1.0
+    ppoly = [(PX0, -PD), (PX1, -PD), (PX1, 0.0), (PX0, 0.0)]
+    Lf = PX1 - PX0
+    runs = [dict(a=(PX0, 0.0), b=(PX0, -PD), posts=[3.2, PD - 1.6]),
+            dict(a=(PX0, -PD), b=(PX1, -PD), posts=[1.6, Lf / 2 - 6.6, Lf / 2 + 6.6, Lf - 1.6]),
+            dict(a=(PX1, -PD), b=(PX1, 0.0), posts=[1.6, PD - 3.2])]
+    H_floor = ZF - 1.0
+    post_h = 26.0                   # the porch roof stays under the eave and the gable's lace
+    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, Lf / 2, 11.0)],
+                        planks=dict(pitch=1.8, border=1.2), joined=False, ledger_off=1.5, arcade="lace", post="boxed",
+                        rail="lace", skirt="rings", pier_tex="coquina", roof_edge="scallop", drop=8.0)
+    fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
+    ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
+                      for p in inserts if p is not None])
+    socks = union([box([x - 1.75, y - 1.75, H_floor - 0.4], [x + 1.75, y + 1.75, H_floor + 1]) for x, y in P["sockets"]])
+    deck = P["deck"] - fkeep - socks
+    deck = union([c for c in deck.decompose() if c.volume() > 0.5])
+    kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
+            render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
+    tabs = union([arc for arc, _ in P["arcades"]])
+    for k, po in enumerate(P["posts"]):
+        kit.add(f"PORCH-post-{k}", "Orange", po - tabs, key="PORCH-post", group="porch")
+    for k, rl in enumerate(P["rails"]):
+        L_ = rl.bounding_box()
+        kit.add(f"PORCH-rail-{k}", "Gold", rl, key=f"PORCH-rail-{max(L_[3] - L_[0], L_[4] - L_[1]):.1f}", group="porch")
+    for k, (arc, A) in enumerate(P["arcades"]):
+        kit.add(f"PORCH-arcade-{k}", "Gold", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
+    bld_keep = MAIN.solid(grow=1.45, dz0=-20, dz1=0)
+    proof = P["roof"] - bld_keep - ins_keep
+    ptop = proof.bounding_box()[5]
+    kit.add("PORCH-roof", "Gold", proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), P=print_flip(), group="porch")
+    kit.add("PORCH-roof-top", "Roof", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
+    for k, (sm, A) in enumerate(P["steps"]):
+        kit.add(f"PORCH-steps-{k}", "Stone", sm.transform(A) - fkeep, group="porch")
+    e, u = MAIN.locate(W - 12.0, D)
+    fb = MAIN.facades()[e]
+    A = fb.A.copy()
+    A[:, 3] = fb.world(u, -ZF, 1.4)
+    kit.add("STOOP-back", "Stone", FT.steps(10.0, ZF - 0.6, 2).transform(A), group="porch")
+    print("porch", round(time.time() - t0, 1))
+
+    # --- add-ons: the picket fence with its gate, a rocking chair, flower boxes, the bicycle
+    fence = EX.picket_fence(W + 16.0, h=10.0, gate=((W + 16.0) / 2 - 5.0, 10.0))
+    Afn = np.array([[1.0, 0, 0, -8.0], [0, 0, -1.0, -PD - 15.0], [0, 1.0, 0, 0.0]])
+    flip = np.array([[1.0, 0, 0, 0], [0, -1.0, 0, 0], [0, 0, -1.0, 0]])                # pickets down on the bed
+    kit.add("FENCE", "White", fence.transform(Afn), P=compose(flip, inv34(Afn)), group="extras")
+    a = math.radians(200.0)
+    Rz = np.array([[math.cos(a), -math.sin(a), 0.0, 7.0], [math.sin(a), math.cos(a), 0.0, -PD + 7.5], [0, 0, 1.0, H_floor + 0.3]])
+    Ark = compose(Rz, np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))       # (x fwd, y up, z across) -> world
+    kit.add("ROCKER", "Blue", EX.rocking_chair().transform(Ark), P=inv34(Ark), group="extras")
+    for k, x in enumerate((9.0, W - 9.0)):
+        e, u = MAIN.locate(x, 0.0)
+        fw = MAIN.facades()[e]
+        A = fw.A.copy()
+        A[:, 3] = fw.world(u - 3.4, FLOWER_V, 0.0)
+        bx = EX.flower_box(6.8)
+        kit.add(f"FLOWERBOX-{k}", "FlowerBox", bx.transform(A), P=compose(np.array([[1.0, 0, 0, 0], [0, 0, -1.0, 0], [0, 1.0, 0, 0]]),
+                                                                           inv34(A)), key="FLOWERBOX", group="extras",
+                render=[("FlowerBox", (bx ^ box([-5, -5, -5], [20, 2.2, 5])).transform(A)),
+                        ("Blooms", (bx - box([-5, -5, -5], [20, 2.2, 5])).transform(A))])
+    bike = EX.bicycle()
+    Abk = np.array([[1.0, 0, 0, W / 2 + 12.0], [0, 0, -1.0, -PD - 17.0], [0, 1.0, 0, 0.0]])
+    kit.add("BICYCLE", "Pink", bike.transform(Abk), P=inv34(Abk), group="extras")
+    print("specks dropped:", kit.drop_specks())
+    return kit
+
+
+if __name__ == "__main__":
+    HERE = os.path.dirname(os.path.abspath(__file__))
+    OUT = os.path.join(HERE, "..", "..", "out", "marigold")
+    os.makedirs(OUT, exist_ok=True)
+    kit = build()
+    print(len(kit.parts), "parts")
+    if "check" in sys.argv:
+        bad = kit.interference()
+        print("interfering pairs:", len(bad))
+        for b in bad[:40]:
+            print("  ", b)
+        print("bed:", kit.bed_check())
+    kit.render_npz(os.path.join(OUT, "marigold.npz"))
+    if "export" in sys.argv:
+        from hoarch.kit import slice_check
+        kit.export(os.path.join(OUT, "kit"), layer=0.2)
+        slice_check(os.path.join(OUT, "kit"), os.path.join(HERE, "..", "..", "slicer", "bambu_like.ini"), layer=0.2,
+                    supported=("Windows_Doors",))

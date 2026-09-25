@@ -403,8 +403,9 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     with ears), "lintel" (a stone lintel with a keystone), "archivolt" (a stepped arch band
     with a keystone and imposts), "pediment" (frieze, cornice and a triangular pediment),
     "shouldered" (a flat lintel with shouldered ends and a rosette), "drip" (a bevelled drip
-    cap), "crested" (a cap with a cresting of little arches) or "triple" (a lintel with a
-    stepped triple keystone). The brick arch of a brick
+    cap), "crested" (a cap with a cresting of little arches), "triple" (a lintel with a
+    stepped triple keystone) or "halo" (a round moulding over a round head, with a drop
+    keystone). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -450,6 +451,15 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     elif head == "crested":
         hp, top = _crested(w / 2 + casing + 0.8, h + casing)
         parts += hp
+    elif head == "halo":
+        # a round moulding following the casing round the head, with a small drop keystone
+        spring = h - (rise or 0)
+        clip = rect(-w, spring - 0.01, w, h + 20)
+        ring = (op.offset(casing + 1.0, JoinType.Round) - op.offset(casing - 0.01, JoinType.Round)) ^ clip
+        parts.append(ext(ring, 0.0, 0.8))
+        kt = h + casing + 1.4
+        parts.append(ext(poly([(-0.6, h + casing - 0.3), (0.6, h + casing - 0.3), (0.8, kt), (-0.8, kt)]), 0.0, 1.2))
+        top = kt
     elif head == "triple":
         # a flat stone lintel with a stepped triple keystone
         lw = w / 2 + casing + 1.0
@@ -507,7 +517,7 @@ def door_commercial(w, h, transom=4.0, leaf="four_panel", tstyle="number:12", ca
     transom (see openings._ornate_door_sash), a flat casing with corner blocks and a head:
     "cornice" (a moulded cap on two small consoles), "temple" (pilasters, an entablature
     lettered with ``text``, a segmental pediment), "crested" (a cap with a cresting of little
-    arches) or None. Prints face-up."""
+    arches), "fanhood" (a half-round fan hood with ribs and a hub) or None. Prints face-up."""
     from .openings import _ornate_door_sash, _one_piece
     op, plug_cs, sash_parts = _ornate_door_sash(w, h, leaves, transom, leaf, tstyle)
     parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6)]
@@ -526,6 +536,17 @@ def door_commercial(w, h, transom=4.0, leaf="four_panel", tstyle="number:12", ca
     elif head == "crested":
         hp, top = _crested(w / 2 + casing + 0.8, top)
         parts += hp
+    elif head == "fanhood":
+        # a half-round fan hood over the casing: a rim, radial ribs and a hub
+        R = w / 2 + casing + 0.6
+        v0 = top - 0.01
+        half = circle((0.0, v0), R, 48) ^ rect(-R - 1, v0, R + 1, v0 + R + 1)
+        parts.append(ext(half, 0.0, 0.6))
+        ribs = cs_union([stroke([(0.0, v0), (R * math.cos(a), v0 + R * math.sin(a))], 0.55)
+                         for a in np.linspace(math.pi / 6, 5 * math.pi / 6, 5)])
+        rim = half - circle((0.0, v0), R - 0.6, 48)
+        parts.append(ext((ribs ^ half) + rim + (circle((0.0, v0), 1.2, 24) ^ half), 0.59, 1.0))
+        top = v0 + R
     elif head == "temple":
         # pilasters on plinths, an entablature with ``text`` in raised letters on its frieze,
         # and a segmental pediment

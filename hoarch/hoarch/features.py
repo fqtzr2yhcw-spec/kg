@@ -334,6 +334,9 @@ def _pier_skin(style, reg, seed):
         return ashlar(reg, course=(1.6, 1.6), length=(3.2, 3.2), d=0.3, seed=seed, rough=0.1)
     if style == "coursed":
         return ashlar(reg, course=(1.2, 1.4), length=(2.0, 3.4), d=0.3, seed=seed, rough=0.08)
+    if style == "coquina":
+        from .trimwork import foundation_skin
+        return foundation_skin("coquina", reg, seed=seed)
     return brick(reg, bl=2.0, d=0.2)
 
 
@@ -375,7 +378,7 @@ def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT
     return floor
 
 
-ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain")
+ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain", "scallop")
 
 
 def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None, edge="dentil"):
@@ -386,7 +389,8 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
     in print) or is a groove, and every flat face is a multiple of 0.2 from z0. ``edge``, one
     per building: dentil, modillion (blocks with bevelled feet), fillet (two raised bands),
     cove (a concave crown, no ornament), drop (Gothic points), sticks (Stick battens),
-    button (round bosses), reeded (grooves cut along the fascia), plain."""
+    button (round bosses), reeded (grooves cut along the fascia), scallop (a valance of
+    half-round scallops), plain."""
     if not dent:
         edge = "plain"
     top = z0 + fascia + th - 0.4
@@ -430,6 +434,11 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
             cs = cs_union([rect(u - 0.3, z0 + 0.4, u + 0.3, zc - 0.2) for u in (0.6 + (L - 1.2) * (k + 0.5) / n
                                                                               for k in range(n))])
             parts.append(f.place(ext(cs, 0.0, 0.5)))
+        elif edge == "scallop":            # a valance of half-round scallops hung under the crown
+            n = max(1, int((L - 1.2) / 1.5))
+            cs = cs_union([circle((u, zc - 0.2), 0.72, 20) for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
+            cs = (cs + rect(0.3, zc - 0.6, L - 0.3, zc)) ^ rect(0.0, zc - 1.2, L, zc)
+            parts.append(f.place(ext(cs, 0.0, 0.6)))
         elif edge == "button":
             n = max(1, int((L - 1.2) / 1.6))
             cs = cs_union([circle((u, zc - 0.65), 0.45, 16) for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
@@ -702,7 +711,7 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
     for u in ((0.0, L - 0.7) if stiles else ()):                                     # end stiles
         parts.append(box([u, -0.5, foot], [u + 0.7, 0.5, vt + 0.01]))
     from . import porchwork as PW
-    if style in ("chippendale", "x", "pierced", "sawn"):
+    if style in ("chippendale", "x", "pierced", "sawn", "lace"):
         parts.append(PW.fill_flat(style, L, vb - 0.01, vt + 0.01))
     else:
         mk, pt = {"turned": (baluster, pitch), "vase": (PW.baluster_vase, 2.4), "urn": (PW.baluster_urn, 2.4),
@@ -863,7 +872,9 @@ def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0,
         if u1 - u0 < 6.0:
             continue
         from . import porchwork as PW
-        fn = {"gothic": _gothic_spandrel_cs, "braced": _braced_spandrel_cs, "sawn": _spandrel_cs}.get(style) or PW.FRIEZES[style]
+        from . import lace as LC
+        fn = {"gothic": _gothic_spandrel_cs, "braced": _braced_spandrel_cs, "sawn": _spandrel_cs,
+              "lace": LC.lace_spandrel_cs}.get(style) or PW.FRIEZES[style]
         sp = fn(u0, u1, vb - drop, vb)
         body = ext(sp, tb / 2 - ts, tb / 2)
         rim = ext(sp.offset(-0.55, JoinType.Round).offset(0.05, JoinType.Round), tb / 2 - 0.3, tb / 2 + 1)
@@ -879,11 +890,13 @@ ARCADE_PRINT = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
 
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
                  boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0, arcade="sawn", post="turned",
-                 rail="turned", skirt="lattice", pier_tex="brick", roof_edge="dentil", planks=None):
+                 rail="turned", skirt="lattice", pier_tex="brick", roof_edge="dentil", planks=None, drop=5.0):
     """Porch with turned posts, upright railings and edge-printed arcades.
     ``planks`` = dict for porch_planks(): the floor is planks printed with the deck (one part,
     upside down, one filament change at the planks' thickness) instead of a separate floor.
-    ``arcade``: "sawn" (elliptical arches with roundels) or "gothic" (pointed arches, trefoils).
+    ``arcade``: "sawn" (elliptical arches with roundels), "gothic" (pointed arches, trefoils),
+    "lace" (elliptical arches in pierced lace with scrolls, see lace.py), or a frieze name;
+    ``drop``: how far the spandrels hang below the beam.
 
     runs: list of dict(a, b, posts=[u, ...]) in CCW order (u from a along the yard edge);
     posts stand ``inset`` inside the yard edge, and a post at a corner is shared by the two
@@ -974,7 +987,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         if nxt is not None and np.allclose(nxt["a"], r["b"], atol=0.05) and lens[k + 1] > lens[k]:
             u1 = us[-1] - beam / 2 - 0.1
             stops.append((k, k + 1, us[-1]))
-        arc = porch_arcade(u0, u1, us, post_h, beam=beam, style=arcade)
+        arc = porch_arcade(u0, u1, us, post_h, beam=beam, style=arcade, drop=drop)
         arcades.append((arc.transform(A), A))
     # a stopped end meets the covering beam square only at a right angle: clear it of that
     # beam (on any angle) and of the corner post's square capital below the beam

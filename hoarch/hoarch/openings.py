@@ -736,6 +736,18 @@ def _leaf(style, u, lw, dh, hinge_left):
         loz = poly([(cx, cy + hy), (cx + hx, cy), (cx, cy - hy), (cx - hx, cy)])
         _GLASS_BARS.append(ext((loz - loz.offset(-0.5, JoinType.Miter, 4.0)) ^ gl.offset(0.2), -1.21, -0.6))
         panel(rect(pu0, 1.3, pu1, dh * 0.36 - 1.0))
+    elif style == "lace":                 # a tall round-headed light behind a lace grille, over a panel
+        gw = pu1 - pu0
+        gl = arch_cs(pu0, pu1, dh * 0.4, top - st - gw / 2, seg=24)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Round) - gl, -0.8, -0.6))
+        c = gl.bounds()
+        cx = (c[0] + c[2]) / 2
+        bars = [gl.offset(-0.9, JoinType.Round) - gl.offset(-1.45, JoinType.Round), rect(cx - 0.25, c[1], cx + 0.25, c[3])]
+        for v in np.linspace(c[1] + 2.0, c[3] - 2.5, 3):
+            bars.append(circle((cx, v), 0.75, 16) - circle((cx, v), 0.25, 10))
+        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), -1.21, -0.6))
+        panel(rect(pu0, 1.3, pu1, dh * 0.4 - 1.0))
     elif style == "twin_arch":            # two round-headed lights side by side over a raised panel
         gw = (pu1 - pu0 - 0.6) / 2
         gl = cs_union([arch_cs(a, a + gw, dh * 0.42, top - st - gw / 2, seg=16) for a in (pu0, pu0 + gw + 0.6)])

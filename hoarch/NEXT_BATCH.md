@@ -55,8 +55,35 @@ octagon, hexagon, staggered butt).
   garage wing.
 - Colour split: turquoise body, cream trim, navy accents.
 
+## 6. Green Queen Anne with a round corner tower
+- A round tower on the front corner: the upper storey ringed with tall 1-over-1 windows
+  under a band of shingles, then a tall conical roof in brown metal with a spire finial.
+- Olive clapboard below, lighter green shingles above, a lavender band between the floors;
+  an oval window with a lavender surround beside the entry.
+- A wraparound porch sweeping round the tower's foot (a curved corner) on turned posts, its
+  base a solid shingled skirt with square vent grilles; a small pedimented porch gable with
+  an arched opening over the steps.
+- Brown shingled hips and gables: a side gable with an arched window in lavender shingles, a
+  front gable with an arched attic window, a dormer with a triple window.
+- Colour split: olive and sage greens, lavender accents, cream trim, brown roofs.
+
+## 7. Pink Queen Anne with a bell-roofed tower
+- A round corner tower with a tall bell (ogee) roof, black, with a spike finial; the tower
+  wrapped in ornate bands (patterned shingles, a frieze with swags) at every floor.
+- Steep front gables with deep white gingerbread bargeboards and fan panels; a pedimented
+  entry porch on turned columns; bay windows with arched hoods; an arched ground-floor
+  window with a keystone.
+- Pink body with white trim everywhere, black roofs; a brick-paved forecourt with street
+  lamps (a street lamp is a good add-on part).
+
+## Batch plan
+The ten houses: the seven photos above (1-7), then three more that combine features from
+them (a cottage with the round-cornered porch, a smaller tower house, a twin-gabled house
+with the loggia), each still with its own everything.
+
 ## Fun extras seen in the photos (add-on parts)
 - Picket fences and a gate with posts and finials (flat face-up strips, any length).
+- Street lamps (photo 7), a bicycle with a flower basket (photo 3).
 - Flower boxes under windows, porch rocking chairs, a bench, a bicycle, planters.
 - Weathervanes and finials on the towers.
 
