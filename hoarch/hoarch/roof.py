@@ -557,3 +557,19 @@ def roll_panel(L, W, t=1.2, course=6.0, butt=0.4, lap=0.1):
                                    [(u, v, t + butt) for u in (0.0, L)] + [(u, v1, t + lap) for u in (0.0, L)]))
         v = v1
     return union(parts)
+
+
+def walk_rail(L, h=3.2, pitch=1.2, t=0.8, post=1.0):
+    """A widow's-walk railing ``L`` long as a flat strip that prints face-up: a bottom rail,
+    a hand rail, flat balusters with a waist, and square posts with ball tops at the ends.
+    Local: u along, v up, w across (0..t); stand it on its v = 0 edge round a flat roof."""
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, h - 0.7, L, h)]
+    n = max(1, int((L - 2 * post) / pitch))
+    for k in range(n):
+        u = post + (L - 2 * post) * (k + 0.5) / n
+        cells.append(poly([(u - 0.3, 0.55), (u + 0.3, 0.55), (u + 0.18, h / 2), (u + 0.3, h - 0.65), (u - 0.3, h - 0.65),
+                           (u - 0.18, h / 2)]))
+    for u in (0.0, L - post):
+        cells.append(rect(u, 0.0, u + post, h + 0.6))
+        cells.append(circle((u + post / 2, h + 1.1), 0.6, 16))
+    return M.extrude(cs_union(cells), t)

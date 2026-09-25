@@ -418,7 +418,7 @@ def frieze_rosette(u0, u1, v_bot, v_top):
     for k in range(n):
         u = u0 + 0.5 + (u1 - u0 - 1.0) * (k + 0.5) / n
         c = (u, (rail1 + v_top) / 2)
-        holes.append(circle(c, 0.75, 16) - circle(c, 0.3, 12))
+        holes.append(circle(c, 0.75, 16))
     for sg, ue in ((1, u0), (-1, u1)):
         R = 2.4
         q = circle((ue, rail0), R, 32) ^ rect(min(ue, ue + sg * R), rail0 - R, max(ue, ue + sg * R), rail0)
@@ -478,7 +478,8 @@ def skirt_fill(style, reg, d=1.2):
         return M.extrude(board, d)
     if style == "shingles":             # a board faced with courses of square shingles
         from .core import scallop_rows
-        return M.extrude(reg, d * 0.5) + scallop_rows(reg, 1.4, 1.6, d=d * 0.5, shape="square", taper=0.4).translate([0, 0, d * 0.5 - 0.02])
+        return M.extrude(reg, d * 0.5) + scallop_rows(reg, 1.4, 1.6, d=d * 0.5, shape="square", taper=0.4,
+                                                      lap=2.0).translate([0, 0, d * 0.5 - 0.02])
     if style == "rings":                # a board pierced with a row of round holes
         L = u1 - u0
         n = max(1, int(round(L / 2.6)))

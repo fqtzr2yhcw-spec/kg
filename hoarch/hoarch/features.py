@@ -334,9 +334,9 @@ def _pier_skin(style, reg, seed):
         return ashlar(reg, course=(1.6, 1.6), length=(3.2, 3.2), d=0.3, seed=seed, rough=0.1)
     if style == "coursed":
         return ashlar(reg, course=(1.2, 1.4), length=(2.0, 3.4), d=0.3, seed=seed, rough=0.08)
-    if style == "coquina":
+    if style in ("coquina", "pebble"):
         from .trimwork import foundation_skin
-        return foundation_skin("coquina", reg, seed=seed)
+        return foundation_skin(style, reg, seed=seed)
     return brick(reg, bl=2.0, d=0.2)
 
 
@@ -1044,3 +1044,24 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         posts, rails = [], []
     return dict(deck=deck, floor=floor, posts=posts, rails=rails, arcades=arcades, roof=roof, steps=st,
                 sockets=[tuple(p) for p in where], frames=frames)
+
+
+def entry_pediment(w, depth, rise, t=1.0, fan=True):
+    """A small gabled pediment for a porch entry, standing on the porch roof over the steps:
+    a triangular gable face ``w`` wide with a raised rim and a half-round fan on its base, and
+    a gabled roof block ``depth`` deep behind it. Local: u across (centred), v up from the
+    porch roof top, w out from the house (the face at w = depth). Prints upright on its base:
+    the roof slopes are its top faces."""
+    face = poly([(-w / 2, 0.0), (w / 2, 0.0), (0.0, rise)])
+    body = M.extrude(face, depth).transform(np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0]]))
+    parts = [body]
+    rim = face - face.offset(-0.8, JoinType.Miter, 4.0)
+    parts.append(ext(rim, depth - 0.01, depth + t))
+    if fan:
+        r = min(w * 0.28, rise * 0.55)
+        half = circle((0.0, 0.8), r, 40) ^ rect(-r - 1, 0.8, r + 1, r + 1)
+        rays = cs_union([stroke([(0.0, 0.8), ((r - 0.2) * math.cos(a), 0.8 + (r - 0.2) * math.sin(a))], 0.5)
+                         for a in np.linspace(math.pi / 7, 6 * math.pi / 7, 6)])
+        ring = half - circle((0.0, 0.8), r - 0.6, 40)
+        parts.append(ext((rays ^ half) + ring + rect(-w / 2 + 0.8, 0.0, w / 2 - 0.8, 0.8), depth - 0.01, depth + t * 0.6))
+    return union(parts).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))

@@ -350,3 +350,51 @@ def gable_gingerbread(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
                                  poly([(L / 2 - 0.7, H + finial - 1.2), (L / 2 + 0.7, H + finial - 1.2), (L / 2, H + finial)])]),
                        0.0, d + 0.2))
     return union(out)
+
+
+def gable_eastlake(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, tie=0.3, finial=6.0):
+    """Eastlake gable ornament hung on the rake like a bargeboard: narrow rafters with a drop
+    at each foot; a tie beam across the gable ``tie`` of the way up, faced with a row of
+    square rosette panels; a half-round fan standing on the tie beam, its rays raised; a king
+    post from the fan's hub to the apex; and a pinnacle-topped spike at the apex. Flat, prints
+    face-up; place at w = rake."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    depth = skin + width
+    band = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    rafters = cs_union(band) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    H = tip[1]
+    vt = round(H * tie / 0.2) * 0.2
+    u_t = vt / s - d_eave
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    beam = rect(u_t - 0.6, vt - 1.6, L - u_t + 0.6, vt + 0.2)
+    r_fan = min(4.2, (H - vt) * 0.32)
+    fan = (circle((L / 2, vt + 0.2), r_fan, 40) - circle((L / 2, vt + 0.2), r_fan - 0.6, 40)) ^ rect(-5, vt + 0.1, L + 5, H)
+    hub = circle((L / 2, vt + 0.2), 1.2, 24) ^ rect(-5, vt + 0.1, L + 5, H)
+    rays = cs_union([stroke([(L / 2 + 1.0 * math.cos(a), vt + 0.2 + 1.0 * math.sin(a)),
+                             (L / 2 + (r_fan - 0.3) * math.cos(a), vt + 0.2 + (r_fan - 0.3) * math.sin(a))], 0.55)
+                     for a in np.linspace(math.pi / 8, 7 * math.pi / 8, 7)])
+    king = rect(L / 2 - 0.5, vt + 0.2, L / 2 + 0.5, H)
+    frame = ((beam + fan + hub + rays + king) ^ tri) + rafters
+    drops = []
+    for a, sg in ((np.array([-d_eave, 0.0]), 1), (np.array([L + d_eave, 0.0]), -1)):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        foot = a + n * depth
+        x = float((a[0] + foot[0]) / 2)
+        drops.append(cs_union([rect(x - 0.45, -2.2, x + 0.45, 0.2), circle((x, -2.2), 0.7, 16),
+                               poly([(x - 0.45, -2.6), (x + 0.45, -2.6), (x, -3.4)])]))
+    frame = frame + cs_union(drops)
+    parts = [ext(frame, 0.0, d)]
+    n = max(3, int((L - 2 * u_t) / 2.8))
+    for k in range(n):
+        u = u_t + 0.6 + (L - 2 * u_t - 1.2) * (k + 0.5) / n
+        parts.append(ext(rect(u - 0.9, vt - 1.4, u + 0.9, vt), d - 0.01, d + 0.4))
+        parts.append(ext(circle((u, vt - 0.7), 0.4, 12), d + 0.39, d + 0.8))
+    fcs = cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 2.2), circle((L / 2, H + finial - 1.6), 0.8, 20),
+                    poly([(L / 2 - 0.4, H + finial - 1.0), (L / 2 + 0.4, H + finial - 1.0), (L / 2, H + finial)])])
+    parts.append(ext(fcs, 0.0, d + 0.2))
+    return union(parts)
