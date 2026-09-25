@@ -441,6 +441,17 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 wv = wtab * (0.75 + 0.12 * h_)
                 tabs.append(rect(u + gap / 2, vk + low, u + wv - gap / 2, top))       # short butts show the row below
                 u += wv - wtab
+            elif shp == "riven":          # hand-split shakes: random widths, each butt cut off at a slight slant
+                h_ = (int(u * 5.7 + k * 7.9) % 7)
+                wv = wtab * (0.7 + 0.1 * h_)
+                a_, b_ = u + gap / 2, u + wv - gap / 2
+                sl = (0.35, -0.3, 0.0)[h_ % 3]
+                tab = poly([(a_, vk + max(0.0, sl)), (b_, vk + max(0.0, -sl)), (b_, top), (a_, top)])
+                if h_ >= 5:                   # the wide ones split part way up
+                    c = a_ + (b_ - a_) * 0.4
+                    tab = tab - rect(c - 0.25, vk - 0.1, c + 0.25, vk + min(0.9, (top - vk) * 0.5))
+                tabs.append(tab)
+                u += wv - wtab
             else:
                 tabs.append(rect(u + gap / 2, vk, u + wtab - gap / 2, top))
             u += wtab

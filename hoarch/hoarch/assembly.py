@@ -607,6 +607,27 @@ chimneys and the roof upright.
 """, """The PORTICO-roof and the PORTICO-floor print upside down; the columns and the balustrade
 upright (brim on); the dormers, the chimneys and the roof upright.
 """),
+    "pennock": ("THE PENNOCK - PENNSYLVANIA FIELDSTONE COLONIAL", """  1. FOUNDATION (dry-laid ledgestone).
+  2. WALLS-1 onto the foundation's lip (the kitchen ell at the back is part of it). Round the
+     ell's top the CORNICE-ELL parts (the whirl frieze, then the white crown); ELL-gable on
+     the ell's north wall top, between the cornice ends.
+  3. JOINT onto WALLS-1's lip; the CORNICE-J parts round it (they stop either side of the
+     ell's roof); then WALLS-2 onto the joint's lip (both gable walls are part of it).
+  4. PENT-S, the pent roof, across the front on the joint cornice, its back against WALLS-2.
+  5. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the front door's hood and consoles are part of it); a pair of SHUTTERs beside each
+     shuttered window, their strap hinges on the outer sides.
+  6. The CORNICE-E parts round the eave band (across the gable feet too); PENT-E and PENT-W
+     on the cornice across each gable foot.
+  7. ROOF onto the lip at the wall tops; a CHIMNEY into each end pocket; each DORMER-core into
+     its DORMER, the DORMERs into their pockets on the front slope, a DORMER-roof (tin) on each.
+  8. ELL-roof onto the ell's lip, against the back wall; ELL-chimney into its pocket.
+  9. STOOP against the front under the door, STEPS-front in front of it, a SETTLE either side
+     of the door on the stoop; STOOP-back and STOOP-ell at the back doors.
+""", """The cornices' upper parts print upside down; the pents print as they sit (the soffit on the
+bed); the DORMER-roofs stand on their front ends; the settles, the dormers, the chimneys,
+the stoop and the roofs upright. The datestone (J P 1768) is carved in the west gable.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

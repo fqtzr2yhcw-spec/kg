@@ -818,3 +818,451 @@ def bowed_portico(c, R, a0, a1, H_floor, z_col_top, ent_h=5.0, n_cols=6, col_r=1
         bs.append(box([-1.1, -1.1, ztop], [1.1, 1.1, ztop + rail_h + 0.4]).rotate([0, 0, math.degrees(a)]).translate([p[0], p[1], 0]))
     rail = rail + union(bs)
     return dict(cols=cols, ent=ent, rail=rail, angs=angs, Rc=Rc)
+
+
+# ================================================================== the Pennock (house 32)
+# ------------------------------------------------------------------ fieldstone, quoins, rubble arches
+def _knocked(a, lo, e, hi, cut):
+    """A stone's face: the rectangle (a, lo)-(e, hi) with its four corners knocked off by
+    cut[0..3] (bottom-left, bottom-right, top-right, top-left)."""
+    c0, c1, c2, c3 = cut
+    pts = [(a + c0, lo), (e - c1, lo), (e, lo + c1), (e, hi - c2), (e - c2, hi), (a + c3, hi), (a, hi - c3), (a, lo + c0)]
+    out = []
+    for p in pts:
+        if not out or abs(p[0] - out[-1][0]) + abs(p[1] - out[-1][1]) > 1e-6:
+            out.append(p)
+    if abs(out[0][0] - out[-1][0]) + abs(out[0][1] - out[-1][1]) < 1e-6:
+        out.pop()
+    return poly(out)
+
+
+def fieldstone(region, datum=0.0, seed=0, joint=0.5, bed=0.4, d=(0.3, 0.42)):
+    """Pennsylvania fieldstone: roughly coursed rubble. Courses of random height (1.6 to 3.2
+    mm) of stones of random length, each stone's corners knocked off at random and its top or
+    bottom stepped a layer out of line, so the courses wander as laid rubble does; 0.5 mm
+    joints, the stones standing 0.3 or 0.42 proud with every layer pulled back underneath."""
+    from .shell import _stepped
+    if region.is_empty():
+        return M()
+    rng = np.random.default_rng(seed)
+    u0, v0, u1, v1 = region.bounds()
+    by_d = {d[0]: [], d[1]: []}
+    v = datum + math.floor((v0 - datum) / 0.2) * 0.2 - 3.2
+    while v < v1 + 0.1:
+        hc = float(rng.choice([1.6, 2.0, 2.4, 2.8, 3.2], p=[0.14, 0.26, 0.26, 0.2, 0.14]))
+        u = u0 - rng.uniform(0.0, 5.0)
+        while u < u1 + 0.5:
+            L = rng.uniform(2.2, 6.2) if hc < 2.5 else rng.uniform(3.0, 7.6)
+            a, e = u + joint / 2, u + L - joint / 2
+            lo = v + bed / 2 + 0.2 * int(rng.integers(0, 2))
+            hi = v + hc - bed / 2 - 0.2 * int(rng.integers(0, 2))
+            if hi - lo >= 0.8 and e - a >= 1.2:
+                lim = min(e - a, hi - lo) / 2 - 0.15
+                cut = [min(lim, float(rng.choice([0.0, 0.25, 0.45, 0.6]))) for _ in range(4)]
+                by_d[d[0] if rng.random() < 0.35 else d[1]].append(_knocked(a, lo, e, hi, cut))
+            u += L
+        v += hc
+    out = []
+    for dd, stones in by_d.items():
+        if stones:
+            cs = cs_union(stones) ^ region
+            if not cs.is_empty():
+                out.append(_stepped(cs, 0.0, dd))
+    return union(out) if out else M()
+
+
+def quoins_drafted(L, v_top, ends=(True, True), datum=0.0, long=7.4, short=4.4, course=3.6, joint=0.4, d=0.6):
+    """Dressed quoins with a drafted margin (a sunk line chiselled round each face) at the
+    ends of a wall face of length L, long and short in turn, and the other way round at the
+    face's far end so the two faces of a corner interlock. Returns (relief, zone)."""
+    from .shell import _stepped
+    blocks, grooves = [], []
+    k = 0
+    v = datum
+    while v + course <= v_top + 0.01:
+        lo, hi = v + joint / 2, v + course - joint / 2
+        for end, (on, first_long) in enumerate(zip(ends, (k % 2 == 0, k % 2 == 1))):
+            if not on:
+                continue
+            ln = long if first_long else short
+            a, e = (0.0, ln) if end == 0 else (L - ln, L)
+            r = rect(a, lo, e, hi)
+            blocks.append(r)
+            grooves.append(r.offset(-0.5, JoinType.Miter, 4.0) - r.offset(-0.9, JoinType.Miter, 4.0))
+        v += course
+        k += 1
+    if not blocks:
+        return M(), rect(0, 0, 0, 0)
+    cs = cs_union(blocks)
+    relief = _stepped(cs, 0.0, d) - ext(cs_union(grooves), d - 0.2, d + 0.2)
+    return relief, cs.offset(joint / 2, JoinType.Miter, 4.0)
+
+
+def rubble_arch(u, v_base, span, rise=1.8, foot=1.6, seed=0, joint=0.45, d=0.5):
+    """A flat-bottomed segmental arch of thin stones set on edge over an opening: its soffit
+    runs level on the frame's head, its back rises in a segment (``foot`` tall at the ends,
+    ``foot + rise`` at the crown), the stones radiate from a point below and their tails are
+    left ragged. Returns (relief, zone) in the facade's (u, v) frame."""
+    from .shell import _stepped
+    rng = np.random.default_rng(seed)
+    n = max(5, int(round(span / 1.25)) | 1)
+    Rf = span * 0.9
+    half = span / 2
+
+    def back(x):                               # the extrados, a parabolic segment
+        t = (x - u) / half
+        return v_base + foot + rise * (1 - t * t)
+    stones = []
+    for i in range(n):
+        xa = u - half + span * i / n + joint / 2
+        xb = u - half + span * (i + 1) / n - joint / 2
+        xm = (xa + xb) / 2
+        top = back(xm) - v_base + (0.5 if i == n // 2 else rng.uniform(-0.15, 0.35))
+        pa = (xa + (xa - u) * top / Rf, v_base + top)
+        pb = (xb + (xb - u) * top / Rf, v_base + top)
+        stones.append(poly([(xa, v_base), (xb, v_base), pb, pa]))
+    cs = cs_union(stones)
+    zone = cs_union([cs.offset(0.3, JoinType.Miter, 4.0), rect(u - half - 0.3, v_base - 0.3, u + half + 0.3, v_base + foot)])
+    return _stepped(cs, 0.0, d), zone
+
+
+# ------------------------------------------------------------------ friezes and a course
+def frieze_compass(L, h, b, pitch, margin, pair, half):
+    """Pennsylvania compass stars: in every bay a ring with a six-petalled rosette inside (the
+    petals laid out with a compass, as on a barn star), a lozenge at every station."""
+    v0, v1 = 0.8, h - 0.8
+    vm = (v0 + v1) / 2
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, 0.8):
+        r = min(hh / 2 - 0.05, wd / 2 - 0.4)
+        if r < 1.0:
+            continue
+        out.append(_st(circle((uc, vm), r, 36) - circle((uc, vm), r - 0.45, 36), b, 0.4))
+        ri = r - 0.45
+        for k in range(6):
+            a = math.pi / 2 + k * math.pi / 3
+            c = (uc + math.cos(a) * ri / 2, vm + math.sin(a) * ri / 2)
+            out.append(_st(_lens(c, ri * 0.96, min(0.62, ri * 0.55), a), b, 0.45))
+    for u in CO._us(L, pitch, margin, 0.0):
+        out.append(_st(poly([(u, v0 + 0.1), (u + 0.55, vm), (u, v1 - 0.1), (u - 0.55, vm)]), b, 0.4))
+    return out, []
+
+
+def frieze_gadroons(L, h, b, pitch, margin, pair, half):
+    """Gadrooning: a run of slanting convex lobes along the band, each a pill in two steps
+    (so it reads round), broken at every station by a square boss."""
+    v0, v1 = 0.7, h - 0.7
+    out = []
+    stations = CO._us(L, pitch, margin, 0.0)
+    for u in np.arange(margin * 0.5, L - margin * 0.5, 1.4):
+        if any(abs(u - s) < 1.3 for s in stations):
+            continue
+        a, e = (u - 0.45, v0 + 0.4), (u + 0.45, v1 - 0.4)
+        out.append(_st(stroke([a, e], 0.9), b, 0.25))
+        out.append(_st(stroke([a, e], 0.5), b + 0.25, 0.25))
+    for s in stations:
+        out.append(_st(rect(s - 0.8, v0 + 0.2, s + 0.8, v1 - 0.2), b, 0.3))
+        out.append(_st(circle((s, (v0 + v1) / 2), 0.4, 12), b + 0.3, 0.3))
+    return out, []
+
+
+def frieze_whirls(L, h, b, pitch, margin, pair, half):
+    """Whirling rosettes (the hex-sign whirl): in every bay four curved blades swept round a
+    boss, and a little bead either side of every station."""
+    v0, v1 = 0.8, h - 0.8
+    vm = (v0 + v1) / 2
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, 0.6):
+        r = min(hh / 2, wd / 2 - 0.3)
+        if r < 1.0:
+            continue
+        for k in range(4):
+            a0 = k * math.pi / 2
+            pts = [(uc + (0.45 + (r - 0.45) * t) * math.cos(a0 + 1.3 * t), vm + (0.45 + (r - 0.45) * t) * math.sin(a0 + 1.3 * t))
+                   for t in np.linspace(0.0, 1.0, 8)]
+            out.append(_st(stroke(pts, 0.5), b, 0.4))
+        out.append(_st(circle((uc, vm), 0.55, 14), b, 0.55))
+    for u in CO._us(L, pitch, margin, 0.0):
+        for dv in (-0.7, 0.7):
+            out.append(_st(circle((u, vm + dv), 0.35, 10), b, 0.35))
+    return out, []
+
+
+def course_wedges(L, h, b, pitch, margin, p):
+    """Wolf's teeth: wedges standing on the course's foot and hanging from its head in turn,
+    each pair parted by a slot a nozzle wide."""
+    wd, g = p.get("tooth", 1.8), p.get("gap", 0.6)
+    step = wd / 2 + g
+    n = int((L - wd - 0.6) / step)
+    u0 = (L - (n * step + wd)) / 2
+    out = []
+    for k in range(n + 1):
+        u = u0 + k * step
+        if k % 2 == 0:
+            cs = poly([(u, 0.0), (u + wd, 0.0), (u + wd / 2, h)])
+        else:
+            cs = poly([(u, h), (u + wd, h), (u + wd / 2, 0.0)])
+        out.append(ext(cs, b - 0.05, b + p.get("d", 0.6)))
+    return out
+
+
+# ------------------------------------------------------------------ foundation
+def foundation_ledgestone(reg, seed=0):
+    """Dry-laid ledgestone: thin courses (0.8 and 1.2 mm) of long flat stones with a bond
+    stone standing a course taller every so often, deeper than the rest."""
+    from .shell import _stepped
+    rng = np.random.default_rng(seed + 11)
+    b = reg.bounds()
+    thin, deep = [], []
+    v = b[1]
+    while v < b[3]:
+        hc = float(rng.choice([0.8, 1.2]))
+        u = b[0] - rng.uniform(0.0, 6.0)
+        while u < b[2]:
+            L = rng.uniform(4.0, 11.0)
+            lo, hi = v + 0.2, v + hc - 0.2
+            if rng.random() < 0.12 and v + hc + 1.2 <= b[3]:
+                deep.append(rect(u + 0.25, lo, u + min(L, 5.0) - 0.25, hi + 1.2))
+                u += min(L, 5.0)
+                continue
+            if hi - lo >= 0.4:
+                thin.append(rect(u + 0.25, lo, u + L - 0.25, hi))
+            u += L
+        v += hc
+    thin_cs = cs_union(thin) - cs_union(deep).offset(0.25, JoinType.Miter, 4.0) if deep else cs_union(thin)
+    out = [_stepped(thin_cs ^ reg, 0.0, 0.3)]
+    if deep:
+        out.append(_stepped(cs_union(deep) ^ reg, 0.0, 0.5))
+    return union(out)
+
+
+CO.FRIEZE_EXTRA.update(compass=frieze_compass, gadroons=frieze_gadroons, whirls=frieze_whirls)
+CO.COURSE_EXTRA.update(wedges=course_wedges)
+TW.FOUNDATION_EXTRA.update(ledgestone=foundation_ledgestone)
+
+
+# ------------------------------------------------------------------ windows and the door
+def window_pennsylvania(w, h, lites=(3, 3), rows=(3, 2), A=1.4, head="drip"):
+    """A Pennsylvania window: a wide plank frame with a quirked bead round the sash and a
+    lugged sill (its ends run past the frame). ``head`` "drip": a drip cap over the head (the
+    lower storey, nine-over-six); "ears": the frame's head corners stepped out as crossettes
+    (the upper storey, six-over-six)."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=lites, rows=rows, bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    frame = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext(frame, 0.0, 1.0))
+    quirk = (op.offset(0.75, JoinType.Miter, 4.0) - op.offset(0.4, JoinType.Miter, 4.0)) ^ rect(-w, 0.3, w, h + 0.75)
+    parts[-1] = parts[-1] - ext(quirk, 0.8, 1.2)
+    top = h + A
+    if head == "drip":
+        parts.append(chamfer_box(-w / 2 - A - 0.6, h + A - 0.01, w / 2 + A + 0.6, h + A + 0.8, 0.0, 1.6, c=0.4))
+        parts.append(ext(rect(-w / 2 - A - 0.3, h + A - 0.5, w / 2 + A + 0.3, h + A), 0.0, 1.3))
+        top = h + A + 0.8
+    else:
+        for sg in (-1, 1):
+            u0, u1 = sorted((sg * (w / 2 + A - 0.01), sg * (w / 2 + A + 0.8)))
+            parts.append(ext(rect(u0, h - 1.4, u1, h + A), 0.0, 1.0))
+        parts.append(ext(rect(-w / 2 - A - 0.8, h + A - 0.01, w / 2 + A + 0.8, h + A + 0.6), 0.0, 1.2))
+        top = h + A + 0.6
+    parts.append(chamfer_box(-w / 2 - A - 1.2, -1.6, w / 2 + A + 1.2, 0.01, 0.0, 1.8, c=0.45, bottom=0.6))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, top, -1.6)
+
+
+def window_attic(w, h, A=1.0):
+    """A small four-light attic window in the gable: a plain frame and a thin sill."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(2, 2), rows=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.9),
+             chamfer_box(-w / 2 - A - 0.5, -1.0, w / 2 + A + 0.5, 0.01, 0.0, 1.3, c=0.35, bottom=0.5)]
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A, -1.0)
+
+
+def _strap(u0, u1, v, flip=False):
+    """An iron strap hinge's outline: a strap from the hinge edge u0 tapering to a spear
+    point with a round eye short of it."""
+    s = 1.0 if u1 > u0 else -1.0
+    tip = u1
+    body = poly([(u0, v - 0.3), (tip - s * 1.0, v - 0.22), (tip - s * 1.0, v + 0.22), (u0, v + 0.3)])
+    spear = poly([(tip - s * 1.2, v - 0.45), (tip, v), (tip - s * 1.2, v + 0.45)])
+    return cs_union([body, spear, circle((u0 + s * 0.6, v), 0.45, 12)])
+
+
+def door_hooded(w, h, transom=4.2, A=1.3, hood=True):
+    """A Pennsylvania entrance: a pair of leaves, each with two raised panels and a pair of
+    iron strap hinges, under a four-light transom, in a beaded plank frame; over it a hood
+    on two scrolled consoles: a moulded shelf and a pediment with a compass star in its
+    tympanum. All one piece, printed face-up; the hood stands 4.6 proud. ``hood=False``: the
+    door and frame alone (the back doors)."""
+    op = rect(-w / 2, 0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    body = [ext(plug_cs, -pl, -1.0)]
+    lw = (w - 2 * O.CLR - SLOT) / 2
+    for i, ua in enumerate((-w / 2 + O.CLR, SLOT / 2)):
+        ub = ua + lw
+        body.append(ext(rect(ua, 0.4, ub, dh - 0.3), -1.01, -0.8))
+        mid = round((dh * 0.42) / 0.2) * 0.2
+        for pv0, pv1 in ((1.4, mid - 0.5), (mid + 0.5, dh - 1.3)):
+            body.append(chamfer_box(ua + 0.8, pv0, ub - 0.8, pv1, -0.81, 0.4, c=0.25))
+        hinge_u, free_u = (ua + 0.2, ub - 1.6) if i == 0 else (ub - 0.2, ua + 1.6)
+        for v in (2.4, dh - 2.6):
+            body.append(ext(_strap(hinge_u, free_u, v), -0.81, -0.3))
+    tcs = rect(-w / 2 + O.CLR + 0.5, dh + 0.3, w / 2 - O.CLR - 0.5, h - O.CLR - 0.5)
+    body = [p - ext(tcs, -pl + O.GLASS, 0.5) for p in body]
+    sash = body + [ext(tcs, -pl, -pl + O.GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
+    bars = [rect(-w, dh - 0.3, w, dh + 0.3)] + [rect(x - 0.3, dh, x + 0.3, h) for x in (-w / 4, 0.0, w / 4)]
+    sash.append(ext(cs_union(bars) ^ plug_cs, -pl + O.GLASS - 0.01, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    frame = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext(frame, 0.0, 1.0) - ext((op.offset(0.75, JoinType.Miter, 4.0) - op.offset(0.4, JoinType.Miter, 4.0))
+                                             ^ rect(-w, 0.3, w, h + 0.75), 0.8, 1.2))
+    if not hood:
+        parts.append(chamfer_box(-w / 2 - A - 0.4, h + A - 0.01, w / 2 + A + 0.4, h + A + 0.8, 0.0, 1.4, c=0.35))
+        return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 0.8, 0.0)
+    # the hood: consoles either side, a shelf, a pediment
+    uc = w / 2 + A + 0.79
+    vb, vt = h - 7.0, h + A
+    for sg in (-1, 1):
+        u0, u1 = sg * uc - 0.8, sg * uc + 0.8
+        v = vb
+        while v < vt - 0.01:
+            t = (v - vb) / (vt - vb)
+            parts.append(ext(rect(u0, v, u1, min(vt, v + 0.4) + 0.01), 0.0, 1.2 + 3.0 * t ** 1.6))
+            v += 0.4
+        parts.append(ext(circle((sg * uc, vb + 0.9), 0.9, 20), 0.0, 1.9))
+        parts.append(ext(circle((sg * uc, vb + 0.9), 0.35, 12), 1.89, 2.2))
+    S = uc + 1.5
+    parts.append(ext(rect(-S + 0.4, vt - 0.01, S - 0.4, vt + 0.6), 0.0, 4.2))
+    parts.append(ext(rect(-S, vt + 0.6, S, vt + 1.8), 0.0, 4.6))
+    rise = round(S * 0.48 / 0.2) * 0.2
+    base = vt + 1.8
+    tri = poly([(-S - 0.3, base - 0.01), (S + 0.3, base - 0.01), (0.0, base + rise)])
+    inner = poly([(-S + 1.7, base + 0.4), (S - 1.7, base + 0.4), (0.0, base + rise - 1.0)])
+    parts.append(ext(tri - inner, 0.0, 4.6))
+    parts.append(ext(inner.offset(0.05, JoinType.Miter, 4.0), 0.0, 3.6))
+    rc = min(rise - 1.9, S - 3.0) * 0.56
+    cc = (0.0, base + 0.4 + rc + 0.25)
+    if rc > 0.7:
+        parts.append(ext(circle(cc, rc, 28) - circle(cc, rc - 0.4, 28), 3.59, 4.0))
+        for k in range(6):
+            a = math.pi / 2 + k * math.pi / 3
+            parts.append(ext(_lens((cc[0] + math.cos(a) * (rc - 0.4) / 2, cc[1] + math.sin(a) * (rc - 0.4) / 2),
+                                   (rc - 0.4) * 0.96, 0.5, a), 3.59, 4.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, base + rise + 0.1, 0.0)
+
+
+# ------------------------------------------------------------------ shutters, bench
+def shutter_strap(w, h, t=0.8, stile=0.6, hinge_left=True):
+    """A Pennsylvania shutter: two raised panels in a frame, and a pair of iron strap hinges
+    on its face from the hinge side (local frame as features.shutter, prints face-up)."""
+    mid = round(h * 0.5 / 0.2) * 0.2
+    parts = [ext(rect(0, 0, w, h), 0.0, 0.45),
+             ext(rect(0, 0, w, h) - rect(stile, stile, w - stile, h - stile), 0.0, t),
+             ext(rect(stile, mid - stile / 2, w - stile, mid + stile / 2), 0.0, t)]
+    for p0, p1 in ((stile, mid - stile / 2), (mid + stile / 2, h - stile)):
+        parts.append(chamfer_box(stile + 0.3, p0 + 0.3, w - stile - 0.3, p1 - 0.3, 0.44, t - 0.44, c=0.2))
+    a, e = (0.1, w * 0.78) if hinge_left else (w - 0.1, w * 0.22)
+    for v in (h * 0.14, h * 0.86):
+        parts.append(ext(_strap(a, e, v), t - 0.01, t + 0.25))
+    return union(parts)
+
+
+def settle_bench(L=9.0, depth=4.2, seat=5.2, back=9.6, t=0.8):
+    """A stoop bench (a settle): two shaped end boards, a seat, a back board and an apron.
+    Local: u along it (0..L), y out from the wall (0 at the back), z up; prints upright."""
+    ends = []
+    for x in (0.0, L - t):
+        prof = poly([(0.0, 0.0), (depth, 0.0), (depth, seat - 1.2), (depth - 0.8, seat), (1.0, seat),
+                     (t + 0.2, back - 1.0), (t + 0.2, back), (0.0, back)])
+        ends.append(M.extrude(prof, t).transform(np.array([[0, 0, 1.0, x], [1.0, 0, 0, 0], [0, 1.0, 0, 0]])))
+    seat_b = box([t - 0.01, 0.6, seat - 0.8], [L - t + 0.01, depth - 0.2, seat])
+    back_b = box([t - 0.01, 0.0, seat - 0.01], [L - t + 0.01, t, back - 0.4])
+    apron = box([t - 0.01, depth - 0.9, seat - 2.2], [L - t + 0.01, depth - 0.2, seat - 0.79])
+    return union(ends + [seat_b, back_b, apron])
+
+
+# ------------------------------------------------------------------ chimney
+def chimney_stonehood(w=8.0, d=15.0, h=30.0, seed=5):
+    """A fieldstone stack with a two-slab drip course and a stone hood: two gabled end
+    stones carrying a pitched stone roof over the flue, open at the sides (the smoke leaves
+    under the hood). The long side runs along y. Stands on z = 0."""
+    h = round(h / 0.2) * 0.2
+    sh = round((h - 6.4) / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh])
+    body = body + TW._skin(w, d, 0.0, sh - 0.4, lambda reg, i: fieldstone(reg, datum=0.0, seed=seed + i, d=(0.26, 0.36)))
+    z = sh
+    for g in (0.5, 0.9):
+        body = body + TW._corbel_out(w, d, z + g, g) + box([-w / 2 - g, -d / 2 - g, z + g - 0.01], [w / 2 + g, d / 2 + g, z + g + 0.6])
+        z += g + 0.6
+    body = body + box([-w / 2 + 0.4, -d / 2 + 0.4, z - 0.01], [w / 2 - 0.4, d / 2 - 0.4, z + 0.8])
+    z += 0.8
+    body = body - box([-w / 2 + 1.6, -d / 2 + 2.6, z - 2.0], [w / 2 - 1.6, d / 2 - 2.6, z + 10])
+    hw = w / 2 + 0.6
+    ze = z + 2.6
+    rise = hw
+    for sg in (-1, 1):
+        y0, y1 = sorted((sg * (d / 2 - 0.4), sg * (d / 2 - 1.8)))
+        e_ = w / 2 - 0.4
+        end = poly([(-e_, z - 0.01), (e_, z - 0.01), (e_, ze - 0.35 + (hw - e_)), (0.0, ze + rise - 0.35), (-e_, ze - 0.35 + (hw - e_))])
+        body = body + M.extrude(end, y1 - y0).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, y0], [0, 1.0, 0, 0]]))
+    roof = poly([(-hw, ze - 0.4), (0.0, ze + rise - 0.4), (hw, ze - 0.4), (hw, ze + 0.5), (0.0, ze + rise + 0.5), (-hw, ze + 0.5)])
+    body = body + M.extrude(roof, d + 0.4).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, -d / 2 - 0.2], [0, 1.0, 0, 0]]))
+    return body
+
+
+# ------------------------------------------------------------------ the arched dormer
+def dormer_arched(w=15.0, dep=18.0, hwall=11.0, rise=3.6):
+    """A dormer with a segmental (arched) roof: a flat front with pilaster strips, a six-light
+    window whose head follows the arch, a keystone at the crown. Local as dormer_pedimented.
+    Returns (body, core, face, arc(t) points for the roof)."""
+    R = (w * w / 4 + rise * rise) / (2 * rise)
+    cy = hwall + rise - R
+
+    def arc(r, n=40):
+        a0 = math.asin((w / 2) / R)
+        return [(r * math.sin(a), cy + r * math.cos(a)) for a in np.linspace(-a0, a0, n)]
+    face = poly([(-w / 2, 0.0), (w / 2, 0.0)] + list(reversed(arc(R))))
+    body = ext(face, -dep, 0.0) - ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, 99), -dep - 1, -1.2)
+    lw = w * 0.46
+    light = face.translate((0.0, -2.4)) ^ rect(-lw / 2, 2.2, lw / 2, 99)
+    body = body - ext(light, -1.3, 1.0)
+    lb = light.bounds()
+    bars = cs_union([rect(-lw / 2, 2.2 + (lb[3] - 2.2) * k / 3 - 0.22, lw / 2, 2.2 + (lb[3] - 2.2) * k / 3 + 0.22) for k in (1, 2)] +
+                    [rect(-0.25, 2.2, 0.25, lb[3])]) ^ light
+    body = body + ext(bars, -1.2, -0.5)
+    body = body + ext((light.offset(0.8, JoinType.Miter, 4.0) - light) ^ rect(-w, 1.6, w, 99), -0.01, 0.6)
+    body = body + chamfer_box(-lw / 2 - 1.0, 1.2, lw / 2 + 1.0, 2.2, -0.01, 0.9, c=0.3, bottom=0.9)
+    for sg in (-1, 1):
+        body = body + ext(rect(sg * (w / 2) - (1.2 if sg > 0 else 0.0), 1.2, sg * (w / 2) + (0.0 if sg > 0 else 1.2), hwall - 0.4),
+                          -0.01, 0.5)
+    body = body + ext(poly([(-0.6, lb[3] - 0.3), (0.6, lb[3] - 0.3), (0.8, lb[3] + 1.4), (-0.8, lb[3] + 1.4)]), -0.01, 0.9)
+    core = ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, hwall), -dep + 1.2, -1.2)
+    return body, core, face, (R, cy)
+
+
+def arched_roof_cs(w, R, cy, t=1.0, eave=1.2, seam_pitch=2.2):
+    """Cross-section (u, v) of the dormer's arched tin roof: a band over the arc of radius R
+    (centre (0, cy)), ``t`` thick, running ``eave`` past the face's sides, with standing
+    seams (little ribs) every ``seam_pitch`` along it; extruded along the dormer's depth."""
+    a0 = math.asin(min(0.999, (w / 2 + eave) / (R + t)))
+    n = 48
+    outer = [((R + t) * math.sin(a), cy + (R + t) * math.cos(a)) for a in np.linspace(-a0, a0, n)]
+    inner = [(R * math.sin(a), cy + R * math.cos(a)) for a in np.linspace(a0, -a0, n)]
+    band = poly(outer + inner)
+    seams = []
+    arc_len = 2 * a0 * (R + t)
+    k = int(arc_len / seam_pitch)
+    for j in range(1, k):
+        a = -a0 + 2 * a0 * j / k
+        c, s = math.cos(a), math.sin(a)
+        p = ((R + t - 0.05) * s, cy + (R + t - 0.05) * c)
+        seams.append(poly([(p[0] - 0.25 * c, p[1] + 0.25 * s), (p[0] + 0.25 * c, p[1] - 0.25 * s),
+                           (p[0] + 0.25 * c + 0.4 * s, p[1] - 0.25 * s + 0.4 * c), (p[0] - 0.25 * c + 0.4 * s, p[1] + 0.25 * s + 0.4 * c)]))
+    return cs_union([band] + seams)

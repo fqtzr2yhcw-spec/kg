@@ -42,7 +42,7 @@ BUILDINGS = [
     ("marigold", "The Marigold"), ("primrose", "The Primrose"), ("rosecroft", "The Rosecroft"), ("twins", "Laurel & Myrtle"),
     ("larkspur", "The Larkspur"), ("juniper", "The Juniper"), ("camellia", "The Camellia"), ("wisteria", "The Wisteria"),
     ("hawthorn", "The Hawthorn"), ("magnolia", "The Magnolia"),
-    ("whitmore", "The Whitmore"), ("westbrook", "The Westbrook"),
+    ("whitmore", "The Whitmore"), ("pennock", "The Pennock"), ("westbrook", "The Westbrook"),
 ]
 NAMES = dict(BUILDINGS)
 HO = 87.1
