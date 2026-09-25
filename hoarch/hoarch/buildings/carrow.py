@@ -228,7 +228,10 @@ def build(kit=None):
         roof = roof + G.chimney_seat(solid_env, x, y, CH / 2, zr + 1.0)
     pockets = union([box([x - CH / 2 - 0.4, y - CH / 2 - 0.4, z0], [x + CH / 2 + 0.4, y + CH / 2 + 0.4, zr + 40])
                      for x, y in chims])
-    roof = roof - pockets - slab(offset(TURRET.cs, 1.4), ZW - 1, ZTW + 90)
+    # round the turret, and trimmed under its roof's eave where the front hip climbs past it
+    dt_t = TURRET_C["layers"][-1]["P"] + 0.6
+    roof = roof - pockets - slab(offset(TURRET.cs, 1.4), ZW - 1, ZTW + 90) \
+        - slab(offset(TURRET.cs, dt_t + 0.6), ZTW - 0.2, ZTW + 90)
     kit.add("ROOF", "Slate", roof, group="roof")
     for k, (x, y) in enumerate(chims):
         ch = TW.chimney("arched", w=CH, d=CH, h=round((zr + 20.0 - z0) / 0.2) * 0.2).translate([x, y, z0])
@@ -260,7 +263,7 @@ def build(kit=None):
     hipc = union([G.hip_cap((x, y, zc0), (TC[0], TC[1], zap), half=0.9, up=0.5, drop=1.4) for x, y in tips])
     cone = cone + hipc.trim_by_plane([0, 0, 1.0], zc0 + 0.2)
     zseat = round((zc0 + SP * (TAPO + dt) - 3.0) / 0.2) * 0.2
-    seat = M.cylinder(1.2, 1.35, 1.35, 32).translate([TC[0], TC[1], zseat - 0.4])
+    seat = M.cylinder(1.2, 1.7, 1.7, 32).translate([TC[0], TC[1], zseat - 0.4])         # the finial's base, 1.6
     cone = cone.trim_by_plane([0, 0, -1.0], -zseat) - seat
     kit.add("TURRET-roof", "Slate", cone, group="turret")
     kit.add("TURRET-finial", "Slate", TW.finial("spire", 1.6, 16.0).translate([TC[0], TC[1], zseat - 0.4]), group="turret")
