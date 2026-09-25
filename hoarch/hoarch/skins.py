@@ -87,6 +87,19 @@ def double_lap(region, datum=0.0):
                               (2.2, 0.14), (2.4, 0.10)], datum)
 
 
+def narrow_lap(region, datum=0.0):
+    """Narrow bevel siding: fine 1.2 mm courses (a 4" exposure), a crisp butt under a
+    straight bevel, so a wall reads as a close, even ribbing (the Laurel)."""
+    return _lap(region, 1.2, [(0.0, 0.36), (0.2, 0.34), (1.2, 0.10)], datum)
+
+
+def flush_bead(region, datum=0.0):
+    """Flush beaded boards: 1.6 mm boards with flat faces, each joint a round bead under a
+    small quirk (the Myrtle)."""
+    return _lap(region, 1.6, [(0.0, 0.22), (0.15, 0.34), (0.3, 0.38), (0.45, 0.34), (0.55, 0.26), (0.75, 0.40),
+                              (1.6, 0.40)], datum)
+
+
 def ogee_lap(region, datum=0.0):
     """Ogee-faced lap siding: 1.6 mm courses (a 5.5" exposure), each board's face an S-curve,
     full at the butt and easing to a thin feather under the next course."""

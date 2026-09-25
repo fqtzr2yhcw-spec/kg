@@ -334,6 +334,15 @@ def _pier_skin(style, reg, seed):
         return ashlar(reg, course=(1.6, 1.6), length=(3.2, 3.2), d=0.3, seed=seed, rough=0.1)
     if style == "coursed":
         return ashlar(reg, course=(1.2, 1.4), length=(2.0, 3.4), d=0.3, seed=seed, rough=0.08)
+    if style == "banded":                # smooth courses of two heights in turn, joints on the layer grid
+        b = reg.bounds()
+        cells, v, j = [], b[1], 0
+        while v < b[3]:
+            ch = 2.0 if j % 2 == 0 else 1.2
+            cells.append(rect(b[0] - 1, v + 0.2, b[2] + 1, v + ch - 0.2))
+            v += ch
+            j += 1
+        return M.extrude(cs_union(cells) ^ reg, 0.35)
     if style in ("coquina", "pebble"):
         from .trimwork import foundation_skin
         return foundation_skin(style, reg, seed=seed)
@@ -379,7 +388,7 @@ def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT
 
 
 ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain", "scallop",
-              "beadreel")
+              "beadreel", "notched")
 
 
 def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None, edge="dentil"):
@@ -391,7 +400,7 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
     per building: dentil, modillion (blocks with bevelled feet), fillet (two raised bands),
     cove (a concave crown, no ornament), drop (Gothic points), sticks (Stick battens),
     button (round bosses), reeded (grooves cut along the fascia), scallop (a valance of
-    half-round scallops), plain."""
+    half-round scallops), beadreel, notched (V notches cut up the fascia), plain."""
     if not dent:
         edge = "plain"
     top = z0 + fascia + th - 0.4
@@ -413,6 +422,7 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
     prof = [(seat, z0)] + face + [(over, zc + 0.3), (over, top), (seat, top)]
     parts = [deck, sweep_run(outer_path, prof)]
     P = np.asarray(outer_path, float)
+    cuts = []
     for a, b in zip(P[:-1], P[1:]):
         f = Facade(a, b, 0.0)
         L = f.L
@@ -447,11 +457,17 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
             cs = cs_union([circle((u, zc - 0.2), 0.72, 20) for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
             cs = (cs + rect(0.3, zc - 0.6, L - 0.3, zc)) ^ rect(0.0, zc - 1.2, L, zc)
             parts.append(f.place(ext(cs, 0.0, 0.6)))
+        elif edge == "notched":            # Stick style: V notches cut up the fascia every 2 mm
+            n = max(1, int((L - 1.2) / 2.0))
+            for k in range(n):
+                u = 0.6 + (L - 1.2) * (k + 0.5) / n
+                cuts.append(f.place(M.hull_points([(u + du, z, d) for z in (z0 - 0.1, zc - 0.8)
+                                                   for du, d in ((-0.45, 0.01), (0.45, 0.01), (0.0, -0.4))])))
         elif edge == "button":
             n = max(1, int((L - 1.2) / 1.6))
             cs = cs_union([circle((u, zc - 0.65), 0.45, 16) for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
             parts.append(f.place(ext(cs, 0.0, 0.6)))
-    return union(parts)
+    return union(parts) - union(cuts) if cuts else union(parts)
 
 
 def steps(width, rise_total, n, tread=2.6, cheek=1.8):
@@ -719,7 +735,7 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
     for u in ((0.0, L - 0.7) if stiles else ()):                                     # end stiles
         parts.append(box([u, -0.5, foot], [u + 0.7, 0.5, vt + 0.01]))
     from . import porchwork as PW
-    if style in ("chippendale", "x", "pierced", "sawn", "lace"):
+    if style in ("chippendale", "x", "pierced", "sawn", "lace", "ladder"):
         parts.append(PW.fill_flat(style, L, vb - 0.01, vt + 0.01))
     else:
         mk, pt = {"turned": (baluster, pitch), "vase": (PW.baluster_vase, 2.4), "urn": (PW.baluster_urn, 2.4),

@@ -16,7 +16,7 @@ from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
 from .core import (Facade, box, ccw, circle, cs_union, frame, miters, offset, poly, rect, scallop_rows, slab,
                    sweep_ring, union)
-from .ornament import chamfer_box, console, dentils, lozenge, side_profile
+from .ornament import chamfer_box, console, dentils, lozenge, side_profile, stroke
 
 
 def _edges(path):
@@ -268,6 +268,20 @@ def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6, style="arch"):
         return round(v / 0.2) * 0.2
     vm = zq(h * 0.55)
     cells = [rect(0, 0, L, 0.6), rect(0, vm, L, vm + 0.4)]
+    if style == "fleur":
+        # bars with fleur-de-lis heads and a ring between each pair under the rail (prints flat)
+        top = zq(h)
+        for j in range(k + 1):
+            u = L * j / k
+            cells.append(rect(u - bar / 2, 0, u + bar / 2, top - 1.4))
+            cells.append(poly([(u - 0.35, top - 1.5), (u + 0.35, top - 1.5), (u + 0.35, top - 0.6), (u, top), (u - 0.35, top - 0.6)]))
+            for sg in (-1, 1):
+                cells.append(stroke([(u, top - 1.6), (u + sg * 0.75, top - 1.2), (u + sg * 0.8, top - 0.6)], 0.45))
+            if j < k:
+                rc = (u + L / k / 2, (0.6 + vm) / 2)
+                rr = (vm - 0.6) / 2 + 0.05
+                cells.append(circle(rc, rr, 20) - circle(rc, max(rr - 0.45, 0.2), 16))
+        return M.extrude(cs_union(cells) ^ rect(0, 0, L, h + 1), t).translate([0, 0, -t / 2])
     if style == "spear":
         # spear-headed bars of two heights and a ball on the rail between them (prints flat)
         for j in range(k + 1):
@@ -290,8 +304,8 @@ def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6, style="arch"):
 
 def cresting(path, z0, h=2.4, pitch=1.6, bar=0.5, t=0.6, d_off=0.0, finials=True, style="arch"):
     """Iron roof cresting along a closed path: "arch" (spikes carrying a rail on pointed
-    arches, prints upright) or "spear" (spear-headed bars with balls on the rail, for strips
-    that print flat)."""
+    arches, prints upright), "spear" (spear-headed bars with balls on the rail, for strips
+    that print flat) or "fleur" (fleur-de-lis bars with rings under the rail, flat strips)."""
     P, Mi = _edges(path)
     out = []
     n = len(P)

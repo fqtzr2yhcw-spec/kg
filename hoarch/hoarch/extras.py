@@ -60,6 +60,26 @@ def picket_fence(L, h=10.0, pitch=1.6, picket=0.9, t=0.8, gate=None, post=1.6, s
     return union([pickets] + rails + pp)
 
 
+def iron_fence(L, h=7.0, pitch=1.4, bar=0.6, t=0.8, post=1.8):
+    """A wrought-iron area railing ``L`` long printed face-up (flat): square bars with spear
+    heads between two rails, a ball between each pair of bars under the top rail, and square
+    posts at the ends with a ball and a spike. Local: u along, v up from the ground, w across
+    (0..t)."""
+    cells = [rect(0.0, 0.6, L, 1.2), rect(0.0, h - 2.2, L, h - 1.6)]
+    u = post / 2 + pitch
+    while u < L - post / 2 - pitch / 2:
+        cells.append(rect(u - bar / 2, 0.6, u + bar / 2, h - 0.9))
+        cells.append(poly([(u - 0.6, h - 1.0), (u, h - 1.6), (u + 0.6, h - 1.0), (u, h)]))
+        if u + pitch < L - post / 2 - pitch / 2:
+            cells.append(circle((u + pitch / 2, h - 2.7), 0.55, 16))
+        u += pitch
+    for p in (post / 2, L - post / 2):
+        cells.append(rect(p - post / 2, 0.0, p + post / 2, h + 0.4))
+        cells.append(cs_union([circle((p, h + 1.3), 0.8, 20), rect(p - 0.5, h + 0.3, p + 0.5, h + 0.9),
+                               poly([(p - 0.3, h + 2.0), (p + 0.3, h + 2.0), (p, h + 2.8)])]))
+    return ext(cs_union(cells), 0.0, t)
+
+
 def rocking_chair(scale=1.0):
     """A porch rocking chair: two flat side frames (a rocker, legs, an arm and a high back)
     joined by the seat and the back. Local: x forward, y up, z across (0..3.4); it prints

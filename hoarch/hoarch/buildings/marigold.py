@@ -9,8 +9,8 @@ apex; and a round-headed window under a gold fan hood with a sunburst and scroll
 the whole front, a porch on orange boxed posts with gold lace arches (scrolls, eyelets and
 pendants), gold lace railings, a scalloped fascia and a planked floor; orange round-headed
 windows under halo mouldings; a door with a lace-grilled light under a fan hood. Cove-cut
-shingles on the roof, a fluted chimney. Add-ons: a white picket fence with an arched gate, a
-blue rocking chair, flower boxes, and a pink bicycle with a basket.
+shingles on the roof, a fluted chimney. Add-ons: a blue rocking chair, flower boxes, and a
+pink bicycle with a basket.
 
 Colour comes from the part split: turquoise walls, gold lace, orange posts, windows and doors,
 grey roofs. The porch deck prints planks first (one filament change); the flower boxes change
@@ -34,10 +34,10 @@ from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring
 
 NAME = "The Marigold Cottage"
 COLORS = {"Turquoise": "#3FB5AE", "Gold": "#E7B52B", "Orange": "#E2772C", "Roof": "#4C5056", "Stone": "#CDBFA3",
-          "PorchDeck": "#E2772C", "Planks": "#7A5A3A", "Brick": "#9A4A36", "White": "#F2F0EA", "Blue": "#3E6FB5",
+          "PorchDeck": "#E2772C", "Planks": "#7A5A3A", "Brick": "#9A4A36", "Blue": "#3E6FB5",
           "Pink": "#E57FA4", "FlowerBox": "#3FB5AE", "Windows_Doors": "#E2772C"}
 RENDER_MAT = {"Turquoise": "siding", "Gold": "gold", "Orange": "orange", "Roof": "roof", "Stone": "stone",
-              "PorchDeck": "orange", "Planks": "planks", "Brick": "brick", "White": "white", "Blue": "blue",
+              "PorchDeck": "orange", "Planks": "planks", "Brick": "brick", "Blue": "blue",
               "Pink": "pink", "FlowerBox": "siding", "Blooms": "pink", "Windows_Doors": "orange", "Sash": "sash",
               "Door": "door", "Glass": "glass"}
 
@@ -241,12 +241,7 @@ def build(kit=None):
     kit.add("STOOP-back", "Stone", FT.steps(11.0, ZF - 0.6, 3).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
 
-    # --- add-ons: the picket fence with its gate, a rocking chair, flower boxes, the bicycle
-    FL = W + 20.0
-    fence = EX.picket_fence(FL, h=10.0, gate=(FL / 2 - 6.0, 12.0))
-    Afn = np.array([[1.0, 0, 0, -10.0], [0, 0, -1.0, -PD - 16.0], [0, 1.0, 0, 0.0]])
-    flip = np.array([[1.0, 0, 0, 0], [0, -1.0, 0, 0], [0, 0, -1.0, 0]])                # pickets down on the bed
-    kit.add("FENCE", "White", fence.transform(Afn), P=compose(flip, inv34(Afn)), group="extras")
+    # --- add-ons: a rocking chair, flower boxes, the bicycle
     a = math.radians(200.0)
     Rz = np.array([[math.cos(a), -math.sin(a), 0.0, 9.0], [math.sin(a), math.cos(a), 0.0, -PD + 8.0], [0, 0, 1.0, H_floor + 0.3]])
     Ark = compose(Rz, np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))       # (x fwd, y up, z across) -> world
@@ -262,7 +257,7 @@ def build(kit=None):
                 render=[("FlowerBox", (bx ^ box([-5, -5, -5], [20, 2.2, 5])).transform(A)),
                         ("Blooms", (bx - box([-5, -5, -5], [20, 2.2, 5])).transform(A))])
     bike = EX.bicycle()
-    Abk = np.array([[1.0, 0, 0, W / 2 + 16.0], [0, 0, -1.0, -PD - 18.0], [0, 1.0, 0, 0.0]])
+    Abk = np.array([[1.0, 0, 0, W / 2 + 22.0], [0, 0, -1.0, -PD - 4.0], [0, 1.0, 0, 0.0]])        # against the porch skirt
     kit.add("BICYCLE", "Pink", bike.transform(Abk), P=inv34(Abk), group="extras")
     print("specks dropped:", kit.drop_specks())
     return kit

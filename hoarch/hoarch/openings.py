@@ -580,7 +580,8 @@ def _leaf(style, u, lw, dh, hinge_left):
     with a push bar over a low panel and a kick plate), grille (a light behind a diagonal
     iron grille over a raised panel), six_light (six lights over two short panels), margin,
     french, dutch, boards_glass, lozenge, ledged, twin_arch (two round-headed lights over a
-    raised panel)."""
+    raised panel), keyhole, sunray, lace, roundel (a round light in a square panel over a
+    tall raised panel) and bolection (a light over a panel ringed by a bolection moulding)."""
     if style == "arched":
         return _ornate_leaf(u, lw, dh, hinge_left)
     st = min(1.0, lw * 0.16)
@@ -788,6 +789,24 @@ def _leaf(style, u, lw, dh, hinge_left):
             if not hinge_left:
                 a0, a1 = (u + lw - 0.6, va + 0.5), (u + 0.6, vb - 0.5)
             parts.append(ext(stroke([a0, a1], 0.8, caps=False) ^ rect(u, va, u + lw, vb), -0.81, -0.4))
+    elif style == "roundel":              # a tall raised panel under a round light set in a square panel
+        cx = (pu0 + pu1) / 2
+        rr = min((pu1 - pu0) / 2 - 0.5, 1.6)
+        sq = rect(pu0, top - st - (pu1 - pu0), pu1, top - st)
+        vc = (sq.bounds()[1] + sq.bounds()[3]) / 2
+        gl = circle((cx, vc), rr, 32)
+        glass = gl
+        parts.append(ext(sq - sq.offset(-0.45, JoinType.Miter, 4.0), -0.8, -0.6))
+        parts.append(ext(gl.offset(0.45, JoinType.Round) - gl, -0.8, -0.6))
+        panel(rect(pu0, 1.3, pu1, sq.bounds()[1] - 0.9))
+    elif style == "bolection":            # a light over a panel ringed by a bolection moulding, a raised rosette in it
+        gl = rect(pu0, dh * 0.52, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        lo = rect(pu0 + 0.3, 1.5, pu1 - 0.3, dh * 0.52 - 1.2)
+        parts.append(ext(lo.offset(0.5, JoinType.Miter, 4.0) - lo, -0.81, -0.4))
+        lb = lo.bounds()
+        parts.append(ext(circle(((lb[0] + lb[2]) / 2, (lb[1] + lb[3]) / 2), min(0.7, (lb[2] - lb[0]) * 0.3), 16), -0.81, -0.4))
     elif style == "oval":
         cx, cy = (pu0 + pu1) / 2, dh * 0.7
         rx, ry = (pu1 - pu0) / 2 - 0.2, min(dh * 0.18, top - st - cy)
@@ -821,7 +840,8 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
     """The leaves and transom of a door (the plug part): leaf style (see _leaf) and a
     transom of style sunburst, plain (with an oval boss), stick (a row of narrow lights),
     diamond (a diamond grid), leaded (a border of small squares), ring (a ring on a cross of
-    bars), twin (one bar), cross (a cross of bars), heart, scallop (three little arches) or
+    bars), twin (one bar), cross (a cross of bars), heart, scallop (three little arches),
+    chevron, beads, grid (two rows of four lights), quatrefoil (four linked rings) or
     "number:<digits>" (the street number in
     raised gilt figures on the glass). One transom style per building."""
     op = rect(-w / 2, 0, w / 2, h)
@@ -906,6 +926,17 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
             r = min(p / 2 - 0.1, (tb[3] - tb[1]) - 0.5)
             pat = cs_union([circle((tb[0] + p * (k + 0.5), tb[1]), r + RIB / 2, 28) -
                             circle((tb[0] + p * (k + 0.5), tb[1]), r - RIB / 2, 28) for k in range(3)])
+        elif tstyle == "grid":                   # two rows of four small lights
+            cy = (tb[1] + tb[3]) / 2
+            pat = rect(tb[0] - 1, cy - RIB / 2, tb[2] + 1, cy + RIB / 2) + \
+                cs_union([rect(tb[0] + (tb[2] - tb[0]) * k / 4 - RIB / 2, tb[1] - 1, tb[0] + (tb[2] - tb[0]) * k / 4 + RIB / 2,
+                               tb[3] + 1) for k in (1, 2, 3)])
+        elif tstyle == "quatrefoil":             # four linked rings in the middle of the light, on a bar
+            cy = (tb[1] + tb[3]) / 2
+            r = min((tb[3] - tb[1]) * 0.25, 0.9)
+            rings = [circle((dx, cy + dy), r + RIB / 2, 20) - circle((dx, cy + dy), r - RIB / 2, 20)
+                     for dx, dy in ((-r, 0.0), (r, 0.0), (0.0, -r), (0.0, r))]
+            pat = cs_union(rings) + rect(tb[0] - 1, cy - RIB / 2, -2 * r, cy + RIB / 2) + rect(2 * r, cy - RIB / 2, tb[2] + 1, cy + RIB / 2)
         elif tstyle == "leaded":
             inner = tcs.offset(-1.1, JoinType.Miter, 4.0)
             bars = [inner.offset(RIB / 2, JoinType.Miter, 4.0) - inner.offset(-RIB / 2, JoinType.Miter, 4.0)]

@@ -238,7 +238,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
 
 
 CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope",
-                 "notched")
+                 "notched", "banded", "cabled")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -254,7 +254,10 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
       panel     a long sunk panel (Ashby's cupola)
       beaded    a bead down the middle between a plinth and a cap (the barber shop)
       reeded    three round reeds down the board between a plinth and a cap (the cottage)
-      rope      a twisted three-strand cable down the board (the Primrose)"""
+      rope      a twisted three-strand cable down the board (the Primrose)
+      notched   cut across with V notches every 6 mm (the Rosecroft)
+      banded    a pilaster banded by raised blocks every 3.6 mm (the Laurel)
+      cabled    two flutes, their lower third filled with round cables (the Myrtle)"""
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
@@ -315,6 +318,29 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
                 uc = u0 + (u1 - u0) * (k + 0.5) / 3
                 parts.append(M.cylinder(qb - qa - 2.4, 0.3, 0.3, 12).translate([uc, t - 0.05, 0.0])
                              .transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, qa + 1.4], [0, 1.0, 0, 0]])))
+    if style == "banded":               # a pilaster banded by raised, chamfered blocks
+        parts.append(box([far0, qa, 0], [far1, qa + 1.6, t + 0.3]))
+        parts.append(box([far0, qb - 1.0, 0], [far1, qb, t + 0.3]))
+        if qb - qa > 6.0:
+            for v in np.arange(qa + 3.2, qb - 2.6, 3.6):
+                v = round(v / 0.2) * 0.2
+                parts.append(chamfer_box(far0, v, far1, v + 1.6, t - 0.01, 0.31, c=0.2))
+    if style == "cabled":               # two flutes, their lower third filled with round cables
+        u0, u1 = span(0.0, w + 0.6)                     # a wider board to carry two flutes
+        far0, far1 = span(0.0, w + 0.8)
+        parts = [box([u0, qa, 0], [u1, qb, t])]
+        parts.append(box([far0, qa, 0], [far1, qa + 1.4, t + 0.3]))
+        parts.append(box([far0, qb - 1.2, 0], [far1, qb, t + 0.3]))
+        if qb - qa > 7.0:
+            um = (u0 + u1) / 2
+            f0, f1 = qa + 2.0, qb - 1.8
+            vc = round((f0 + (f1 - f0) / 3) / 0.2) * 0.2
+            body = union(parts)
+            for du in (-0.6, 0.6):
+                body = body - box([um + du - 0.25, f0, t - 0.3], [um + du + 0.25, f1, t + 0.5])
+                body = body + M.cylinder(vc - f0, 0.25, 0.25, 12).transform(
+                    np.array([[1.0, 0, 0, um + du], [0, 0, 1.0, f0], [0, 1.0, 0, t - 0.3]]))
+            return body
     if style == "panel" and qb - qa > 3.0:
         return union(parts) - box([u0 + 0.5, qa + 1.0, t - 0.2], [u1 - 0.5, qb - 1.0, t + 0.5])
     return union(parts)
@@ -409,9 +435,10 @@ def belt_ring(outline_pts, z0, t=3.0, prof=BELT_PROF, lip=True, blocks=BELT_BLOC
                 continue
             n = max(1, int(round(span / bk["pitch"])))
             for j in range(n + 1):
-                u = bk["margin"] + span * j / n
-                row.append(f.place(chamfer_box(u - bk["w"] / 2, bk["z"], u + bk["w"] / 2, bk["z"] + bk["h"],
-                                               bk["d0"] - 0.05, bk["d"] + 0.05, bk["c"])))
+                for du in ((-bk["pair"] / 2, bk["pair"] / 2) if bk.get("pair") else (0.0,)):
+                    u = bk["margin"] + span * j / n + du
+                    row.append(f.place(chamfer_box(u - bk["w"] / 2, bk["z"], u + bk["w"] / 2, bk["z"] + bk["h"],
+                                                   bk["d0"] - 0.05, bk["d"] + 0.05, bk["c"])))
         ring = ring + union(row)
     base = poly(ccw(outline_pts))
     if lip:

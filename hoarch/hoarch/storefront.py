@@ -405,7 +405,9 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     "shouldered" (a flat lintel with shouldered ends and a rosette), "drip" (a bevelled drip
     cap), "crested" (a cap with a cresting of little arches), "triple" (a lintel with a
     stepped triple keystone), "halo" (a round moulding over a round head, with a drop
-    keystone) or "rosettes" (a head board with three rosette blocks under a cap). The brick arch of a brick
+    keystone), "rosettes" (a head board with three rosette blocks under a cap), "ancon" (a
+    square architrave round an arched head, a frieze and a cap on scroll consoles) or
+    "cartouche" (a moulded hood with ears and an oval cartouche at the crown). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -504,6 +506,37 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
             parts.append(chamfer_box(a, h + casing + 1.59, b, h + casing + 2.6, 0.0, 0.8, c=0.2))
         parts.append(ext(circle((0.0, h + casing + 0.8), 0.6, 16), 0.79, 1.2))
         top = h + casing + 2.6
+    elif head == "ancon":
+        # Italianate: the arch set in a square architrave (its spandrels filled), a frieze and
+        # a cornice cap carried on a scroll console (an ancon) at each side (the Laurel)
+        lw = w / 2 + casing
+        v0 = h + casing
+        spring = h - (rise or 0)
+        parts.append(ext(rect(-lw, spring, lw, v0) - op.offset(casing - 0.02, JoinType.Round), 0.0, 0.4))
+        parts.append(box([-lw, v0 - 0.01, 0.0], [lw, v0 + 1.4, 0.6]))
+        parts.append(chamfer_box(-lw - 1.4, v0 + 1.4, lw + 1.4, v0 + 2.2, 0.0, 1.2, c=0.3, bottom=0.8))
+        for sg in (-1, 1):
+            u = sg * (lw + 0.6)
+            parts.append(chamfer_box(u - 0.6, v0 - 2.4, u + 0.6, v0 + 1.41, 0.0, 1.0, c=0.3, bottom=1.0))
+            parts.append(ext(circle((u, v0 - 2.6), 0.5, 16), 0.0, 0.8))
+        top = v0 + 2.2
+    elif head == "cartouche":
+        # a moulded hood following the head, with ears at the springing and a raised oval
+        # cartouche with scrolled sides at the crown (the Myrtle)
+        spring = h - (rise or 0)
+        clip = rect(-w, spring - 0.01, w, h + 20)
+        band = (op.offset(casing + 1.0, JoinType.Round) - op.offset(casing - 0.01, JoinType.Round)) ^ clip
+        parts.append(ext(band, 0.0, 0.8))
+        for sg in (-1, 1):
+            u = sg * (w / 2 + casing + 0.5)
+            parts.append(chamfer_box(u - 0.9, spring - 0.8, u + 0.9, spring + 0.01, 0.0, 1.0, c=0.3, bottom=1.0))
+        cy = h + casing + 1.0
+        ov = poly([(1.0 * math.cos(a), cy + 1.4 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 32, endpoint=False)])
+        parts.append(ext(ov, 0.0, 1.0))
+        parts.append(ext(ov - ov.offset(-0.5), 0.99, 1.2))
+        for sg in (-1, 1):
+            parts.append(ext(circle((sg * 1.35, cy - 0.5), 0.5, 16), 0.0, 0.8))
+        top = cy + 1.4
     elif head == "lintel":
         lw = w / 2 + casing + 1.0
         parts.append(chamfer_box(-lw, h, lw, h + 2.4, 0.0, 0.8, c=0.2))

@@ -85,7 +85,10 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
       arched    Roman brick with arched recesses, a deep corbelled crown, three pots (Carrow)
       and for the Main Street shops: party, stovepipe, coped, hooded, stepped, slab, tapered,
       twin and round (a round stack with iron bands and a corbelled crown, on a plinth);
-      fluted (the cottage: sunk flutes down each face, a band, a corbelled cap and a pot)
+      fluted (the cottage: sunk flutes down each face, a band, a corbelled cap and a pot);
+      crowned (the Primrose), dogtooth (the Rosecroft), roundel (the Laurel: stucco, a band,
+      a roundel frieze, a stepped cornice and a capstone) and chequer (the Myrtle: brick with
+      a chequer band of proud bricks under a corbelled cap)
     """
     h = zq(h)
     if style == "corbel":
@@ -264,6 +267,44 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         body = body + _corbel_out(w2, d2, h - 2.4, 0.4) + box([-w2 / 2 - 0.4, -d2 / 2 - 0.4, h - 2.41], [w2 / 2 + 0.4, d2 / 2 + 0.4, h - 1.6])
         body = body + box([-w2 / 2 - 0.1, -d2 / 2 - 0.1, h - 1.61], [w2 / 2 + 0.1, d2 / 2 + 0.1, h])
         return body - box([-w2 / 2 + 0.7, -d2 / 2 + 0.7, h - 1.0], [w2 / 2 - 0.7, d2 / 2 - 0.7, h + 1])
+    if style == "roundel":
+        # a smooth stuccoed stack, a raised band, a frieze with a raised roundel on each face,
+        # a cornice corbelled out in two steps and a low pyramidal capstone (the Laurel)
+        sh = zq(h - 4.4)
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh])
+        zb = zq(sh * 0.5)
+        body = body + _corbel_out(w, d, zb, 0.3) + box([-w / 2 - 0.3, -d / 2 - 0.3, zb - 0.01], [w / 2 + 0.3, d / 2 + 0.3, zb + 0.8])
+        for f in _faces(w, d):
+            body = body + f.place(ext(circle((f.L / 2, sh - 1.6), min(1.0, f.L * 0.15), 20), -0.02, 0.4))
+        g = 0.0
+        for k in range(2):
+            body = body + _corbel_out(w + 2 * g, d + 2 * g, sh + 0.4 + 0.6 * k, 0.4) + \
+                box([-w / 2 - g - 0.4, -d / 2 - g - 0.4, sh + 0.39 + 0.6 * k], [w / 2 + g + 0.4, d / 2 + g + 0.4, sh + 0.6 + 0.6 * k])
+            g += 0.4
+        zc = sh + 1.2
+        body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, zc - 0.01], [w / 2 + 0.8, d / 2 + 0.8, zc + 1.0])
+        cap = M.hull_points([(x, y, zc + 0.99) for x in (-w / 2 - 0.8, w / 2 + 0.8) for y in (-d / 2 - 0.8, d / 2 + 0.8)] +
+                            [(x, y, h) for x in (-w / 2 + 1.4, w / 2 - 1.4) for y in (-d / 2 + 1.4, d / 2 - 1.4)])
+        return body + cap - box([-w / 2 + 1.6, -d / 2 + 1.6, h - 1.4], [w / 2 - 1.6, d / 2 - 1.6, h + 1])
+    if style == "chequer":
+        # brick with a chequer band near the top (alternate bricks standing proud), a
+        # corbelled cap and a raised rim (the Myrtle)
+        sh = zq(h - 2.4)
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh])
+        zc0 = zq(sh - 4.0)
+        body = body + _skin(w, d, 0.0, zc0 - 0.4, _brick("running"))
+        for f in _faces(w, d):
+            n = max(3, int(f.L / 1.3))
+            sq = []
+            for r in range(3):
+                for k in range(n):
+                    if (k + r) % 2 == 0:
+                        u = f.L * k / n
+                        sq.append(chamfer_box(u + 0.1, zc0 + 1.2 * r + 0.2, u + f.L / n - 0.1, zc0 + 1.2 * r + 1.0, -0.02, 0.37, c=0.15))
+            body = body + f.place(union(sq))
+        body = body + _corbel_out(w, d, sh + 0.4, 0.4) + box([-w / 2 - 0.4, -d / 2 - 0.4, sh + 0.39], [w / 2 + 0.4, d / 2 + 0.4, sh + 1.0])
+        body = body + _corbel_out(w + 0.8, d + 0.8, sh + 1.4, 0.4) + box([-w / 2 - 0.8, -d / 2 - 0.8, sh + 1.39], [w / 2 + 0.8, d / 2 + 0.8, h])
+        return body - box([-w / 2 + 0.6, -d / 2 + 0.6, h - 0.8], [w / 2 - 0.6, d / 2 - 0.6, h + 1])
     if style == "dogtooth":
         # a brick stack with a band of dogtooth brick (headers set diagonally, their corners
         # out) under a three-course corbel and a cap
@@ -421,8 +462,9 @@ def foundation_skin(style, reg, seed=0):
     battered (the hardware store), moulded (the millinery: a smooth course under an ogee),
     tooled (the jeweler: dressed blocks with a margin round vertically striated faces) and
     coquina (the gingerbread cottage: shell-stone blocks with pitted faces), pebble (the Primrose:
-    pebble-dash over a smooth base course), banded (the Coral House: smooth courses of two
-    heights in turn)."""
+    pebble-dash over a smooth base course), banded (the Rosecroft: smooth courses of two
+    heights in turn) and panelled (the Laurel and Myrtle pair: a wooden raised basement of
+    raised panels over a base board)."""
     from . import skins as S
     if style == "fieldstone":
         return ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=0.55, seed=seed)
@@ -511,6 +553,22 @@ def foundation_skin(style, reg, seed=0):
             j += 1
         blocks = M.extrude(cs_union(cells) ^ reg, 0.45)
         return blocks - M.extrude(cs_union(pits) ^ reg, 1.0).translate([0, 0, 0.25])
+    if style == "panelled":              # a wooden raised basement: raised panels between stiles over a base board
+        b = reg.bounds()
+        vb = b[1] + 1.6
+        out = [M.extrude(reg ^ rect(b[0] - 1, b[1] - 1, b[2] + 1, vb), 0.5),
+               M.extrude(reg ^ rect(b[0] - 1, vb - 0.01, b[2] + 1, b[3] + 1), 0.2)]
+        v0, v1 = vb + 1.0, b[3] - 1.2
+        if v1 - v0 > 2.0:
+            n = max(1, int(round((b[2] - b[0]) / 7.0)))
+            pw = (b[2] - b[0]) / n
+            for k in range(n):
+                u0, u1 = b[0] + pw * k + 0.8, b[0] + pw * (k + 1) - 0.8
+                if u1 - u0 < 2.0:
+                    continue
+                out.append(M.hull_points([(u, v, 0.19) for u in (u0, u1) for v in (v0, v1)] +
+                                         [(u, v, 0.45) for u in (u0 + 0.5, u1 - 0.5) for v in (v0 + 0.5, v1 - 0.5)]))
+        return union(out) ^ M.extrude(reg, 1.0)
     if style == "tooled":                # dressed blocks (one course, two on a tall base): a smooth
         b = reg.bounds()                  # margin round a face tooled in fine vertical striations
         nc = 1 if b[3] - b[1] < 3.6 else 2
@@ -630,6 +688,12 @@ BELTS = {
     "string": ([(0.0, 0.0), (0.5, 0.5), (0.5, 3.4), (1.1, 4.0), (1.1, 4.4)], None),
     "cyma": ([(0.0, 0.0), (0.4, 0.4), (0.7, 0.8), (0.85, 1.2), (0.9, 1.6), (1.0, 2.0), (1.2, 2.3), (1.5, 2.6),
               (1.5, 3.2), (1.2, 3.5), (1.2, 4.0)], None),
+    # a fascia with tall raised tablets (the Laurel)
+    "tablet": ([(0.0, 0.0), (0.4, 0.4), (0.4, 3.4), (0.9, 3.9), (0.9, 4.4)],
+               dict(w=1.4, z=0.8, h=2.4, d0=0.4, d=0.45, c=0.2, pitch=4.2, margin=2.2)),
+    # a stepped band with small blocks in pairs (the Myrtle)
+    "twinblock": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.0, 3.3), (1.0, 3.8), (1.3, 4.1), (1.3, 4.4)],
+                  dict(w=0.7, z=1.0, h=1.6, d0=0.5, d=0.4, c=0.2, pitch=5.6, pair=1.5, margin=2.6)),
     # two stepped fascias (the Rosecroft)
     "fillet": ([(0.0, 0.0), (0.4, 0.4), (0.4, 1.6), (0.8, 2.0), (0.8, 3.6), (1.2, 4.0), (1.2, 4.4)], None),
     # a bell-cast shingled skirt: widest at its foot, three courses of shingle butts
@@ -654,7 +718,8 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     pierced quarter-round), brace (a diagonal stick brace), metal (a pressed-metal bracket:
     a block head, an ogee and a round drop), sawn (a flat jigsawn bracket, pierced), modillion
     (a horizontal console under a cornice, its front rolled under), knee, volute, beaded (a
-    console whose sloping front is a string of three beads)."""
+    console whose sloping front is a string of three beads), fret, ladder, acanthus (an S
+    console with a lobed front and an open eye) and twin (two slim consoles on one head)."""
     from .ornament import console, side_profile
     if style == "scroll":
         return console(h, d, t, u=u, v_top=v_top, w0=w0)
@@ -719,6 +784,24 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
         slots = cs_union([rect(0.55, -h + 0.9 + k * (h - 1.6) / 4, d * 0.95, -h + 0.9 + k * (h - 1.6) / 4 + 0.5)
                           for k in range(4)])
         prof = tri - (slots ^ tri.offset(-0.55))
+    elif style == "acanthus":           # an Italianate console: an S sweeping in to a curl, its front lobed like a leaf,
+        # an open eye in the head (the Laurel)
+        front = [(d * (1 - 0.7 * (3 * s * s - 2 * s ** 3)), -h * s) for s in np.linspace(0.0, 1.0, 17)]
+        body = poly([(0.0, 0.0)] + front + [(0.0, -h)])
+        lobes = cs_union([circle((front[i][0] - 0.2, front[i][1]), 0.42, 16) for i in (5, 8, 11)])
+        foot = circle((0.3 * d + 0.1, -h + 0.5), 0.5, 16)
+        r_eye = min(0.3 * d, 0.45)
+        eye = circle((d * 0.55, -r_eye - 0.7), r_eye, 16)
+        prof = cs_union([body, lobes, foot, rect(0.0, -h, 0.6, 0.0)]) - eye
+    elif style == "twin":               # a pair of slim quarter-round consoles on one head block (the Myrtle)
+        pts = [(0, 0), (d, 0)] + [(d - d * (1 - math.cos(a)) * 0.8, -h * 0.85 * math.sin(a))
+                                  for a in np.linspace(0.1, math.pi / 2, 10)] + [(0.0, -h)]
+        blade = cs_union([poly(pts), circle((0.35, -h + 0.4), 0.4, 12)])
+        tb = max(0.5, t * 0.36)
+        head = side_profile(rect(0.0, -0.8, d, 0.0), -t / 2, t / 2)
+        pair = [side_profile(blade, sg * t / 2 - (tb if sg > 0 else 0.0), sg * t / 2 + (tb if sg < 0 else 0.0))
+                for sg in (-1, 1)]
+        return union([head] + pair).translate([u, v_top, w0])
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])

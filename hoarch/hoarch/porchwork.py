@@ -222,9 +222,27 @@ def post_turned(h, collar=None, **kw):
     return turned_post(h, collar=collar)
 
 
+def post_notched(h, collar=None, abacus=3.0, slot=(1.2, 1.0), w=2.2):
+    """Stick-style square post cut across by V notches every 6 mm on all four faces, on a base
+    block, under a cap (the Rosecroft)."""
+    s = w / 2
+    body = _plinth() + box([-s, -s, 1.0], [s, s, h - 1.8]) + box([-s - 0.3, -s - 0.3, 1.19], [s + 0.3, s + 0.3, 2.6])
+    cuts = []
+    for v in np.arange(6.0, h - 5.0, 6.0):
+        v = round(v / 0.2) * 0.2
+        for ax in range(4):
+            cuts.append(M.hull_points([(x, y, z) for x in (-s - 0.1, s + 0.1) for y, z in
+                                       ((s + 0.1, v - 0.35), (s + 0.1, v + 0.35), (s - 0.2, v))]).rotate([0, 0, 90 * ax]))
+    if cuts:
+        body = body - union(cuts)
+    if collar is not None:
+        body = body + box([-s - 0.2, -s - 0.2, collar - 1.6], [s + 0.2, s + 0.2, collar + 0.2])
+    return body + _top(h, abacus / 2, h - 1.8, s, slot, shape="square")
+
+
 POSTS = {"turned": post_turned, "tuscan": post_tuscan, "fluted": post_fluted, "chamfered": post_chamfered,
          "clustered": post_clustered, "stick": post_stick, "spindle": post_spindle, "eastlake": post_eastlake,
-         "boxed": post_boxed, "bobbin": post_bobbin}
+         "boxed": post_boxed, "bobbin": post_bobbin, "notched": post_notched}
 
 
 # ------------------------------------------------------------------ railing fills (between the rails)
@@ -282,6 +300,16 @@ def fill_flat(style, L, vb, vt):
     elif style == "lace":
         from .lace import lace_panel_cs
         parts.append(lace_panel_cs(L, vb, vt))
+    elif style == "ladder":              # square sticks at an even pitch, a mid rail and a band of short rungs up top
+        n = max(2, int(round(L / 1.5)))
+        for i in range(n + 1):
+            u = L * i / n
+            parts.append(rect(u - 0.3, vb, u + 0.3, vt))
+        vm = round((vb + H * 0.62) / 0.2) * 0.2
+        parts.append(rect(0.0, vm, L, vm + 0.6))
+        for i in range(n):
+            u = L * (i + 0.5) / n
+            parts.append(rect(u - 0.3, vm + 0.6, u + 0.3, vt))
     else:
         raise ValueError(style)
     cs = cs_union(parts) ^ rect(0.0, vb - 0.05, L, vt + 0.05)
@@ -426,8 +454,27 @@ def frieze_rosette(u0, u1, v_bot, v_top):
     return cs_union(parts) - cs_union(holes)
 
 
+def frieze_drops(u0, u1, v_bot, v_top):
+    """Stick-style frieze: a board with a row of hanging teardrop drops under it, and a
+    quarter bracket at each post cut with a row of notches (the Rosecroft)."""
+    rail0 = v_top - 1.0                  # a board too narrow for the arcade's sunk field: no ledge mid-layer
+    parts = [rect(u0, rail0, u1, v_top + 0.05)]
+    n = max(2, int((u1 - u0 - 1.0) / 1.8))
+    for k in range(n):
+        u = u0 + 0.5 + (u1 - u0 - 1.0) * (k + 0.5) / n
+        parts.append(cs_union([rect(u - 0.3, rail0 - 1.4, u + 0.3, rail0 + 0.05), circle((u, rail0 - 1.7), 0.56, 16)]))
+    for sg, ue in ((1, u0), (-1, u1)):
+        R = 3.0
+        q = circle((ue, rail0), R, 32) ^ rect(min(ue, ue + sg * R), rail0 - R, max(ue, ue + sg * R), rail0)
+        slots = cs_union([stroke([(ue + sg * 0.9 * math.cos(a), rail0 - 0.9 * math.sin(a)),
+                                  (ue + sg * (R - 0.7) * math.cos(a), rail0 - (R - 0.7) * math.sin(a))], 0.5)
+                          for a in (0.35, 0.8, 1.25)])
+        parts.append(q - slots)
+    return cs_union(parts)
+
+
 FRIEZES = {"scroll": frieze_scroll, "entablature": frieze_entablature, "valance": frieze_valance,
-           "spindle": frieze_spindle, "fret": frieze_fret, "rosette": frieze_rosette}
+           "spindle": frieze_spindle, "fret": frieze_fret, "rosette": frieze_rosette, "drops": frieze_drops}
 
 
 # ------------------------------------------------------------------ skirts (under the deck)
@@ -488,6 +535,11 @@ def skirt_fill(style, reg, d=1.2):
         holes = [circle((u0 + L * (i + 0.5) / n, vm), r, 20) for i in range(n)] if r > 0.35 else []
         board = reg - cs_union(holes) if holes else reg
         return M.extrude(board, d)
+    if style == "sawtooth":             # upright boards with gaps between, each cut to a V point at the foot
+        out = []
+        for u in np.arange(u0 + 0.3, u1 - 0.8, 1.6):
+            out.append(poly([(u, v1 + 1), (u + 1.0, v1 + 1), (u + 1.0, v0 + 1.0), (u + 0.5, v0 + 0.4), (u, v0 + 1.0)]))
+        return M.extrude(cs_union(out) ^ reg, d)
     if style == "diamond":              # a board pierced with a row of diamonds (steep sides print clean)
         L = u1 - u0
         n = max(1, int(round(L / 3.0)))
