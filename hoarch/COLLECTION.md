@@ -7,7 +7,8 @@ FDM (0.4 mm nozzle, 0.20 mm layers), with windows and doors as the standout deta
 Work order for each building: concept → print checks (0 interfering pairs, lint) → renders
 (hero and a close-up) → commit. Export and slicing run in the background while the next
 building is designed. All ten houses are done, and so is a Main Street line of ten shops
-(11 to 20); the lineup render is `out/lineup/cycles/lineup.png` (built by merging each
+(11 to 20); a second batch of ten houses after the user's photos (21 on) is under way, each on a
+bigger footprint than the first ten; the lineup render is `out/lineup/cycles/lineup.png` (built by merging each
 building's render data); the shops stand side by side in two rows of five in
 `out/mainstreet/cycles/`. Every building has 0 interfering part pairs.
 
@@ -33,8 +34,21 @@ building's render data); the shops stand side by side in two rows of five in
 | 18 | Bassett Hardware & Feed | Main Street: two-storey stone store, 1872. Split-face limestone on a battered base with a string course; three round-arched bays under voussoir rings (two display windows, glazed board doors under a fanlight); upstairs, windows under splayed jack arches with iron fire shutters, and a loading door under a hoist beam with pulley, rope, block and hook; lettered frieze, cornice and date panel; stepped side parapets over a shingled shed roof | done: 28 parts, print files (1 h 51 m, 47 g) |
 | 19 | Madame Dufresne's Millinery | Main Street: narrow two-storey milliner's shop, 1880. A pressed-metal front (raised panels with bosses between plain stiles; its own part, printed face-up) on brick sides in Flemish garden-wall bond; a canted display bay with a hipped roof on a stone plinth; a door with a lozenge light, a scalloped transom and a crested cap up two steps; italic "Millinery" sign; ovolo belt; 6-over-1 windows under crested caps; gilt hat blade sign; lettered frieze on beaded brackets; a false mansard of octagon slates with a pedimented dormer carrying the date; flat tin roof with a glazed monitor, twin-flue chimney | done: 27 parts, print files (2 h 12 m, 46 g) |
 | 20 | Ashworth & Sons, Jewelers | Main Street: narrow two-storey terra-cotta shop, 1893. Buff terra-cotta blocks with bands of button rosettes (its own part, printed face-up) on header-bond brick sides; one great round arch under a moulded terra-cotta band with imposts and a keystone carrying an "A", filled by a shop front (display window lettered WATCHES, a door with two round-headed lights, a radial fanlight); cyma belt; a canted oriel on a corbel with a copper roof between two 2-over-1 windows under triple-keyed lintels; egg-and-dart frieze lettered ASHWORTH & SONS, cornice, dated parapet panel; a four-faced street clock on a hexagon-paved sidewalk; gilt pocket-watch sign; flat copper roof in lozenge sheets, round chimney stack | done: 30 parts, print files (2 h 13 m, 43 g) |
+| 21 | The Marigold | Gingerbread cottage after the user's photo: turquoise ogee-lap siding, reeded corner boards, a front gable dressed in gold lace (a pierced bargeboard of scrolls with a medallion, a lace screen, a fan hood with scroll ears over a round-headed window), a full-width porch on orange boxed posts with lace arches and railings, a scalloped fascia, a ringed skirt on coquina piers and a planked floor; cove-cut roof shingles, a fluted chimney; add-ons: a rocking chair, flower boxes, a bicycle | done: 51 parts, print files (5 h 5 m, 106 g) |
+| 22 | The Primrose | Eastlake Queen Anne after the user's photo: butter double-lap siding with rope corners, a flared shingle belt, an L-plan with a wing gable carrying an Eastlake sunburst ornament and ladder brackets, a flat-topped hip with a walk rail, a porch that sweeps round the corner in three facets on bobbin posts with beaded balusters, a rosette frieze, a bead-and-reel fascia, a shingled skirt on pebble-dash piers and a pediment over the steps; notch-cut shingles, a crowned chimney; windows with square-light transoms under rosette head boards | done: 77 parts, print files (5 h 38 m, 118 g) |
+| 23 | The Rosecroft | Stick-style tower house after the user's photo, 150 x 80 mm: coral rabbeted-bevel siding with notched corners on a banded stone base, a broad octagonal tower to a crown of eight pointed gablets, a teal lantern of eight tall lights over a dark core, a spire and a weathervane; two wheel gables, a two-storey canted bay; a porch round the foot of the tower on notched posts with ladder railings, a frieze of drops, a notched fascia, a sawtooth skirt on banded piers and a sunflower gablet over wide steps; rounded roof shingles, a dogtooth chimney, windows under peaked heads | done: 73 parts, print files (10 h 16 m, 250 g) |
+| 24 | Laurel & Myrtle | A pair of San Francisco Italianate row houses after the user's photo, 120 x 76 mm, each with its own trim on one panelled wooden basement. The cream Laurel: narrow bevel siding, banded corner pilasters, a tablet belt, a slanted bay with Corinthian colonnettes, round-arched windows (two lights over four) in square architraves under caps on scroll consoles, a Corinthian portico with a sunburst segmental pediment over roundel doors, a cornice on paired acanthus consoles with dentils and a pediment with an oculus, a roundel chimney. The sage Myrtle: flush beaded boards, cabled pilasters, a belt of paired blocks, fluted colonnettes, segmental windows (a three-row upper sash) under cartouche hoods, a portico of fluted square piers with a pierced balustrade over bolection doors, a cornice on twin consoles under fleur-de-lis cresting, a chequer chimney. Tall stoops with panelled cheek walls and newels, iron area railings | done: 67 parts, print files (8 h 3 m, 221 g) |
+| 25 | The Larkspur | Queen Anne after the user's photo: turquoise chamfered lap siding below and chisel-cut shingles above an astragal belt, reveal corners, a drafted-stone base; a gabled wing with a Free Classic pediment and fan, a round corner tower with a bell-cast slate cone and a lance finial, an arcaded loggia sunk into the upper storey, a round dormer turret, a clustered chimney; a porch curving round the tower on paired columns with twisted balusters, a ball-and-spindle frieze, a lozenge fascia and a drafted-stone skirt; 9-over-1 windows under little pent roofs; square slate | print files exporting |
 
 ## Log
+- Second batch, houses 21 to 25 (the Marigold, the Primrose, the Rosecroft, Laurel & Myrtle, the
+  Larkspur), each after one of the user's photos and on a bigger footprint. The user asked for
+  the white picket fences to come off (the Marigold and the Rosecroft) and for the Rosecroft to
+  be wider with a bigger cupola and a porch round its tower. New techniques: lantern and dormer
+  lights as a coloured sleeve over a dark core (they read as glass); a cornice ring whose first
+  0.8 mm (printed upside down) is the roof deck, so one filament change gives a dark roof; a
+  loggia sunk into the upper storey (a stacked plan block) with its floor in the belt ring and an
+  arcade screen printed on its back.
 - Main Street shops 15 to 20: Whitcomb's Pharmacy, the Palace Hotel, Vogel's Bakery, Bassett
   Hardware, Madame Dufresne's Millinery and Ashworth & Sons. The millinery and the jeweler print
   their fronts as separate face-up parts (pressed metal, terra cotta) so the front takes its
@@ -88,6 +102,12 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Bassett | split-face limestone, voussoir and jack arches | battered | string | shingled shed roof | none | none (date panel) |
 | Dufresne | pressed-metal front, Flemish garden-wall bond sides | moulded stone | ovolo | flat tin in flat-lock sheets with a glazed monitor; false mansard of octagon slates | twin flue | none (dated dormer) |
 | Ashworth | terra cotta with rosette bands and a moulded arch band, header-bond sides | tooled granite | cyma | flat copper in lozenge sheets; copper oriel roof | round stack with iron bands | none (street clock) |
+| Marigold | ogee lap siding | coquina | none (one storey and a gable) | cove-cut shingles | fluted | none (lace bargeboard medallion) |
+| Primrose | double lap siding, saw-cut shingles in the gable | pebble-dash | flared shingle skirt | notch-cut shingles | crowned | none (walk rail) |
+| Rosecroft | rabbeted bevel siding | banded stone | two stepped fascias (fillet) | rounded shingles | dogtooth | vane with a weathervane arrow |
+| Laurel | narrow bevel siding | panelled wooden basement (shared) | tablet | flat deck (dark by a filament change) | roundel | none (pediment with an oculus) |
+| Myrtle | flush beaded boards | panelled wooden basement (shared) | paired blocks | flat deck (dark by a filament change) | chequer | none (fleur-de-lis cresting) |
+| Larkspur | chamfered lap siding, chisel-cut shingles above | drafted stone | astragal | square slate (tower and dormer too) | clustered flues | lance |
 
 | Building | Porch: post / railing / frieze / skirt / piers; roof edge | Windows and door | Gable, shutters, brackets |
 |---|---|---|---|
@@ -111,6 +131,12 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Bassett | three round-arched bays: display windows and glazed board doors under a fanlight | 1-over-1 (two-row sashes) under jack arches; ledged loading and freight doors | iron fire shutters; a loading hoist |
 | Dufresne | canted display bay with a hipped roof on a stone plinth | 6-over-1 under crested caps; door with a lozenge light, scalloped transom and crested cap | beaded brackets |
 | Ashworth | arched shop front (display window lettered WATCHES, radial fanlight); canted oriel on a corbel | 2-over-1 under lintels with triple keystones; doors with twin round-headed lights | none (egg-and-dart frieze) |
+| Marigold | boxed / lace / lace arches / rings / coquina; scallop roof edge | round-headed windows under halo mouldings; lace-grilled door under a fan hood | lace bargeboard, lace screen and fan hood; no shutters |
+| Primrose | bobbin / beaded / rosette / shingles / pebble; bead-and-reel roof edge | 1-over-1 with square-light transoms under rosette head boards; sunray doors, beaded transoms | Eastlake sunburst gable; ladder brackets |
+| Rosecroft | notched / ladder / drops / sawtooth / banded; notched roof edge | 1-over-1 (two-row lower sash) under peaked heads; keyhole double doors, chevron transom | wheel gables; fret brackets |
+| Laurel | Corinthian portico; stoop with panelled cheeks and ball newels | round-arched, two lights over four, under caps on scroll consoles; roundel doors, grid transom | acanthus consoles with dentils |
+| Myrtle | fluted-pier portico with a pierced balustrade; stoop with pyramid newels | segmental, a three-row upper sash over a plain lower one, under cartouche hoods; bolection doors, quatrefoil transom | twin consoles |
+| Larkspur | paired / twist / beads / stone / drafted; lozenge roof edge | 9-over-1 under pent roofs on brackets; cameo doors, wave transom | Free Classic pediment with a fan; cove brackets |
 
 
 | Building | Corners | Other trim of its own |
@@ -135,3 +161,9 @@ friezes, skirts), `hoarch/trimwork.py` (chimneys, finials, foundations, belts, b
 | Bassett | none | hoist beam with pulley, rope, block and hook; stepped side parapets |
 | Dufresne | plain pressed-metal stiles | italic sign, gilt hat blade sign, glazed roof monitor |
 | Ashworth | none | four-faced street clock with separate dials, gilt pocket-watch sign, hexagon-paved sidewalk |
+| Marigold | reeded boards | flower boxes, rocking chair, bicycle |
+| Primrose | rope boards | a porch sweeping round its corner in facets; walk rail on a flat hip top |
+| Rosecroft | notched boards | a crown of gablets, a lantern of dark-glazed lights, a weathervane |
+| Laurel | banded pilasters | Corinthian colonnettes on the bay |
+| Myrtle | cabled pilasters | fluted colonnettes on the bay, iron area railings |
+| Larkspur | reveal boards | an arcaded loggia, a round dormer turret, a bell-cast tower cone |

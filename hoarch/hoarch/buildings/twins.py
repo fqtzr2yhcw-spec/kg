@@ -6,13 +6,13 @@ middle, each on a panelled wooden raised basement and each with its own trim:
 
 - The Laurel (cream and gold): narrow bevel siding, banded corner pilasters, a tablet
   belt, a two-storey slanted bay with Corinthian colonnettes, round-arched windows in
-  square architraves under caps on scroll consoles (4-over-2 sash), a portico of
+  square architraves under caps on scroll consoles (two lights over four), a portico of
   Corinthian columns with a segmental pediment and a sunburst over a pair of roundel doors
   with a gridded transom, a cornice on paired acanthus consoles with dentils, a pediment
   with an oculus over the bay, and a stuccoed chimney with roundels.
 - The Myrtle (sage and forest green): flush beaded boards, cabled corner pilasters, a
   belt of paired blocks, a slanted bay with fluted colonnettes, segmental windows under
-  hoods with oval cartouches (1-over-1), a portico of fluted square piers carrying a
+  hoods with oval cartouches (a plain lower sash under an upper sash of three rows), a portico of fluted square piers carrying a
   pierced balustrade over a pair of bolection doors with a quatrefoil transom, a cornice on
   twin consoles under a fleur-de-lis iron cresting, and a brick chimney with a chequer band.
 
@@ -77,11 +77,11 @@ def _half(tag):
              party=HW)
     if not m:
         H.update(name="Laurel", wall="Cream", trim="Gold", siding=SK.narrow_lap, corners="banded", belt="tablet",
-                 head="ancon", rise=lambda w: w / 2, lites=(2, 2), rows=(1, 2), leaf="roundel", tstyle="grid",
+                 head="ancon", rise=lambda w: w / 2, lites=(2, 2), rows=(2, 1), leaf="roundel", tstyle="grid",
                  chimney="roundel", keep=box([HW, -100, -1], [400, 300, 400]))
     else:
         H.update(name="Myrtle", wall="Sage", trim="Forest", siding=SK.flush_bead, corners="cabled", belt="twinblock",
-                 head="cartouche", rise=lambda w: round(w * 0.24 / 0.2) * 0.2, lites=(1, 1), rows=(1, 1),
+                 head="cartouche", rise=lambda w: round(w * 0.24 / 0.2) * 0.2, lites=(1, 1), rows=(1, 3),
                  leaf="bolection", tstyle="quatrefoil", chimney="chequer", keep=box([-400, -100, -1], [HW, 300, 400]))
     return H
 
