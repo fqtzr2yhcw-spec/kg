@@ -838,8 +838,15 @@ def level(path, z0, spec, cut=None, t=3.0):
                     fascia=L_.get("fascia"), pitch=pitch, margin=margin, pair=pair, back=L_.get("back", front + 0.15))
             flip = True
         elif kind == "crown":
-            m = crown(path, z, h, L_.get("b", 1.4), L_["P"], kind=L_.get("orn", "cyma"), blocks=L_.get("blocks"),
+            b_c = L_.get("b", 1.4)
+            m = crown(path, z, h, b_c, L_["P"], kind=L_.get("orn", "cyma"), blocks=L_.get("blocks"),
                       pitch=pitch, margin=margin)
+            prev = spec["layers"][k - 1] if k else None
+            if prev is not None and prev["kind"] == "bed" and prev["P"] > b_c:
+                # a bed under the crown prints on the crown's foot (both upside down, one part):
+                # a 45 degree cove from the bed's soffit edge up into the crown carries it
+                H = min(prev["P"] - b_c, h)
+                m = union([m, sweep_ring(path, [(CLR, z), (prev["P"], z), (prev["P"] - H, z + H), (CLR, z + H)])])
             flip = True
         else:
             raise ValueError(kind)

@@ -305,9 +305,9 @@ are true HO: the pink house is 206 x 137 mm with a 40.6 mm storey pitch, and the
 ## Built-up cornices (`cornice.py`)
 
 Every level has a cornice: each storey joint, each eave, and the tower and bay tops. As in
-the reference kits, a cornice is several rings stacked round the wall. Each ring is its own
-part in its own colour. No two cornice levels in the collection are alike: see the cornice
-table in `COLLECTION.md`.
+the reference kits, a cornice is several rings stacked round the wall, each in its own
+colour. No two cornice levels in the collection are alike: see the cornice table in
+`COLLECTION.md`.
 
 - **The wall carries it.** Where the cornice goes, the wall is a plain band standing on a
   45° ledge (`ledge`, `joint_profile`). The band has no siding and no openings.
@@ -320,6 +320,14 @@ table in `COLLECTION.md`.
   - a *crown* moulding.
 - **Print orientation.** The frieze and course print upright, with their relief stepped back
   0.2 mm a layer underneath. The bed and crown print upside down, so they widen toward the bed.
+- **Two parts per level, one colour change each** (`CO.add_level`). The upright rings merge
+  into `-lower` (frieze + course) and the upside-down ones into `-upper` (bed + crown). A
+  two-colour part changes filament once, at the height where its second ring starts in the
+  print pose. It gets a plate of its own named for the change.
+- **The crown carries the bed.** Upside down, the bed prints on the crown's foot, which is
+  only the crown's `b` off the wall; its soffit would hang flat in the air. So where a bed
+  lies directly under a crown, the crown gets a 45° cove from the bed's soffit edge up into
+  the crown's curve. It reads as the corona under the cymatium.
 - **Spacing.** One pitch and margin per level, so the frieze ornaments centre between the
   brackets above them.
 - **Towers.** A ring that meets a tower rising through its level is cut back to it. Each
