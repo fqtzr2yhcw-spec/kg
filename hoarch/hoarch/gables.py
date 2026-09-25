@@ -398,3 +398,51 @@ def gable_eastlake(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, tie=0.3, finial
                     poly([(L / 2 - 0.4, H + finial - 1.0), (L / 2 + 0.4, H + finial - 1.0), (L / 2, H + finial)])])
     parts.append(ext(fcs, 0.0, d + 0.2))
     return union(parts)
+
+
+def gable_wheel(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, collar=0.34, finial=4.0):
+    """Stick-style gable ornament hung on the rake: narrow rafters with a drop at each foot, a
+    collar across the gable with a row of pendant drops under it, and a spoked wheel (a rim,
+    eight spokes and a hub) standing on the collar and touching the rafters; a spike over the
+    apex. Flat, prints face-up; place at w = rake."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    depth = skin + width
+    band = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    rafters = cs_union(band) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    H = tip[1]
+    vc = round(H * collar / 0.2) * 0.2
+    u_c = vc / s - d_eave
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    parts = [rect(u_c - 0.5, vc, L - u_c + 0.5, vc + 1.2)]
+    n = max(3, int((L - 2 * u_c) / 1.8))
+    for k in range(n):
+        u = u_c + 0.6 + (L - 2 * u_c - 1.2) * (k + 0.5) / n
+        parts.append(cs_union([rect(u - 0.3, vc - 1.0, u + 0.3, vc + 0.05), circle((u, vc - 1.2), 0.45, 12)]))
+    # the wheel: as big as fits between the collar and the rafters
+    inner = (tri - rafters.offset(0.0)) ^ rect(-5, vc + 1.2, L + 5, H)
+    from .lace import _fit
+    fit = _fit(inner.offset(0.3), (L / 2, vc + (H - vc) * 0.35), rmin=1.5, rmax=6.0)
+    if fit is not None:
+        (cx, cy), r = fit
+        cx = L / 2
+        wheel = [circle((cx, cy), r, 48) - circle((cx, cy), r - 0.7, 48), circle((cx, cy), 0.9, 20)]
+        wheel += [stroke([(cx, cy), (cx + (r - 0.3) * math.cos(a), cy + (r - 0.3) * math.sin(a))], 0.55)
+                  for a in np.linspace(0, 2 * math.pi, 8, endpoint=False)]
+        wheel.append(rect(cx - 0.5, vc + 1.1, cx + 0.5, cy - r + 0.35))
+        parts += wheel
+    frame = (cs_union(parts) ^ tri) + rafters
+    drops = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        nrm = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        foot = a + nrm * depth
+        x = float((a[0] + foot[0]) / 2)
+        drops.append(cs_union([rect(x - 0.45, -2.0, x + 0.45, 0.2), circle((x, -2.0), 0.65, 16)]))
+    frame = frame + cs_union(drops)
+    fcs = cs_union([rect(L / 2 - 0.45, H - 0.6, L / 2 + 0.45, H + finial - 1.0),
+                    poly([(L / 2 - 0.45, H + finial - 1.0), (L / 2 + 0.45, H + finial - 1.0), (L / 2, H + finial)])])
+    return ext(frame, 0.0, d) + ext(fcs, 0.0, d + 0.2)

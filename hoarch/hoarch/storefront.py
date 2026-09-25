@@ -451,6 +451,16 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     elif head == "crested":
         hp, top = _crested(w / 2 + casing + 0.8, h + casing)
         parts += hp
+    elif head == "peak":
+        # Stick style: a frieze board with a small raised disc under a steep peaked gablet
+        lw = w / 2 + casing + 0.8
+        v0 = h + casing
+        parts.append(box([-lw + 0.4, v0 - 0.01, 0.0], [lw - 0.4, v0 + 1.4, 0.6]))
+        tri = poly([(-lw, v0 + 1.39), (lw, v0 + 1.39), (0.0, v0 + 1.39 + lw * 0.9)])
+        parts.append(ext(tri, 0.0, 0.6))
+        parts.append(ext(tri - tri.offset(-0.6, JoinType.Miter, 4.0), 0.59, 1.0))
+        parts.append(ext(circle((0.0, v0 + 1.39 + lw * 0.3), min(0.9, lw * 0.2), 16), 0.59, 1.0))
+        top = v0 + 1.39 + lw * 0.9
     elif head == "rosettes":
         # Eastlake: a flat head board with three raised square rosette blocks under a cap
         lw = w / 2 + casing + 0.6

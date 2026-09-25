@@ -74,6 +74,12 @@ def banded_rustication(region, course=2.4, groove=0.6, d=0.4, datum=0.0):
     return _lap(region, course, [(0.0, d - g), (g, d), (course - g, d), (course, d - g)], datum)
 
 
+def rabbet_bevel(region, datum=0.0):
+    """Wide rabbeted bevel siding: 1.8 mm courses (a 6" exposure), each butt standing
+    square off the course below in a crisp rabbet before the long bevel."""
+    return _lap(region, 1.8, [(0.0, 0.46), (0.3, 0.46), (0.35, 0.40), (1.0, 0.28), (1.8, 0.12)], datum)
+
+
 def double_lap(region, datum=0.0):
     """Double-course lap siding: 2.4 mm boards (an 8" exposure) each run with a V groove at
     mid-height, so the wall reads as narrow courses in pairs."""

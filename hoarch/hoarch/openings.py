@@ -736,6 +736,14 @@ def _leaf(style, u, lw, dh, hinge_left):
         loz = poly([(cx, cy + hy), (cx + hx, cy), (cx, cy - hy), (cx - hx, cy)])
         _GLASS_BARS.append(ext((loz - loz.offset(-0.5, JoinType.Miter, 4.0)) ^ gl.offset(0.2), -1.21, -0.6))
         panel(rect(pu0, 1.3, pu1, dh * 0.36 - 1.0))
+    elif style == "keyhole":              # a keyhole-shaped light (a round head on a narrow shaft) over a panel
+        cx = (pu0 + pu1) / 2
+        rr = min((pu1 - pu0) / 2 - 0.3, 1.6)
+        vc = top - st - rr - 0.3
+        gl = circle((cx, vc), rr, 28) + rect(cx - rr * 0.55, dh * 0.45, cx + rr * 0.55, vc)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Round) - gl, -0.8, -0.6))
+        panel(rect(pu0, 1.3, pu1, dh * 0.45 - 1.0))
     elif style == "sunray":               # a square-headed light over a panel carved with a sunburst
         gl = rect(pu0, dh * 0.5, pu1, top - st)
         glass = gl
@@ -883,6 +891,11 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
         elif tstyle == "cross":                  # a cross of bars: four lights
             cy = (tb[1] + tb[3]) / 2
             pat = rect(-RIB / 2, tb[1] - 1, RIB / 2, tb[3] + 1) + rect(tb[0] - 1, cy - RIB / 2, tb[2] + 1, cy + RIB / 2)
+        elif tstyle == "chevron":                # a zigzag bar across the light
+            n = max(2, int((tb[2] - tb[0]) / 2.2))
+            pts = [(tb[0] - 0.5 + (tb[2] - tb[0] + 1.0) * k / (2 * n), tb[1] + 0.3 if k % 2 == 0 else tb[3] - 0.3)
+                   for k in range(2 * n + 1)]
+            pat = stroke(pts, RIB, caps=False)
         elif tstyle == "beads":                  # a row of round beads on a bar across the light
             cy = (tb[1] + tb[3]) / 2
             n = max(3, int((tb[2] - tb[0]) / 1.4))

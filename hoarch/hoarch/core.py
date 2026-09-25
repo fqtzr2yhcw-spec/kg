@@ -380,6 +380,11 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 c, q = u + wtab / 2, r * 0.5
                 tabs.append(poly([(c - r + q, vk), (c + r - q, vk), (c + r, vk + q), (c + r, top), (c - r, top),
                                   (c - r, vk + q)]))
+            elif shp == "rounded":        # square shingles, both butt corners rounded off
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                rr = min(0.5, (b_ - a_) / 2 - 0.1)
+                tabs.append(cs_union([rect(a_, vk + rr, b_, top), rect(a_ + rr, vk, b_ - rr, top),
+                                      circle((a_ + rr, vk + rr), rr, 12), circle((b_ - rr, vk + rr), rr, 12)]))
             elif shp == "notch":          # square shingles with a V notch cut in the middle of each butt
                 c = u + wtab / 2
                 q = min(0.45, r - 0.5)

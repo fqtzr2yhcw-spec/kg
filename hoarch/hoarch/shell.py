@@ -237,7 +237,8 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     return shell + dress
 
 
-CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope")
+CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope",
+                 "notched")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -288,6 +289,14 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
         um = (u0 + u1) / 2
         if qb - qa > 5.0:
             parts.append(chamfer_box(um - 0.5, qa + 1.6, um + 0.5, qb - 1.0, t - 0.01, 0.31, c=0.25))
+    if style == "notched":              # Stick style: the board cut across with V notches every 6 mm
+        if qb - qa > 5.0:
+            cuts = []
+            for v in np.arange(qa + 3.0, qb - 2.0, 6.0):
+                v = round(v / 0.2) * 0.2
+                cuts.append(M.hull_points([(uu, vv, ww) for uu in (u0 - 0.1, u1 + 0.1)
+                                           for vv, ww in ((v - 0.4, t + 0.1), (v + 0.4, t + 0.1), (v, t - 0.35))]))
+            return union(parts) - union(cuts)
     if style == "rope":                 # a twisted cable moulding down the middle of the board
         parts.append(box([far0, qa, 0], [far1, qa + 1.4, t + 0.3]))
         parts.append(box([far0, qb - 1.0, 0], [far1, qb, t + 0.3]))

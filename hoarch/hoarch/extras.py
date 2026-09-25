@@ -9,11 +9,13 @@ from .core import box, circle, cs_union, poly, rect, union
 from .ornament import ext, stroke
 
 
-def picket_fence(L, h=10.0, pitch=1.6, picket=0.9, t=0.8, gate=None, post=1.6):
+def picket_fence(L, h=10.0, pitch=1.6, picket=0.9, t=0.8, gate=None, post=1.6, style="point", sign=False):
     """A picket fence ``L`` long printed face-up: pointed pickets on two rails between square
     posts with ball tops; ``gate`` = (u0, width) leaves an opening filled by a gate whose
     pickets rise in an arch to the middle. Local: u along, v up from the ground, w across
-    (the pickets 0..t, rails and posts behind them)."""
+    (the pickets 0..t, rails and posts behind them). ``style``: "point" (pointed pickets, ball
+    tops on the posts) or "arrow" (arrow-headed pickets, pyramid caps on the posts); ``sign``:
+    an arched sign board over the gate on two tall posts."""
     cells = []
     posts = [0.0, L] + ([gate[0], gate[0] + gate[1]] if gate else [])
     n_mid = max(0, int(L / 24.0))
@@ -26,8 +28,13 @@ def picket_fence(L, h=10.0, pitch=1.6, picket=0.9, t=0.8, gate=None, post=1.6):
             if gate and gate[0] < u < gate[0] + gate[1]:
                 x = (u - gate[0]) / gate[1]
                 top = h + 1.6 * math.sin(math.pi * x)
-            cells.append(poly([(u - picket / 2, 0.6), (u + picket / 2, 0.6), (u + picket / 2, top - 0.7), (u, top),
-                               (u - picket / 2, top - 0.7)]))
+            if style == "arrow":
+                cells.append(poly([(u - picket / 2, 0.6), (u + picket / 2, 0.6), (u + picket / 2, top - 1.3),
+                                   (u + picket / 2 + 0.3, top - 1.3), (u, top), (u - picket / 2 - 0.3, top - 1.3),
+                                   (u - picket / 2, top - 1.3)]))
+            else:
+                cells.append(poly([(u - picket / 2, 0.6), (u + picket / 2, 0.6), (u + picket / 2, top - 0.7), (u, top),
+                                   (u - picket / 2, top - 0.7)]))
         u += pitch
     pickets = ext(cs_union(cells), 0.0, t)
     rails = []
@@ -38,8 +45,18 @@ def picket_fence(L, h=10.0, pitch=1.6, picket=0.9, t=0.8, gate=None, post=1.6):
         rails.append(ext(cs_union(segs), -0.8, 0.01))
     pp = []
     for p in posts:
-        pp.append(ext(rect(p - post / 2, 0.0, p + post / 2, h + 0.8), -0.8, t))
-        pp.append(ext(circle((p, h + 1.6), 0.9, 20) + rect(p - 0.4, h + 0.7, p + 0.4, h + 1.0), -0.8, t))
+        tall = sign and gate and p in (gate[0], gate[0] + gate[1])
+        ph = h + (5.2 if tall else 0.8)
+        pp.append(ext(rect(p - post / 2, 0.0, p + post / 2, ph), -0.8, t))
+        if style == "arrow":
+            pp.append(ext(poly([(p - post / 2 - 0.2, ph - 0.01), (p + post / 2 + 0.2, ph - 0.01), (p, ph + 1.4)]), -0.8, t))
+        else:
+            pp.append(ext(circle((p, ph + 0.8), 0.9, 20) + rect(p - 0.4, ph - 0.1, p + 0.4, ph + 0.2), -0.8, t))
+    if sign and gate:
+        a, b = gate[0], gate[0] + gate[1]
+        from .core import arch_cs
+        board = arch_cs(a, b, h + 2.4, h + 3.8, rise=1.2, seg=24)
+        pp.append(ext(board, -0.8, t))
     return union([pickets] + rails + pp)
 
 
