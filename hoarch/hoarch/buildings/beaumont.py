@@ -234,15 +234,6 @@ def _dormer():
     return body, win, wv, front, apex
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part (a ring cut back from a block may fall into pieces)."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 def _ridge_crest(a, b, z0, h=3.0):
     """Iron cresting for the hip ridge as its own strip standing on the ridge cap's flat top:
     a base bar, the pierced fence, and a turned urn finial at each end. Prints upright."""
@@ -300,17 +291,17 @@ def build(kit=None):
     kit.add("WALLS-2", "Gold", st["shells"][1] + lip + tring + ledges + tlip, group="walls")
     # the cornices: the joint and the eave run round the tower too; the tower's own at its top
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     # the eave's rings wrap the tower: parted where they meet it and halved round it (to fit)
     cut = CO.blades(CO.tower_cuts(eave_path, TC, TA + 8.0, wall=TA, away=(-1.0, -1.0), tower=TOWER.pts, house=MAIN.pts), ZE, ZW)
     rings, _ = CO.level(eave_path, ZE, EAVE, cut=cut)
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     # the tower's own cornice stops where the main roof climbs past it behind
     t_env, _ = R.hip_roof(pieces, Z_EAVE + 1.4, S_MAIN, D_EAVE + 1.4, texture=None, zlo=ZW)     # over the hip caps too
     rings, _ = CO.level(TOWER.pts, ZT, TOWER_C, cut=t_env)
-    add_rings(kit, rings, "CORNICE-T", "tower")
+    CO.add_level(kit, rings, "CORNICE-T", "tower")
     rings, _ = CO.level(BAY.pts, BAY_LEDGE, BAY_C, cut=MAIN.solid(grow=0.7, dz0=-2, dz1=2))
-    add_rings(kit, rings, "CORNICE-B", "bay")
+    CO.add_level(kit, rings, "CORNICE-B", "bay")
     kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF), group="foundation")
     inserts = []
     for o in OPENINGS:

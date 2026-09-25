@@ -96,15 +96,6 @@ def _siding(f, b, reg):
     return out + SK.half_timber(hi, rails=(V2 - 1.0, V2 + 22.6), post_pitch=7.2)
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part (a ring cut back from a block may fall into pieces)."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 def _roof_z(x, y):
     d = min(x + D_EAVE, W + D_EAVE - x, y + D_EAVE, D + D_EAVE - y)
     return None if d < 0 else Z_EAVE + S_MAIN * d
@@ -193,12 +184,12 @@ def build(kit=None):
     tlip = _corbel(TURRET.cs, 3.0, ZTW) + lip_ring(TURRET.cs, 3.0, ZTW)
     kit.add("WALLS-2", "Lavender", st["shells"][1] + lip + tring + ledges + tlip, group="walls")
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     # the eave's rings wrap the turret: parted where they meet it and halved round it (to fit)
     cut = CO.blades(CO.tower_cuts(eave_path, TC, TAPO + 8.0, wall=TAPO, away=(1.0, -1.0), tower=TURRET.pts,
                                    house=MAIN.pts), ZE, ZW)
     rings, _ = CO.level(eave_path, ZE, EAVE, cut=cut)
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF, style="coursed"), group="foundation")
     inserts = []
     for o in OPENINGS:
@@ -253,7 +244,7 @@ def build(kit=None):
     # witch's-hat spire with hip rolls
     t_env, _ = R.hip_roof(pieces, Z_EAVE + 1.4, S_MAIN, D_EAVE + 1.4, texture=None, zlo=ZW)
     rings, _ = CO.level(TURRET.pts, ZT, TURRET_C, cut=t_env)
-    add_rings(kit, rings, "CORNICE-T", "turret")
+    CO.add_level(kit, rings, "CORNICE-T", "turret")
     tpts = TURRET.pts
     dt = TURRET_C["layers"][-1]["P"] + 0.6
     zc0 = ZTW + 1.4

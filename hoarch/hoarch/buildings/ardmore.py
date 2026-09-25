@@ -100,15 +100,6 @@ def _siding(f, b, reg):
     return ashlar(reg, course=(2.6, 4.2), length=(4.0, 9.0), d=0.55, seed=seed)
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part (a ring cut back from a block may fall into pieces)."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 def _outside(p, blk, margin):
     return (blk.cs ^ rect(p[0] - margin, p[1] - margin, p[0] + margin, p[1] + margin)).is_empty()
 
@@ -202,12 +193,12 @@ def build(kit=None):
     tlip = _corbel(TOWER.cs, 3.0, ZTW) + lip_ring(TOWER.cs, 3.0, ZTW)
     kit.add("WALLS-2", "Sandstone", st["shells"][1] + lip + tring + ledges + tlip, group="walls")
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     # the eave's rings wrap the tower: parted where they meet it and halved round it (to fit)
     cut = CO.blades(CO.tower_cuts(eave_path, TC, TAPO + 8.0, wall=TAPO, away=(-1.0, -1.0), tower=TOWER.pts,
                                    house=MAIN.pts), ZE, ZW)
     rings, _ = CO.level(eave_path, ZE, EAVE, cut=cut)
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF, style="boulder"), group="foundation")
     inserts = []
     for o in OPENINGS:
@@ -260,7 +251,7 @@ def build(kit=None):
     # --- the tower's cornice (cut back where the main roof climbs past it) and conical roof
     t_env, _ = R.hip_roof(pieces, Z_EAVE + 1.4, S_MAIN, D_EAVE + 1.4, texture=None, zlo=ZW)
     rings, _ = CO.level(TOWER.pts, ZT, TOWER_C, cut=t_env)
-    add_rings(kit, rings, "CORNICE-T", "tower")
+    CO.add_level(kit, rings, "CORNICE-T", "tower")
     tpts = TOWER.pts
     dt = TOWER_C["layers"][-1]["P"] + 0.6
     zc0 = ZTW + 1.4
@@ -290,6 +281,10 @@ def build(kit=None):
     deck = slab(deck_cs, PZ, PZ + 1.6) + slab(offset(PORCH.cs, -3.15) - offset(MAIN.cs, 0.15), PZ - 1.2, PZ + 0.01)
     walls_lo = st["shells"][0] + st["rings"][0] + st["shells"][1] + union([p.solid for p in kit.parts
                                                                              if p.name.startswith("CORNICE-J")])
+    # the portal's arch and the front door's head rise into the deck and parapet: clear them
+    arches = union([p.solid for p in kit.parts if p.name in ("PORTAL", "DOOR-front-door")])
+    walls_lo = walls_lo + union([arches.translate(v) for v in
+                                 ((0.2, 0, 0), (-0.2, 0, 0), (0, 0.2, 0), (0, -0.2, 0), (0, 0, 0.2), (0, 0, -0.2))])
     kit.add("PORCH-deck", "Buff", deck - walls_lo, P=print_flip(), group="porch")
     par_out = PORCH.cs.offset(0.4) - MAIN.cs.offset(0.15)
     par = slab(par_out - PORCH.cs.offset(-1.4), PZ + 1.6, PZ + 6.0)

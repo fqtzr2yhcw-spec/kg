@@ -24,7 +24,7 @@ from manifold3d import Manifold as M
 
 from hoarch.core import arch_cs, box, brick, cs_union, inv34, offset, poly, rect, slab, union
 from hoarch import cornice as CO, features as FT, moulding as MD, openings as O, skins as SK, trimwork as TW
-from hoarch.kit import Kit, print_flip
+from hoarch.kit import Kit
 from hoarch.ornament import chamfer_box, ext, lozenge
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
@@ -109,15 +109,6 @@ def _openings():
     return L
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 OPENINGS = _openings()
 
 
@@ -179,9 +170,9 @@ def build(kit=None):
     kit.add("WALLS-2", "Mist", st["shells"][1] + _colonettes(S1 + RJ, ZE - LEDGE - 0.6) + _corbel(base, 3.0, ZW)
             + lip_ring(base, 3.0, ZW) + CO.ledge(outline, ZE, LEDGE), group="walls")
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     rings, _ = CO.level(outline, ZE, EAVE)
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     # raised basement: tall coursed-stone foundation with two small windows
     fnd = foundation(BLOCKS, 0.0, ZF, style="rusticated")
     bwin = O.window_insert(9.0, 9.0, rise=0, lites=(2, 1), bare=True)

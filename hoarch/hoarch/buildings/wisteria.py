@@ -171,8 +171,7 @@ def build(kit=None):
     path = max(base.to_polygons(), key=lambda L_: abs(poly(L_).area()))
     kit.add("WALLS", "Wisteria", walls + lip + CO.ledge(path, ZE, LEDGE), group="walls")
     rings, _ = CO.level(path, ZE, EAVE)
-    for r_ in rings:
-        kit.add(f"CORNICE-{r_['name']}", r_["role"], r_["solid"], P=print_flip() if r_["flip"] else None, group="cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     fnd = foundation(BLOCKS, 0.0, ZF, style="riverstone")
     kit.add("FOUNDATION", "River", fnd, group="foundation")
     inserts = []

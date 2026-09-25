@@ -31,7 +31,7 @@ from manifold3d import JoinType, Manifold as M
 from hoarch.core import arch_cs, box, cs_union, inv34, offset, poly, rect, scallop_rows, slab, union
 from hoarch import cornice as CO, features as FT, gables as G, openings as O, roof as R, skins as SK, storefront as SF, \
     trimwork as TW
-from hoarch.kit import Kit, print_flip
+from hoarch.kit import Kit
 from hoarch.ornament import chamfer_box, ext
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
@@ -182,9 +182,7 @@ def build(kit=None):
     kit.add("WALLS-2", "Butterscotch", st["shells"][1] + lip + CO.ledge(MAIN_HI.pts, ZE, LEDGE), group="walls")
     for tag, path, z0, spec in (("J", st["outlines"][0], S1 + LEDGE + 0.4, JOINT), ("E", MAIN_HI.pts, ZE, EAVE)):
         rings, _ = CO.level(path, z0, spec)
-        for r_ in rings:
-            kit.add(f"CORNICE-{tag}-{r_['name']}", r_["role"], r_["solid"], P=print_flip() if r_["flip"] else None,
-                    group="cornice")
+        CO.add_level(kit, rings, f"CORNICE-{tag}", "cornice")
     fnd = foundation([MAIN_LO], 0.0, ZF, style="vjoint") + box([LX0 - 0.1, 0.0, 0.0], [LX1 + 0.1, LD + 0.5, ZF])
     kit.add("FOUNDATION", "Limestone", fnd, group="foundation")
     inserts = []

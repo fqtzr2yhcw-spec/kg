@@ -73,7 +73,7 @@ ROOF_SLOPE, D_EAVE = 0.45, 7.6
 
 # ------------------------------------------------------------------ plan
 C = (80.0, 80.0)
-APO = 74.0
+APO = 76.0                        # across the flats 152 mm (the house-size standard: at least 150)
 MAIN = Block("main", ngon(C, APO), ZF, ZW)
 BLOCKS = [MAIN]
 CUP_APO, CUP_H = 21.0, 26.0
@@ -128,15 +128,6 @@ def _stucco(f, b, reg):
     return SK.scored_stucco(reg - rect(-1, ZE - b.z0, f.L + 1, 999), datum=1.8)
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 def build(kit=None):
     kit = kit or Kit(NAME, COLORS, RENDER_MAT)
     kit.parts.clear()
@@ -150,9 +141,9 @@ def build(kit=None):
     lip = _corbel(MAIN.cs, 3.0, ZW) + lip_ring(MAIN.cs, 3.0, ZW)
     kit.add("WALLS-2", "Butter", st["shells"][1] + lip + CO.ledge(MAIN.pts, ZE, LEDGE), group="walls")
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     rings, _ = CO.level(MAIN.pts, ZE, EAVE)
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     kit.add("FOUNDATION", "Brick", foundation(BLOCKS, 0.0, ZF, style="brick"), group="foundation")
     inserts = []
     for o, shut in OPENINGS_S:
@@ -214,7 +205,7 @@ def build(kit=None):
         world, P, zones = O.place(o.spec, A, "White", "Sash", "Glass")
         kit.add(f"WIN-{o.name}", "Windows_Doors", world, P=P, key="WIN-cupola", group="cupola", render=zones)
     rings, _ = CO.level(cup.pts, cze, CUPOLA_C, t=2.4)
-    add_rings(kit, rings, "CORNICE-CUP", "cupola")
+    CO.add_level(kit, rings, "CORNICE-CUP", "cupola")
     cd = CUPOLA_C["layers"][-1]["P"] + 0.6
     croof, ctex = R.hip_roof([(cup.pts, list(range(8)))], czw + 1.4, 0.7, cd, texture=ROOF_TEX,
                              tex_kw=dict(seam_pitch=3.6), zlo=czw)

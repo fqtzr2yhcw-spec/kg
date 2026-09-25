@@ -90,15 +90,6 @@ def _siding(f, b, reg):
     return out
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 def _specs():
     return [dict(p0=(0.0, 0.0), p1=(MW, 0.0), slope=SLOPE, blk=MAIN, edge=0, u0=0.0),
             dict(p0=(MW, MD_), p1=(0.0, MD_), slope=SLOPE, blk=MAIN, edge=2, u0=0.0),
@@ -201,9 +192,9 @@ def build(kit=None):
     eave_path = max(base.to_polygons(), key=lambda L_: abs(poly(L_).area()))
     kit.add("WALLS-2", "Robin", st["shells"][1] + lip + CO.ledge(eave_path, ZE, LEDGE), group="walls")
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     rings, _ = CO.level(eave_path, ZE, EAVE)
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF, style="block"), group="foundation")
     inserts = []
     for o in OPENINGS:

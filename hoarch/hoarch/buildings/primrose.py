@@ -163,9 +163,7 @@ def build(kit=None):
     kit.add("WALLS-2", "Butter", st["shells"][1] + lip + CO.ledge(PLAN, ZE, LEDGE), group="walls")
     for tag, path, z0, spec in (("J", st["outlines"][0], S1 + LEDGE + 0.4, JOINT), ("E", PLAN, ZE, EAVE)):
         rings, _ = CO.level(path, z0, spec)
-        for r_ in rings:
-            kit.add(f"CORNICE-{tag}-{r_['name']}", r_["role"], r_["solid"], P=print_flip() if r_["flip"] else None,
-                    group="cornice")
+        CO.add_level(kit, rings, f"CORNICE-{tag}", "cornice")
     fnd = foundation(BLOCKS, 0.0, ZF, style="pebble")
     kit.add("FOUNDATION", "Pebble", fnd, group="foundation")
     inserts = []

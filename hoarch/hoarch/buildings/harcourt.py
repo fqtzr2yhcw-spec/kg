@@ -170,15 +170,6 @@ def _dormer_frame(x, y):
     return A
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part (a ring cut back from a block may fall into pieces)."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 # ------------------------------------------------------------------ build
 def build(kit=None):
     kit = kit or Kit(NAME, COLORS, RENDER_MAT)
@@ -204,17 +195,17 @@ def build(kit=None):
     tlip = _corbel(TOWER.cs, 3.0, ZTW) + lip_ring(TOWER.cs, 3.0, ZTW)
     kit.add("WALLS-2", "Brick", st["shells"][1] + tring + ledges + tlip, group="walls")
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     # the eave's rings wrap the tower: parted where they meet it (the tower's piece slides on
     # from the front)
     tcen = ((TX0 + TX1) / 2, (TY0 + TY1) / 2)
     cut = CO.blades(CO.tower_cuts(eave_path, tcen, 32.0, tower=TOWER.pts, house=MAIN.pts), ZE, ZW)
     rings, _ = CO.level(eave_path, ZE, EAVE, cut=cut)
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     rings, _ = CO.level(TOWER.pts, ZT, TOWER_C)
-    add_rings(kit, rings, "CORNICE-T", "tower")
+    CO.add_level(kit, rings, "CORNICE-T", "tower")
     rings, _ = CO.level(BAY.pts, BAY_LEDGE, BAY_C, cut=MAIN.solid(grow=0.7, dz0=-2, dz1=2))
-    add_rings(kit, rings, "CORNICE-B", "bay")
+    CO.add_level(kit, rings, "CORNICE-B", "bay")
     kit.add("FOUNDATION", "Granite", foundation(BLOCKS, 0.0, ZF, style="granite"), group="foundation")
     inserts = []
     for o in OPENINGS:

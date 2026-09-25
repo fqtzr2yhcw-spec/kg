@@ -375,9 +375,7 @@ def build(kit=None):
         kgrow = keep.translate([-0.1 if tg == "L" else 0.1, 0, 0])      # rings stop at the party wall
         for lvl, z0, spec in (("J", S1 + LEDGE + 0.4, JOINTS[tg]), ("F", ZE, FRIEZES[tg])):
             rings, _ = CO.level(H["outline"], z0, spec, cut=kgrow)
-            for r_ in rings:
-                kit.add(f"{tg}-CORNICE-{lvl}-{r_['name']}", r_["role"], r_["solid"], P=print_flip() if r_["flip"] else None,
-                        group=f"cornice-{tg}")
+            CO.add_level(kit, rings, f"{tg}-CORNICE-{lvl}", f"cornice-{tg}")
         for o in H["openings"]:
             A = o.local_frame()
             sp = o.spec

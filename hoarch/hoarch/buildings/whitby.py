@@ -154,15 +154,6 @@ def _ridge_caps():
                   G.ridge_cap((xm, D - y_meet), (xm, D + RAKE), zc, S_CROSS, ZW)])
 
 
-def add_rings(kit, rings, prefix, group):
-    """Each cornice ring as its own part (the eave's fall into pieces at the cross gables)."""
-    for r in rings:
-        pcs = sorted([p for p in r["solid"].decompose() if p.volume() > 2.0], key=lambda m_: -m_.volume())
-        for j, pc in enumerate(pcs):
-            nm = f"{prefix}-{r['name']}" + (f"-{j}" if len(pcs) > 1 else "")
-            kit.add(nm, r["role"], pc, P=print_flip() if r["flip"] else None, group=group)
-
-
 def build(kit=None):
     kit = kit or Kit(NAME, COLORS, RENDER_MAT)
     kit.parts.clear()
@@ -187,9 +178,9 @@ def build(kit=None):
     lip = (_corbel(MAIN.cs, 3.0, ZW) + lip_ring(MAIN.cs, 3.0, ZW)) - no_lip
     kit.add("WALLS-2", "Fawn", st["shells"][1] + lip + (CO.ledge(MAIN.pts, ZE, LEDGE) - cross), group="walls")
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
-    add_rings(kit, rings, "CORNICE-J", "cornice")
+    CO.add_level(kit, rings, "CORNICE-J", "cornice")
     rings, _ = CO.level(MAIN.pts, ZE, EAVE, cut=cross)
-    add_rings(kit, rings, "CORNICE-E", "cornice")
+    CO.add_level(kit, rings, "CORNICE-E", "cornice")
     kit.add("FOUNDATION", "Fieldstone", foundation(BLOCKS, 0.0, ZF, style="rubble"), group="foundation")
     inserts = []
     for o in OPENINGS:

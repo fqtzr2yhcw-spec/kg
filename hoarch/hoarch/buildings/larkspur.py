@@ -289,11 +289,7 @@ def build(kit=None):
                                      ("E", eave_path, ZE, EAVE, TOWER.solid(grow=1.1, dz0=-2, dz1=2)),
                                      ("T", TOWER.pts, ZT, TOWER_C, None)):
         rings, _ = CO.level(path, z0, spec, cut=cut)
-        for r_ in rings:
-            pcs = sorted([p_ for p_ in r_["solid"].decompose() if p_.volume() > 2.0], key=lambda m_: -m_.volume())
-            for j_, pc in enumerate(pcs):
-                kit.add(f"CORNICE-{tag}-{r_['name']}" + (f"-{j_}" if len(pcs) > 1 else ""), r_["role"], pc,
-                        P=print_flip() if r_["flip"] else None, group="tower" if tag == "T" else "cornice")
+        CO.add_level(kit, rings, f"CORNICE-{tag}", "tower" if tag == "T" else "cornice")
     fnd = foundation([MAIN_LO, WING, TOWER], 0.0, ZF, style="drafted")
     kit.add("FOUNDATION", "Stone", fnd, group="foundation")
     inserts = []
