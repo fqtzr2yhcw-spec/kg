@@ -43,17 +43,28 @@ building's render data); the shops stand side by side in two rows of five in
 | 27 | The Camellia | Queen Anne after the user's photo, 115 x 108 mm (132 mm deep with its forecourt): pink banded lap siding below (bevel courses tied by a flat band every sixth course) and key-cut shingles above a white belt hung with swags between rosettes, lozenge corner boards, a red-brown diamond-point base; a round tower banded in key-cut and diamond shingles under a black bell roof (flared foot, rounded shoulders, drawn to a point) with an iron spike finial and ring brackets; a pavilion with a steep front gable and a canted bay under a little hip roof, a steep east gable, both with deep keyhole-pierced gingerbread bargeboards, a collar, a lattice panel and a pendant; black wave-butt slates, a chimney with a Greek cross on each face and two pots; an entry porch on barley-twist columns with hourglass balusters, a lambrequin frieze, a cable-moulded fascia, a honeycomb brick skirt and a pediment over the steps; 8-over-1 windows under half-round keystoned hoods, a round-arched window on the porch, trefoil-light doors under a fret transom; a basket-weave brick forecourt with two cast-iron street lamps | done: 80 parts, print files (9 h 58 m, 196 g) |
 | 28 | The Wisteria | Storey-and-a-half cottage combining the gingerbread cottage with the round-cornered porch, 123 x 93 mm: wisteria-lavender wide-and-narrow lap siding with blocked corner boards on a river-stone base; a steep side-gabled roof of clipped-corner shingles in moss green with a front cross-gabled wing, two hipped dormers and a tulip-crowned brick chimney; split shingles in the gable fields under crescent gable ornaments (a crescent arch with drops, a pierced diamond and a spike); a porch across the front and round the west corner in a true curve, on octagonal posts with heart-pierced railings, plum wisteria clusters hung from the frieze, an arcaded fascia and an X-braced skirt on river-stone piers; 1-over-1 windows with Y tracery under little gablets; hexagonal-light doors under a lozenge transom | done: 49 parts, print files (5 h 39 m, 117 g) |
 | 29 | The Hawthorn | Eastlake house with a square tower, the batch's smaller tower house, 101 x 106 mm: oxblood cove-and-bead siding with incised corner boards on a stacked ledge-stone base; a mustard belt carrying a raised zigzag; a hipped roof of spade-cut slates with a front gable under a star gable ornament (a collar, a king post through a disc pierced with an eight-pointed star, a drop and a spike); a square tower rising a storey above the eaves with paired arched windows, a cornice on comma brackets and a steep pyramid roof with a pineapple finial; an octagonal chimney with a corbelled crown; a front porch on tapered square posts with paddle balusters, a forest-green Tudor-arched frieze, a sawtooth fascia and a chevron-board skirt on ledge-stone piers; windows with a fan of bars in the upper sash under incised sunflower head boards; doors with a shoulder-headed light over two panels and a bow-tie transom | done: 60 parts, print files (6 h 57 m, 150 g) |
-| 30 | The Magnolia | Twin-gabled house with an entry loggia, combining the paired gables with the loggia idea, 112 x 87 mm: a ground storey of red brick in English cross bond on a V-jointed ashlar base, a brick corbel table with dentil headers at the floor line, butterscotch step-cut shingles above with dentilled corner boards; two steep front gables each with an arcade ornament (a band of little round arches with drops, a king post carrying a ring, a spike); a hipped roof of charcoal arch-cut shingles and a pilastered brick chimney; an entry loggia sunk into the ground storey between the gables behind three segmental arches on square piers with imposts and keystones, up a flight of steps; windows with a cross of bars in the upper sash under lambrequin head boards; doors with a spoked round light under an arched-bar transom | print files exporting |
+| 30 | The Magnolia | Twin-gabled house with an entry loggia, combining the paired gables with the loggia idea, 112 x 87 mm: a ground storey of red brick in English cross bond on a V-jointed ashlar base, a brick corbel table with dentil headers at the floor line, butterscotch step-cut shingles above with dentilled corner boards; two steep front gables each with an arcade ornament (a band of little round arches with drops, a king post carrying a ring, a spike); a hipped roof of charcoal arch-cut shingles and a pilastered brick chimney; an entry loggia sunk into the ground storey between the gables behind three segmental arches on square piers with imposts and keystones, up a flight of steps; windows with a cross of bars in the upper sash under lambrequin head boards; doors with a spoked round light under an arched-bar transom | done: 43 parts, print files (6 h 56 m, 137 g) |
 
 ## Log
 - Second batch, houses 21 to 30 (the Marigold, the Primrose, the Rosecroft, Laurel & Myrtle, the
-  Larkspur, the Juniper, the Camellia, the Wisteria, the Hawthorn, the Magnolia), each after one of the user's photos and on a bigger footprint. The user asked for
-  the white picket fences to come off (the Marigold and the Rosecroft) and for the Rosecroft to
-  be wider with a bigger cupola and a porch round its tower. New techniques: lantern and dormer
-  lights as a coloured sleeve over a dark core (they read as glass); a cornice ring whose first
-  0.8 mm (printed upside down) is the roof deck, so one filament change gives a dark roof; a
-  loggia sunk into the upper storey (a stacked plan block) with its floor in the belt ring and an
-  arcade screen printed on its back.
+  Larkspur, the Juniper, the Camellia, the Wisteria, the Hawthorn, the Magnolia). Houses 21 to 27
+  follow the user's seven photos; 28 to 30 combine their features (a cottage with the curved
+  porch, a smaller tower house, twin gables with a loggia). All are on a bigger footprint. The
+  user asked for the white picket fences to come off (the Marigold and the Rosecroft) and for
+  the Rosecroft to be wider with a bigger cupola and a porch round its tower. New techniques:
+  - lantern and dormer lights as a coloured sleeve over a dark core (they read as glass);
+  - a cornice ring whose first 0.8 mm (printed upside down) is the roof deck, so one filament
+    change gives a dark roof;
+  - a loggia sunk into a storey (a notched plan block), with its floor or ceiling in the belt
+    ring and an arcade screen printed on its back;
+  - a bell (ogee) roof as a stack of conical bands with their own slopes (`roof.bell_roof`);
+  - belt reliefs (swags, zigzags) that step back 0.2 mm per layer underneath, so the belt
+    ring still prints upright;
+  - flat-bottomed dormers that drop into pockets shaped to them and sit on seat blocks standing
+    on the bed inside the hollow roof;
+  - a gable ridge that runs above the main hip ends in a hip of its own;
+  - add-ons: a basket-weave brick forecourt and cast-iron street lamps (standard, glass and cap
+    as three parts).
 - Main Street shops 15 to 20: Whitcomb's Pharmacy, the Palace Hotel, Vogel's Bakery, Bassett
   Hardware, Madame Dufresne's Millinery and Ashworth & Sons. The millinery and the jeweler print
   their fronts as separate face-up parts (pressed metal, terra cotta) so the front takes its

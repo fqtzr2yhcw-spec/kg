@@ -1,5 +1,9 @@
 # Next batch: ten more houses (after the Main Street shops)
 
+Status: all ten are built, houses 21 to 30 in `COLLECTION.md`: the Marigold (1), the Primrose
+(2), the Rosecroft (3), Laurel & Myrtle (4), the Larkspur (5), the Juniper (6), the Camellia (7),
+then the Wisteria, the Hawthorn and the Magnolia combining their features.
+
 Style references the user picked (photos shared in the session, not stored here). What each
 one brings, and how it would print. Every house in the batch still gets its own everything:
 no part, skin or ornament repeats from the first ten or from each other. Fish-scale ("U")
