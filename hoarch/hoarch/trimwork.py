@@ -264,6 +264,21 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         body = body + _corbel_out(w2, d2, h - 2.4, 0.4) + box([-w2 / 2 - 0.4, -d2 / 2 - 0.4, h - 2.41], [w2 / 2 + 0.4, d2 / 2 + 0.4, h - 1.6])
         body = body + box([-w2 / 2 - 0.1, -d2 / 2 - 0.1, h - 1.61], [w2 / 2 + 0.1, d2 / 2 + 0.1, h])
         return body - box([-w2 / 2 + 0.7, -d2 / 2 + 0.7, h - 1.0], [w2 / 2 - 0.7, d2 / 2 - 0.7, h + 1])
+    if style == "crowned":
+        # a tall brick stack with a stone band two thirds up, a four-course corbelled crown
+        # with a dentil course, a stone cap and a flue
+        sh = h - 4.0
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh])
+        body = body + _skin(w, d, 0.0, sh, _brick("common"))
+        zb = round(sh * 0.66 / 0.2) * 0.2
+        body = body + box([-w / 2 - 0.3, -d / 2 - 0.3, zb], [w / 2 + 0.3, d / 2 + 0.3, zb + 0.8])
+        g = 0.0
+        for k in range(4):
+            body = body + _corbel_out(w + 2 * g, d + 2 * g, sh + 0.6 * k + 0.3, 0.3) + \
+                box([-w / 2 - g - 0.3, -d / 2 - g - 0.3, sh + 0.6 * k + 0.29], [w / 2 + g + 0.3, d / 2 + g + 0.3, sh + 0.6 * k + 0.6])
+            g += 0.3
+        body = body + box([-w / 2 - 1.3, -d / 2 - 1.3, sh + 2.39], [w / 2 + 1.3, d / 2 + 1.3, h])
+        return body - box([-w / 2 + 1.2, -d / 2 + 1.2, h - 1.2], [w / 2 - 1.2, d / 2 - 1.2, h + 1])
     if style == "fluted":
         # brick, three sunk flutes down each face, a stone band and a corbelled cap with a pot
         sh = h - 3.0
@@ -320,7 +335,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
-            "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin", "round", "fluted")
+            "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin", "round", "fluted", "crowned")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -346,6 +361,9 @@ def finial(style, r=1.2, h=8.0, seg=28):
     elif style == "stack":
         prof = [(0, 0), (1.3, 0), (1.3, 1.0), (1.0, 1.3), (1.0, 2.0), (0.8, 2.2), (0.8, 3.0), (0.6, 3.2),
                 (0.6, 4.0), (0.45, 4.2), (0.45, 6.0), (0, 7.0)]
+    elif style == "pinnacle":            # Eastlake: a square-looking turned spike with a ball
+        prof = [(0, 0), (1.2, 0), (1.2, 0.8), (0.8, 1.2), (0.8, 2.0), (1.1, 2.3), (1.1, 2.7), (0.6, 3.2), (0.5, 4.2),
+                (0.9, 4.6), (0.9, 5.2), (0.4, 5.7), (0.3, 7.0), (0.0, 8.0)]
     elif style == "onion":
         prof = [(0, 0), (1.1, 0), (1.1, 0.5), (0.6, 1.0), (0.55, 1.6), (0.9, 2.2), (1.25, 3.0), (1.2, 3.7),
                 (0.8, 4.4), (0.45, 5.0), (0.4, 6.2), (0, 7.0)]
@@ -373,7 +391,8 @@ def foundation_skin(style, reg, seed=0):
     board skirting), bossed (the drugstore), cobble (the hotel), herringbone (the bakery),
     battered (the hardware store), moulded (the millinery: a smooth course under an ogee),
     tooled (the jeweler: dressed blocks with a margin round vertically striated faces) and
-    coquina (the gingerbread cottage: shell-stone blocks with pitted faces)."""
+    coquina (the gingerbread cottage: shell-stone blocks with pitted faces), pebble (the Primrose:
+    pebble-dash over a smooth base course)."""
     from . import skins as S
     if style == "fieldstone":
         return ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=0.55, seed=seed)
@@ -417,6 +436,17 @@ def foundation_skin(style, reg, seed=0):
         pc = cs_union(piers) ^ reg
         stones = ashlar(pc, course=(0.9, 1.4), length=(1.0, 1.7), d=0.5, seed=seed, rough=0.1)
         return stones + S.beadboard(reg - pc.offset(0.2, JoinType.Miter, 4.0), pitch=1.2, groove=0.5, d=0.25)
+    if style == "pebble":                # pebble-dash: a rough render set with rows of small round pebbles,
+        b = reg.bounds()                  # over a smooth base course
+        rng = np.random.default_rng(seed + 3)
+        pebbles = []
+        for v in np.arange(b[1] + 1.4, b[3] - 0.5, 0.8):
+            off = rng.uniform(0, 0.8)
+            for u in np.arange(b[0] + off, b[2], 0.9 + rng.uniform(0, 0.4)):
+                pebbles.append(M.sphere(0.36, 10).translate([u, v, 0.05]))
+        base = M.extrude(reg ^ rect(b[0] - 1, b[1] - 1, b[2] + 1, b[1] + 1.0), 0.4)
+        render = M.extrude(reg ^ rect(b[0] - 1, b[1] + 1.0, b[2] + 1, b[3] + 1), 0.15)
+        return base + render + (union(pebbles) ^ M.extrude(reg.offset(-0.2), 1.0)) if pebbles else base + render
     if style == "coquina":               # shell-stone blocks in regular courses, their faces pitted
         b = reg.bounds()
         rng = np.random.default_rng(seed + 7)
@@ -557,6 +587,9 @@ BELTS = {
     "string": ([(0.0, 0.0), (0.5, 0.5), (0.5, 3.4), (1.1, 4.0), (1.1, 4.4)], None),
     "cyma": ([(0.0, 0.0), (0.4, 0.4), (0.7, 0.8), (0.85, 1.2), (0.9, 1.6), (1.0, 2.0), (1.2, 2.3), (1.5, 2.6),
               (1.5, 3.2), (1.2, 3.5), (1.2, 4.0)], None),
+    # a bell-cast shingled skirt: widest at its foot, three courses of shingle butts
+    "flare": ([(0.0, 0.0), (1.6, 0.0), (1.6, 0.4), (1.1, 1.4), (1.3, 1.4), (0.8, 2.4), (1.0, 2.4), (0.5, 3.4),
+               (0.7, 3.4), (0.2, 4.2), (0.2, 4.4)], None),
     "roll": ([(0.0, 0.0), (0.4, 0.4), (0.6, 0.8), (0.6, 1.2), (0.4, 1.6), (0.4, 2.8), (1.0, 3.4), (1.0, 4.4)], None),
     "cavetto": ([(0.0, 0.0), (0.3, 0.3), (0.3, 1.2), (0.6, 1.5), (1.0, 2.2), (1.3, 3.2), (1.3, 3.6), (1.6, 3.9),
                  (1.6, 4.4)], None),
@@ -629,6 +662,11 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
         prof = cs_union([poly([(0, 0), (d, 0), a, b, (0.0, -h)])] +
                         [circle((a[0] + (b[0] - a[0]) * (k + 0.5) / 3, a[1] + (b[1] - a[1]) * (k + 0.5) / 3), r, 16)
                          for k in range(3)])
+    elif style == "ladder":              # Eastlake: a triangle whose face is cut into a ladder of rungs
+        tri = poly([(0, 0), (d, 0), (0.0, -h)])
+        slots = cs_union([rect(0.55, -h + 0.9 + k * (h - 1.6) / 4, d * 0.95, -h + 0.9 + k * (h - 1.6) / 4 + 0.5)
+                          for k in range(4)])
+        prof = tri - (slots ^ tri.offset(-0.55))
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])

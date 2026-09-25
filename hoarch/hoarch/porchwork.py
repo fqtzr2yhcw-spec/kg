@@ -137,6 +137,39 @@ def post_boxed(h, collar=None, abacus=3.0, slot=(1.2, 1.0), w=2.2):
     return body + _top(h, abacus / 2, h - 1.8, s, slot, shape="square")
 
 
+def post_bobbin(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """Eastlake bobbin post: square blocks at the foot and under the capital with a turned
+    shaft between them of stacked bobbins (a bead, a reel, a bead), and a collar block where
+    a railing meets it."""
+    zb, zt = 3.2, h - 3.4
+    parts = [_plinth(), box([-1.2, -1.2, 1.19], [1.2, 1.2, zb])]
+    prof = [(0.0, zb - 0.01), (1.0, zb - 0.01)]
+    n = max(3, int((zt - zb) / 3.0))
+    p = (zt - zb) / n
+    for k in range(n):
+        z = zb + k * p
+        prof += [(1.0, z + 0.2), (0.75, z + 0.5), (0.95, z + p * 0.35), (1.05, z + p * 0.5), (0.95, z + p * 0.65),
+                 (0.75, z + p - 0.5), (1.0, z + p - 0.2)]
+    prof += [(1.0, zt + 0.01), (0.0, zt + 0.01)]
+    parts.append(_revolve(prof[:-1], 28))
+    if collar is not None:
+        parts.append(box([-1.2, -1.2, collar - 1.6], [1.2, 1.2, collar + 0.2]))
+    body = union(parts) + box([-1.2, -1.2, zt], [1.2, 1.2, h - 1.8])
+    return body + _top(h, abacus / 2, h - 1.8, 1.2, slot, shape="square")
+
+
+def baluster_bead(h, seg=20):
+    """A baluster of stacked beads (three balls between square-ish necks), printed upright."""
+    prof = [(0.0, 0.0), (0.5, 0.0), (0.5, 0.4), (0.3, 0.6)]
+    n = 3
+    p = (h - 1.4) / n
+    for k in range(n):
+        z = 0.7 + k * p
+        prof += [(0.3, z), (0.55, z + p * 0.3), (0.6, z + p * 0.5), (0.55, z + p * 0.7), (0.3, z + p)]
+    prof += [(0.3, h - 0.6), (0.5, h - 0.4), (0.5, h), (0.0, h)]
+    return _revolve(prof[:-1], seg)
+
+
 def post_spindle(h, collar=None, abacus=2.8, slot=(1.2, 1.0)):
     """Folk Victorian turned spindle post: a slim shaft ringed with bead-and-reel turnings
     along its length (a bead at the railing's hand rail)."""
@@ -191,7 +224,7 @@ def post_turned(h, collar=None, **kw):
 
 POSTS = {"turned": post_turned, "tuscan": post_tuscan, "fluted": post_fluted, "chamfered": post_chamfered,
          "clustered": post_clustered, "stick": post_stick, "spindle": post_spindle, "eastlake": post_eastlake,
-         "boxed": post_boxed}
+         "boxed": post_boxed, "bobbin": post_bobbin}
 
 
 # ------------------------------------------------------------------ railing fills (between the rails)
@@ -375,8 +408,26 @@ def frieze_fret(u0, u1, v_bot, v_top):
     return cs_union(parts)
 
 
+def frieze_rosette(u0, u1, v_bot, v_top):
+    """Eastlake panelled frieze: a band of square panels, each pierced with a round rosette
+    eye, between two rails, and a sawn quarter bracket at each post."""
+    rail0, rail1 = v_top - 3.2, v_top - 2.6
+    parts = [rect(u0, rail0, u1, v_top + 0.05)]
+    n = max(2, int((u1 - u0 - 1.0) / 2.6))
+    holes = []
+    for k in range(n):
+        u = u0 + 0.5 + (u1 - u0 - 1.0) * (k + 0.5) / n
+        c = (u, (rail1 + v_top) / 2)
+        holes.append(circle(c, 0.75, 16) - circle(c, 0.3, 12))
+    for sg, ue in ((1, u0), (-1, u1)):
+        R = 2.4
+        q = circle((ue, rail0), R, 32) ^ rect(min(ue, ue + sg * R), rail0 - R, max(ue, ue + sg * R), rail0)
+        parts.append(q - circle((ue + sg * R * 0.55, rail0 - R * 0.55), 0.55, 16))
+    return cs_union(parts) - cs_union(holes)
+
+
 FRIEZES = {"scroll": frieze_scroll, "entablature": frieze_entablature, "valance": frieze_valance,
-           "spindle": frieze_spindle, "fret": frieze_fret}
+           "spindle": frieze_spindle, "fret": frieze_fret, "rosette": frieze_rosette}
 
 
 # ------------------------------------------------------------------ skirts (under the deck)
@@ -425,6 +476,9 @@ def skirt_fill(style, reg, d=1.2):
                 holes.append(cs_union([rect(a, v0 + 0.8, b, spring), circle(((a + b) / 2, spring), r, 24)]))
         board = reg - cs_union(holes) if holes else reg
         return M.extrude(board, d)
+    if style == "shingles":             # a board faced with courses of square shingles
+        from .core import scallop_rows
+        return M.extrude(reg, d * 0.5) + scallop_rows(reg, 1.4, 1.6, d=d * 0.5, shape="square", taper=0.4).translate([0, 0, d * 0.5 - 0.02])
     if style == "rings":                # a board pierced with a row of round holes
         L = u1 - u0
         n = max(1, int(round(L / 2.6)))

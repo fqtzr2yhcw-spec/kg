@@ -74,6 +74,13 @@ def banded_rustication(region, course=2.4, groove=0.6, d=0.4, datum=0.0):
     return _lap(region, course, [(0.0, d - g), (g, d), (course - g, d), (course, d - g)], datum)
 
 
+def double_lap(region, datum=0.0):
+    """Double-course lap siding: 2.4 mm boards (an 8" exposure) each run with a V groove at
+    mid-height, so the wall reads as narrow courses in pairs."""
+    return _lap(region, 2.4, [(0.0, 0.44), (0.9, 0.40), (1.1, 0.36), (1.2, 0.22), (1.3, 0.36), (1.5, 0.32),
+                              (2.2, 0.14), (2.4, 0.10)], datum)
+
+
 def ogee_lap(region, datum=0.0):
     """Ogee-faced lap siding: 1.6 mm courses (a 5.5" exposure), each board's face an S-curve,
     full at the butt and easing to a thin feather under the next course."""

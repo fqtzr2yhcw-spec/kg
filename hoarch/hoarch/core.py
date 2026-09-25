@@ -380,6 +380,14 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 c, q = u + wtab / 2, r * 0.5
                 tabs.append(poly([(c - r + q, vk), (c + r - q, vk), (c + r, vk + q), (c + r, top), (c - r, top),
                                   (c - r, vk + q)]))
+            elif shp == "notch":          # square shingles with a V notch cut in the middle of each butt
+                c = u + wtab / 2
+                q = min(0.45, r - 0.5)
+                tabs.append(poly([(u + gap / 2, vk), (c - q, vk), (c, vk + q), (c + q, vk), (u + wtab - gap / 2, vk),
+                                  (u + wtab - gap / 2, top), (u + gap / 2, top)]))
+            elif shp == "saw":            # sawtooth butts: each butt slopes up from one corner to the other
+                tabs.append(poly([(u + gap / 2, vk), (u + wtab - gap / 2, vk + min(r, 0.7)),
+                                  (u + wtab - gap / 2, top), (u + gap / 2, top)]))
             elif shp == "cove":           # square shingles with a concave notch cut in each butt
                 c = u + wtab / 2
                 tabs.append(rect(u + gap / 2, vk, u + wtab - gap / 2, top) - circle((c, vk - 0.05), max(0.3, r - 0.5), seg))

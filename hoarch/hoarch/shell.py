@@ -9,7 +9,7 @@ import math
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from .core import (Facade, ashlar, box, ccw, clapboard, cs_union, offset, poly, rect, slab, sweep_ring, union)
+from .core import (Facade, ashlar, box, ccw, circle, clapboard, cs_union, offset, poly, rect, slab, sweep_ring, union)
 from .ornament import chamfer_box
 
 
@@ -237,7 +237,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     return shell + dress
 
 
-CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded")
+CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -252,7 +252,8 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
       capital   a base plinth and a capital flaring out at 45 degrees (Hollis)
       panel     a long sunk panel (Ashby's cupola)
       beaded    a bead down the middle between a plinth and a cap (the barber shop)
-      reeded    three round reeds down the board between a plinth and a cap (the cottage)"""
+      reeded    three round reeds down the board between a plinth and a cap (the cottage)
+      rope      a twisted three-strand cable down the board (the Primrose)"""
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
@@ -287,6 +288,16 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
         um = (u0 + u1) / 2
         if qb - qa > 5.0:
             parts.append(chamfer_box(um - 0.5, qa + 1.6, um + 0.5, qb - 1.0, t - 0.01, 0.31, c=0.25))
+    if style == "rope":                 # a twisted cable moulding down the middle of the board
+        parts.append(box([far0, qa, 0], [far1, qa + 1.4, t + 0.3]))
+        parts.append(box([far0, qb - 1.0, 0], [far1, qb, t + 0.3]))
+        if qb - qa > 5.0:
+            um = (u0 + u1) / 2
+            L_ = qb - qa - 2.4
+            strand = cs_union([circle((0.42 * math.cos(2 * math.pi * k / 3), 0.42 * math.sin(2 * math.pi * k / 3)), 0.32, 12)
+                               for k in range(3)])
+            rope = M.extrude(strand, L_, int(L_ / 0.2), 360.0 * L_ / 2.4)
+            parts.append(rope.transform(np.array([[1.0, 0, 0, um], [0, 0, 1.0, qa + 1.4], [0, 1.0, 0, t + 0.2]])))
     if style == "reeded":               # three reeds down the board between a plinth and a cap
         parts.append(box([far0, qa, 0], [far1, qa + 1.4, t + 0.3]))
         parts.append(box([far0, qb - 1.0, 0], [far1, qb, t + 0.3]))

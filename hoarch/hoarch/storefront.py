@@ -404,8 +404,8 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     with a keystone and imposts), "pediment" (frieze, cornice and a triangular pediment),
     "shouldered" (a flat lintel with shouldered ends and a rosette), "drip" (a bevelled drip
     cap), "crested" (a cap with a cresting of little arches), "triple" (a lintel with a
-    stepped triple keystone) or "halo" (a round moulding over a round head, with a drop
-    keystone). The brick arch of a brick
+    stepped triple keystone), "halo" (a round moulding over a round head, with a drop
+    keystone) or "rosettes" (a head board with three rosette blocks under a cap). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -451,6 +451,16 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     elif head == "crested":
         hp, top = _crested(w / 2 + casing + 0.8, h + casing)
         parts += hp
+    elif head == "rosettes":
+        # Eastlake: a flat head board with three raised square rosette blocks under a cap
+        lw = w / 2 + casing + 0.6
+        v0 = h + casing
+        parts.append(box([-lw, v0 - 0.01, 0.0], [lw, v0 + 1.8, 0.6]))
+        for u in (-lw * 0.62, 0.0, lw * 0.62):
+            parts.append(chamfer_box(u - 0.7, v0 + 0.2, u + 0.7, v0 + 1.6, 0.59, 0.4, c=0.15))
+            parts.append(ext(circle((u, v0 + 0.9), 0.35, 12), 0.98, 1.2))
+        parts.append(chamfer_box(-lw - 0.3, v0 + 1.8, lw + 0.3, v0 + 2.4, 0.0, 1.0, c=0.2, bottom=0.6))
+        top = v0 + 2.4
     elif head == "halo":
         # a round moulding following the casing round the head, with a small drop keystone
         spring = h - (rise or 0)

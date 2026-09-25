@@ -736,6 +736,17 @@ def _leaf(style, u, lw, dh, hinge_left):
         loz = poly([(cx, cy + hy), (cx + hx, cy), (cx, cy - hy), (cx - hx, cy)])
         _GLASS_BARS.append(ext((loz - loz.offset(-0.5, JoinType.Miter, 4.0)) ^ gl.offset(0.2), -1.21, -0.6))
         panel(rect(pu0, 1.3, pu1, dh * 0.36 - 1.0))
+    elif style == "sunray":               # a square-headed light over a panel carved with a sunburst
+        gl = rect(pu0, dh * 0.5, pu1, top - st)
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        pc = rect(pu0, 1.3, pu1, dh * 0.5 - 1.0)
+        panel(pc)
+        b = pc.bounds()
+        cx, cy = (b[0] + b[2]) / 2, b[1] + 0.4
+        rays = cs_union([stroke([(cx, cy), (cx + 9 * math.cos(a), cy + 9 * math.sin(a))], 0.5)
+                         for a in np.linspace(0.35, math.pi - 0.35, 5)]) ^ pc.offset(-0.5, JoinType.Miter, 4.0)
+        parts.append(ext(rays, -0.41, -0.2))
     elif style == "lace":                 # a tall round-headed light behind a lace grille, over a panel
         gw = pu1 - pu0
         gl = arch_cs(pu0, pu1, dh * 0.4, top - st - gw / 2, seg=24)
@@ -872,6 +883,11 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
         elif tstyle == "cross":                  # a cross of bars: four lights
             cy = (tb[1] + tb[3]) / 2
             pat = rect(-RIB / 2, tb[1] - 1, RIB / 2, tb[3] + 1) + rect(tb[0] - 1, cy - RIB / 2, tb[2] + 1, cy + RIB / 2)
+        elif tstyle == "beads":                  # a row of round beads on a bar across the light
+            cy = (tb[1] + tb[3]) / 2
+            n = max(3, int((tb[2] - tb[0]) / 1.4))
+            pat = rect(tb[0] - 1, cy - RIB / 2, tb[2] + 1, cy + RIB / 2) + \
+                cs_union([circle((tb[0] + (tb[2] - tb[0]) * (k + 0.5) / n, cy), 0.45, 16) for k in range(n)])
         elif tstyle == "scallop":                # a row of three small round arch bars on the transom's foot
             p = (tb[2] - tb[0]) / 3
             r = min(p / 2 - 0.1, (tb[3] - tb[1]) - 0.5)

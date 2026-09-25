@@ -378,7 +378,8 @@ def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT
     return floor
 
 
-ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain", "scallop")
+ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain", "scallop",
+              "beadreel")
 
 
 def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None, edge="dentil"):
@@ -434,6 +435,13 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
             cs = cs_union([rect(u - 0.3, z0 + 0.4, u + 0.3, zc - 0.2) for u in (0.6 + (L - 1.2) * (k + 0.5) / n
                                                                               for k in range(n))])
             parts.append(f.place(ext(cs, 0.0, 0.5)))
+        elif edge == "beadreel":           # a bead-and-reel moulding along the fascia
+            n = max(1, int((L - 1.2) / 1.2))
+            cs = []
+            for k in range(n):
+                u = 0.6 + (L - 1.2) * (k + 0.5) / n
+                cs.append(circle((u, zc - 1.0), 0.42, 16) if k % 2 == 0 else rect(u - 0.45, zc - 1.2, u + 0.45, zc - 0.8))
+            parts.append(f.place(ext(cs_union(cs) + rect(0.3, zc - 1.2, L - 0.3, zc - 0.8), 0.0, 0.5)))
         elif edge == "scallop":            # a valance of half-round scallops hung under the crown
             n = max(1, int((L - 1.2) / 1.5))
             cs = cs_union([circle((u, zc - 0.2), 0.72, 20) for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
@@ -715,7 +723,7 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
         parts.append(PW.fill_flat(style, L, vb - 0.01, vt + 0.01))
     else:
         mk, pt = {"turned": (baluster, pitch), "vase": (PW.baluster_vase, 2.4), "urn": (PW.baluster_urn, 2.4),
-                  "spindle": (PW.spindle, 1.25)}[style]
+                  "spindle": (PW.spindle, 1.25), "bead": (PW.baluster_bead, 1.9)}[style]
         n = max(1, int(round((L - 1.4) / pt)))
         for j in range(n):
             u = 0.7 + (L - 1.4) * (j + 0.5) / n
