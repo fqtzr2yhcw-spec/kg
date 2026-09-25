@@ -343,7 +343,7 @@ def _pier_skin(style, reg, seed):
             v += ch
             j += 1
         return M.extrude(cs_union(cells) ^ reg, 0.35)
-    if style in ("coquina", "pebble", "drafted", "tuckpoint", "diamond"):
+    if style in ("coquina", "pebble", "drafted", "tuckpoint", "diamond", "riverstone"):
         from .trimwork import foundation_skin
         return foundation_skin(style, reg, seed=seed)
     return brick(reg, bl=2.0, d=0.2)
@@ -388,7 +388,7 @@ def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT
 
 
 ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain", "scallop",
-              "beadreel", "notched", "lozenge", "billet", "cable")
+              "beadreel", "notched", "lozenge", "billet", "cable", "arcading")
 
 
 def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None, edge="dentil"):
@@ -463,6 +463,19 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
             cs = cs_union([rect(u - 0.4, zc - (1.2 if k % 2 else 0.8), u + 0.4, zc)
                            for k, u in enumerate(0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
             parts.append(f.place(ext(cs, 0.0, 0.5)))
+        elif edge == "arcading":           # a row of little round arches on colonnettes along the fascia
+            n = max(1, int((L - 1.6) / 1.6))
+            p_ = (L - 1.6) / n
+            cs = []
+            for k in range(n + 1):
+                u = 0.8 + p_ * k
+                cs.append(rect(u - 0.3, zc - 1.6, u + 0.3, zc - 0.2))
+            for k in range(n):
+                u = 0.8 + p_ * (k + 0.5)
+                r_ = p_ / 2
+                cs.append((circle((u, zc - 1.0), r_ + 0.3, 20) - circle((u, zc - 1.0), max(0.2, r_ - 0.3), 20))
+                          ^ rect(u - p_, zc - 1.0, u + p_, zc - 0.2))
+            parts.append(f.place(ext(cs_union(cs) + rect(0.3, zc - 0.6, L - 0.3, zc - 0.2), 0.0, 0.5)))
         elif edge == "cable":              # a cable (rope) moulding: slanted strands in a row along the fascia
             n = max(1, int((L - 1.6) / 1.1))
             cs = cs_union([poly([(u - 0.5, zc - 1.2), (u + 0.1, zc - 1.2), (u + 0.5, zc - 0.4), (u - 0.1, zc - 0.4)])
@@ -751,7 +764,7 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
     for u in ((0.0, L - 0.7) if stiles else ()):                                     # end stiles
         parts.append(box([u, -0.5, foot], [u + 0.7, 0.5, vt + 0.01]))
     from . import porchwork as PW
-    if style in ("chippendale", "x", "pierced", "sawn", "lace", "ladder"):
+    if style in ("chippendale", "x", "pierced", "sawn", "lace", "ladder", "hearts"):
         parts.append(PW.fill_flat(style, L, vb - 0.01, vt + 0.01))
     else:
         mk, pt = {"turned": (baluster, pitch), "vase": (PW.baluster_vase, 2.4), "urn": (PW.baluster_urn, 2.4),

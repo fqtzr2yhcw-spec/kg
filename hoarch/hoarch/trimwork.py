@@ -285,6 +285,18 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
             g += 0.4
         body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, sh + 1.59], [w / 2 + 0.8, d / 2 + 0.8, h])
         return body - box([-w / 2 + 1.0, -d / 2 + 1.0, h - 1.0], [w / 2 - 1.0, d / 2 - 1.0, h + 1])
+    if style == "tulip":
+        # a slim brick stack with a band of soldier bricks, then a round flue flaring out like a
+        # tulip to a thick lip (the Wisteria)
+        sh = zq(h - 5.6)
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + _skin(w, d, 0.0, sh - 1.8, _brick("running"))
+        body = body + _corbel_out(w, d, sh - 1.2, 0.3) + box([-w / 2 - 0.3, -d / 2 - 0.3, sh - 1.21], [w / 2 + 0.3, d / 2 + 0.3, sh])
+        r0 = min(w, d) * 0.3
+        prof = [(0.0, sh - 0.01), (r0, sh - 0.01), (r0 * 0.9, sh + 1.0), (r0 * 1.05, sh + 2.6), (r0 * 1.35, h - 1.0),
+                (r0 * 1.45, h - 0.6), (r0 * 1.45, h), (0.0, h)]
+        from .porchwork import _clamp45
+        body = body + M.revolve(poly(_clamp45(prof)), 32)
+        return body - M.cylinder(h, r0 * 0.9, r0 * 0.9, 24).translate([0, 0, h - 1.4])
     if style == "cross":
         # brick with a Greek cross left standing in a sunk square panel on each face, a
         # dentilled band and a cap slab with a drip, two round pots (the Camellia)
@@ -459,7 +471,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
             "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin", "round", "fluted", "crowned",
-            "dogtooth")
+            "dogtooth", "roundel", "chequer", "clustered", "lozenge", "cross", "tulip")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -506,6 +518,9 @@ def finial(style, r=1.2, h=8.0, seg=28):
     elif style == "lance":               # a tall slim lance: a turned base, two rings and a long spike (the Larkspur)
         prof = [(0, 0), (1.2, 0), (1.2, 0.6), (0.7, 1.1), (0.6, 2.2), (0.95, 2.5), (0.95, 2.8), (0.55, 3.2), (0.5, 4.0),
                 (0.8, 4.3), (0.8, 4.6), (0.45, 5.0), (0.4, 6.4), (0.0, 7.0)]
+    elif style == "pineapple":           # a turned stem carrying a pineapple: an egg-shaped body under a tuft (the Wisteria)
+        prof = [(0, 0), (1.2, 0), (1.2, 0.5), (0.7, 0.9), (0.6, 1.8), (0.9, 2.1), (0.9, 2.4), (0.6, 2.7), (0.9, 3.1),
+                (1.2, 3.8), (1.25, 4.4), (1.05, 5.0), (0.6, 5.4), (0.45, 5.6), (0.7, 6.0), (0.4, 6.5), (0.0, 7.0)]
     elif style == "spike":               # an iron spike: a turned base, a round ball, a collar and a long thin point (the Camellia)
         prof = [(0, 0), (1.2, 0), (1.2, 0.5), (0.7, 0.9), (0.6, 1.3), (1.05, 1.75), (1.15, 2.2), (1.05, 2.65), (0.6, 3.1),
                 (0.45, 3.5), (0.75, 3.8), (0.75, 4.0), (0.4, 4.35), (0.3, 6.3), (0.0, 7.0)]
@@ -632,6 +647,25 @@ def foundation_skin(style, reg, seed=0):
             j += 1
         blocks = M.extrude(cs_union(cells) ^ reg, 0.45)
         return blocks - M.extrude(cs_union(pits) ^ reg, 1.0).translate([0, 0, 0.25])
+    if style == "riverstone":            # rounded river stones in rough courses, each a low pillow (the Wisteria)
+        b = reg.bounds()
+        rng = np.random.default_rng(seed + 23)
+        out, v, j = [], b[1], 0
+        slab_ = M.extrude(reg, 1.0)
+        while v < b[3]:
+            ch = 1.8
+            u = b[0] - rng.uniform(0.0, 1.4)
+            while u < b[2]:
+                L_ = rng.uniform(2.0, 3.0)
+                cx, cy = u + L_ / 2, v + ch / 2
+                rx, ry = L_ / 2 - 0.25, ch / 2 - 0.22
+                ring = [(cx + rx * math.cos(t), cy + ry * math.sin(t), 0.0) for t in np.linspace(0, 2 * math.pi, 16, endpoint=False)]
+                top = [(cx + rx * 0.3 * math.cos(t), cy + ry * 0.3 * math.sin(t), 0.4) for t in np.linspace(0, 2 * math.pi, 8, endpoint=False)]
+                out.append(M.hull_points(ring + top) ^ slab_)
+                u += L_
+            v += ch
+            j += 1
+        return union(out)
     if style == "diamond":               # diamond-point rustication: each block dressed to a low hipped point (the Camellia)
         b = reg.bounds()
         out, v, j = [], b[1], 0
@@ -863,8 +897,8 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     (a horizontal console under a cornice, its front rolled under), knee, volute, beaded (a
     console whose sloping front is a string of three beads), fret, ladder, acanthus (an S
     console with a lobed front and an open eye), twin (two slim consoles on one head) and cove
-    (a square head over a concave sweep), tongue (a long slim taper with a round end) and ring
-    (a sawn bracket pierced with a round eye)."""
+    (a square head over a concave sweep), tongue (a long slim taper with a round end), ring
+    (a sawn bracket pierced with a round eye) and comma (a round head curling down to a point)."""
     from .ornament import console, side_profile
     if style == "scroll":
         return console(h, d, t, u=u, v_top=v_top, w0=w0)
@@ -957,6 +991,12 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
               [(d - R_ + R_ * math.cos(a), -hd - R_ + R_ * math.sin(a)) for a in np.linspace(0.0, -math.pi / 2, 12)][1:] + \
               [(0.6, -hd - R_), (0.6, -h), (0.0, -h)]
         prof = poly(pts)
+    elif style == "comma":              # a sawn bracket curling like a comma: a round head tapering down to a point (the Wisteria)
+        R_ = min(d, h) * 0.42
+        cx_, cy_ = d - R_, -R_
+        tail = [(0.0, 0.0), (d, 0.0)] + [(cx_ + R_ * math.cos(a), cy_ + R_ * math.sin(a)) for a in np.linspace(0.0, -math.pi * 0.9, 10)]
+        tail += [(0.55, -h + 0.3), (0.0, -h + 0.3)]
+        prof = cs_union([poly(tail), circle((0.3, -h + 0.35), 0.35, 12)])
     elif style == "ring":               # a sawn bracket pierced with a round eye, a ball at its foot (the Camellia)
         body = poly([(0.0, 0.0), (d, 0.0), (d, -0.8), (0.7, -h + 0.5), (0.0, -h + 0.5)])
         rr = max(0.5, min(d, h) * 0.17)

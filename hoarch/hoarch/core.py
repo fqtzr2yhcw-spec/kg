@@ -414,6 +414,14 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 ts = np.linspace(0.0, 1.0, 13)
                 tabs.append(poly([(a_ + (b_ - a_) * t_, vk + 0.3 * (1 - math.sin(2 * math.pi * t_))) for t_ in ts]
                                  + [(b_, top), (a_, top)]))
+            elif shp == "slot":           # split shingles: a square butt with a slot cut up its middle
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                c = (a_ + b_) / 2
+                tabs.append(rect(a_, vk, b_, top) - rect(c - 0.25, vk - 0.1, c + 0.25, vk + min(0.8, (top - vk) * 0.5)))
+            elif shp == "bevel":          # a square butt with one corner clipped at 45 degrees
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                q = min(0.6, (b_ - a_) * 0.4)
+                tabs.append(poly([(a_, vk), (b_ - q, vk), (b_, vk + q), (b_, top), (a_, top)]))
             elif shp == "stagger":        # square butts of random width, some shorter than their neighbours
                 h_ = (int(u * 7.3 + k * 3.1) % 5)
                 low = 0.4 if h_ % 2 else 0.0

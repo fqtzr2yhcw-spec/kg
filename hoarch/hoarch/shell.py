@@ -238,7 +238,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
 
 
 CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope",
-                 "notched", "banded", "cabled", "reveal", "rosette", "lozenge")
+                 "notched", "banded", "cabled", "reveal", "rosette", "lozenge", "blocked")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -262,7 +262,8 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
                 (the Larkspur)
       rosette   a plain board with square Eastlake blocks carrying round rosettes at its
                 foot and head (the Juniper)
-      lozenge   a plain board on a plinth carrying raised lozenges every 5.6 mm (the Camellia)"""
+      lozenge   a plain board on a plinth carrying raised lozenges every 5.6 mm (the Camellia)
+      blocked   a board with small raised blocks at alternate edges every 2.4 mm (the Wisteria)"""
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
@@ -352,6 +353,14 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
                 parts.append(chamfer_box(far0, va, far1, vb, t - 0.01, 0.35, c=0.15))
                 um = (far0 + far1) / 2
                 parts.append(M.cylinder(0.3, 0.7, 0.55, 20).translate([um, (va + vb) / 2, t + 0.33]))
+    if style == "blocked":              # a board with small raised blocks at alternate edges every 2.4 mm, like wooden quoins (the Wisteria)
+        v = qa + 1.2
+        k = 0
+        while v + 1.6 < qb - 0.4:
+            a0, a1 = span(0.0, w * 0.62) if k % 2 == 0 else span(w * 0.38, w + 0.2)
+            parts.append(chamfer_box(a0, v, a1, v + 1.6, t - 0.01, 0.3, c=0.15))
+            v += 2.4
+            k += 1
     if style == "lozenge":              # a plain board with a plinth, carrying raised lozenges every 5.6 mm (the Camellia)
         parts.append(box([far0, qa, 0], [far1, qa + 1.2, t + 0.3]))
         um = (u0 + u1) / 2

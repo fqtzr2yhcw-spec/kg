@@ -396,7 +396,8 @@ def applied(landing, top=None, bottom=None):
 
 
 # ------------------------------------------------------------------ commercial windows and doors
-def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casing=0.6, head=None, hood_w=1.2):
+def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casing=0.6, head=None, hood_w=1.2,
+                      upper=None):
     """A plain commercial window for a brick front: a narrow brickmould casing round a
     segmental (``rise``) or flat head, sash with ``lites``/``rows``, a stone sill with lugs
     (``sill`` = its projection), and optionally a head: "hood" (a cast-iron segmental hood
@@ -410,16 +411,31 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     "cartouche" (a moulded hood with ears and an oval cartouche at the crown), "pent" (a
     head board under a little shingled pent roof on brackets) or "tablet" (a head board with a
     raised oval tablet and end blocks under a thin cap) or "keyarch" (a half-round hood with a
-    keystone and drop label stops, over a tympanum with a boss on a flat head). The brick arch of a brick
+    keystone and drop label stops, over a tympanum with a boss on a flat head) or "gablet" (a little
+    boarded gable with raking boards, a spike and a drop). ``upper``: see window_insert. The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
     plug_cs = op.offset(-CLR, JoinType.Miter, 4.0)
-    sash = window_insert(w, h, rise if rise else 0, lites=lites, rows=rows, bare=True)["insert"]
+    sash = window_insert(w, h, rise if rise else 0, lites=lites, rows=rows, bare=True, upper=upper)["insert"]
     parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6)]
     parts.append(ext((op.offset(casing, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + casing + 1), 0.0, 0.4))
     top = h + casing
-    if head == "hood":
+    if head == "gablet":
+        # a little gable over the head: an eave board, a boarded triangle with raking boards, a
+        # spike at the apex and a drop under it (the Wisteria)
+        v0 = h + casing
+        gw = w / 2 + casing + 0.8
+        apex = v0 + 0.8 + gw * 0.9
+        tri = poly([(-gw, v0 + 0.8), (gw, v0 + 0.8), (0.0, apex)])
+        parts.append(ext(rect(-gw - 0.3, v0 - 0.01, gw + 0.3, v0 + 0.8), 0.0, 0.8))
+        parts.append(ext(tri, 0.0, 0.4))
+        parts.append(ext(tri - tri.offset(-0.8, JoinType.Miter, 4.0), 0.0, 0.8))
+        parts.append(ext(cs_union([rect(-0.3, apex - 0.6, 0.3, apex + 1.0),
+                                   poly([(-0.4, apex + 1.0), (0.4, apex + 1.0), (0.0, apex + 1.8)])]), 0.0, 0.8))
+        parts.append(ext(cs_union([circle((0.0, v0 + 1.6), 0.5, 16), rect(-0.25, v0 + 1.6, 0.25, apex - 1.0)]), 0.0, 0.8))
+        top = apex + 1.8
+    elif head == "hood":
         spring = h - (rise or 0)
         hood = (op.offset(casing + hood_w, JoinType.Round) - op.offset(casing, JoinType.Round)) ^ \
             rect(-w, spring - 0.01, w, h + 10)

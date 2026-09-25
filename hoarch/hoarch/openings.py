@@ -136,6 +136,14 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
         for j in range(1, nr):
             v = v0 + (v1 - v0) * j / nr
             bars.append(rect(-w, v - RIB / 2, w, v + RIB / 2))
+    if upper == "ytracery":          # Y tracery: a bar up the upper sash forking into two curved bars (the Wisteria)
+        top_ = spring if rise > 0 else h
+        vf = mr + (top_ - mr) * 0.42
+        bars.append(rect(-RIB / 2, mr, RIB / 2, vf + 0.2))
+        for sgn in (-1, 1):
+            pts = [((2 * (1 - t) * t) * 0.0 + t * t * sgn * w / 2, (1 - t) ** 2 * vf + 2 * (1 - t) * t * top_ + t * t * top_)
+                   for t in np.linspace(0.0, 1.0, 13)]
+            bars.append(stroke(pts, RIB, caps=False) ^ rect(-w, mr, w, top_ + 5))
     if upper == "diamond":           # leaded diamond panes in the upper sash
         for sgn in (-1, 1):
             for k in range(-14, 15):
@@ -584,7 +592,8 @@ def _leaf(style, u, lw, dh, hinge_left):
     tall raised panel), bolection (a light over a panel ringed by a bolection moulding) and
     cameo (a round-headed light over a panel with a raised oval), ellipse (an upright
     elliptical light over a panel with a raised square) and trefoil (a light with a
-    three-lobed head over a raised panel)."""
+    three-lobed head over a raised panel) and hexlight (a tall hexagonal light over a panel with
+    two raised blocks)."""
     if style == "arched":
         return _ornate_leaf(u, lw, dh, hinge_left)
     st = min(1.0, lw * 0.16)
@@ -836,6 +845,21 @@ def _leaf(style, u, lw, dh, hinge_left):
         rx, ry = min(0.9, (b[2] - b[0]) * 0.3), min(1.4, (b[3] - b[1]) * 0.3)
         parts.append(ext(poly([(cxm + rx * math.cos(a), cym + ry * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 24, endpoint=False)]),
                          -0.41, -0.2))
+    elif style == "hexlight":             # a tall hexagonal light (pointed head and foot) over a panel with two raised blocks (the Wisteria)
+        cx = (pu0 + pu1) / 2
+        hw = (pu1 - pu0) / 2
+        vlo, vhi = dh * 0.47, top - st - 0.3
+        q = min(hw * 0.8, (vhi - vlo) * 0.2)
+        gl = poly([(cx, vlo), (cx + hw, vlo + q), (cx + hw, vhi - q), (cx, vhi), (cx - hw, vhi - q), (cx - hw, vlo + q)])
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
+        lo = rect(pu0, 1.3, pu1, dh * 0.47 - 1.0)
+        panel(lo)
+        b = lo.bounds()
+        hh = (b[3] - b[1]) / 2
+        for k in range(2):
+            v0_ = b[1] + 0.6 + k * hh
+            parts.append(ext(rect(b[0] + 0.6, v0_, b[2] - 0.6, v0_ + hh - 1.2), -0.41, -0.2))
     elif style == "trefoil":              # a light with a trefoil (three-lobed) head over a raised panel (the Camellia)
         gw = pu1 - pu0
         cx = (pu0 + pu1) / 2
@@ -881,7 +905,7 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
     diamond (a diamond grid), leaded (a border of small squares), ring (a ring on a cross of
     bars), twin (one bar), cross (a cross of bars), heart, scallop (three little arches),
     chevron, beads, grid (two rows of four lights), quatrefoil (four linked rings), wave, star,
-    fret (a square-wave bar) or
+    fret (a square-wave bar), lozenge (a bar with a lozenge ring) or
     "number:<digits>" (the street number in
     raised gilt figures on the glass). One transom style per building."""
     op = rect(-w / 2, 0, w / 2, h)
@@ -989,6 +1013,12 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
             amp = min(0.8, (tb[3] - tb[1]) * 0.25)
             pts = [(x, cy + amp * math.sin((x - tb[0]) / (tb[2] - tb[0]) * 4 * math.pi)) for x in np.linspace(tb[0] - 0.5, tb[2] + 0.5, 33)]
             pat = stroke(pts, RIB, caps=False)
+        elif tstyle == "lozenge":                # a bar across the light carrying a lozenge ring at its middle
+            cy = (tb[1] + tb[3]) / 2
+            r = min((tb[3] - tb[1]) / 2 - 0.3, 1.6)
+            dia = poly([(0.0, cy - r), (r * 1.3, cy), (0.0, cy + r), (-r * 1.3, cy)])
+            pat = (dia - dia.offset(-RIB, JoinType.Miter, 4.0)) + rect(tb[0] - 1, cy - RIB / 2, -r * 1.2, cy + RIB / 2) + \
+                rect(r * 1.2, cy - RIB / 2, tb[2] + 1, cy + RIB / 2)
         elif tstyle == "fret":                   # a square-wave fret bar running across the light
             n = max(3, int((tb[2] - tb[0]) / 1.6))
             p = (tb[2] - tb[0]) / n

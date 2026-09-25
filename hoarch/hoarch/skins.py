@@ -130,6 +130,13 @@ def banded_lap(region, datum=0.0):
     return _lap(region, 10.8, course, datum)
 
 
+def alternating_lap(region, datum=0.0):
+    """Wide-and-narrow lap siding: a 2.4 mm board, then a 1.2 mm board, in turn (a 3.6 mm
+    repeat), each with a crisp butt and a straight bevel, so the wall reads in a rhythm of
+    broad and slim courses (the Wisteria)."""
+    return _lap(region, 3.6, [(0.0, 0.46), (0.2, 0.44), (2.4, 0.12), (2.4, 0.40), (2.6, 0.38), (3.6, 0.14)], datum)
+
+
 def vgroove(region, datum=0.0):
     """Tongue-and-groove boards with a V joint at every course."""
     return _lap(region, 1.4, [(0.0, 0.40), (1.0, 0.40), (1.2, 0.15), (1.4, 0.40)], datum)

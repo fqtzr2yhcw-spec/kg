@@ -590,3 +590,55 @@ def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=0.8, finial=5.0):
                         poly([(cx - 0.45, H + finial - 1.2), (cx + 0.45, H + finial - 1.2), (cx, H + finial)])])
         out.append(ext(fcs, 0.0, d + 0.2))
     return union(out)
+
+
+def gable_crescent(L, slope, d_eave, skin=1.8, width=1.8, d=0.8, finial=4.4):
+    """A crescent gable (the Wisteria): raking boards, a crescent arch hung between them from
+    about a third of the way up (thick at its crown, thinning to its springings), a turned drop
+    at each springing, a pierced diamond in the apex panel above the arch, and a spike over
+    the apex. Flat, prints face-up; place at w = rake."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    H = tip[1]
+    depth = skin + width
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    band = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    rafters = cs_union(band) ^ tri
+    inner = tri.offset(-depth * c * 0.5, JoinType.Miter, 4.0)
+    ib = inner.bounds()
+    vs = H * 0.32                                       # the arch springs from the rafters here
+    h_i = (H - depth * c) - vs                          # the rafters' inner edges meet this far above the springing
+    half = h_i / s + 0.4                                # the arch springs from the rafters' inner edges
+    rise = h_i * 0.42                                   # low enough to stand clear of the steep rafters
+    cx = L / 2
+    ell = lambda a_, b_: poly([(cx + a_ * math.cos(t), vs + b_ * math.sin(t)) for t in np.linspace(0, math.pi, 40)] +
+                              [(cx - a_, vs - 0.01), (cx + a_, vs - 0.01)])
+    outer = ell(half + 0.3, rise + 0.9)
+    inside = ell(half - 0.6, rise)
+    arch = (outer - inside) ^ tri
+    parts = [rafters, arch]
+    th = math.radians(42.0)                             # a drop hangs where the arch comes clear of the rafters
+    for sg in (-1, 1):
+        x = cx + sg * (half - 0.45) * math.cos(th)
+        y = vs + rise * math.sin(th)
+        parts.append(cs_union([rect(x - 0.4, y - 1.6, x + 0.4, y + 0.2), circle((x, y - 1.9), 0.62, 20),
+                               poly([(x - 0.45, y - 2.3), (x + 0.45, y - 2.3), (x, y - 3.3)])]))
+    apex_panel = (inner ^ rect(-50, vs + rise + 0.8, 50, H)) - rect(-50, -50, 50, vs + rise + 0.8)
+    if not apex_panel.is_empty():
+        pb = apex_panel.bounds()
+        my = (pb[1] + pb[3]) / 2
+        dh = min(1.6, (pb[3] - pb[1]) * 0.3)
+        dia = poly([(cx, my - dh), (cx + dh * 0.7, my), (cx, my + dh), (cx - dh * 0.7, my)])
+        parts.append(apex_panel - dia)
+    frame = cs_union(parts)
+    frame = cs_union([pc for pc in frame.decompose() if pc.area() > 2.0])
+    out = [ext(frame, 0.0, d)]
+    if finial:
+        fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.0),
+                        poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
+        out.append(ext(fcs, 0.0, d + 0.2))
+    return union(out)

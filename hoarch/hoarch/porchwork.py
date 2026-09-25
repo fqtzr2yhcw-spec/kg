@@ -294,10 +294,27 @@ def post_barley(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
     return body + _top(h, abacus / 2, h - 1.8, 1.1, slot, shape="square")
 
 
+def post_octagon(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """An octagonal post: a square foot block, an eight-sided shaft with a ring of lamb's-
+    tongue stops just above the foot and below the head, a square neck block under the capital
+    (the Wisteria)."""
+    zb, zt = 2.8, h - 3.2
+    a8 = 0.95                                    # the shaft's apothem
+    shaft = M.cylinder(zt - zb + 0.02, a8 / math.cos(math.pi / 8), a8 / math.cos(math.pi / 8), 8).rotate(
+        [0, 0, 22.5]).translate([0, 0, zb - 0.01])
+    stops = union([M.hull_points([(x * s_, y * s_, z) for x in (-1, 1) for y in (-1, 1) for s_, z in ((1.2, z0), (a8, z1))])
+                   for z0, z1 in ((zb, zb + 0.4), (zt, zt - 0.4))])
+    body = _plinth() + box([-1.2, -1.2, 1.19], [1.2, 1.2, zb]) + shaft + stops
+    if collar is not None:
+        body = body + box([-1.2, -1.2, collar - 1.6], [1.2, 1.2, collar + 0.2])
+    body = body + box([-1.1, -1.1, zt], [1.1, 1.1, h - 1.8])
+    return body + _top(h, abacus / 2, h - 1.8, 1.1, slot, shape="square")
+
+
 POSTS = {"turned": post_turned, "tuscan": post_tuscan, "fluted": post_fluted, "chamfered": post_chamfered,
          "clustered": post_clustered, "stick": post_stick, "spindle": post_spindle, "eastlake": post_eastlake,
          "boxed": post_boxed, "bobbin": post_bobbin, "notched": post_notched, "paired": post_paired,
-         "vase": post_vase, "barley": post_barley}
+         "vase": post_vase, "barley": post_barley, "octagon": post_octagon}
 
 
 # ------------------------------------------------------------------ railing fills (between the rails)
@@ -352,6 +369,16 @@ def fill_flat(style, L, vb, vt):
             left = [(u - w, vb + t * H) for t, w in prof]
             right = [(u + w, vb + t * H) for t, w in reversed(prof)]
             parts.append(poly(left + right))
+    elif style == "hearts":             # a board pierced with a row of hearts (the Wisteria)
+        board = rect(0.0, vb, L, vt)
+        n = max(1, int(round(L / 2.8)))
+        r = min(0.6, H * 0.14)
+        holes = []
+        for i in range(n):
+            cx, cy = L * (i + 0.5) / n, vb + H / 2
+            holes.append(cs_union([circle((cx - r * 0.72, cy + r * 0.45), r, 20), circle((cx + r * 0.72, cy + r * 0.45), r, 20),
+                                   poly([(cx - r * 1.62, cy + 0.2), (cx + r * 1.62, cy + 0.2), (cx, cy - r * 1.9)])]))
+        parts.append(board - cs_union(holes))
     elif style == "lace":
         from .lace import lace_panel_cs
         parts.append(lace_panel_cs(L, vb, vt))
@@ -611,9 +638,27 @@ def frieze_lambrequin(u0, u1, v_bot, v_top):
     return out - cs_union(holes) if holes else out
 
 
+def frieze_clusters(u0, u1, v_bot, v_top):
+    """A plain board with wisteria clusters hung under it: every 2.4 mm a short stem with a
+    tapering bunch of round blossoms, longer and shorter bunches in turn (the Wisteria)."""
+    rail0 = v_top - 1.0
+    parts = [rect(u0, rail0, u1, v_top + 0.05)]
+    n = max(2, int(round((u1 - u0 - 0.6) / 2.4)))
+    for k in range(n):
+        uc = u0 + 0.3 + (u1 - u0 - 0.6) * (k + 0.5) / n
+        rows = 4 if k % 2 == 0 else 3
+        parts.append(rect(uc - 0.25, rail0 - 1.1, uc + 0.25, rail0 + 0.05))      # the stem runs into the top blossoms
+        for j in range(rows):
+            vv = rail0 - 1.1 - 0.75 * j
+            w_ = 0.55 * (1.0 - 0.18 * j)
+            for du in ((-w_ * 0.6, w_ * 0.6) if j < rows - 1 else (0.0,)):
+                parts.append(circle((uc + du, vv), max(0.42, 0.5 - 0.03 * j), 16))
+    return cs_union(parts)
+
+
 FRIEZES = {"scroll": frieze_scroll, "entablature": frieze_entablature, "valance": frieze_valance,
            "spindle": frieze_spindle, "fret": frieze_fret, "rosette": frieze_rosette, "drops": frieze_drops,
-           "beads": frieze_beads, "fans": frieze_fans, "lambrequin": frieze_lambrequin}
+           "beads": frieze_beads, "fans": frieze_fans, "lambrequin": frieze_lambrequin, "clusters": frieze_clusters}
 
 
 # ------------------------------------------------------------------ skirts (under the deck)
@@ -694,6 +739,23 @@ def skirt_fill(style, reg, d=1.2):
         out = out + sh
         if grills:
             out = out + M.extrude(cs_union(grills) ^ reg, d)
+        return out
+    if style == "saltire":              # a board with open panels crossed by X battens between upright stiles (the Wisteria)
+        L = u1 - u0
+        n = max(1, int(round(L / 6.0)))
+        va = math.ceil((v0 + 0.8) / 0.2) * 0.2
+        vb_ = math.floor((v1 - 0.8) / 0.2) * 0.2
+        holes, xs = [], []
+        for i in range(n):
+            a_, b_ = u0 + L * i / n + 0.5, u0 + L * (i + 1) / n - 0.5
+            if b_ - a_ < 2.0 or vb_ - va < 2.0:
+                continue
+            holes.append(rect(a_, va, b_, vb_))
+            xs += [stroke([(a_, va), (b_, vb_)], 0.6, caps=False), stroke([(a_, vb_), (b_, va)], 0.6, caps=False)]
+        board = reg - cs_union(holes) if holes else reg
+        out = M.extrude(board, d)
+        if xs:
+            out = out + M.extrude(cs_union(xs) ^ cs_union(holes), d * 0.6).translate([0, 0, d * 0.2])
         return out
     if style == "honeycomb":            # hit-and-miss brick: every other brick left out of alternate courses (the Camellia)
         va = math.ceil((v0 + 0.4) / 0.2) * 0.2      # courses on the layer grid (the deck prints upside down)
