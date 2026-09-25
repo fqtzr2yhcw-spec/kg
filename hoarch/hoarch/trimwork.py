@@ -12,6 +12,11 @@ from .ornament import chamfer_box, ext, stroke
 
 
 # ------------------------------------------------------------------ chimneys
+# more styles, registered by other modules (hoarch.colonial): BRACKET_EXTRA[style](h, d, t) ->
+# side-profile CrossSection (as the built-in brackets); FOUNDATION_EXTRA[style](reg, seed) -> solid
+BRACKET_EXTRA = {}
+FOUNDATION_EXTRA = {}
+
 def _faces(w, d):
     return [Facade((-w / 2, -d / 2), (w / 2, -d / 2)), Facade((w / 2, -d / 2), (w / 2, d / 2)),
             Facade((w / 2, d / 2), (-w / 2, d / 2)), Facade((-w / 2, d / 2), (-w / 2, -d / 2))]
@@ -898,6 +903,8 @@ def foundation_skin(style, reg, seed=0):
         return union(blocks) ^ M.extrude(reg, 2.0).translate([0, 0, -0.5])
     if style == "coursed":
         return ashlar(reg, course=(1.2, 1.8), length=(5.0, 11.0), d=0.45, seed=seed, rough=0.1)
+    if style in FOUNDATION_EXTRA:
+        return FOUNDATION_EXTRA[style](reg, seed)
     raise ValueError(style)
 
 
@@ -1085,6 +1092,8 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])
+    elif style in BRACKET_EXTRA:        # side profile from another module (hoarch.colonial)
+        prof = BRACKET_EXTRA[style](h, d, t)
     else:
         raise ValueError(style)
     return side_profile(prof, -t / 2, t / 2).translate([u, v_top, w0])

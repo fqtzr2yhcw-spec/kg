@@ -30,6 +30,11 @@ from .core import Facade, box, ccw, circle, cs_union, poly, rect, sweep_ring, un
 from .ornament import chamfer_box, ext, oval, stroke
 
 CLR = 0.15      # a ring's inner face stands this far off the wall plane
+# more frieze and course kinds, registered by other modules (hoarch.colonial):
+# FRIEZE_EXTRA[kind](L, h, b, pitch, margin, pair, half) -> (ornament solids, cut solids) in the
+# edge's (u, v, w) frame; COURSE_EXTRA[kind](L, h, b, pitch, margin, p) -> list of solids
+FRIEZE_EXTRA = {}
+COURSE_EXTRA = {}
 
 
 def _stepped(cs, w0, d):
@@ -582,6 +587,12 @@ def _frieze_edge(kind, L, h, b, pitch, margin, pair, half, dd):
             out.append(_stepped(circle((uc + pu / 2, vm), 0.4, 12), b, 0.4) if k < n - 1 else M())
     elif kind == "plain":
         pass
+    elif kind in FRIEZE_EXTRA:
+        if L < 2 * margin + 1.0:
+            return M(), M()
+        o_, c_ = FRIEZE_EXTRA[kind](L, h, b, pitch, margin, pair, half)
+        out += o_
+        cuts += c_
     else:
         raise ValueError(kind)
     return union([m for m in out if not m.is_empty()]) if out else M(), union(cuts) if cuts else M()
@@ -694,6 +705,8 @@ def _course_edge(kind, L, h, b, pitch, margin, p):
     elif kind == "reeds":
         for dv in np.arange(0.35, h - 0.2, 0.7):
             out.append(_stepped(rect(0.3, dv - 0.2, L - 0.3, dv + 0.2), b, 0.4))
+    elif kind in COURSE_EXTRA:
+        out += COURSE_EXTRA[kind](L, h, b, pitch, margin, p)
     else:
         raise ValueError(kind)
     return union([m for m in out if not m.is_empty()]) if out else M()

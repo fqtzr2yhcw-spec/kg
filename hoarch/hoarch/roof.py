@@ -232,6 +232,18 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
             ribs = [rect(k * seam_pitch - seam_w / 2, b[1] - 1, k * seam_pitch + seam_w / 2, b[3] + 1)
                     for k in range(n0, int(np.ceil(b[2] / seam_pitch)) + 1)]
             tex = M.extrude(cs_union(ribs) ^ loc.offset(-0.3, JoinType.Miter, 4.0), d)
+        elif shape == "graduated":        # Georgian graduated slate: square butts, the courses shortening up the roof
+            b = loc.bounds()
+            bands, v = [], b[1]
+            span = max(1e-6, b[3] - b[1])
+            while v < b[3]:
+                f_ = min(1.0, (v - b[1]) / span)          # 0 at the eave, 1 at the top of the face
+                p_ = round(pitch * (1.0 - 0.35 * f_) / 0.05) * 0.05
+                band = loc ^ rect(b[0] - 1, v, b[2] + 1, v + 3 * p_)
+                if not band.is_empty():
+                    bands.append(scallop_rows(band, p_, wtab * (1.0 - 0.25 * f_), d=d, shape="square", datum=v))
+                v += 3 * p_
+            tex = union(bands) if bands else M()
         else:
             tex = scallop_rows(loc, pitch, wtab, d=d, shape=shape, datum=loc.bounds()[1])
         vdir = np.array([t[0] * cth, t[1] * cth, s * cth])

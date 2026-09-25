@@ -693,6 +693,13 @@ def _leaf(style, u, lw, dh, hinge_left):
         for a, b in ((pu0, m - 0.35), (m + 0.35, pu1)):
             panel(rect(a, 1.3, b, vm - 0.45))
             panel(rect(a, vm + 0.45, b, top - st))
+    elif style == "six_panel":         # Georgian: two short panels at the top, two tall, two below the lock rail
+        m = (pu0 + pu1) / 2
+        v1, v2 = dh * 0.36, dh * 0.78
+        for a, b in ((pu0, m - 0.35), (m + 0.35, pu1)):
+            panel(rect(a, 1.3, b, v1 - 0.45))
+            panel(rect(a, v1 + 0.45, b, v2 - 0.4))
+            panel(rect(a, v2 + 0.4, b, top - st))
     elif style == "store":
         gl = rect(pu0, dh * 0.36, pu1, top - st)
         glass = gl
