@@ -10,7 +10,7 @@ import numpy as np
 from manifold3d import JoinType, Manifold as M
 
 from .core import (Facade, ashlar, box, ccw, circle, clapboard, cs_union, offset, poly, rect, slab, sweep_ring, union)
-from .ornament import chamfer_box
+from .ornament import chamfer_box, ext
 
 
 class Block:
@@ -238,7 +238,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
 
 
 CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope",
-                 "notched", "banded", "cabled", "reveal", "rosette")
+                 "notched", "banded", "cabled", "reveal", "rosette", "lozenge")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -261,7 +261,8 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
       reveal    two narrow boards with a sunk reveal between them, on a plinth, under a cap
                 (the Larkspur)
       rosette   a plain board with square Eastlake blocks carrying round rosettes at its
-                foot and head (the Juniper)"""
+                foot and head (the Juniper)
+      lozenge   a plain board on a plinth carrying raised lozenges every 5.6 mm (the Camellia)"""
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
@@ -351,6 +352,14 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
                 parts.append(chamfer_box(far0, va, far1, vb, t - 0.01, 0.35, c=0.15))
                 um = (far0 + far1) / 2
                 parts.append(M.cylinder(0.3, 0.7, 0.55, 20).translate([um, (va + vb) / 2, t + 0.33]))
+    if style == "lozenge":              # a plain board with a plinth, carrying raised lozenges every 5.6 mm (the Camellia)
+        parts.append(box([far0, qa, 0], [far1, qa + 1.2, t + 0.3]))
+        um = (u0 + u1) / 2
+        v = qa + 3.6
+        while v + 1.2 < qb - 0.8:
+            dia = poly([(um, v - 1.2), (um + 0.8, v), (um, v + 1.2), (um - 0.8, v)])
+            parts.append(ext(dia, t - 0.01, t + 0.3))
+            v += 5.6
     if style == "reveal":               # two narrow boards parted by a sunk reveal
         parts.append(box([far0, qa, 0], [far1, qa + 1.4, t + 0.3]))
         parts.append(box([far0, qb - 1.2, 0], [far1, qb, t + 0.3]))
@@ -431,6 +440,45 @@ def lip_keep(base, t, z0, h=LIP_H, inner=LIP_IN, reach=LIP_W, clr=0.15):
 BELT_BLOCKS = dict(w=0.9, z=1.4, h=1.2, d0=0.8, d=0.5, c=0.35, pitch=3.0, margin=1.8)
 
 
+def _stepped(cs, w0, d):
+    """A relief of outline ``cs`` (u, v) standing ``d`` proud of w0, printable on an upright
+    wall: the first 0.2 at full size, each further 0.2 with its foot pulled up 0.2, so its
+    underside steps back at 45 degrees instead of hanging flat."""
+    out, k = [], 0
+    while k * 0.2 < d - 1e-6:
+        layer = cs
+        for j in range(1, k + 1):
+            layer = layer ^ cs.translate((0.0, 0.2 * j))
+        if not layer.is_empty():
+            out.append(ext(layer, w0 + 0.2 * k - (0.05 if k == 0 else 0.0), w0 + min(d, 0.2 * (k + 1))))
+        k += 1
+    return union(out)
+
+
+def _swag_row(outline_pts, z0, sw):
+    """Festoons (swags) hung between rosettes along a belt's fascia, on every face (the
+    Camellia): each swag a crescent that thickens to its lowest point, each rosette a
+    round boss; both step back underneath so the ring prints upright."""
+    pts = ccw(outline_pts)
+    w0, zr, sag, pitch, margin = sw["w0"], sw["zr"], sw["sag"], sw["pitch"], sw["margin"]
+    row = []
+    for i in range(len(pts)):
+        f = Facade(pts[i], pts[(i + 1) % len(pts)], z0)
+        span = f.L - 2 * margin
+        if span < 2.4:
+            continue
+        n = max(1, int(round(span / pitch)))
+        us = [margin + span * j / n for j in range(n + 1)]
+        for a, b in zip(us[:-1], us[1:]):
+            ts = np.linspace(0.0, 1.0, 17)
+            lo = [(a + 0.4 + (b - a - 0.8) * t_, zr - 0.2 - sag * math.sin(math.pi * t_)) for t_ in ts]
+            hi = [(x, z + 0.5 + 0.35 * math.sin(math.pi * t_)) for (x, z), t_ in zip(lo, ts)]
+            row.append(f.place(_stepped(poly(lo + hi[::-1]), w0, 0.4)))
+        for u in us:
+            row.append(f.place(_stepped(circle((u, zr), 0.6, 20), w0, 0.45)))
+    return union(row)
+
+
 def belt_ring(outline_pts, z0, t=3.0, prof=BELT_PROF, lip=True, blocks=BELT_BLOCKS):
     """Belt course between two storey shells, the full wall thickness plus a moulded band.
 
@@ -439,7 +487,9 @@ def belt_ring(outline_pts, z0, t=3.0, prof=BELT_PROF, lip=True, blocks=BELT_BLOC
     ``blocks``: a row of small chamfered blocks on the fascia band (modillion blocks)."""
     h = prof[-1][1]
     ring = sweep_ring(outline_pts, [(-t, z0)] + [(d, z0 + z) for d, z in prof] + [(-t, z0 + h)])
-    if blocks:
+    if blocks and blocks.get("kind") == "swag":
+        ring = ring + _swag_row(outline_pts, z0, blocks)
+    elif blocks:
         bk = dict(BELT_BLOCKS)
         bk.update(blocks)
         pts = ccw(outline_pts)

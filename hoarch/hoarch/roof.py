@@ -410,6 +410,30 @@ def hip_roof(pieces, z_eave, slope, d_eave, texture="seam", flat_top=None, tex_k
     return solid, tex
 
 
+def bell_roof(c, r0, z0, bands, n=16, texture="square", tex_kw=None):
+    """A bell (ogee) roof on a round tower: a stack of conical bands on an n-gon, each with
+    its own slope, [(rise, slope), ...] from the eave up, so the profile can flare out at its
+    foot, bulge and then draw in to a point (the Camellia). Each band carries its own
+    courses. Every band narrows upward, so it prints upright on its flat foot. Keep z0 and
+    each rise on the 0.2 grid; ``r0`` is the foot's apothem (the planes rise from the edges).
+    Returns (solid, texture, apothem at the top, z_top)."""
+    from .core import ngon
+    ap = r0
+    z = z0
+    solids, texs = [], []
+    for dz, s in bands:
+        path = ngon(c, ap, n=n)
+        sol, tex = hip_roof([(path, list(range(n)))], z, s, 0.0, texture=texture, tex_kw=tex_kw,
+                            zlo=z - (0.2 if solids else 0.0))
+        top = z + dz
+        solids.append(sol.trim_by_plane([0, 0, -1.0], -top))
+        if texture is not None:
+            texs.append(tex.trim_by_plane([0, 0, -1.0], -top))
+        ap -= dz / s
+        z = top
+    return union(solids), union(texs), ap, z
+
+
 def cresting_strips(crest, path, z, d_off, t=0.6):
     """Split a cresting loop (from ``cresting``) into one flat-printable strip per edge.
     Each strip stops short of the corners and takes only its own fence (``t`` thick), so

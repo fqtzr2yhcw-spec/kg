@@ -582,8 +582,9 @@ def _leaf(style, u, lw, dh, hinge_left):
     french, dutch, boards_glass, lozenge, ledged, twin_arch (two round-headed lights over a
     raised panel), keyhole, sunray, lace, roundel (a round light in a square panel over a
     tall raised panel), bolection (a light over a panel ringed by a bolection moulding) and
-    cameo (a round-headed light over a panel with a raised oval) and ellipse (an upright
-    elliptical light over a panel with a raised square)."""
+    cameo (a round-headed light over a panel with a raised oval), ellipse (an upright
+    elliptical light over a panel with a raised square) and trefoil (a light with a
+    three-lobed head over a raised panel)."""
     if style == "arched":
         return _ornate_leaf(u, lw, dh, hinge_left)
     st = min(1.0, lw * 0.16)
@@ -835,6 +836,16 @@ def _leaf(style, u, lw, dh, hinge_left):
         rx, ry = min(0.9, (b[2] - b[0]) * 0.3), min(1.4, (b[3] - b[1]) * 0.3)
         parts.append(ext(poly([(cxm + rx * math.cos(a), cym + ry * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 24, endpoint=False)]),
                          -0.41, -0.2))
+    elif style == "trefoil":              # a light with a trefoil (three-lobed) head over a raised panel (the Camellia)
+        gw = pu1 - pu0
+        cx = (pu0 + pu1) / 2
+        rs, rc = gw * 0.26, gw * 0.3
+        vh = top - st - rc * 1.9
+        gl = cs_union([rect(pu0, dh * 0.48, pu1, vh), circle((cx - gw / 2 + rs, vh), rs, 20),
+                       circle((cx + gw / 2 - rs, vh), rs, 20), circle((cx, vh + rc * 0.85), rc, 24)])
+        glass = gl
+        parts.append(ext(gl.offset(0.45, JoinType.Round) - gl, -0.8, -0.6))
+        panel(rect(pu0, 1.3, pu1, dh * 0.48 - 1.0))
     elif style == "oval":
         cx, cy = (pu0 + pu1) / 2, dh * 0.7
         rx, ry = (pu1 - pu0) / 2 - 0.2, min(dh * 0.18, top - st - cy)
@@ -869,7 +880,8 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
     transom of style sunburst, plain (with an oval boss), stick (a row of narrow lights),
     diamond (a diamond grid), leaded (a border of small squares), ring (a ring on a cross of
     bars), twin (one bar), cross (a cross of bars), heart, scallop (three little arches),
-    chevron, beads, grid (two rows of four lights), quatrefoil (four linked rings), wave, star or
+    chevron, beads, grid (two rows of four lights), quatrefoil (four linked rings), wave, star,
+    fret (a square-wave bar) or
     "number:<digits>" (the street number in
     raised gilt figures on the glass). One transom style per building."""
     op = rect(-w / 2, 0, w / 2, h)
@@ -976,6 +988,16 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
             cy = (tb[1] + tb[3]) / 2
             amp = min(0.8, (tb[3] - tb[1]) * 0.25)
             pts = [(x, cy + amp * math.sin((x - tb[0]) / (tb[2] - tb[0]) * 4 * math.pi)) for x in np.linspace(tb[0] - 0.5, tb[2] + 0.5, 33)]
+            pat = stroke(pts, RIB, caps=False)
+        elif tstyle == "fret":                   # a square-wave fret bar running across the light
+            n = max(3, int((tb[2] - tb[0]) / 1.6))
+            p = (tb[2] - tb[0]) / n
+            y0, y1 = tb[1] + 0.6, tb[3] - 0.6
+            pts = [(tb[0] - 0.5, y0)]
+            for k in range(n):
+                x = tb[0] + p * k
+                pts += [(x + p * 0.25, y0), (x + p * 0.25, y1), (x + p * 0.75, y1), (x + p * 0.75, y0)]
+            pts.append((tb[2] + 0.5, y0))
             pat = stroke(pts, RIB, caps=False)
         elif tstyle == "leaded":
             inner = tcs.offset(-1.1, JoinType.Miter, 4.0)

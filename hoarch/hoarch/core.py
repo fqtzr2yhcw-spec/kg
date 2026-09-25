@@ -404,6 +404,16 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
             elif shp == "cove":           # square shingles with a concave notch cut in each butt
                 c = u + wtab / 2
                 tabs.append(rect(u + gap / 2, vk, u + wtab - gap / 2, top) - circle((c, vk - 0.05), max(0.3, r - 0.5), seg))
+            elif shp == "key":            # square butts with a square key tab dropping below the middle
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                c, q = (a_ + b_) / 2, min(0.4, (b_ - a_) / 2 - 0.4)
+                tabs.append(poly([(a_, vk + 0.4), (c - q, vk + 0.4), (c - q, vk), (c + q, vk), (c + q, vk + 0.4),
+                                  (b_, vk + 0.4), (b_, top), (a_, top)]))
+            elif shp == "wave":           # each butt one full wave: a low crest, then a high trough
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                ts = np.linspace(0.0, 1.0, 13)
+                tabs.append(poly([(a_ + (b_ - a_) * t_, vk + 0.3 * (1 - math.sin(2 * math.pi * t_))) for t_ in ts]
+                                 + [(b_, top), (a_, top)]))
             elif shp == "stagger":        # square butts of random width, some shorter than their neighbours
                 h_ = (int(u * 7.3 + k * 3.1) % 5)
                 low = 0.4 if h_ % 2 else 0.0

@@ -409,7 +409,8 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     square architrave round an arched head, a frieze and a cap on scroll consoles),
     "cartouche" (a moulded hood with ears and an oval cartouche at the crown), "pent" (a
     head board under a little shingled pent roof on brackets) or "tablet" (a head board with a
-    raised oval tablet and end blocks under a thin cap). The brick arch of a brick
+    raised oval tablet and end blocks under a thin cap) or "keyarch" (a half-round hood with a
+    keystone and drop label stops, over a tympanum with a boss on a flat head). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -569,6 +570,30 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
             u = sg * (lw - 0.3)
             parts.append(chamfer_box(u - 0.4, v0 - 1.4, u + 0.4, v0 + 1.0, 0.0, 1.2, c=0.3, bottom=1.2))
         top = v0 + 2.6
+    elif head == "keyarch":
+        # a half-round hood moulding with a projecting keystone, ending on drop label stops; over
+        # a flat head it arches over a tympanum board with a round boss (the Camellia)
+        if rise:
+            v0 = h - rise
+            clip = rect(-w, v0 - 0.01, w, h + 20)
+            ring = (op.offset(casing + 1.2, JoinType.Round) - op.offset(casing - 0.01, JoinType.Round)) ^ clip
+            R_ = w / 2 + casing
+            crown = h + casing + 1.2
+        else:
+            v0 = h + casing - 0.01
+            R_ = w / 2 + casing
+            half = rect(-R_ - 2, v0, R_ + 2, v0 + R_ + 3)
+            ring = (circle((0.0, v0), R_ + 1.2, 48) - circle((0.0, v0), R_, 48)) ^ half
+            parts.append(ext(circle((0.0, v0), R_ + 0.01, 48) ^ half, 0.0, 0.4))
+            parts.append(ext(circle((0.0, v0 + R_ * 0.42), min(0.9, R_ * 0.25), 24), 0.39, 0.8))
+            crown = v0 + R_ + 1.2
+        parts.append(ext(ring, 0.0, 0.8))
+        parts.append(ext(poly([(-0.6, crown - 2.0), (0.6, crown - 2.0), (0.9, crown + 0.4), (-0.9, crown + 0.4)]), 0.0, 1.2))
+        for sg in (-1, 1):
+            u = sg * (R_ + 0.6)
+            parts.append(ext(cs_union([rect(u - 0.6, v0 - 0.6, u + 0.6, v0 + 0.2),
+                                       poly([(u - 0.6, v0 - 0.6), (u + 0.6, v0 - 0.6), (u, v0 - 1.4)])]), 0.0, 1.0))
+        top = crown + 0.4
     elif head == "lintel":
         lw = w / 2 + casing + 1.0
         parts.append(chamfer_box(-lw, h, lw, h + 2.4, 0.0, 0.8, c=0.2))

@@ -119,6 +119,17 @@ def ogee_lap(region, datum=0.0):
                               (1.3, 0.12), (1.6, 0.10)], datum)
 
 
+def banded_lap(region, datum=0.0):
+    """Banded lap siding: six 1.6 mm bevel courses, then a flat 1.2 mm band board standing out
+    at the butts' depth, so the wall reads as bevel siding tied by a band every 10.8 mm (the
+    Camellia)."""
+    course = [(0.0, 0.12), (0.34, 0.46), (1.2, 0.46)]          # the band, its foot chamfered
+    for k in range(6):
+        v = 1.2 + 1.6 * k
+        course += [(v, 0.44), (v + 0.2, 0.42), (v + 1.6, 0.12)]
+    return _lap(region, 10.8, course, datum)
+
+
 def vgroove(region, datum=0.0):
     """Tongue-and-groove boards with a V joint at every course."""
     return _lap(region, 1.4, [(0.0, 0.40), (1.0, 0.40), (1.2, 0.15), (1.4, 0.40)], datum)

@@ -520,3 +520,73 @@ def gable_pendant(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
                         poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
         out.append(ext(fcs, 0.0, d + 0.2))
     return union(out)
+
+
+def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=0.8, finial=5.0):
+    """Deep gingerbread bargeboards (the Camellia): each rafter board's foot cut into a row of
+    cusps with a ball at every point and pierced with keyholes, a collar tie across the gable
+    with a diamond-lattice panel above it up to the apex, a teardrop pendant under the collar
+    and a spike over the apex. Flat, prints face-up; place at w = rake."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    H = tip[1]
+    depth = skin + width
+    ends = (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0]))
+    band, cuts, balls, holes = [], [], [], []
+    for a in ends:
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+        run = float(np.linalg.norm(tip - a))
+        dirv = (tip - a) / run
+        n_c = max(3, int(run / 2.6))
+        for k in range(n_c + 1):
+            p = a + dirv * (run * k / n_c)
+            if k < n_c - 1:                               # a scallop cut between two cusp points (none at the apex)
+                q = a + dirv * (run * (k + 0.5) / n_c)
+                side = rect(-d_eave - 5, -5, L / 2 - 0.8, H + 5) if a[0] < L / 2 else rect(L / 2 + 0.8, -5, L + d_eave + 5, H + 5)
+                cuts.append(circle(tuple(q + n * (depth + 0.55)), run / n_c * 0.62, 28) ^ side)
+            if 0 < k < n_c - 1:                           # a ball hung at each cusp point
+                balls.append(circle(tuple(p + n * (depth + 0.1)), 0.42, 16))
+            if 0 < k < n_c - 2 and k % 2 == 1:            # a keyhole in the board over every other scallop
+                q = a + dirv * (run * (k + 0.5) / n_c) + n * (skin + width * 0.28)
+                holes.append(cs_union([circle(tuple(q), 0.5, 16),
+                                       poly([tuple(q + np.array([-0.3, 0.0])), tuple(q + np.array([0.3, 0.0])),
+                                             tuple(q + np.array([0.4, -0.9])), tuple(q + np.array([-0.4, -0.9]))])]))
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    rafters = cs_union(band) ^ tri                     # (each board's square end stays under the other's line)
+    rafters = rafters - cs_union(cuts)
+    rafters = rafters + (rect(L / 2 - 1.0, H - depth * c - 1.0, L / 2 + 1.0, H) ^ tri)   # a king post ties the halves
+    rafters = cs_union([pc for pc in rafters.decompose() if pc.area() > 1.0])
+    rafters = rafters + (cs_union(balls) ^ rect(-d_eave - 5, 0.2, L + d_eave + 5, H))
+    if holes:
+        rafters = rafters - cs_union(holes)
+    # collar tie, lattice above it, pendant below it
+    inner = tri.offset(-depth * c * 0.62, JoinType.Miter, 4.0)
+    vc = H * 0.42
+    collar = rect(-d_eave, vc - 0.6, L + d_eave, vc + 0.6) ^ tri
+    panel = inner ^ rect(-d_eave, vc + 0.5, L + d_eave, H)
+    parts = [rafters, collar]
+    if not panel.is_empty():
+        bars = []
+        pb = panel.bounds()
+        span_ = (pb[2] - pb[0]) + (pb[3] - pb[1])
+        k = -int(span_ / 1.8) - 2
+        while k * 1.8 < span_ + 2:
+            x = pb[0] + k * 1.8
+            bars.append(stroke([(x, pb[1] - 1), (x + (pb[3] - pb[1]) + 2, pb[3] + 1)], 0.55, caps=False))
+            bars.append(stroke([(x, pb[3] + 1), (x + (pb[3] - pb[1]) + 2, pb[1] - 1)], 0.55, caps=False))
+            k += 1
+        rim = panel - panel.offset(-0.55, JoinType.Miter, 4.0)
+        parts.append((cs_union(bars) ^ panel) + rim)
+    cx = L / 2
+    parts.append(cs_union([rect(cx - 0.45, vc - 2.2, cx + 0.45, vc - 0.5), circle((cx, vc - 2.4), 0.85, 24),
+                           poly([(cx - 0.6, vc - 2.9), (cx + 0.6, vc - 2.9), (cx, vc - 4.4)])]))
+    frame = cs_union(parts)
+    frame = cs_union([pc for pc in frame.decompose() if pc.area() > 2.0])
+    out = [ext(frame, 0.0, d)]
+    if finial:
+        fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.2), circle((cx, H + finial * 0.4), 0.7, 20),
+                        poly([(cx - 0.45, H + finial - 1.2), (cx + 0.45, H + finial - 1.2), (cx, H + finial)])])
+        out.append(ext(fcs, 0.0, d + 0.2))
+    return union(out)

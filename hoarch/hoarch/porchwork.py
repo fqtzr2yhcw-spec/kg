@@ -10,7 +10,7 @@ import math
 import numpy as np
 from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
-from .core import box, circle, cs_union, poly, rect, union
+from .core import box, circle, cs_union, poly, rect, union, zq
 from .ornament import ext, stroke
 
 
@@ -275,10 +275,29 @@ def post_vase(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
     return body + _top(h, abacus / 2, h - 1.8, 1.1, slot, shape="square")
 
 
+def post_barley(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A barley-twist column: a square foot block, a turned base ring, a shaft of three
+    strands twisted a full turn every 7 mm (their undersides stay steeper than 45 degrees),
+    a ring and a square block under the capital (the Camellia)."""
+    zb, zt = 3.0, h - 3.2
+    L_ = zq(zt - zb - 1.2)
+    strands = cs_union([circle((0.0, 0.0), 0.62, 24)] +
+                       [circle((0.42 * math.cos(a), 0.42 * math.sin(a)), 0.48, 20) for a in (0.0, 2.094, 4.189)])
+    twist = M.extrude(strands, L_, int(L_ / 0.2), 360.0 * L_ / 7.0).translate([0.0, 0.0, zb + 0.6])
+    base = _revolve([(0.0, zb - 0.01), (1.05, zb - 0.01), (1.05, zb + 0.3), (0.9, zb + 0.45), (0.9, zb + 0.61)], 28)
+    ztw = zb + 0.6 + L_
+    top = _revolve([(0.0, ztw - 0.01), (0.9, ztw - 0.01), (1.05, ztw + 0.15), (1.05, zt + 0.01)], 28)
+    body = _plinth() + box([-1.2, -1.2, 1.19], [1.2, 1.2, zb]) + base + twist + top
+    if collar is not None:
+        body = body + box([-1.2, -1.2, collar - 1.6], [1.2, 1.2, collar + 0.2])
+    body = body + box([-1.1, -1.1, zt], [1.1, 1.1, h - 1.8])
+    return body + _top(h, abacus / 2, h - 1.8, 1.1, slot, shape="square")
+
+
 POSTS = {"turned": post_turned, "tuscan": post_tuscan, "fluted": post_fluted, "chamfered": post_chamfered,
          "clustered": post_clustered, "stick": post_stick, "spindle": post_spindle, "eastlake": post_eastlake,
          "boxed": post_boxed, "bobbin": post_bobbin, "notched": post_notched, "paired": post_paired,
-         "vase": post_vase}
+         "vase": post_vase, "barley": post_barley}
 
 
 # ------------------------------------------------------------------ railing fills (between the rails)
@@ -384,6 +403,14 @@ def baluster_ringed(h, seg=20):
     prof = [(0.0, 0.8), (0.34, 0.8), (0.34, zm - 1.0), (0.55, zm - 0.8), (0.55, zm - 0.5), (0.34, zm - 0.3),
             (0.34, zm + 0.3), (0.55, zm + 0.5), (0.55, zm + 0.8), (0.34, zm + 1.0), (0.34, h - 0.8)]
     return _revolve(prof, seg) + box([-0.5, -0.5, 0.0], [0.5, 0.5, 0.81]) + box([-0.5, -0.5, h - 0.81], [0.5, 0.5, h])
+
+
+def baluster_hourglass(h, seg=20):
+    """An hourglass baluster: two long cones meeting at a slim waist, square ends (the
+    Camellia)."""
+    zm = h / 2
+    prof = [(0.0, 0.8), (0.52, 0.8), (0.52, 1.2), (0.3, zm - 0.2), (0.3, zm + 0.2), (0.52, h - 1.2), (0.52, h - 0.8)]
+    return _revolve(prof, seg) + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
 
 
 def spindle(h, r=0.33, seg=14):
@@ -565,9 +592,28 @@ def frieze_drops(u0, u1, v_bot, v_top):
     return cs_union(parts)
 
 
+def frieze_lambrequin(u0, u1, v_bot, v_top):
+    """A deep lambrequin board whose foot is cut into pointed and rounded tongues in turn,
+    a pierced round eye above each rounded one (the Camellia)."""
+    rail0 = v_top - 2.25                 # the arcade's sunk-field edge then falls between slicing planes
+    parts = [rect(u0, rail0, u1, v_top + 0.05)]
+    n = max(2, int(round((u1 - u0) / 2.4)))
+    p = (u1 - u0) / n
+    holes = []
+    for k in range(n):
+        uc = u0 + p * (k + 0.5)
+        if k % 2 == 0:
+            parts.append(poly([(uc - p / 2 + 0.05, rail0 + 0.01), (uc + p / 2 - 0.05, rail0 + 0.01), (uc, rail0 - 1.6)]))
+        else:
+            parts.append(circle((uc, rail0), min(1.1, p / 2 - 0.05), 24) ^ rect(uc - p, rail0 - 2, uc + p, rail0 + 0.02))
+            holes.append(circle((uc, rail0 + 1.0), 0.45, 16))
+    out = cs_union(parts)
+    return out - cs_union(holes) if holes else out
+
+
 FRIEZES = {"scroll": frieze_scroll, "entablature": frieze_entablature, "valance": frieze_valance,
            "spindle": frieze_spindle, "fret": frieze_fret, "rosette": frieze_rosette, "drops": frieze_drops,
-           "beads": frieze_beads, "fans": frieze_fans}
+           "beads": frieze_beads, "fans": frieze_fans, "lambrequin": frieze_lambrequin}
 
 
 # ------------------------------------------------------------------ skirts (under the deck)
@@ -648,6 +694,29 @@ def skirt_fill(style, reg, d=1.2):
         out = out + sh
         if grills:
             out = out + M.extrude(cs_union(grills) ^ reg, d)
+        return out
+    if style == "honeycomb":            # hit-and-miss brick: every other brick left out of alternate courses (the Camellia)
+        va = math.ceil((v0 + 0.4) / 0.2) * 0.2      # courses on the layer grid (the deck prints upside down)
+        bricks, holes = [], []
+        k, v = 0, va
+        while v + 0.8 <= v1 - 0.2:
+            open_ = k % 2 == 1 and v + 2.0 <= v1
+            u = u0 + 0.2 - (1.0 if k % 2 else 0.0)
+            j = 0
+            while u < u1:
+                cell = rect(u, v, u + 1.6, v + 0.8)
+                if open_ and j % 2 == 1 and u > u0 + 0.8 and u + 1.6 < u1 - 0.8:
+                    holes.append(cell)
+                else:
+                    bricks.append(cell)
+                u += 2.0
+                j += 1
+            v += 1.2
+            k += 1
+        board = reg - cs_union(holes) if holes else reg
+        out = M.extrude(board, d * 0.6)
+        if bricks:
+            out = out + M.extrude(cs_union(bricks) ^ board, d).translate([0, 0, 0.0])
         return out
     if style == "stone":                # a solid wall of drafted rock-faced stone between the piers
         from .trimwork import foundation_skin

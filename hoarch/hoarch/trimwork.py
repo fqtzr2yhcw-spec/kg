@@ -285,6 +285,32 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
             g += 0.4
         body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, sh + 1.59], [w / 2 + 0.8, d / 2 + 0.8, h])
         return body - box([-w / 2 + 1.0, -d / 2 + 1.0, h - 1.0], [w / 2 - 1.0, d / 2 - 1.0, h + 1])
+    if style == "cross":
+        # brick with a Greek cross left standing in a sunk square panel on each face, a
+        # dentilled band and a cap slab with a drip, two round pots (the Camellia)
+        sh = zq(h - 3.2)
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + _skin(w, d, 0.0, sh - 0.2, _brick("running"))
+        zc_ = zq(sh - 5.2)
+        for f in _faces(w, d):
+            L_ = f.L
+            a_ = zq(min(2.2, L_ * 0.34))
+            panel = rect(L_ / 2 - a_, zc_ - a_, L_ / 2 + a_, zc_ + a_)
+            arm = 0.4
+            cross = cs_union([rect(L_ / 2 - arm, zc_ - a_ + 0.6, L_ / 2 + arm, zc_ + a_ - 0.6),
+                              rect(L_ / 2 - a_ + 0.6, zc_ - arm, L_ / 2 + a_ - 0.6, zc_ + arm)])
+            body = body - f.place(ext(panel - cross, -0.4, 1.0))
+        body = body + _corbel_out(w, d, sh, 0.4) + box([-w / 2 - 0.4, -d / 2 - 0.4, sh - 0.01], [w / 2 + 0.4, d / 2 + 0.4, sh + 0.8])
+        body = body + _corbel_out(w + 0.8, d + 0.8, sh + 0.8, 0.4) + \
+            box([-w / 2 - 0.8, -d / 2 - 0.8, sh + 0.79], [w / 2 + 0.8, d / 2 + 0.8, sh + 1.6])
+        body = body - box([-w / 2 + 1.0, -d / 2 + 1.0, sh + 1.0], [w / 2 - 1.0, d / 2 - 1.0, sh + 2.0])
+        pr = min(w, d) * 0.16
+        H = h - sh - 1.0                                      # the pots stand in the cap's sunk top
+        for sx in (-1, 1):
+            pot = M.revolve(poly([(0.0, 0.0), (pr, 0.0), (pr - 0.1, H - 0.8), (pr + 0.2, H - 0.4), (pr + 0.2, H),
+                                  (0.0, H)]), 24)
+            pot = pot - M.cylinder(h, pr - 0.5, pr - 0.5, 24).translate([0, 0, 0.6])
+            body = body + pot.translate([sx * w * 0.22, 0.0, sh + 1.0])
+        return body
     if style == "clustered":
         # three round flues rising from a brick plinth, each with a band and a corbelled crown,
         # joined by a shared cap slab under their crowns (the Larkspur)
@@ -480,6 +506,9 @@ def finial(style, r=1.2, h=8.0, seg=28):
     elif style == "lance":               # a tall slim lance: a turned base, two rings and a long spike (the Larkspur)
         prof = [(0, 0), (1.2, 0), (1.2, 0.6), (0.7, 1.1), (0.6, 2.2), (0.95, 2.5), (0.95, 2.8), (0.55, 3.2), (0.5, 4.0),
                 (0.8, 4.3), (0.8, 4.6), (0.45, 5.0), (0.4, 6.4), (0.0, 7.0)]
+    elif style == "spike":               # an iron spike: a turned base, a round ball, a collar and a long thin point (the Camellia)
+        prof = [(0, 0), (1.2, 0), (1.2, 0.5), (0.7, 0.9), (0.6, 1.3), (1.05, 1.75), (1.15, 2.2), (1.05, 2.65), (0.6, 3.1),
+                (0.45, 3.5), (0.75, 3.8), (0.75, 4.0), (0.4, 4.35), (0.3, 6.3), (0.0, 7.0)]
     elif style == "pinnacle":            # Eastlake: a square-looking turned spike with a ball
         prof = [(0, 0), (1.2, 0), (1.2, 0.8), (0.8, 1.2), (0.8, 2.0), (1.1, 2.3), (1.1, 2.7), (0.6, 3.2), (0.5, 4.2),
                 (0.9, 4.6), (0.9, 5.2), (0.4, 5.7), (0.3, 7.0), (0.0, 8.0)]
@@ -603,6 +632,25 @@ def foundation_skin(style, reg, seed=0):
             j += 1
         blocks = M.extrude(cs_union(cells) ^ reg, 0.45)
         return blocks - M.extrude(cs_union(pits) ^ reg, 1.0).translate([0, 0, 0.25])
+    if style == "diamond":               # diamond-point rustication: each block dressed to a low hipped point (the Camellia)
+        b = reg.bounds()
+        out, v, j = [], b[1], 0
+        ch = 2.4
+        while v < b[3]:
+            u = b[0] - (j % 2) * 2.4
+            while u < b[2]:
+                L_ = 4.8
+                blk = rect(u + 0.25, v + 0.25, u + L_ - 0.25, v + ch - 0.25)
+                if not (blk ^ reg).is_empty():
+                    x0, y0, x1, y1 = u + 0.25, v + 0.25, u + L_ - 0.25, v + ch - 0.25
+                    hh = (y1 - y0) / 2
+                    pts = [(x, y, 0.0) for x in (x0, x1) for y in (y0, y1)] + \
+                          [(x0 + hh, y0 + hh, 0.5), (x1 - hh, y0 + hh, 0.5)]
+                    out.append(M.hull_points(pts) ^ M.extrude(reg, 1.0))
+                u += L_
+            v += ch
+            j += 1
+        return union(out)
     if style == "tuckpoint":             # red brick with raised white tuck-pointed joints (the Juniper)
         from . import skins as S
         b = reg.bounds()
@@ -786,6 +834,9 @@ BELTS = {
     # a stepped band with small blocks in pairs (the Myrtle)
     "twinblock": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.0, 3.3), (1.0, 3.8), (1.3, 4.1), (1.3, 4.4)],
                   dict(w=0.7, z=1.0, h=1.6, d0=0.5, d=0.4, c=0.2, pitch=5.6, pair=1.5, margin=2.6)),
+    # a fascia hung with swags between rosettes (the Camellia)
+    "swag": ([(0.0, 0.0), (0.5, 0.5), (0.5, 3.4), (0.9, 3.8), (0.9, 4.4)],
+             dict(kind="swag", w0=0.5, zr=2.9, sag=1.5, pitch=4.4, margin=0.9)),
     # two stepped fascias (the Rosecroft)
     "fillet": ([(0.0, 0.0), (0.4, 0.4), (0.4, 1.6), (0.8, 2.0), (0.8, 3.6), (1.2, 4.0), (1.2, 4.4)], None),
     # a bell-cast shingled skirt: widest at its foot, three courses of shingle butts
@@ -812,7 +863,8 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     (a horizontal console under a cornice, its front rolled under), knee, volute, beaded (a
     console whose sloping front is a string of three beads), fret, ladder, acanthus (an S
     console with a lobed front and an open eye), twin (two slim consoles on one head) and cove
-    (a square head over a concave sweep) and tongue (a long slim taper with a round end)."""
+    (a square head over a concave sweep), tongue (a long slim taper with a round end) and ring
+    (a sawn bracket pierced with a round eye)."""
     from .ornament import console, side_profile
     if style == "scroll":
         return console(h, d, t, u=u, v_top=v_top, w0=w0)
@@ -905,6 +957,11 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
               [(d - R_ + R_ * math.cos(a), -hd - R_ + R_ * math.sin(a)) for a in np.linspace(0.0, -math.pi / 2, 12)][1:] + \
               [(0.6, -hd - R_), (0.6, -h), (0.0, -h)]
         prof = poly(pts)
+    elif style == "ring":               # a sawn bracket pierced with a round eye, a ball at its foot (the Camellia)
+        body = poly([(0.0, 0.0), (d, 0.0), (d, -0.8), (0.7, -h + 0.5), (0.0, -h + 0.5)])
+        rr = max(0.5, min(d, h) * 0.17)
+        eye = circle((0.2 + d * 0.38, -h * 0.34), rr, 20)
+        prof = cs_union([body - eye, circle((0.35, -h + 0.45), 0.45, 16)])
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])
