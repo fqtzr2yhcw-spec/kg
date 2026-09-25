@@ -407,8 +407,9 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     stepped triple keystone), "halo" (a round moulding over a round head, with a drop
     keystone), "rosettes" (a head board with three rosette blocks under a cap), "ancon" (a
     square architrave round an arched head, a frieze and a cap on scroll consoles),
-    "cartouche" (a moulded hood with ears and an oval cartouche at the crown) or "pent" (a
-    head board under a little shingled pent roof on brackets). The brick arch of a brick
+    "cartouche" (a moulded hood with ears and an oval cartouche at the crown), "pent" (a
+    head board under a little shingled pent roof on brackets) or "tablet" (a head board with a
+    raised oval tablet and end blocks under a thin cap). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -538,6 +539,18 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
         for sg in (-1, 1):
             parts.append(ext(circle((sg * 1.35, cy - 0.5), 0.5, 16), 0.0, 0.8))
         top = cy + 1.4
+    elif head == "tablet":
+        # a flat head board with a raised oval tablet at its middle and a block at each end,
+        # under a thin cap (the Juniper)
+        lw = w / 2 + casing + 0.8
+        v0 = h + casing
+        parts.append(box([-lw, v0 - 0.01, 0.0], [lw, v0 + 2.0, 0.6]))
+        ov = poly([(1.6 * math.cos(a), v0 + 1.0 + 0.7 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 28, endpoint=False)])
+        parts.append(ext(ov, 0.59, 1.0))
+        for sg in (-1, 1):
+            parts.append(chamfer_box(sg * lw - 0.7, v0 + 0.2, sg * lw + 0.7, v0 + 1.8, 0.6, 0.4, c=0.15))
+        parts.append(chamfer_box(-lw - 0.4, v0 + 2.0, lw + 0.4, v0 + 2.6, 0.0, 1.0, c=0.2, bottom=0.6))
+        top = v0 + 2.6
     elif head == "pent":
         # Queen Anne: a head board, then a little pent roof of shingles over the window on a
         # cove bracket at each end (the Larkspur)

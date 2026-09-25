@@ -87,6 +87,12 @@ def double_lap(region, datum=0.0):
                               (2.2, 0.14), (2.4, 0.10)], datum)
 
 
+def wide_lap(region, datum=0.0):
+    """Wide clapboard: 2.8 mm boards (a 10" exposure) on a long, even bevel, each butt a
+    deep square shadow line (the Juniper)."""
+    return _lap(region, 2.8, [(0.0, 0.46), (0.25, 0.46), (0.3, 0.42), (2.8, 0.10)], datum)
+
+
 def chamfer_lap(region, datum=0.0):
     """Chamfered lap siding: 2.0 mm boards whose butts are cut back at 45 degrees, so each
     course carries a bright bevel under a flat face (the Larkspur)."""

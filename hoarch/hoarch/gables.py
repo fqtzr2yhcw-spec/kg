@@ -482,3 +482,41 @@ def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
                         poly([(L / 2 - 0.45, H + finial - 1.0), (L / 2 + 0.45, H + finial - 1.0), (L / 2, H + finial)])])
         out.append(ext(fcs, 0.0, d + 0.2))
     return union(out)
+
+
+def gable_pendant(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
+    """Queen Anne gable ornament hung on the rake: raking boards, a pair of curved braces
+    springing from the rafters to a turned king pendant that hangs below them from the apex,
+    and a spike over the apex (the Juniper). Flat, prints face-up; place at w = rake."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    depth = skin + width
+    band = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    rafters = cs_union(band) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    H = tip[1]
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    cx = L / 2
+    # the king pendant: a post from the apex down to about a third of the gable's height,
+    # swelling to a turned drop at its foot
+    pv = H * 0.36
+    post = rect(cx - 0.6, pv, cx + 0.6, H)
+    drop = cs_union([circle((cx, pv), 1.0, 24), poly([(cx - 0.7, pv - 0.4), (cx + 0.7, pv - 0.4), (cx, pv - 2.6)])])
+    # curved braces: quarter arcs from each rafter to the pendant, their undersides round
+    braces = []
+    R = min(L * 0.22, (H - pv) * 0.7)
+    for sg in (-1, 1):
+        cc = (cx + sg * R, pv + R * 0.2)
+        ring = circle(cc, R + 0.35, 48) - circle(cc, R - 0.35, 48)
+        quad = rect(min(cx, cx + sg * R), pv, max(cx, cx + sg * R), H)
+        braces.append(ring ^ quad)
+    frame = (cs_union([post] + braces) ^ tri) + rafters + drop
+    out = [ext(frame, 0.0, d), ext(post.offset(-0.2) ^ tri, 0.0, d + 0.4)]
+    if finial:
+        fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.0),
+                        poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
+        out.append(ext(fcs, 0.0, d + 0.2))
+    return union(out)

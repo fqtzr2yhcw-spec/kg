@@ -343,7 +343,7 @@ def _pier_skin(style, reg, seed):
             v += ch
             j += 1
         return M.extrude(cs_union(cells) ^ reg, 0.35)
-    if style in ("coquina", "pebble", "drafted"):
+    if style in ("coquina", "pebble", "drafted", "tuckpoint"):
         from .trimwork import foundation_skin
         return foundation_skin(style, reg, seed=seed)
     return brick(reg, bl=2.0, d=0.2)
@@ -388,7 +388,7 @@ def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT
 
 
 ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain", "scallop",
-              "beadreel", "notched", "lozenge")
+              "beadreel", "notched", "lozenge", "billet")
 
 
 def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None, edge="dentil"):
@@ -401,7 +401,7 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
     cove (a concave crown, no ornament), drop (Gothic points), sticks (Stick battens),
     button (round bosses), reeded (grooves cut along the fascia), scallop (a valance of
     half-round scallops), beadreel, notched (V notches cut up the fascia), lozenge (a band of
-    raised lozenges), plain."""
+    raised lozenges), billet (square billets, alternate ones longer), plain."""
     if not dent:
         edge = "plain"
     top = z0 + fascia + th - 0.4
@@ -458,6 +458,11 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
             cs = cs_union([circle((u, zc - 0.2), 0.72, 20) for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
             cs = (cs + rect(0.3, zc - 0.6, L - 0.3, zc)) ^ rect(0.0, zc - 1.2, L, zc)
             parts.append(f.place(ext(cs, 0.0, 0.6)))
+        elif edge == "billet":             # short square billets in a row under the crown, alternate ones set lower
+            n = max(1, int((L - 1.2) / 1.2))
+            cs = cs_union([rect(u - 0.4, zc - (1.2 if k % 2 else 0.8), u + 0.4, zc)
+                           for k, u in enumerate(0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
+            parts.append(f.place(ext(cs, 0.0, 0.5)))
         elif edge == "lozenge":            # a band of raised lozenges along the fascia, hung from the crown
             n = max(1, int((L - 1.2) / 2.4))
             cs = cs_union([poly([(u - 1.0, zc - 1.0), (u, zc - 1.6), (u + 1.0, zc - 1.0), (u, zc - 0.4)])
@@ -745,7 +750,8 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
         parts.append(PW.fill_flat(style, L, vb - 0.01, vt + 0.01))
     else:
         mk, pt = {"turned": (baluster, pitch), "vase": (PW.baluster_vase, 2.4), "urn": (PW.baluster_urn, 2.4),
-                  "spindle": (PW.spindle, 1.25), "bead": (PW.baluster_bead, 1.9), "twist": (PW.baluster_twist, 1.7)}[style]
+                  "spindle": (PW.spindle, 1.25), "bead": (PW.baluster_bead, 1.9), "twist": (PW.baluster_twist, 1.7),
+                  "ringed": (PW.baluster_ringed, 1.6)}[style]
         n = max(1, int(round((L - 1.4) / pt)))
         for j in range(n):
             u = 0.7 + (L - 1.4) * (j + 0.5) / n
@@ -931,7 +937,9 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
     runs: list of dict(a, b, posts=[u, ...]) in CCW order (u from a along the yard edge);
     posts stand ``inset`` inside the yard edge, and a post at a corner is shared by the two
     runs (give it at u = L - inset on one run and u = inset on the next). The longer run's
-    arcade covers a shared corner post; the shorter one stops against it.
+    arcade covers a shared corner post; the shorter one stops against it. At an inside
+    (reflex) corner the shared post stands past the ends, at u = L + c and u = -c; a run may
+    then give ``piers=[u, ...]`` to keep its skirt piers on the yard edge.
     Returns dict(deck, floor, posts=[world solid], rails=[world solid], arcades=[(world solid,
     A)], roof, steps=[(local, A)], sockets=[(x, y)]).
     ``joined``: the posts and railings of each connected chain of runs are one piece
@@ -945,7 +953,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             if np.allclose(a, r["a"], atol=0.05) and np.allclose(b, r["b"], atol=0.05):
                 edges.append((i, r))
     outer = [i for i, _ in edges]
-    piers = {i: list(r["posts"]) for i, r in edges}
+    piers = {i: list(r.get("piers", r["posts"])) for i, r in edges}
     if planks is not None:
         planks = dict(planks)
         if planks.get("along") is None:
@@ -1011,7 +1019,8 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         # arcade ends: stop against a corner post covered by a longer neighbour's arcade
         u0, u1 = us[0] - 1.5, us[-1] + 1.5
         prev, nxt = runs[k - 1] if k > 0 else None, runs[k + 1] if k + 1 < len(runs) else None
-        if prev is not None and np.allclose(prev["b"], r["a"], atol=0.05) and lens[k - 1] > lens[k]:
+        if prev is not None and np.allclose(prev["b"], r["a"], atol=0.05) and lens[k - 1] > lens[k] - 1e-6:
+            # (on a tie, e.g. the equal facets of a curved run, the later run stops)
             u0 = us[0] + beam / 2 + 0.1
             stops.append((k, k - 1, us[0]))
         if nxt is not None and np.allclose(nxt["a"], r["b"], atol=0.05) and lens[k + 1] > lens[k]:

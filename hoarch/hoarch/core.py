@@ -394,6 +394,10 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 a_, b_ = u + gap / 2, u + wtab - gap / 2
                 c = (a_ + b_) / 2
                 tabs.append(poly([(a_, vk + 0.5), (c, vk), (b_, vk + 0.5), (b_, top), (a_, top)]))
+            elif shp == "swallow":        # a swallowtail butt: cut in a shallow V up to the middle, points at the corners
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                c = (a_ + b_) / 2
+                tabs.append(poly([(a_, vk), (c, vk + 0.5), (b_, vk), (b_, top), (a_, top)]))
             elif shp == "saw":            # sawtooth butts: each butt slopes up from one corner to the other
                 tabs.append(poly([(u + gap / 2, vk), (u + wtab - gap / 2, vk + min(r, 0.7)),
                                   (u + wtab - gap / 2, top), (u + gap / 2, top)]))

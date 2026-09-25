@@ -238,7 +238,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
 
 
 CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope",
-                 "notched", "banded", "cabled", "reveal")
+                 "notched", "banded", "cabled", "reveal", "rosette")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -259,7 +259,9 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
       banded    a pilaster banded by raised blocks every 3.6 mm (the Laurel)
       cabled    two flutes, their lower third filled with round cables (the Myrtle)
       reveal    two narrow boards with a sunk reveal between them, on a plinth, under a cap
-                (the Larkspur)"""
+                (the Larkspur)
+      rosette   a plain board with square Eastlake blocks carrying round rosettes at its
+                foot and head (the Juniper)"""
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
@@ -343,6 +345,12 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
                 body = body + M.cylinder(vc - f0, 0.25, 0.25, 12).transform(
                     np.array([[1.0, 0, 0, um + du], [0, 0, 1.0, f0], [0, 1.0, 0, t - 0.3]]))
             return body
+    if style == "rosette":              # Eastlake corner blocks with rosettes at the foot and head
+        for va, vb in ((qa, qa + 2.4), (qb - 2.4, qb)):
+            if vb - va > 1.0:
+                parts.append(chamfer_box(far0, va, far1, vb, t - 0.01, 0.35, c=0.15))
+                um = (far0 + far1) / 2
+                parts.append(M.cylinder(0.3, 0.7, 0.55, 20).translate([um, (va + vb) / 2, t + 0.33]))
     if style == "reveal":               # two narrow boards parted by a sunk reveal
         parts.append(box([far0, qa, 0], [far1, qa + 1.4, t + 0.3]))
         parts.append(box([far0, qb - 1.2, 0], [far1, qb, t + 0.3]))

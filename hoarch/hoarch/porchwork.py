@@ -260,9 +260,25 @@ def post_paired(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
     return body
 
 
+def post_vase(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A vasiform turned post: a square foot block, a shaft swelling into one long vase and
+    necking in under a ring, a square block under the capital (the Juniper)."""
+    zb, zt = 2.8, h - 3.2
+    L_ = zt - zb
+    prof = [(0.0, zb - 0.01), (1.0, zb - 0.01), (1.0, zb + 0.3), (0.8, zb + 0.6), (0.9, zb + L_ * 0.2),
+            (1.15, zb + L_ * 0.42), (1.1, zb + L_ * 0.55), (0.75, zb + L_ * 0.78), (0.6, zb + L_ * 0.9),
+            (0.9, zt - 0.5), (0.9, zt - 0.2), (1.0, zt + 0.01)]
+    body = _plinth() + box([-1.2, -1.2, 1.19], [1.2, 1.2, zb]) + _revolve(prof, 28)
+    if collar is not None:
+        body = body + box([-1.2, -1.2, collar - 1.6], [1.2, 1.2, collar + 0.2])
+    body = body + box([-1.1, -1.1, zt], [1.1, 1.1, h - 1.8])
+    return body + _top(h, abacus / 2, h - 1.8, 1.1, slot, shape="square")
+
+
 POSTS = {"turned": post_turned, "tuscan": post_tuscan, "fluted": post_fluted, "chamfered": post_chamfered,
          "clustered": post_clustered, "stick": post_stick, "spindle": post_spindle, "eastlake": post_eastlake,
-         "boxed": post_boxed, "bobbin": post_bobbin, "notched": post_notched, "paired": post_paired}
+         "boxed": post_boxed, "bobbin": post_bobbin, "notched": post_notched, "paired": post_paired,
+         "vase": post_vase}
 
 
 # ------------------------------------------------------------------ railing fills (between the rails)
@@ -360,6 +376,14 @@ def baluster_twist(h, seg=16):
     L_ = h - 1.6
     shaft = M.extrude(lobes, L_, int(L_ / 0.2), 360.0 * L_ / 3.0).translate([0, 0, 0.8])
     return shaft + box([-0.5, -0.5, 0.0], [0.5, 0.5, 0.81]) + box([-0.5, -0.5, h - 0.81], [0.5, 0.5, h])
+
+
+def baluster_ringed(h, seg=20):
+    """A slim round baluster with two raised rings at its middle, square ends (the Juniper)."""
+    zm = h / 2
+    prof = [(0.0, 0.8), (0.34, 0.8), (0.34, zm - 1.0), (0.55, zm - 0.8), (0.55, zm - 0.5), (0.34, zm - 0.3),
+            (0.34, zm + 0.3), (0.55, zm + 0.5), (0.55, zm + 0.8), (0.34, zm + 1.0), (0.34, h - 0.8)]
+    return _revolve(prof, seg) + box([-0.5, -0.5, 0.0], [0.5, 0.5, 0.81]) + box([-0.5, -0.5, h - 0.81], [0.5, 0.5, h])
 
 
 def spindle(h, r=0.33, seg=14):
@@ -483,6 +507,26 @@ def frieze_rosette(u0, u1, v_bot, v_top):
     return cs_union(parts) - cs_union(holes)
 
 
+def frieze_fans(u0, u1, v_bot, v_top):
+    """A plain frieze board with a quarter fan of pierced rays at each post and a small half
+    fan hung at the middle of the bay (the Juniper)."""
+    rail0 = v_top - 1.0
+    parts = [rect(u0, rail0, u1, v_top + 0.05)]
+
+    def fan(c, R, a0, a1):
+        disc = circle(c, R, 40)
+        wedge = poly([c] + [(c[0] + 2 * R * math.cos(a), c[1] + 2 * R * math.sin(a)) for a in np.linspace(a0, a1, 12)])
+        q = disc ^ wedge
+        slots = cs_union([stroke([(c[0] + 1.0 * math.cos(a), c[1] + 1.0 * math.sin(a)),
+                                  (c[0] + (R - 0.7) * math.cos(a), c[1] + (R - 0.7) * math.sin(a))], 0.5)
+                          for a in np.linspace(a0 + (a1 - a0) / 5, a1 - (a1 - a0) / 5, 3)])
+        return q - (slots ^ q.offset(-0.55))
+    parts.append(fan((u0, rail0), 3.4, -math.pi / 2, 0.0))
+    parts.append(fan((u1, rail0), 3.4, math.pi, 3 * math.pi / 2))
+    parts.append(fan(((u0 + u1) / 2, rail0), 2.2, math.pi, 2 * math.pi))
+    return cs_union(parts)
+
+
 def frieze_beads(u0, u1, v_bot, v_top):
     """Queen Anne ball-and-spindle frieze: a narrow board with a row of balls strung on a
     rod beneath it, and a pierced quarter bracket at each post (the Larkspur)."""
@@ -523,7 +567,7 @@ def frieze_drops(u0, u1, v_bot, v_top):
 
 FRIEZES = {"scroll": frieze_scroll, "entablature": frieze_entablature, "valance": frieze_valance,
            "spindle": frieze_spindle, "fret": frieze_fret, "rosette": frieze_rosette, "drops": frieze_drops,
-           "beads": frieze_beads}
+           "beads": frieze_beads, "fans": frieze_fans}
 
 
 # ------------------------------------------------------------------ skirts (under the deck)
@@ -584,6 +628,27 @@ def skirt_fill(style, reg, d=1.2):
         holes = [circle((u0 + L * (i + 0.5) / n, vm), r, 20) for i in range(n)] if r > 0.35 else []
         board = reg - cs_union(holes) if holes else reg
         return M.extrude(board, d)
+    if style == "vents":                # a board faced with swallowtail shingles, pierced by square vent grilles
+        from .core import scallop_rows
+        L = u1 - u0
+        n = max(1, int(round(L / 8.0)))
+        vm = round((v0 + v1) / 2 / 0.2) * 0.2       # grille edges on the layer grid (the deck prints upside down)
+        hs = min(1.6, round(((v1 - v0) / 2 - 0.8) / 0.2) * 0.2)
+        grills, holes = [], []
+        for i in range(n):
+            c = u0 + L * (i + 0.5) / n
+            if hs > 0.8:
+                box_cs = rect(c - hs, vm - hs, c + hs, vm + hs)
+                holes.append(box_cs)
+                grills.append((box_cs.offset(0.4, JoinType.Miter, 4.0) - box_cs) +
+                              cs_union([rect(x - 0.25, vm - hs, x + 0.25, vm + hs) for x in np.linspace(c - hs + 0.8, c + hs - 0.8, 3)]))
+        board = reg - cs_union(holes) if holes else reg
+        out = M.extrude(board, d * 0.5)
+        sh = scallop_rows(board, 1.4, 1.8, d=d * 0.5, shape="swallow", lap=2.0).translate([0, 0, d * 0.5 - 0.02])
+        out = out + sh
+        if grills:
+            out = out + M.extrude(cs_union(grills) ^ reg, d)
+        return out
     if style == "stone":                # a solid wall of drafted rock-faced stone between the piers
         from .trimwork import foundation_skin
         return M.extrude(reg, d * 0.5) + foundation_skin("drafted", reg, seed=int(u0 * 7) % 31).translate([0, 0, d * 0.5 - 0.02])

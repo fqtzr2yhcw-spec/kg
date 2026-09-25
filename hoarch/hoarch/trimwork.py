@@ -86,7 +86,8 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
       and for the Main Street shops: party, stovepipe, coped, hooded, stepped, slab, tapered,
       twin and round (a round stack with iron bands and a corbelled crown, on a plinth);
       fluted (the cottage: sunk flutes down each face, a band, a corbelled cap and a pot);
-      clustered (the Larkspur: three round flues on a brick plinth),
+      clustered (the Larkspur: three round flues on a brick plinth), lozenge (the Juniper:
+      a sunk lozenge on each face under a two-step corbelled cap),
       crowned (the Primrose), dogtooth (the Rosecroft), roundel (the Laurel: stucco, a band,
       a roundel frieze, a stepped cornice and a capstone) and chequer (the Myrtle: brick with
       a chequer band of proud bricks under a corbelled cap)
@@ -268,6 +269,22 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
         body = body + _corbel_out(w2, d2, h - 2.4, 0.4) + box([-w2 / 2 - 0.4, -d2 / 2 - 0.4, h - 2.41], [w2 / 2 + 0.4, d2 / 2 + 0.4, h - 1.6])
         body = body + box([-w2 / 2 - 0.1, -d2 / 2 - 0.1, h - 1.61], [w2 / 2 + 0.1, d2 / 2 + 0.1, h])
         return body - box([-w2 / 2 + 0.7, -d2 / 2 + 0.7, h - 1.0], [w2 / 2 - 0.7, d2 / 2 - 0.7, h + 1])
+    if style == "lozenge":
+        # brick with a sunk lozenge panel on each face, a band and a two-step corbelled cap (the Juniper)
+        sh = zq(h - 2.0)
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + _skin(w, d, 0.0, sh - 0.2, _brick("running"))
+        zc_ = zq(sh - 5.0)
+        for f in _faces(w, d):
+            L_ = f.L
+            dia = poly([(L_ / 2, zc_ - 2.2), (L_ / 2 + min(1.6, L_ * 0.3), zc_), (L_ / 2, zc_ + 2.2), (L_ / 2 - min(1.6, L_ * 0.3), zc_)])
+            body = body - f.place(ext(dia, -0.4, 1.0))
+        g = 0.0
+        for k in range(2):
+            body = body + _corbel_out(w + 2 * g, d + 2 * g, sh + 0.4 + 0.8 * k, 0.4) + \
+                box([-w / 2 - g - 0.4, -d / 2 - g - 0.4, sh + 0.39 + 0.8 * k], [w / 2 + g + 0.4, d / 2 + g + 0.4, sh + 0.8 + 0.8 * k])
+            g += 0.4
+        body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, sh + 1.59], [w / 2 + 0.8, d / 2 + 0.8, h])
+        return body - box([-w / 2 + 1.0, -d / 2 + 1.0, h - 1.0], [w / 2 - 1.0, d / 2 - 1.0, h + 1])
     if style == "clustered":
         # three round flues rising from a brick plinth, each with a band and a corbelled crown,
         # joined by a shared cap slab under their crowns (the Larkspur)
@@ -423,7 +440,8 @@ CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone"
 def finial(style, r=1.2, h=8.0, seg=28):
     """Turned finials, one per building with a tower, spire or cupola:
     urn (Beaumont), acorn (Ashby), iron (Harcourt), ball (Fowler), stack (Ardmore),
-    spire (Carrow), onion (the drugstore's turret), vane (the Rosecroft), lance (the Larkspur)."""
+    spire (Carrow), onion (the drugstore's turret), vane (the Rosecroft), lance (the Larkspur),
+    fleur (the Juniper)."""
     if style == "urn":
         from .ornament import finial as f0
         return f0(r, h)
@@ -448,6 +466,17 @@ def finial(style, r=1.2, h=8.0, seg=28):
         prof = [(x * k, z * k) for x, z in prof] + [(0.4, h), (0.0, h)]
         from .porchwork import _clamp45
         return M.revolve(poly(_clamp45([(max(x, 0.4) if 0 < x < 0.4 else x, z) for x, z in prof])), seg)
+    elif style == "fleur":               # a rod carrying a fleur-de-lis head (added below) over a turned collar (the Juniper)
+        prof = [(0, 0), (1.2, 0), (1.2, 0.6), (0.8, 1.0), (0.7, 2.0), (1.0, 2.3), (1.0, 2.7), (0.45, 3.1), (0.4, 7.0),
+                (0.0, 7.0)]
+        prof = [(x * k, z * h / 7.0) for x, z in prof]
+        from .porchwork import _clamp45
+        rod = M.revolve(poly(_clamp45([(max(x, 0.4) if 0 < x < 0.4 else x, z) for x, z in prof])), seg)
+        petals = cs_union([poly([(-0.35, 0.0), (0.35, 0.0), (0.35, 1.4), (0.0, 2.2), (-0.35, 1.4)])] +
+                          [stroke([(0.0, 0.2), (sg * 0.9, 0.7), (sg * 1.0, 1.5)], 0.5) for sg in (-1, 1)] +
+                          [rect(-0.9, -0.4, 0.9, 0.4)])
+        head = M.extrude(petals, 0.8).translate([0, 0, -0.4]).transform(np.array([[1.0, 0, 0, 0], [0, 0, -1.0, 0], [0, 1.0, 0, h - 0.4]]))
+        return rod + head
     elif style == "lance":               # a tall slim lance: a turned base, two rings and a long spike (the Larkspur)
         prof = [(0, 0), (1.2, 0), (1.2, 0.6), (0.7, 1.1), (0.6, 2.2), (0.95, 2.5), (0.95, 2.8), (0.55, 3.2), (0.5, 4.0),
                 (0.8, 4.3), (0.8, 4.6), (0.45, 5.0), (0.4, 6.4), (0.0, 7.0)]
@@ -485,7 +514,7 @@ def foundation_skin(style, reg, seed=0):
     pebble-dash over a smooth base course), banded (the Rosecroft: smooth courses of two
     heights in turn), panelled (the Laurel and Myrtle pair: a wooden raised basement of
     raised panels over a base board) and drafted (the Larkspur: rock-faced blocks with smooth
-    chisel-drafted margins)."""
+    chisel-drafted margins) and tuckpoint (the Juniper: brick with raised pointing)."""
     from . import skins as S
     if style == "fieldstone":
         return ashlar(reg, course=(2.6, 3.9), length=(3.5, 8.5), d=0.55, seed=seed)
@@ -574,6 +603,18 @@ def foundation_skin(style, reg, seed=0):
             j += 1
         blocks = M.extrude(cs_union(cells) ^ reg, 0.45)
         return blocks - M.extrude(cs_union(pits) ^ reg, 1.0).translate([0, 0, 0.25])
+    if style == "tuckpoint":             # red brick with raised white tuck-pointed joints (the Juniper)
+        from . import skins as S
+        b = reg.bounds()
+        brick_ = S.brick_bond(reg, "running", bl=2.4, bh=0.8, mortar=0.5, bed=0.4, d=0.3)
+        joints = []
+        v = b[1]
+        k = 0
+        while v < b[3]:
+            joints.append(rect(b[0] - 1, v + 0.8, b[2] + 1, v + 1.2))
+            v += 1.2
+            k += 1
+        return brick_ + M.extrude(cs_union(joints) ^ reg, 0.12)
     if style == "drafted":               # rock-faced blocks in courses, each ringed by a smooth chisel-drafted margin
         b = reg.bounds()
         out, v, j = [], b[1], 0
@@ -733,6 +774,9 @@ BELTS = {
     "string": ([(0.0, 0.0), (0.5, 0.5), (0.5, 3.4), (1.1, 4.0), (1.1, 4.4)], None),
     "cyma": ([(0.0, 0.0), (0.4, 0.4), (0.7, 0.8), (0.85, 1.2), (0.9, 1.6), (1.0, 2.0), (1.2, 2.3), (1.5, 2.6),
               (1.5, 3.2), (1.2, 3.5), (1.2, 4.0)], None),
+    # a fascia carrying three half-round reeds (the Juniper)
+    "reeded": ([(0.0, 0.0), (0.4, 0.4), (0.4, 0.8), (0.7, 1.1), (0.7, 1.5), (0.4, 1.8), (0.7, 2.1), (0.7, 2.5),
+                (0.4, 2.8), (0.7, 3.1), (0.7, 3.5), (0.4, 3.8), (0.8, 4.2), (0.8, 4.4)], None),
     # a fascia carrying a half-round astragal between two fillets (the Larkspur)
     "astragal": ([(0.0, 0.0), (0.4, 0.4), (0.4, 1.8), (0.6, 2.0), (0.8, 2.2), (0.9, 2.6), (0.8, 3.0), (0.6, 3.2),
                   (0.4, 3.2), (0.4, 3.6), (0.8, 4.0), (0.8, 4.4)], None),
@@ -768,7 +812,7 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     (a horizontal console under a cornice, its front rolled under), knee, volute, beaded (a
     console whose sloping front is a string of three beads), fret, ladder, acanthus (an S
     console with a lobed front and an open eye), twin (two slim consoles on one head) and cove
-    (a square head over a concave sweep)."""
+    (a square head over a concave sweep) and tongue (a long slim taper with a round end)."""
     from .ornament import console, side_profile
     if style == "scroll":
         return console(h, d, t, u=u, v_top=v_top, w0=w0)
@@ -851,6 +895,9 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
         pair = [side_profile(blade, sg * t / 2 - (tb if sg > 0 else 0.0), sg * t / 2 + (tb if sg < 0 else 0.0))
                 for sg in (-1, 1)]
         return union([head] + pair).translate([u, v_top, w0])
+    elif style == "tongue":             # a long slim tongue: a square head, a straight taper and a round end (the Juniper)
+        prof = cs_union([poly([(0.0, 0.0), (d, 0.0), (d, -0.8), (0.9, -h + 0.45), (0.0, -h + 0.45)]),
+                         circle((0.45, -h + 0.45), 0.45, 16)])
     elif style == "cove":               # a square head over a concave quarter-round sweep and a foot block (the Larkspur)
         hd = min(1.0, h * 0.25)
         R_ = min(d - 0.6, h - hd - 0.6)
