@@ -12,7 +12,7 @@ surround sits beside the door. A porch sweeps round the foot of the tower and ac
 front on vasiform turned posts, with ringed balusters, a frieze of pierced fans, a billet
 fascia, a planked floor over a skirt of swallowtail shingles pierced by square vent grilles,
 and a gablet with a round-arched panel over the steps. Windows with a raised oval tablet in
-their head boards (two lights over one across three rows); doors with elliptical lights
+their head boards (six over one: the upper sash two lights across and three high); doors with elliptical lights
 under a star transom.
 
 usage: python3 -m hoarch.buildings.juniper [check] [export]
@@ -172,7 +172,7 @@ def build(kit=None):
     gy = (S_GABLE * ((FG[1] - FG[0]) / 2 + D_EAVE)) / S_MAIN + 4.0
     gx = (S_GABLE * ((SG[1] - SG[0]) / 2 + D_EAVE)) / S_MAIN + 4.0
     pieces = [(MAIN.pts, [0, 1, 2, 3], S_MAIN),
-              ([(FG[0], -r), (FG[1], -r), (FG[1], gy), (FG[0], gy)], [1, 3], S_GABLE),
+              ([(FG[0], -r), (FG[1], -r), (FG[1], gy), (FG[0], gy)], [1, 2, 3], S_GABLE),
               ([(W - gx, SG[0]), (W + r, SG[0]), (W + r, SG[1]), (W - gx, SG[1])], [0, 2], S_GABLE)]
     specs = [dict(p0=(FG[0], 0.0), p1=(FG[1], 0.0), slope=S_GABLE, e=0.3),
              dict(p0=(W, SG[0]), p1=(W, SG[1]), slope=S_GABLE, e=0.3)]
@@ -223,8 +223,13 @@ def build(kit=None):
     walls_env = union([wl["facade"].place(M.extrude(wl["cs"].offset(0.15), RAKE + 4.2).translate([0, 0, -3.15]))
                        for wl in rf["walls"]])
     zc = Z_EAVE + S_GABLE * ((FG[1] - FG[0]) / 2 + D_EAVE)
-    caps.append(G.ridge_cap(((FG[0] + FG[1]) / 2, -RAKE), ((FG[0] + FG[1]) / 2, (zc - Z_EAVE) / S_MAIN - D_EAVE + 1.0),
-                            zc, S_GABLE, ZE))
+    # the front gable's ridge stands above the main hip's east slope, so it ends in a hip of
+    # its own at the back, with caps on the two hip lines
+    fx = (FG[0] + FG[1]) / 2
+    fy = gy + D_EAVE - (zc - Z_EAVE) / S_GABLE
+    caps.append(G.ridge_cap((fx, -RAKE), (fx, fy + 0.4), zc, S_GABLE, ZE))
+    for xc in (FG[0] - D_EAVE, FG[1] + D_EAVE):
+        caps.append(G.hip_cap((xc, gy + D_EAVE, Z_EAVE), (fx, fy, zc), half=1.3, up=0.7, drop=1.8))
     zc2 = Z_EAVE + S_GABLE * ((SG[1] - SG[0]) / 2 + D_EAVE)
     caps.append(G.ridge_cap((W + RAKE, (SG[0] + SG[1]) / 2), (W - ((zc2 - Z_EAVE) / S_MAIN - D_EAVE + 1.0), (SG[0] + SG[1]) / 2),
                             zc2, S_GABLE, ZE))
@@ -253,7 +258,10 @@ def build(kit=None):
     dkeep = ext(dface.offset(0.3, JoinType.Miter, 4.0), -DDEP - 0.3, 0.3).transform(Ad)
     roof = roof - pocket - (dkeep ^ box([-500, -500, zdf], [500, 500, 999])) - slab(offset(TOWER.cs, 1.4), ZE - 1, ZT + 60)
     dpocket = dkeep ^ box([-500, -500, zdf], [500, 500, 999])
-    roof = roof + (G.chimney_seat(solid_env, dxc, dyf + DDEP / 2, DW / 2, zdf + 1.0) - dpocket)
+    # the dormer's seat: a block standing on the bed inside the hollow roof (a seat pyramid's
+    # tip would start in mid-air this far down), its top the pocket's floor
+    dseat = box([dxc - DW / 2 - 1.3, dyf - 1.6, ZE], [dxc + DW / 2 + 1.3, dyf + DDEP + 1.3, zdf]) ^ solid_env
+    roof = roof + (dseat - dpocket)
     kit.add("ROOF", "Brown", roof, group="roof")
     ch = TW.chimney("lozenge", w=CW, d=CD, h=round((zr + 12.0 - z0) / 0.2) * 0.2).translate([cx, cy, z0])
     kit.add("CHIMNEY", "Brick", ch, group="roof")
@@ -270,8 +278,12 @@ def build(kit=None):
     kit.add("DORMER", "Sage", dsolid, group="roof")
     kit.add("DORMER-core", "Brown", dcore.transform(Ad), group="roof")
     rise = DW / 2 * 1.2
-    droof_cs = poly([(-DW / 2 - 1.2, DHW - 1.2 * 1.2), (0.0, DHW + rise + 0.2), (DW / 2 + 1.2, DHW - 1.2 * 1.2),
-                     (DW / 2 + 1.2, DHW - 1.2 * 1.2 + 1.4), (0.0, DHW + rise + 1.6), (-DW / 2 - 1.2, DHW - 1.2 * 1.2 + 1.4)])
+    # boxed eaves: a flat soffit at each side down to the body's wall top, so the roof prints
+    # upright standing on its two soffits
+    ez = DHW - 1.2 * 1.2
+    droof_cs = poly([(-DW / 2 - 1.2, ez), (-DW / 2, ez), (-DW / 2, DHW), (0.0, DHW + rise + 0.2), (DW / 2, DHW),
+                     (DW / 2, ez), (DW / 2 + 1.2, ez), (DW / 2 + 1.2, ez + 1.4), (0.0, DHW + rise + 1.6),
+                     (-DW / 2 - 1.2, ez + 1.4)])
     droof = ext(droof_cs, -DDEP - 6.0, 1.2).transform(Ad) - envd - dbody.transform(Ad) - roof
     kit.add("DORMER-roof", "Brown", droof, group="roof")
     print("roof", round(time.time() - t0, 1))
