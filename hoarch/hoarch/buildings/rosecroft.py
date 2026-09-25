@@ -6,9 +6,8 @@ Stick-style corner boards and a double-fascia belt between the floors. An octago
 stands forward at the middle of the front, rising a storey above the eaves to a bracketed eave
 and a crown: a ring of eight pointed gablets with lancet lights and spikes, a steep octagonal
 roof of round-cornered shingles behind them, an eight-light lantern, and a spire with a
-weathervane. Its door is a pair of leaves with
-keyhole lights under a chevron transom, sheltered by a gabled hood on fret brackets with a
-sunflower in its gable. On either side a steep front gable with a spoked-wheel ornament over
+weathervane. Its door is a pair of leaves with keyhole lights under a chevron transom,
+sheltered by a gabled hood on fret brackets with a sunflower in its gable. On either side a steep front gable with a spoked-wheel ornament over
 a collar of drops; under the west gable a two-storey canted bay with a bracketed eave and a
 low hip. Tall windows under peaked heads. A dogtooth brick chimney. In front, a white picket
 fence of arrow-headed pickets with an arched sign board over the gate.
@@ -166,7 +165,7 @@ def build(kit=None):
     rf = G.gabled_roof(pieces, Z_EAVE, D_EAVE, specs, texture="rounded", tex_kw=dict(pitch=1.5, wtab=2.0, d=0.42),
                        skin=SKIN, rake=RAKE, inner_cs=offset(MAIN.cs, -3.0), fascia=FASCIA, hollow=2.6)
     gables = [(MAIN, 0, wl["cs"].translate((g0, Z_EAVE - ZF))) for (g0, g1), wl in zip(GABLES, rf["walls"])]
-    bprof, _ = TW.BELTS["double"]
+    bprof, _ = TW.BELTS["fillet"]
     st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="notched", siding=_siding, gables=gables, prof=bprof,
                         belt_blocks=None, water_table=False)
     hood, brs, land = _hood_parts()
