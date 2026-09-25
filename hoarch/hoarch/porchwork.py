@@ -240,9 +240,29 @@ def post_notched(h, collar=None, abacus=3.0, slot=(1.2, 1.0), w=2.2):
     return body + _top(h, abacus / 2, h - 1.8, s, slot, shape="square")
 
 
+def post_paired(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """Queen Anne paired columns: two slim turned shafts side by side on one plinth block,
+    sharing a square capital block (the Larkspur). The pair runs along the railing."""
+    zb, zt = 2.4, h - 3.0
+    parts = [_plinth(p=3.6), box([-1.8, -1.2, 1.19], [1.8, 1.2, zb])]
+    for x in (-0.95, 0.95):
+        prof = [(0.0, zb - 0.01), (0.75, zb - 0.01), (0.75, zb + 0.3), (0.55, zb + 0.5), (0.5, zb + 1.0),
+                (0.46, zb + (zt - zb) * 0.5), (0.42, zt - 0.8), (0.6, zt - 0.6), (0.6, zt - 0.3), (0.45, zt - 0.1),
+                (0.45, zt + 0.01)]
+        parts.append(_revolve(prof, 24).translate([x, 0, 0]))
+    if collar is not None:
+        parts.append(box([-1.8, -1.0, collar - 1.4], [1.8, 1.0, collar + 0.2]))
+    body = union(parts) + M.hull_points([(x, y, zt) for x in (-1.5, 1.5) for y in (-0.5, 0.5)] +
+                                        [(x, y, zt + 1.0) for x in (-1.8, 1.8) for y in (-1.5, 1.5)])
+    body = body + box([-1.8, -1.5, zt + 0.99], [1.8, 1.5, h])
+    if slot:
+        body = body - box([-slot[0] / 2, -3, h - slot[1]], [slot[0] / 2, 3, h + 1])
+    return body
+
+
 POSTS = {"turned": post_turned, "tuscan": post_tuscan, "fluted": post_fluted, "chamfered": post_chamfered,
          "clustered": post_clustered, "stick": post_stick, "spindle": post_spindle, "eastlake": post_eastlake,
-         "boxed": post_boxed, "bobbin": post_bobbin, "notched": post_notched}
+         "boxed": post_boxed, "bobbin": post_bobbin, "notched": post_notched, "paired": post_paired}
 
 
 # ------------------------------------------------------------------ railing fills (between the rails)
@@ -331,6 +351,15 @@ def baluster_urn(h, seg=28):
          (1.0, 0.7)]
     prof = [(0.0, 0.0)] + [(r, f * h) for f, r in t]
     return _revolve(prof, seg)
+
+
+def baluster_twist(h, seg=16):
+    """A barley-twist baluster: a square block at each end and a shaft of a twisted
+    four-lobed section, printed upright (the Larkspur)."""
+    lobes = cs_union([circle((0.22 * math.cos(a), 0.22 * math.sin(a)), 0.28, 12) for a in np.linspace(0, 2 * math.pi, 4, endpoint=False)])
+    L_ = h - 1.6
+    shaft = M.extrude(lobes, L_, int(L_ / 0.2), 360.0 * L_ / 3.0).translate([0, 0, 0.8])
+    return shaft + box([-0.5, -0.5, 0.0], [0.5, 0.5, 0.81]) + box([-0.5, -0.5, h - 0.81], [0.5, 0.5, h])
 
 
 def spindle(h, r=0.33, seg=14):
@@ -454,6 +483,25 @@ def frieze_rosette(u0, u1, v_bot, v_top):
     return cs_union(parts) - cs_union(holes)
 
 
+def frieze_beads(u0, u1, v_bot, v_top):
+    """Queen Anne ball-and-spindle frieze: a narrow board with a row of balls strung on a
+    rod beneath it, and a pierced quarter bracket at each post (the Larkspur)."""
+    rail0 = v_top - 1.0
+    parts = [rect(u0, rail0, u1, v_top + 0.05)]
+    vb = rail0 - 1.5                     # the rod's faces on the layer grid (printed upside down)
+    parts.append(rect(u0 + 0.4, vb - 0.3, u1 - 0.4, vb + 0.3))
+    n = max(3, int((u1 - u0 - 2.0) / 1.5))
+    for k in range(n):
+        u = u0 + 1.0 + (u1 - u0 - 2.0) * (k + 0.5) / n
+        parts.append(circle((u, vb), 0.6, 16))
+        parts.append(rect(u - 0.25, vb, u + 0.25, rail0 + 0.05))
+    for sg, ue in ((1, u0), (-1, u1)):
+        R = 3.2
+        q = circle((ue, rail0), R, 32) ^ rect(min(ue, ue + sg * R), rail0 - R, max(ue, ue + sg * R), rail0)
+        parts.append(q - circle((ue + sg * R * 0.5, rail0 - R * 0.5), 0.7, 16))
+    return cs_union(parts)
+
+
 def frieze_drops(u0, u1, v_bot, v_top):
     """Stick-style frieze: a board with a row of hanging teardrop drops under it, and a
     quarter bracket at each post cut with a row of notches (the Rosecroft)."""
@@ -474,7 +522,8 @@ def frieze_drops(u0, u1, v_bot, v_top):
 
 
 FRIEZES = {"scroll": frieze_scroll, "entablature": frieze_entablature, "valance": frieze_valance,
-           "spindle": frieze_spindle, "fret": frieze_fret, "rosette": frieze_rosette, "drops": frieze_drops}
+           "spindle": frieze_spindle, "fret": frieze_fret, "rosette": frieze_rosette, "drops": frieze_drops,
+           "beads": frieze_beads}
 
 
 # ------------------------------------------------------------------ skirts (under the deck)
@@ -535,6 +584,9 @@ def skirt_fill(style, reg, d=1.2):
         holes = [circle((u0 + L * (i + 0.5) / n, vm), r, 20) for i in range(n)] if r > 0.35 else []
         board = reg - cs_union(holes) if holes else reg
         return M.extrude(board, d)
+    if style == "stone":                # a solid wall of drafted rock-faced stone between the piers
+        from .trimwork import foundation_skin
+        return M.extrude(reg, d * 0.5) + foundation_skin("drafted", reg, seed=int(u0 * 7) % 31).translate([0, 0, d * 0.5 - 0.02])
     if style == "sawtooth":             # upright boards with gaps between, each cut to a V point at the foot
         out = []
         for u in np.arange(u0 + 0.3, u1 - 0.8, 1.6):

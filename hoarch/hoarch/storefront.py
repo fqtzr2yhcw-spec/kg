@@ -406,8 +406,9 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     cap), "crested" (a cap with a cresting of little arches), "triple" (a lintel with a
     stepped triple keystone), "halo" (a round moulding over a round head, with a drop
     keystone), "rosettes" (a head board with three rosette blocks under a cap), "ancon" (a
-    square architrave round an arched head, a frieze and a cap on scroll consoles) or
-    "cartouche" (a moulded hood with ears and an oval cartouche at the crown). The brick arch of a brick
+    square architrave round an arched head, a frieze and a cap on scroll consoles),
+    "cartouche" (a moulded hood with ears and an oval cartouche at the crown) or "pent" (a
+    head board under a little shingled pent roof on brackets). The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -537,6 +538,24 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
         for sg in (-1, 1):
             parts.append(ext(circle((sg * 1.35, cy - 0.5), 0.5, 16), 0.0, 0.8))
         top = cy + 1.4
+    elif head == "pent":
+        # Queen Anne: a head board, then a little pent roof of shingles over the window on a
+        # cove bracket at each end (the Larkspur)
+        lw = w / 2 + casing + 0.6
+        v0 = h + casing
+        parts.append(box([-lw, v0 - 0.01, 0.0], [lw, v0 + 1.0, 0.6]))
+        pw = lw + 0.8
+        prof = poly([(0.0, 0.0), (1.4, 0.0), (1.4, 0.2), (0.0, 1.6)])                    # (w, v): the pent's section
+        pent = M.extrude(prof, 2 * pw).transform(np.array([[0, 0, 1.0, -pw], [0, 1.0, 0, v0 + 1.0], [1.0, 0, 0, 0]]))
+        ribs = [box([u - 0.25, v0 + 1.0, 0.0], [u + 0.25, v0 + 2.6, 1.6]) ^
+                M.extrude(poly([(0.0, 0.0), (1.6, 0.0), (1.6, 0.4), (0.0, 1.8)]), 2 * pw).transform(
+                    np.array([[0, 0, 1.0, -pw], [0, 1.0, 0, v0 + 1.0], [1.0, 0, 0, 0]]))
+                for u in np.linspace(-pw + 0.6, pw - 0.6, max(3, int(2 * pw / 1.4)))]
+        parts.append(pent + union(ribs))
+        for sg in (-1, 1):
+            u = sg * (lw - 0.3)
+            parts.append(chamfer_box(u - 0.4, v0 - 1.4, u + 0.4, v0 + 1.0, 0.0, 1.2, c=0.3, bottom=1.2))
+        top = v0 + 2.6
     elif head == "lintel":
         lw = w / 2 + casing + 1.0
         parts.append(chamfer_box(-lw, h, lw, h + 2.4, 0.0, 0.8, c=0.2))

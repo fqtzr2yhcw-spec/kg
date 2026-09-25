@@ -87,6 +87,12 @@ def double_lap(region, datum=0.0):
                               (2.2, 0.14), (2.4, 0.10)], datum)
 
 
+def chamfer_lap(region, datum=0.0):
+    """Chamfered lap siding: 2.0 mm boards whose butts are cut back at 45 degrees, so each
+    course carries a bright bevel under a flat face (the Larkspur)."""
+    return _lap(region, 2.0, [(0.0, 0.14), (0.3, 0.44), (1.2, 0.40), (2.0, 0.12)], datum)
+
+
 def narrow_lap(region, datum=0.0):
     """Narrow bevel siding: fine 1.2 mm courses (a 4" exposure), a crisp butt under a
     straight bevel, so a wall reads as a close, even ribbing (the Laurel)."""

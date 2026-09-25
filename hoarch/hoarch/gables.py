@@ -446,3 +446,39 @@ def gable_wheel(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, collar=0.34, finia
     fcs = cs_union([rect(L / 2 - 0.45, H - 0.6, L / 2 + 0.45, H + finial - 1.0),
                     poly([(L / 2 - 0.45, H + finial - 1.0), (L / 2 + 0.45, H + finial - 1.0), (L / 2, H + finial)])])
     return ext(frame, 0.0, d) + ext(fcs, 0.0, d + 0.2)
+
+
+def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
+    """Free Classic gable ornament hung on the rake: raking boards, a cornice board across the
+    gable's foot closing it into a pediment, and in the tympanum a half-round fan (a moulded
+    rim, rays and a hub) standing on the cornice; a spike over the apex (the Larkspur). Flat,
+    prints face-up; place at w = rake."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    depth = skin + width
+    band = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    rafters = cs_union(band) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    H = tip[1]
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    vb = 1.8
+    parts = [rect(-d_eave, 0.0, L + d_eave, vb)]                                   # the cornice across the foot
+    R = min(L * 0.24, (H - vb) * 0.62)
+    cx = L / 2
+    half = circle((cx, vb), R, 48) ^ rect(-5, vb - 0.01, L + 5, H)
+    rim = half - circle((cx, vb), R - 0.8, 48)
+    rays = cs_union([stroke([(cx, vb), (cx + R * math.cos(a), vb + R * math.sin(a))], 0.55)
+                     for a in np.linspace(math.pi / 8, 7 * math.pi / 8, 7)]) ^ half
+    hub = circle((cx, vb), min(1.4, R * 0.3), 24) ^ rect(-5, vb - 0.01, L + 5, H)
+    parts += [rim, rays, hub]
+    frame = (cs_union(parts) ^ tri) + rafters
+    out = [ext(frame, 0.0, d), ext(rim.offset(-0.15) + hub.offset(-0.15), 0.0, d + 0.4),
+           ext(rect(-d_eave, vb - 0.6, L + d_eave, vb) ^ tri, 0.0, d + 0.4)]
+    if finial:
+        fcs = cs_union([rect(L / 2 - 0.45, H - 0.6, L / 2 + 0.45, H + finial - 1.0),
+                        poly([(L / 2 - 0.45, H + finial - 1.0), (L / 2 + 0.45, H + finial - 1.0), (L / 2, H + finial)])])
+        out.append(ext(fcs, 0.0, d + 0.2))
+    return union(out)

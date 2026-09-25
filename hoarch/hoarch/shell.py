@@ -238,7 +238,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
 
 
 CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope",
-                 "notched", "banded", "cabled")
+                 "notched", "banded", "cabled", "reveal")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -257,7 +257,9 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
       rope      a twisted three-strand cable down the board (the Primrose)
       notched   cut across with V notches every 6 mm (the Rosecroft)
       banded    a pilaster banded by raised blocks every 3.6 mm (the Laurel)
-      cabled    two flutes, their lower third filled with round cables (the Myrtle)"""
+      cabled    two flutes, their lower third filled with round cables (the Myrtle)
+      reveal    two narrow boards with a sunk reveal between them, on a plinth, under a cap
+                (the Larkspur)"""
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
@@ -341,6 +343,12 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
                 body = body + M.cylinder(vc - f0, 0.25, 0.25, 12).transform(
                     np.array([[1.0, 0, 0, um + du], [0, 0, 1.0, f0], [0, 1.0, 0, t - 0.3]]))
             return body
+    if style == "reveal":               # two narrow boards parted by a sunk reveal
+        parts.append(box([far0, qa, 0], [far1, qa + 1.4, t + 0.3]))
+        parts.append(box([far0, qb - 1.2, 0], [far1, qb, t + 0.3]))
+        if qb - qa > 4.0:
+            um = (u0 + u1) / 2
+            return union(parts) - box([um - 0.3, qa + 1.4, t - 0.3], [um + 0.3, qb - 1.2, t + 0.5])
     if style == "panel" and qb - qa > 3.0:
         return union(parts) - box([u0 + 0.5, qa + 1.0, t - 0.2], [u1 - 0.5, qb - 1.0, t + 0.5])
     return union(parts)

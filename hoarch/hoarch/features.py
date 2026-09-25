@@ -343,7 +343,7 @@ def _pier_skin(style, reg, seed):
             v += ch
             j += 1
         return M.extrude(cs_union(cells) ^ reg, 0.35)
-    if style in ("coquina", "pebble"):
+    if style in ("coquina", "pebble", "drafted"):
         from .trimwork import foundation_skin
         return foundation_skin(style, reg, seed=seed)
     return brick(reg, bl=2.0, d=0.2)
@@ -388,7 +388,7 @@ def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT
 
 
 ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain", "scallop",
-              "beadreel", "notched")
+              "beadreel", "notched", "lozenge")
 
 
 def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None, edge="dentil"):
@@ -400,7 +400,8 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
     per building: dentil, modillion (blocks with bevelled feet), fillet (two raised bands),
     cove (a concave crown, no ornament), drop (Gothic points), sticks (Stick battens),
     button (round bosses), reeded (grooves cut along the fascia), scallop (a valance of
-    half-round scallops), beadreel, notched (V notches cut up the fascia), plain."""
+    half-round scallops), beadreel, notched (V notches cut up the fascia), lozenge (a band of
+    raised lozenges), plain."""
     if not dent:
         edge = "plain"
     top = z0 + fascia + th - 0.4
@@ -457,6 +458,11 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
             cs = cs_union([circle((u, zc - 0.2), 0.72, 20) for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
             cs = (cs + rect(0.3, zc - 0.6, L - 0.3, zc)) ^ rect(0.0, zc - 1.2, L, zc)
             parts.append(f.place(ext(cs, 0.0, 0.6)))
+        elif edge == "lozenge":            # a band of raised lozenges along the fascia, hung from the crown
+            n = max(1, int((L - 1.2) / 2.4))
+            cs = cs_union([poly([(u - 1.0, zc - 1.0), (u, zc - 1.6), (u + 1.0, zc - 1.0), (u, zc - 0.4)])
+                           for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))]) + rect(0.3, zc - 0.6, L - 0.3, zc)
+            parts.append(f.place(ext(cs, 0.0, 0.5)))
         elif edge == "notched":            # Stick style: V notches cut up the fascia every 2 mm
             n = max(1, int((L - 1.2) / 2.0))
             for k in range(n):
@@ -739,7 +745,7 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
         parts.append(PW.fill_flat(style, L, vb - 0.01, vt + 0.01))
     else:
         mk, pt = {"turned": (baluster, pitch), "vase": (PW.baluster_vase, 2.4), "urn": (PW.baluster_urn, 2.4),
-                  "spindle": (PW.spindle, 1.25), "bead": (PW.baluster_bead, 1.9)}[style]
+                  "spindle": (PW.spindle, 1.25), "bead": (PW.baluster_bead, 1.9), "twist": (PW.baluster_twist, 1.7)}[style]
         n = max(1, int(round((L - 1.4) / pt)))
         for j in range(n):
             u = 0.7 + (L - 1.4) * (j + 0.5) / n
