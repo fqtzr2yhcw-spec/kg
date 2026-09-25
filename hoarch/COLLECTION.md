@@ -6,11 +6,14 @@ FDM (0.4 mm nozzle, 0.20 mm layers), with windows and doors as the standout deta
 
 Work order for each building: concept → print checks (0 interfering pairs, lint) → renders
 (hero and a close-up) → commit. Export and slicing run in the background while the next
-building is designed. All ten houses are done, and so is a Main Street line of ten shops
-(11 to 20); a second batch of ten houses after the user's photos (21 on) is under way, each on a
-bigger footprint than the first ten; the lineup render is `out/lineup/cycles/lineup.png` (built by merging each
+building is designed. Twenty houses are done (1 to 10, and a second batch of ten after the
+user's photos, 21 to 30), and so is a Main Street line of ten shops (11 to 20). All twenty
+houses are on the house-size standard (each fills most of a 256 mm bed) with a built-up
+cornice at every level (the table under "Cornices per building"); the shops keep their
+original size. The lineup render is `out/lineup/cycles/lineup.png` (built by merging each
 building's render data); the shops stand side by side in two rows of five in
-`out/mainstreet/cycles/`. Every building has 0 interfering part pairs.
+`out/mainstreet/cycles/`. Every building has 0 interfering part pairs, and
+`python3 -m hoarch.audit` checks the houses against the owner's measurable rules (`CLAUDE.md`).
 
 | # | Building | Style | Status |
 |---|---|---|---|
@@ -46,6 +49,30 @@ building's render data); the shops stand side by side in two rows of five in
 | 30 | The Magnolia | Twin-gabled house with an entry loggia, combining the paired gables with the loggia idea, 112 x 87 mm: a ground storey of red brick in English cross bond on a V-jointed ashlar base, a brick corbel table with dentil headers at the floor line, butterscotch step-cut shingles above with dentilled corner boards; two steep front gables each with an arcade ornament (a band of little round arches with drops, a king post carrying a ring, a spike); a hipped roof of charcoal arch-cut shingles and a pilastered brick chimney; an entry loggia sunk into the ground storey between the gables behind three segmental arches on square piers with imposts and keystones, up a flight of steps; windows with a cross of bars in the upper sash under lambrequin head boards; doors with a spoked round light under an arched-bar transom | done: 43 parts, print files (6 h 56 m, 137 g) |
 
 ## Log
+- House-size standard and built-up cornices, on all twenty houses (the user: the Ashby's floors
+  were 35-40% smaller than the pink reference house; a cornice between every level, in several
+  parts and colours, never the same design twice; two colours in a part is fine if it is one
+  filament change). The Camellia, the Ashby and the Marigold were the pilots; the user
+  test-printed them before the rest followed.
+  - Every house fills most of the P1S/P2S bed: long side 150 to 210 mm. Most two-storey
+    houses have a 42 mm first storey, a joint band and a 38 mm second storey (the San
+    Francisco row houses 46 and 42 mm; the Whitby's upper storey is a knee wall). Windows (about 9.6 x 24 mm below, 21 mm above) never
+    fill a storey's height or a wall's width, and every sash has its own frame lining.
+  - A cornice at every level: each storey joint, each eave, and the tower, turret, bay,
+    cupola and ell tops. Each is a frieze, a course, a bracketed bed and a crown, and no two
+    levels in the collection are alike (the table below; 25 new frieze patterns).
+  - Each level prints as at most two parts with at most one filament change each: `-lower`
+    (frieze and course, upright) and `-upper` (bed and crown, upside down, the bed carried on
+    a 45 degree cove under the crown). A two-colour part has a plate of its own named for its
+    change, e.g. `07_Raspberry_then_White_at_3.0mm`.
+  - Rings that wrap a tower are parted so no piece wraps more than half of it, and each fits
+    on from the side.
+  - The user's fixes: fewer, framed windows in the Rosecroft's crown; a gabled dormer and an
+    uncovered gable window on the Larkspur; fewer tower windows and an uncovered gable window
+    on the Camellia; no bicycle on the Marigold; fewer porch posts on the Wisteria.
+  - Optional dark glass: the first 0.4 mm of every window is its glass, so one filament change
+    on the Windows_Doors plate gives dark glass in coloured frames.
+  - Every house's renders include a rear view.
 - Second batch, houses 21 to 30 (the Marigold, the Primrose, the Rosecroft, Laurel & Myrtle, the
   Larkspur, the Juniper, the Camellia, the Wisteria, the Hawthorn, the Magnolia). Houses 21 to 27
   follow the user's seven photos; 28 to 30 combine their features (a cottage with the curved
@@ -86,6 +113,73 @@ building's render data); the shops stand side by side in two rows of five in
 - Merritt: Stick-style windows and door (`window_stick`, `door_stick`), `gables.gable_truss`, braced porch arcade (`porch_turned(arcade="braced")`), stickwork siding hook that frames each window and X-braces the free panels, knee braces under the eaves.
 - Hollis: Folk Victorian windows and door (`window_folk`, `door_folk`: crossetted casing, frieze panel, dentils, pediment with a fan or a cap), `gables.gable_sunburst`, shutters fitted only where a pair has room.
 - Carrow: stone-and-shingle Queen Anne with a witch's-hat turret; ridge caps trimmed clear of the space under the rake skin (no nub under the gable peak).
+
+## Cornices per building
+
+Every level of every house has its own built-up cornice (`hoarch/cornice.py`; the method is in
+`NOTES.md` under "Built-up cornices"). Each row is one level: the frieze and the
+course print together upright as the level's `-lower` part, the bracketed bed and the crown
+together upside down as its `-upper` part (a level with only one of a pair keeps that ring's
+name, `-frieze` or `-crown`). No level, frieze pattern or bracket style appears on two
+buildings. The colours are the filament colours on each house's plates.
+
+| Building | Level | Frieze | Course | Bed (brackets) | Crown |
+|---|---|---|---|---|---|
+| Beaumont | storey joint | pendants, oxblood | bead and reel, cream | - | ogee, cream |
+|  | eave | shells, oxblood | dentil, cream | curve, cream | cyma reversa, oxblood |
+|  | bay | pendants, gold | - | curve, cream | bevel, cream |
+|  | tower top | hearts, oxblood | - | curve, cream | stepped, cream |
+| Ashby | storey joint | coffers, forest | egg and dart, white | - | torus, white |
+|  | eave | rinceau (vine scroll), forest | dentil, white | scroll, white | cyma recta, forest |
+|  | kitchen ell | pearls, forest | billet, white | - | cavetto, white |
+|  | cupola | oculi, white | - | scroll, forest | ovolo, white |
+| Harcourt | storey joint | acanthus, limestone | cable, verdigris | - | cyma recta, limestone |
+|  | eave | anthemion, verdigris | dentil, limestone | block, limestone | cavetto, verdigris |
+|  | bay | anthemion, limestone | - | block, verdigris | stepped, limestone |
+|  | tower top | bosses, limestone | - | block, verdigris | ovolo, limestone |
+| Fowler | storey joint | wreaths, forest | pellets, white | - | ovolo, white |
+|  | eave | paterae, forest | dentil, white | fan, white | torus, white |
+|  | cupola | lunettes, white | - | fan, forest | bevel, white |
+| Whitby | storey joint | pointed arcade, claret | dog-tooth, cream | - | bevel, cream |
+|  | eave | trefoils, claret | billet, cream | - | cavetto, cream |
+| Delancey | storey joint | incised lines, navy | scallop, cream | - | cyma reversa, cream |
+|  | eave | cartouches, navy | dentil, cream | pendant, cream | ogee, navy |
+| Ardmore | storey joint | interlace, buff | billet, terracotta | - | bevel, buff |
+|  | eave | corbel arches, buff | dog-tooth, terracotta | - | stepped, buff |
+|  | tower top | nailhead, terracotta | bead and reel, buff | - | ovolo, buff |
+| Merritt | storey joint | stick frames, oxide | blocks, cream | - | cavetto, cream |
+|  | eave | X-braced panels, oxide | cable, cream | brace, cream | bevel, cream |
+| Hollis | storey joint | diamonds, forest | drops, white | - | ovolo, white |
+|  | eave | teeth, forest | reeds, white | knee, white | cavetto, forest |
+| Carrow | storey joint | strapwork, plum | egg and dart, cream | - | cyma reversa, cream |
+|  | eave | Tudor roses, plum | dentil, cream | modillion, cream | cyma recta, plum |
+|  | turret top | crenellation, cream | - | volute, plum | ovolo, cream |
+| Marigold | eave | circles, gold | bead and reel, orange | sawn, gold | ogee, orange |
+| Primrose | storey joint | spindles, olive | rope, burgundy | - | cavetto, olive |
+|  | eave | guilloche, burgundy | dog-tooth, olive | beaded, olive | ovolo, burgundy |
+| Rosecroft | storey joint | fret, teal | cable, cream | - | bevel, teal |
+|  | eave | triglyphs, teal | dentil, cream | fret, teal | cyma recta, teal |
+|  | tower top | diaper, teal | - | fret, cream | ogee, teal |
+| Laurel & Myrtle | joint (Laurel) | panels, gold | egg and dart, cream | - | ogee, gold |
+|  | joint (Myrtle) | keys, forest | cable, sage | - | stepped, forest |
+|  | eave frieze (Laurel) | medallions, gold | dentil, cream | - | - |
+|  | eave frieze (Myrtle) | tulips, forest | pellets, sage | - | - |
+| Larkspur | storey joint | wave, navy | scallop, cream | - | cyma reversa, cream |
+|  | eave | rosettes, navy | dentil, cream | cove, cream | cavetto, navy |
+|  | tower top | scrolls, navy | - | cove, cream | stepped, cream |
+| Juniper | storey joint | fans, lavender | pellets, cream | - | ovolo, lavender |
+|  | eave | lattice, lavender | dentil, cream | tongue, cream | cyma recta, lavender |
+|  | tower top | stars, lavender | - | tongue, cream | bevel, cream |
+| Camellia | storey joint | swags, raspberry | pellets, white | - | cyma recta, white |
+|  | eave | ovals, raspberry | dentil, white | ring, white | cavetto, raspberry |
+|  | bay | studs, raspberry | - | ring, white | bevel, white |
+|  | tower top | flutes, raspberry | - | ring, white | ovolo, white |
+| Wisteria | eave | quatrefoil, plum | drops, cream | comma, cream | cyma reversa, plum |
+| Hawthorn | storey joint | zigzag, mustard | billet, forest | - | stepped, mustard |
+|  | eave | sunflower, mustard | reeds, forest | ladder, mustard | torus, forest |
+|  | tower top | chevron, forest | - | ladder, mustard | cyma recta, mustard |
+| Magnolia | storey joint | arcade, ivory | blocks, chocolate | - | ovolo, ivory |
+|  | eave | lozenges, chocolate | egg and dart, ivory | stepped, ivory | cyma recta, chocolate |
 
 ## Unique parts per building
 
