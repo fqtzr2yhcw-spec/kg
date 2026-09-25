@@ -343,7 +343,7 @@ def _pier_skin(style, reg, seed):
             v += ch
             j += 1
         return M.extrude(cs_union(cells) ^ reg, 0.35)
-    if style in ("coquina", "pebble", "drafted", "tuckpoint", "diamond", "riverstone"):
+    if style in ("coquina", "pebble", "drafted", "tuckpoint", "diamond", "riverstone", "ledgestone"):
         from .trimwork import foundation_skin
         return foundation_skin(style, reg, seed=seed)
     return brick(reg, bl=2.0, d=0.2)
@@ -388,7 +388,7 @@ def porch_floor(poly_pts, outer_edges, H=14.0, floor_t=1.6, pitch=1.8, slot=SLOT
 
 
 ROOF_EDGES = ("dentil", "modillion", "fillet", "cove", "drop", "sticks", "button", "reeded", "plain", "scallop",
-              "beadreel", "notched", "lozenge", "billet", "cable", "arcading")
+              "beadreel", "notched", "lozenge", "billet", "cable", "arcading", "sawtooth")
 
 
 def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True, roof_cs=None, edge="dentil"):
@@ -462,6 +462,11 @@ def porch_roof(poly_pts, outer_path, z0, th=2.4, fascia=3.2, over=1.4, dent=True
             n = max(1, int((L - 1.2) / 1.2))
             cs = cs_union([rect(u - 0.4, zc - (1.2 if k % 2 else 0.8), u + 0.4, zc)
                            for k, u in enumerate(0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))])
+            parts.append(f.place(ext(cs, 0.0, 0.5)))
+        elif edge == "sawtooth":           # a row of sawn triangular teeth hung under the crown
+            n = max(1, int((L - 1.2) / 1.2))
+            cs = cs_union([poly([(u - 0.6, zc - 0.4), (u + 0.6, zc - 0.4), (u, zc - 1.4)])
+                           for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))]) + rect(0.3, zc - 0.6, L - 0.3, zc)
             parts.append(f.place(ext(cs, 0.0, 0.5)))
         elif edge == "arcading":           # a row of little round arches on colonnettes along the fascia
             n = max(1, int((L - 1.6) / 1.6))
@@ -764,7 +769,7 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
     for u in ((0.0, L - 0.7) if stiles else ()):                                     # end stiles
         parts.append(box([u, -0.5, foot], [u + 0.7, 0.5, vt + 0.01]))
     from . import porchwork as PW
-    if style in ("chippendale", "x", "pierced", "sawn", "lace", "ladder", "hearts"):
+    if style in ("chippendale", "x", "pierced", "sawn", "lace", "ladder", "hearts", "paddle"):
         parts.append(PW.fill_flat(style, L, vb - 0.01, vt + 0.01))
     else:
         mk, pt = {"turned": (baluster, pitch), "vase": (PW.baluster_vase, 2.4), "urn": (PW.baluster_urn, 2.4),

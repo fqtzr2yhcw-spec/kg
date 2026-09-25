@@ -311,10 +311,25 @@ def post_octagon(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
     return body + _top(h, abacus / 2, h - 1.8, 1.1, slot, shape="square")
 
 
+def post_tapered(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A square post tapering as it rises, on a tall square base block with a chamfered cap,
+    a neck band and a square block under the capital (the Hawthorn)."""
+    zb, zt = 4.4, h - 3.2
+    shaft = M.hull_points([(x * 1.15, y * 1.15, zb) for x in (-1, 1) for y in (-1, 1)] +
+                          [(x * 0.8, y * 0.8, zt) for x in (-1, 1) for y in (-1, 1)])
+    base = box([-1.35, -1.35, 1.19], [1.35, 1.35, zb - 0.6]) + M.hull_points(
+        [(x * 1.35, y * 1.35, zb - 0.61) for x in (-1, 1) for y in (-1, 1)] + [(x * 1.15, y * 1.15, zb + 0.01) for x in (-1, 1) for y in (-1, 1)])
+    body = _plinth() + base + shaft + box([-1.0, -1.0, zt - 1.0], [1.0, 1.0, zt - 0.6])
+    if collar is not None:
+        body = body + box([-1.2, -1.2, collar - 1.6], [1.2, 1.2, collar + 0.2])
+    body = body + box([-1.1, -1.1, zt], [1.1, 1.1, h - 1.8])
+    return body + _top(h, abacus / 2, h - 1.8, 1.1, slot, shape="square")
+
+
 POSTS = {"turned": post_turned, "tuscan": post_tuscan, "fluted": post_fluted, "chamfered": post_chamfered,
          "clustered": post_clustered, "stick": post_stick, "spindle": post_spindle, "eastlake": post_eastlake,
          "boxed": post_boxed, "bobbin": post_bobbin, "notched": post_notched, "paired": post_paired,
-         "vase": post_vase, "barley": post_barley, "octagon": post_octagon}
+         "vase": post_vase, "barley": post_barley, "octagon": post_octagon, "tapered": post_tapered}
 
 
 # ------------------------------------------------------------------ railing fills (between the rails)
@@ -369,6 +384,13 @@ def fill_flat(style, L, vb, vt):
             left = [(u - w, vb + t * H) for t, w in prof]
             right = [(u + w, vb + t * H) for t, w in reversed(prof)]
             parts.append(poly(left + right))
+    elif style == "paddle":             # flat sawn balusters, each a slim neck rising to a round paddle (the Hawthorn)
+        n = max(1, int(round(L / 1.8)))
+        for i in range(n):
+            u = L * (i + 0.5) / n
+            parts.append(rect(u - 0.3, vb, u + 0.3, vt))
+            parts.append(circle((u, vt - H * 0.3), 0.7, 20))
+            parts.append(poly([(u - 0.55, vb), (u + 0.55, vb), (u + 0.3, vb + 1.0), (u - 0.3, vb + 1.0)]))
     elif style == "hearts":             # a board pierced with a row of hearts (the Wisteria)
         board = rect(0.0, vb, L, vt)
         n = max(1, int(round(L / 2.8)))
@@ -638,6 +660,21 @@ def frieze_lambrequin(u0, u1, v_bot, v_top):
     return out - cs_union(holes) if holes else out
 
 
+def frieze_tudor(u0, u1, v_bot, v_top):
+    """A board cut into a flattened Tudor arch across each bay: it springs upright from the
+    posts, flattens and meets at a slight point at the crown (the Hawthorn)."""
+    rail0 = v_top - 1.0
+    L = u1 - u0
+    rise = min(3.2, L * 0.2)
+    spring = rail0 - rise - 0.65        # the arcade's sunk-field edge then falls between slicing planes
+    mid = (u0 + u1) / 2
+    f = lambda t: 0.75 * math.sqrt(t * (2.0 - t)) + 0.25 * t
+    left = [(u0 + (mid - u0) * t, spring + rise * f(t)) for t in np.linspace(0.0, 1.0, 17) ** 2]
+    right = [(u1 - (x - u0), y) for x, y in reversed(left[:-1])]
+    opening = poly([(u0, spring - 1.0)] + left + right + [(u1, spring - 1.0)])
+    return rect(u0, spring, u1, v_top + 0.05) - opening
+
+
 def frieze_clusters(u0, u1, v_bot, v_top):
     """A plain board with wisteria clusters hung under it: every 2.4 mm a short stem with a
     tapering bunch of round blossoms, longer and shorter bunches in turn (the Wisteria)."""
@@ -658,7 +695,8 @@ def frieze_clusters(u0, u1, v_bot, v_top):
 
 FRIEZES = {"scroll": frieze_scroll, "entablature": frieze_entablature, "valance": frieze_valance,
            "spindle": frieze_spindle, "fret": frieze_fret, "rosette": frieze_rosette, "drops": frieze_drops,
-           "beads": frieze_beads, "fans": frieze_fans, "lambrequin": frieze_lambrequin, "clusters": frieze_clusters}
+           "beads": frieze_beads, "fans": frieze_fans, "lambrequin": frieze_lambrequin, "clusters": frieze_clusters,
+           "tudor": frieze_tudor}
 
 
 # ------------------------------------------------------------------ skirts (under the deck)
@@ -740,6 +778,22 @@ def skirt_fill(style, reg, d=1.2):
         if grills:
             out = out + M.extrude(cs_union(grills) ^ reg, d)
         return out
+    if style == "chevron":              # a board faced with chevron boards (V courses pointing down) between stiles (the Hawthorn)
+        L = u1 - u0
+        out = M.extrude(reg, d * 0.5)
+        n = max(1, int(round(L / 5.0)))
+        bars = []
+        for i in range(n):
+            a_, b_ = u0 + L * i / n, u0 + L * (i + 1) / n
+            m_ = (a_ + b_) / 2
+            bars.append(rect(a_ - 0.35, v0 - 1, a_ + 0.35, v1 + 1))
+            k = -2
+            sl = m_ - a_
+            while k * 1.4 < (v1 - v0) + (b_ - a_):
+                vv = v0 + k * 1.4           # each chevron a sharp V board (no flat at its point)
+                bars.append(poly([(a_, vv + sl), (m_, vv), (b_, vv + sl), (b_, vv + sl + 0.8), (m_, vv + 0.8), (a_, vv + sl + 0.8)]))
+                k += 2
+        return out + M.extrude(cs_union(bars) ^ reg, d * 0.5).translate([0, 0, d * 0.5 - 0.02])
     if style == "saltire":              # a board with open panels crossed by X battens between upright stiles (the Wisteria)
         L = u1 - u0
         n = max(1, int(round(L / 6.0)))

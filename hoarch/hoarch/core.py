@@ -414,6 +414,11 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 ts = np.linspace(0.0, 1.0, 13)
                 tabs.append(poly([(a_ + (b_ - a_) * t_, vk + 0.3 * (1 - math.sin(2 * math.pi * t_))) for t_ in ts]
                                  + [(b_, top), (a_, top)]))
+            elif shp == "spade":          # square shoulders over a round-ended tab dropping from the middle of the butt
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                c, q = (a_ + b_) / 2, min(0.45, (b_ - a_) / 2 - 0.3)
+                tabs.append(cs_union([rect(a_, vk + 0.45, b_, top), rect(c - q, vk + q, c + q, top),
+                                      circle((c, vk + q), q, 16)]))
             elif shp == "slot":           # split shingles: a square butt with a slot cut up its middle
                 a_, b_ = u + gap / 2, u + wtab - gap / 2
                 c = (a_ + b_) / 2

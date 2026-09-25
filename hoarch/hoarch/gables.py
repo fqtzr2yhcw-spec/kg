@@ -642,3 +642,41 @@ def gable_crescent(L, slope, d_eave, skin=1.8, width=1.8, d=0.8, finial=4.4):
                         poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
         out.append(ext(fcs, 0.0, d + 0.2))
     return union(out)
+
+
+def gable_star(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4):
+    """A star gable (the Hawthorn): raking boards, a collar tie across the gable, a king post
+    from the apex down through a disc pierced with an eight-pointed star to the collar, a
+    turned drop under the collar and a spike over the apex. Flat, prints face-up; place at
+    w = rake."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    H = tip[1]
+    depth = skin + width
+    tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
+    band = []
+    for a in (np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    rafters = cs_union(band) ^ tri
+    cx = L / 2
+    vc = H * 0.38
+    collar = rect(-d_eave, vc - 0.6, L + d_eave, vc + 0.6) ^ tri
+    top_in = H - depth * c
+    R = min((top_in - vc) * 0.36, (L / 2) * 0.3)
+    cy = vc + 0.6 + R + 0.4
+    disc = circle((cx, cy), R, 40)
+    star = poly([(cx + (R - 0.7 if k % 2 == 0 else (R - 0.7) * 0.45) * math.cos(math.pi / 2 + k * math.pi / 8),
+                  cy + (R - 0.7 if k % 2 == 0 else (R - 0.7) * 0.45) * math.sin(math.pi / 2 + k * math.pi / 8)) for k in range(16)])
+    post = rect(cx - 0.55, vc, cx + 0.55, H) ^ tri
+    drop = cs_union([rect(cx - 0.45, vc - 1.8, cx + 0.45, vc), circle((cx, vc - 2.1), 0.7, 20),
+                     poly([(cx - 0.5, vc - 2.6), (cx + 0.5, vc - 2.6), (cx, vc - 3.6)])])
+    frame = cs_union([rafters, collar, post, disc, drop]) - (star - circle((cx, cy), 0.55, 16))
+    frame = cs_union([pc for pc in frame.decompose() if pc.area() > 2.0])
+    out = [ext(frame, 0.0, d)]
+    if finial:
+        fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.0),
+                        poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
+        out.append(ext(fcs, 0.0, d + 0.2))
+    return union(out)

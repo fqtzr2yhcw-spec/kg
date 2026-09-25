@@ -285,6 +285,30 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
             g += 0.4
         body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, sh + 1.59], [w / 2 + 0.8, d / 2 + 0.8, h])
         return body - box([-w / 2 + 1.0, -d / 2 + 1.0, h - 1.0], [w / 2 - 1.0, d / 2 - 1.0, h + 1])
+    if style == "octagon":
+        # a square brick base, a 45 degree weathering to an octagonal shaft with a sunk band,
+        # and a two-step corbelled octagonal crown (the Hawthorn)
+        zb = zq(h * 0.35)
+        body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, zb]) + _skin(w, d, 0.0, zb - 0.4, _brick("running"))
+        ap = min(w, d) * 0.4
+        R8 = ap / math.cos(math.pi / 8)
+        oct_ = lambda r_, z0_, z1_: M.cylinder(z1_ - z0_, r_, r_, 8).rotate([0, 0, 22.5]).translate([0, 0, z0_])
+        body = body + M.hull_points([(x, y, zb - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                                    [(R8 * math.cos(math.pi / 8 + k * math.pi / 4), R8 * math.sin(math.pi / 8 + k * math.pi / 4),
+                                      zb + max(w, d) / 2 - ap) for k in range(8)])
+        z1 = zb + max(w, d) / 2 - ap
+        zc_ = zq(h - 2.0)
+        body = body + oct_(R8, z1 - 0.01, zc_)
+        zbnd = zq((z1 + zc_) / 2)
+        body = body - (oct_(R8 + 1, zbnd, zbnd + 0.8) - oct_(R8 - 0.3, zbnd - 1, zbnd + 2))
+        for k, g in enumerate((0.4, 0.8)):
+            body = body + M.hull_points([((R8 + g - 0.4) * math.cos(math.pi / 8 + j * math.pi / 4),
+                                          (R8 + g - 0.4) * math.sin(math.pi / 8 + j * math.pi / 4), zc_ + 0.8 * k - 0.4)
+                                         for j in range(8)] +
+                                        [((R8 + g) * math.cos(math.pi / 8 + j * math.pi / 4), (R8 + g) * math.sin(math.pi / 8 + j * math.pi / 4),
+                                          zc_ + 0.8 * k) for j in range(8)]) + oct_(R8 + g, zc_ + 0.8 * k - 0.01, zc_ + 0.8 * k + 0.41)
+        body = body + oct_(R8 + 0.8, zc_ + 1.2, h)
+        return body - M.cylinder(h, ap - 1.0, ap - 1.0, 16).translate([0, 0, h - 1.2])
     if style == "tulip":
         # a slim brick stack with a band of soldier bricks, then a round flue flaring out like a
         # tulip to a thick lip (the Wisteria)
@@ -471,7 +495,7 @@ def chimney(style, w=9.0, d=9.0, h=24.0):
 
 CHIMNEYS = ("corbel", "stucco", "paneled", "banded", "slim", "diagonal", "stone", "ribbed", "plain", "arched", "party",
             "stovepipe", "coped", "hooded", "stepped", "slab", "tapered", "twin", "round", "fluted", "crowned",
-            "dogtooth", "roundel", "chequer", "clustered", "lozenge", "cross", "tulip")
+            "dogtooth", "roundel", "chequer", "clustered", "lozenge", "cross", "tulip", "octagon")
 
 
 # ------------------------------------------------------------------ finials (revolved, printed upright)
@@ -647,6 +671,21 @@ def foundation_skin(style, reg, seed=0):
             j += 1
         blocks = M.extrude(cs_union(cells) ^ reg, 0.45)
         return blocks - M.extrude(cs_union(pits) ^ reg, 1.0).translate([0, 0, 0.25])
+    if style == "ledgestone":            # thin stacked ledge stones: long low slabs in courses of 0.8 to 1.2, joints staggered (the Hawthorn)
+        b = reg.bounds()
+        rng = np.random.default_rng(seed + 31)
+        out, v = [], b[1]
+        while v < b[3]:
+            ch = 0.8 if rng.random() < 0.5 else 1.2
+            u = b[0] - rng.uniform(0.0, 2.0)
+            while u < b[2]:
+                L_ = rng.uniform(2.4, 5.0)
+                cell = rect(u + 0.25, v + 0.2, u + L_ - 0.25, v + ch) ^ reg        # courses and joints on the layer grid
+                if not cell.is_empty() and cell.area() > 0.3:
+                    out.append(M.extrude(cell, 0.3 + 0.1 * rng.integers(0, 2)))
+                u += L_
+            v += ch
+        return union(out)
     if style == "riverstone":            # rounded river stones in rough courses, each a low pillow (the Wisteria)
         b = reg.bounds()
         rng = np.random.default_rng(seed + 23)
@@ -868,6 +907,9 @@ BELTS = {
     # a stepped band with small blocks in pairs (the Myrtle)
     "twinblock": ([(0.0, 0.0), (0.5, 0.5), (0.5, 2.8), (1.0, 3.3), (1.0, 3.8), (1.3, 4.1), (1.3, 4.4)],
                   dict(w=0.7, z=1.0, h=1.6, d0=0.5, d=0.4, c=0.2, pitch=5.6, pair=1.5, margin=2.6)),
+    # a fascia carrying a raised zigzag between fillets (the Hawthorn)
+    "zigzag": ([(0.0, 0.0), (0.4, 0.4), (0.4, 0.8), (0.6, 1.0), (0.6, 3.2), (0.9, 3.5), (0.9, 4.4)],
+               dict(kind="zigzag", w0=0.6, z0=1.4, z1=2.8, pitch=1.6, margin=0.6)),
     # a fascia hung with swags between rosettes (the Camellia)
     "swag": ([(0.0, 0.0), (0.5, 0.5), (0.5, 3.4), (0.9, 3.8), (0.9, 4.4)],
              dict(kind="swag", w0=0.5, zr=2.9, sag=1.5, pitch=4.4, margin=0.9)),

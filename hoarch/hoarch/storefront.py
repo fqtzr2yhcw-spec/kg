@@ -412,7 +412,8 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     head board under a little shingled pent roof on brackets) or "tablet" (a head board with a
     raised oval tablet and end blocks under a thin cap) or "keyarch" (a half-round hood with a
     keystone and drop label stops, over a tympanum with a boss on a flat head) or "gablet" (a little
-    boarded gable with raking boards, a spike and a drop). ``upper``: see window_insert. The brick arch of a brick
+    boarded gable with raking boards, a spike and a drop) or "incised" (an Eastlake head board incised
+    with a sunflower between grooves, under a cap with ears). ``upper``: see window_insert. The brick arch of a brick
     building belongs to the wall's skin (skins.brick_arches). Prints face-up."""
     from .openings import CLR, _one_piece, opening_cs, window_insert
     op = opening_cs(w, h, rise if rise else 0)
@@ -421,7 +422,28 @@ def window_commercial(w, h, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.2, casin
     parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, 0.6)]
     parts.append(ext((op.offset(casing, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + casing + 1), 0.0, 0.4))
     top = h + casing
-    if head == "gablet":
+    if head == "incised":
+        # an Eastlake head board incised with a sunflower (a sunk ring round a boss, with sunk
+        # rays) between sunk grooves, under a thin cap with square ears (the Hawthorn)
+        v0 = h + casing
+        lw = w / 2 + casing + 0.8
+        hb = 3.2
+        board = chamfer_box(-lw, v0 - 0.01, lw, v0 + hb, 0.0, 0.8, c=0.2)
+        cy = v0 + hb / 2
+        rr = min(1.2, hb / 2 - 0.3)
+        cut = ext(circle((0.0, cy), rr, 28) - circle((0.0, cy), rr - 0.5, 28), 0.4, 1.0)
+        rays = cs_union([stroke([(0.0, cy), (0.0 + (rr + 1.4) * math.cos(t_), cy + (rr + 1.4) * math.sin(t_))], 0.5, caps=False)
+                         for t_ in np.linspace(0.0, math.pi, 7)]) - circle((0.0, cy), rr + 0.3, 28)
+        rays = rays ^ rect(-lw + 0.8, v0 + 0.5, lw - 0.8, v0 + hb - 0.5)
+        grooves = cs_union([rect(sg * (rr + 2.2) - 0.25, v0 + 0.8, sg * (rr + 2.2) + 0.25, v0 + hb - 0.8) for sg in (-1, 1)
+                            if rr + 2.5 < lw - 0.6])
+        board = board - cut - ext(rays, 0.4, 1.0) - (ext(grooves, 0.4, 1.0) if not grooves.is_empty() else M())
+        parts.append(board)
+        parts.append(chamfer_box(-lw - 0.4, v0 + hb - 0.01, lw + 0.4, v0 + hb + 0.8, 0.0, 1.2, c=0.3, bottom=0.8))
+        for sg in (-1, 1):
+            parts.append(chamfer_box(sg * lw - 0.6, v0 - 0.4, sg * lw + 0.6, v0 + hb, 0.0, 1.0, c=0.2))
+        top = v0 + hb + 0.8
+    elif head == "gablet":
         # a little gable over the head: an eave board, a boarded triangle with raking boards, a
         # spike at the apex and a drop under it (the Wisteria)
         v0 = h + casing

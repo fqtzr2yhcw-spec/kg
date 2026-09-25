@@ -238,7 +238,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
 
 
 CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope",
-                 "notched", "banded", "cabled", "reveal", "rosette", "lozenge", "blocked")
+                 "notched", "banded", "cabled", "reveal", "rosette", "lozenge", "blocked", "incised")
 
 
 def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
@@ -263,7 +263,8 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
       rosette   a plain board with square Eastlake blocks carrying round rosettes at its
                 foot and head (the Juniper)
       lozenge   a plain board on a plinth carrying raised lozenges every 5.6 mm (the Camellia)
-      blocked   a board with small raised blocks at alternate edges every 2.4 mm (the Wisteria)"""
+      blocked   a board with small raised blocks at alternate edges every 2.4 mm (the Wisteria)
+      incised   an Eastlake board incised with a groove ending in drilled roundels (the Hawthorn)"""
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
@@ -353,6 +354,15 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
                 parts.append(chamfer_box(far0, va, far1, vb, t - 0.01, 0.35, c=0.15))
                 um = (far0 + far1) / 2
                 parts.append(M.cylinder(0.3, 0.7, 0.55, 20).translate([um, (va + vb) / 2, t + 0.33]))
+    if style == "incised":              # an Eastlake board on a plinth, incised with a sunk groove ending in drilled roundels, a cap block (the Hawthorn)
+        parts.append(box([far0, qa, 0], [far1, qa + 1.2, t + 0.3]))
+        parts.append(box([far0, qb - 1.0, 0], [far1, qb, t + 0.3]))
+        um = (u0 + u1) / 2
+        if qb - qa > 6.0:
+            body = union(parts)
+            groove = box([um - 0.25, qa + 2.2, t - 0.3], [um + 0.25, qb - 2.0, t + 0.5])
+            dots = union([M.cylinder(0.8, 0.4, 0.4, 12).translate([um, v_, t - 0.3]) for v_ in (qa + 1.8, qb - 1.6)])
+            return body - groove - dots
     if style == "blocked":              # a board with small raised blocks at alternate edges every 2.4 mm, like wooden quoins (the Wisteria)
         v = qa + 1.2
         k = 0
@@ -488,6 +498,24 @@ def _swag_row(outline_pts, z0, sw):
     return union(row)
 
 
+def _zigzag_row(outline_pts, z0, zz):
+    """A raised zigzag run along a belt's fascia on every face (the Hawthorn); it steps back
+    underneath so the ring prints upright."""
+    from .ornament import stroke
+    pts = ccw(outline_pts)
+    row = []
+    for i in range(len(pts)):
+        f = Facade(pts[i], pts[(i + 1) % len(pts)], z0)
+        span = f.L - 2 * zz["margin"]
+        if span < 2.0:
+            continue
+        n = max(1, int(round(span / zz["pitch"])))
+        p_ = span / n
+        line = [(zz["margin"] + p_ * k, zz["z0"] if k % 2 == 0 else zz["z1"]) for k in range(n + 1)]
+        row.append(f.place(_stepped(stroke(line, 0.55, caps=False), zz["w0"], 0.4)))
+    return union(row)
+
+
 def belt_ring(outline_pts, z0, t=3.0, prof=BELT_PROF, lip=True, blocks=BELT_BLOCKS):
     """Belt course between two storey shells, the full wall thickness plus a moulded band.
 
@@ -498,6 +526,8 @@ def belt_ring(outline_pts, z0, t=3.0, prof=BELT_PROF, lip=True, blocks=BELT_BLOC
     ring = sweep_ring(outline_pts, [(-t, z0)] + [(d, z0 + z) for d, z in prof] + [(-t, z0 + h)])
     if blocks and blocks.get("kind") == "swag":
         ring = ring + _swag_row(outline_pts, z0, blocks)
+    elif blocks and blocks.get("kind") == "zigzag":
+        ring = ring + _zigzag_row(outline_pts, z0, blocks)
     elif blocks:
         bk = dict(BELT_BLOCKS)
         bk.update(blocks)

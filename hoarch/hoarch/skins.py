@@ -137,6 +137,13 @@ def alternating_lap(region, datum=0.0):
     return _lap(region, 3.6, [(0.0, 0.46), (0.2, 0.44), (2.4, 0.12), (2.4, 0.40), (2.6, 0.38), (3.6, 0.14)], datum)
 
 
+def cove_bead_lap(region, datum=0.0):
+    """Cove-and-bead siding: 2.0 mm boards, each with a round bead at its butt and a concave
+    cove easing it into the board above (the Hawthorn)."""
+    return _lap(region, 2.0, [(0.0, 0.24), (0.1, 0.36), (0.25, 0.44), (0.45, 0.44), (0.6, 0.36), (0.7, 0.30), (0.9, 0.34),
+                              (1.1, 0.36), (2.0, 0.14)], datum)
+
+
 def vgroove(region, datum=0.0):
     """Tongue-and-groove boards with a V joint at every course."""
     return _lap(region, 1.4, [(0.0, 0.40), (1.0, 0.40), (1.2, 0.15), (1.4, 0.40)], datum)
