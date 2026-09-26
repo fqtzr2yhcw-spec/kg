@@ -41,34 +41,37 @@ RENDER_MAT = {"Terra": "terra", "Brick": "brick", "Buff": "buff", "Oriel": "gree
               "Blade": "iron", "Windows_Doors": "green", "Sash": "sash", "Door": "door", "Glass": "glass"}
 
 # ------------------------------------------------------------------ levels (v from the block base)
-ZF = 2.8                   # tooled granite base
-H1 = 40.0                  # storey joint
+ZF = 4.0                   # tooled granite base
+H1 = 50.0                  # storey joint: a tall shop floor under the great arch
 S1 = ZF + H1
 RH = 4.0                   # the cyma belt
 V2 = H1 + RH
-VF, FR_H = V2 + 30.4, 6.4  # frieze
+VF, FR_H = V2 + 38.0, 7.6  # frieze over a 38 mm upper storey
 VK = VF + FR_H             # cornice cap
-CAP_PROF = [(0.0, 0.0), (0.8, 0.0), (0.8, 0.6), (1.4, 1.2), (1.4, 1.8), (2.4, 2.4), (2.4, 3.0), (0.0, 3.0)]
-VTOP = VK + 3.0            # top of the front wall
-PANEL = (6.0, 5.0)         # the date panel on the parapet: half width, height
+CAP_K = 1.3
+CAP_PROF = [(CAP_K * a, CAP_K * b) for a, b in
+            [(0.0, 0.0), (0.8, 0.0), (0.8, 0.6), (1.4, 1.2), (1.4, 1.8), (2.4, 2.4), (2.4, 3.0), (0.0, 3.0)]]
+CAP_H = CAP_K * 3.0
+VTOP = VK + CAP_H          # top of the front wall
+PANEL = (9.0, 7.0)         # the date panel on the parapet: half width, height
 HB = VK                    # side and rear walls
 T = 3.0
-W, D = 34.0, 46.0
+W, D = 60.0, 104.0
 MAIN = Block("main", [(0, 0), (W, 0), (W, D), (0, D)], ZF, ZF + HB)
 ZR = ZF + HB - 3.2         # roof ledge
 
 # ------------------------------------------------------------------ the front
-ARCH_U, ARCH_W, SPRING = W / 2, 22.0, 24.0
-ORIEL_U, ORIEL_V = W / 2, V2 + 1.0
-NARROW_U = (4.6, W - 4.6)
-NARROW_V = V2 + 6.0
-BLADE_U = W - 1.2          # the watch sign on the right-hand pier
-BLADE_V = 32.0
-WALK = 18.6                # sidewalk depth
+ARCH_U, ARCH_W, SPRING = W / 2, 40.0, 26.0
+ORIEL_U, ORIEL_V = W / 2, V2 + 1.4
+NARROW_U = (9.5, W - 9.5)
+NARROW_V = V2 + 7.0
+BLADE_U = W - 1.6          # the watch sign on the right-hand pier
+BLADE_V = 40.0
+WALK = 24.0                # sidewalk depth
 
 
 def _oriel():
-    o = SF.oriel(15.0, 3.2, 18.0, head=2.0, lights=(1, 2, 1))
+    o = SF.oriel(22.0, 4.4, 21.0, head=2.6, lights=(1, 2, 1))
     roof_land = o["roof"].project().offset(0.15)
     return dict(insert=o["solid"], glass=o["glass"], sash=M(), frame=o["solid"] - o["glass"], surround=o["solid"],
                 back=0.0, cut=o["cut"], landing=o["landing"] + roof_land, top=o["top"] + 3.8, bottom=0.0), o
@@ -84,25 +87,25 @@ def _openings():
         e, u = MAIN.locate(x, y)
         L.append(Opening(MAIN, e, u, v0, sp, name, kind))
 
-    add(ARCH_U, 0, 0.0, SF.arched_shopfront(ARCH_W, SPRING, door_w=6.4, leaf="twin_arch", bulk=5.0, text="WATCHES",
-                                             cap=1.4), "shopfront", "door")
+    add(ARCH_U, 0, 0.0, SF.arched_shopfront(ARCH_W, SPRING, door_w=10.0, leaf="twin_arch", bulk=7.0, text="WATCHES",
+                                             cap=2.2), "shopfront", "door")
     add(ORIEL_U, 0, ORIEL_V, ORIEL_SPEC, "oriel")
-    nw = SF.window_commercial(4.4, 16.0, rise=0, lites=(1, 2), rows=(1, 1), sill=1.0, head="triple")
+    nw = SF.window_commercial(7.0, 21.0, rise=0, lites=(1, 2), rows=(1, 1), sill=1.0, head="triple")
     for u in NARROW_U:
         add(u, 0, NARROW_V, nw, f"F{u:.0f}-2")
-    side = SF.window_commercial(5.4, 14.0, rise=0, lites=(1, 2), rows=(1, 1), sill=1.0, head="triple")
-    for y in (16.0, 32.0):
-        add(W, y, V2 + 6.0, side, f"E{y:.0f}-2")
-    add(W - 9.0, D, 0.0, SF.door_commercial(6.4, 22.0, transom=0.0, leaf="twin_arch", tstyle="plain", head=None),
+    side = SF.window_commercial(8.4, 21.0, rise=0, lites=(1, 2), rows=(1, 1), sill=1.0, head="triple")
+    for y in (28.0, 56.0, 84.0):
+        add(W, y, V2 + 7.0, side, f"E{y:.0f}-2")
+    add(W - 14.0, D, 0.0, SF.door_commercial(10.0, 30.0, transom=0.0, leaf="twin_arch", tstyle="plain", head=None),
         "back-door", "door")
-    add(W - 25.0, D, 10.0, side, "N25-1")
-    for x in (9.0, 25.0):
-        add(W - x, D, V2 + 6.0, side, f"N{x:.0f}-2")
+    add(W - 36.0, D, 12.0, side, "N36-1")
+    for x in (14.0, 36.0):
+        add(W - x, D, V2 + 7.0, side, f"N{x:.0f}-2")
     return L
 
 
 OPENINGS = _openings()
-APPLIED = [("FRIEZE", 0.0, VF, W, FR_H), ("CAP", 0.0, VK, W, 3.0), ("BLADE", BLADE_U - 0.8, BLADE_V - 3.4, 1.6, 4.8),
+APPLIED = [("FRIEZE", 0.0, VF, W, FR_H), ("CAP", 0.0, VK, W, CAP_H), ("BLADE", BLADE_U - 0.8, BLADE_V - 3.4, 1.6, 4.8),
            ("PANEL", W / 2 - PANEL[0] - 0.2, VTOP, 2 * PANEL[0] + 0.4, PANEL[1] + 0.2)]
 
 
@@ -113,14 +116,14 @@ def _applied_openings():
 
 def _panel_cs():
     hw, ph = PANEL
-    return arch_cs(W / 2 - hw, W / 2 + hw, VTOP - 0.01, VTOP + ph - 2.0, rise=2.0, seg=40)
+    return arch_cs(W / 2 - hw, W / 2 + hw, VTOP - 0.01, VTOP + ph - 3.0, rise=3.0, seg=40)
 
 
 def _siding(f, b, reg):
     if f.n[1] < -0.3:
         # the street front: terra cotta with rosette bands, a moulded band round the arch
-        key = SF.text_cs("A", 1.8, "roman", grow=0.1)
-        outline, arch = SK.moulded_arch(ARCH_U, 0.0, ARCH_W + 1.2, SPRING, band=2.4, key=key)
+        key = SF.text_cs("A", 2.6, "roman", grow=0.1)
+        outline, arch = SK.moulded_arch(ARCH_U, 0.0, ARCH_W + 1.2, SPRING, band=3.0, key=key)
         tc = SK.terracotta(reg - outline, course=2.4, block=6.0, d=0.4, datum=0.0, band_every=10)
         return tc + (arch ^ M.extrude(reg.offset(0.5), 3.0).translate([0, 0, -1.0]))
     ud = f.A[:2, 0]
@@ -181,11 +184,11 @@ def build(kit=None):
         A_[:, 3] = f.world(u0, v0, w0)
         return A_
 
-    darts, eggs = SF.egg_dart(W - 1.6, h=2.2, pitch=2.8)
-    fr = box([0, 0, 0], [W, FR_H, 1.0]) + ext(darts.translate((0.8, 0.4)), 0.99, 1.4) + \
-        ext(eggs.translate((0.8, 0.4)), 0.99, 1.6) + \
-        ext(rect(0, 0, W, FR_H) - rect(0.6, 0.6, W - 0.6, FR_H - 0.6), 0.99, 1.4) + \
-        ext(SF.text_cs("ASHWORTH & SONS", 2.2, "roman", grow=0.1).translate((W / 2, 3.1)), 0.99, 1.4)
+    darts, eggs = SF.egg_dart(W - 2.0, h=2.8, pitch=3.4)
+    fr = box([0, 0, 0], [W, FR_H, 1.0]) + ext(darts.translate((1.0, 0.5)), 0.99, 1.4) + \
+        ext(eggs.translate((1.0, 0.5)), 0.99, 1.6) + \
+        ext(rect(0, 0, W, FR_H) - rect(0.8, 0.8, W - 0.8, FR_H - 0.8), 0.99, 1.4) + \
+        ext(SF.text_cs("ASHWORTH & SONS", 3.0, "roman", grow=0.1).translate((W / 2, 3.8)), 0.99, 1.4)
     Afr = frame_at(0.0, VF)
     kit.add("FRIEZE", "Sign", fr.transform(Afr), P=inv34(Afr), group="front", render=_gilt(fr, Afr, 1.0, "Sign"))
     cap = SF.cornice_cap(W, CAP_PROF)
@@ -193,7 +196,7 @@ def build(kit=None):
     kit.add("CAP", "Buff", cap.transform(Ac), P=inv34(Ac), group="front")
     pcs = _panel_cs().translate((-W / 2, -VTOP)) ^ rect(-50.0, 0.0, 50.0, 50.0)
     panel = ext(pcs, 0.0, 0.8) + ext(pcs - pcs.offset(-0.7), 0.79, 1.2) + \
-        ext(SF.text_cs("1893", 2.2, "roman", grow=0.1).translate((0.0, 0.9)), 0.79, 1.2)
+        ext(SF.text_cs("1893", 3.0, "roman", grow=0.1).translate((0.0, 1.2)), 0.79, 1.2)
     Ap = frame_at(W / 2, VTOP)
     kit.add("PANEL", "Buff", panel.transform(Ap), P=inv34(Ap), group="front")
     wcs, face = SF.watch_cs(6.4)
@@ -203,15 +206,15 @@ def build(kit=None):
     print("front", round(time.time() - t0, 1))
 
     # --- the sidewalk: hexagon paving and a curb, a step up to the door, the street clock
-    walk = SF.hex_paving(W, WALK, t=1.2, a=1.2, curb=1.6)
+    walk = SF.hex_paving(W, WALK, t=1.2, a=1.2, curb=2.0)
     Aw = np.array([[-1.0, 0.0, 0.0, W], [0.0, -1.0, 0.0, -1.4], [0.0, 0.0, 1.0, 0.0]])       # clear of the base
     du0, du1 = ARCH_U + ARCH_W / 2 - O.CLR - 0.5 - 6.4, ARCH_U + ARCH_W / 2 - O.CLR - 0.5
-    step = box([du0 - 0.6, -3.0, 1.19], [du1 + 0.6, -1.4, ZF])
+    step = box([du0 - 0.6, -3.6, 1.19], [du1 + 0.6, -1.4, ZF])
     kit.add("SIDEWALK", "Paving", walk.transform(Aw) + step, group="street")
-    clock, seats = SF.street_clock(40.0, head=6.0, r=1.2)
-    cx, cy = 5.0, -WALK + 3.0
+    clock, seats = SF.street_clock(52.0, head=8.0, r=1.6)
+    cx, cy = 7.0, -WALK + 4.0
     kit.add("CLOCK", "Iron", clock.translate([cx, cy, 1.2]), group="street")
-    dial = SF.clock_dial(3.0 - 0.7 - 0.15, t=0.6)
+    dial = SF.clock_dial(4.0 - 0.7 - 0.15, t=0.6)
     for k, (c, n) in enumerate(seats):
         a = math.atan2(n[1], n[0])
         Rm = np.array([[-math.sin(a), 0.0, math.cos(a)], [math.cos(a), 0.0, math.sin(a)], [0.0, 1.0, 0.0]])
@@ -230,12 +233,12 @@ def build(kit=None):
             lines.append(stroke([(bx[0] - 5, c + sgn * math.tan(math.radians(30)) * (bx[0] - 5)),
                                  (bx[2] + 5, c + sgn * math.tan(math.radians(30)) * (bx[2] + 5))], 0.5, caps=False))
     seams = M.extrude(cs_union(lines) ^ inner_cs.offset(-0.6), 1.0).translate([0, 0, ZR + 1.0])
-    cw = 5.0
+    cw = 7.0
     cxh, cyh = W - T - 1.2 - cw / 2, D - T - 1.2 - cw / 2
     pocket = box([cxh - cw / 2 - 0.4, cyh - cw / 2 - 0.4, ZR + 0.6], [cxh + cw / 2 + 0.4, cyh + cw / 2 + 0.4, ZR + 2.0])
     kit.add("ROOF", "Copper", deck - seams - pocket, group="roof")
     zc = ZR + 0.6
-    ch = TW.chimney("round", w=cw, d=cw, h=round((ZF + HB + 12.0 - zc) / 0.2) * 0.2).translate([cxh, cyh, zc])
+    ch = TW.chimney("round", w=cw, d=cw, h=round((ZF + HB + 14.0 - zc) / 0.2) * 0.2).translate([cxh, cyh, zc])
     kit.add("CHIMNEY", "Brick", ch, group="roof")
     cop = slab(offset(base, 0.4) - offset(base, -T - 0.3), ZF + HB, ZF + HB + 0.8) - box([-5, -5, 0], [W + 5, T, 400]) - \
         box([T + 0.1, -5, 0], [W - T - 0.1, T + 1.0, 400])

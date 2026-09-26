@@ -39,41 +39,46 @@ RENDER_MAT = {"Metal": "metal", "Brick": "brick", "Trim": "trim", "Plum": "plum"
               "Sash": "sash", "Door": "door", "Glass": "glass"}
 
 # ------------------------------------------------------------------ levels (v from the block base)
-ZF = 3.2                   # moulded stone base
-H1 = 37.2                  # storey joint
+ZF = 5.0                   # moulded stone base
+H1 = 44.0                  # storey joint
 S1 = ZF + H1
 RH = 4.4                   # the ovolo belt
 V2 = H1 + RH               # upper floor
-VF, FR_H = V2 + 24.0, 5.6  # frieze
+VF, FR_H = V2 + 38.0, 6.4  # frieze over a 38 mm upper storey
 VK = VF + FR_H             # cornice cap
-CAP_PROF = [(0.0, 0.0), (1.2, 0.0), (1.2, 0.6), (1.6, 1.0), (1.6, 1.6), (2.2, 1.8), (2.6, 2.2), (2.8, 2.8),
-            (2.8, 3.2), (0.0, 3.2)]
-VTOP = VK + 3.2            # top of the front wall; the false mansard stands on it
+CAP_K = 1.3
+CAP_PROF = [(CAP_K * a, CAP_K * b) for a, b in
+            [(0.0, 0.0), (1.2, 0.0), (1.2, 0.6), (1.6, 1.0), (1.6, 1.6), (2.2, 1.8), (2.6, 2.2), (2.8, 2.8),
+             (2.8, 3.2), (0.0, 3.2)]]
+CAP_H = CAP_K * 3.2
+VTOP = VK + CAP_H          # top of the front wall; the false mansard stands on it
 HB = VK                    # side and rear walls
 T = 3.0
-W, D = 39.0, 52.0
+W, D = 70.0, 110.0
 MAIN = Block("main", [(0, 0), (W, 0), (W, D), (0, D)], ZF, ZF + HB)
 ZR = ZF + HB - 3.2         # roof ledge (the deck sits on it, 2 mm below the wall tops)
 
 # ------------------------------------------------------------------ the front
-STILE = 2.0                # plain stiles at the corners; pressed-metal panels between
-PW, PH = 5.0, 4.0          # panel grid (upper front: 7 x 6 panels, the windows fill 2 x 4 each)
-BAY_U, BAY_W, BAY_P = 12.0, 18.0, 3.4
-BAY_BULK, BAY_GLASS, BAY_HEAD = 6.0, 18.0, 2.0
+STILE = 2.5                # plain stiles at the corners; pressed-metal panels between
+PW, PH = 6.5, 38.0 / 8     # panel grid (upper front: 10 x 8 panels, the windows fill 2 columns each)
+BAY_U, BAY_W, BAY_P = STILE + 3 * PW, 36.0, 4.4       # the bay fills panel columns 0-5
+BAY_BULK, BAY_GLASS, BAY_HEAD = 7.0, 22.0, 2.4
 BAY_TOP = BAY_BULK + BAY_GLASS + BAY_HEAD
-DOOR_U = 32.0               # its landing fills two panel columns
-SIGN_V, SIGN_H = 30.8, 5.6
-WIN_U = (12.0, 27.0)
-WIN_V = V2 + 3.0
+DOOR_U = STILE + 8 * PW     # its landing fills panel columns 7-8
+PIERS = (6, 9)              # the panelled piers downstairs
+SIGN_V, SIGN_H = H1 - 7.6, 7.2
+WIN_U = (STILE + 2 * PW, STILE + 5 * PW, STILE + 8 * PW)
+WIN_V = V2 + 5.0
 BLADE_X = W - 0.2
-MH, HIP = 10.0, 2.8        # false mansard: height, hip run at each end
-DORMER = (W / 2 - 4.0, W / 2 + 4.0, 8.0)     # x0, x1, height to the pediment's foot
+MH, HIP = 14.0, 4.0        # false mansard: height, hip run at each end
+DORMER = (W / 2 - 6.0, W / 2 + 6.0, 11.0)    # x0, x1, height to the pediment's foot
 
 
 def _bay_spec():
     """The display bay as an opening: it plugs into a plain rectangular cut and stands on
     the wall face (the siding stops round it)."""
-    solid, glass = SF.display_bay(BAY_W, BAY_P, bulk=BAY_BULK, glass_h=BAY_GLASS, head=BAY_HEAD, transom=20.0)
+    solid, glass = SF.display_bay(BAY_W, BAY_P, bulk=BAY_BULK, glass_h=BAY_GLASS, head=BAY_HEAD,
+                                  transom=BAY_BULK + BAY_GLASS - 5.0)
     hw = BAY_W / 2
     outside = solid ^ box([-100, -100, 0.0], [100, 100, 100])
     land = outside.project().offset(0.15)
@@ -90,26 +95,27 @@ def _openings():
         L.append(Opening(MAIN, e, u, v0, sp, name, kind))
 
     add(BAY_U, 0, 0.0, _bay_spec(), "bay", "door")
-    add(DOOR_U, 0, 0.0, SF.door_commercial(6.4, 24.0, transom=4.0, leaf="lozenge", tstyle="scallop", head="crested"),
+    add(DOOR_U, 0, 0.0, SF.door_commercial(10.0, 26.0, transom=4.4, leaf="lozenge", tstyle="scallop", head="crested"),
         "shop-door", "door")
-    up = SF.window_commercial(6.4, 16.0, rise=0, lites=(1, 3), rows=(1, 2), sill=1.0, head="crested")
+    up = SF.window_commercial(8.4, 21.0, rise=0, lites=(1, 3), rows=(1, 2), sill=1.0, head="crested")
     for u in WIN_U:
         add(u, 0, WIN_V, up, f"F{u:.0f}-2")
-    plain = SF.window_commercial(6.0, 14.0, rise=1.2, lites=(1, 3), rows=(1, 2), sill=1.0)
-    for y in (20.0, 38.0):                   # the east side looks over an alley; the west is a party wall
-        add(W, y, V2 + 3.0, plain, f"E{y:.0f}-2")
-    add(W, 40.0, 10.0, plain, "E40-1")
-    add(W - 9.0, D, 0.0, SF.door_commercial(6.4, 22.0, transom=3.0, leaf="lozenge", tstyle="scallop", head=None),
+    plain = SF.window_commercial(8.4, 21.0, rise=1.6, lites=(1, 3), rows=(1, 2), sill=1.0)
+    for y in (30.0, 60.0, 90.0):             # the east side looks over an alley; the west is a party wall
+        add(W, y, V2 + 5.0, plain, f"E{y:.0f}-2")
+    for y in (60.0, 90.0):
+        add(W, y, 10.0, plain, f"E{y:.0f}-1")
+    add(W - 14.0, D, 0.0, SF.door_commercial(10.0, 30.0, transom=4.0, leaf="lozenge", tstyle="scallop", head=None),
         "back-door", "door")
-    add(W - 27.0, D, 10.0, plain, "N27-1")
-    for x in (10.0, 29.0):
-        add(W - x, D, V2 + 3.0, plain, f"N{x:.0f}-2")
+    add(W - 40.0, D, 10.0, plain, "N40-1")
+    for x in (16.0, 38.0, 58.0):
+        add(W - x, D, V2 + 5.0, plain, f"N{x:.0f}-2")
     return L
 
 
 OPENINGS = _openings()
 APPLIED = [("SIGN", STILE + 0.4, SIGN_V, W - 2 * STILE - 0.8, SIGN_H), ("FRIEZE", 0.0, VF, W, FR_H),
-           ("CAP", 0.0, VK, W, 3.2)]
+           ("CAP", 0.0, VK, W, CAP_H)]
 
 
 def _applied_openings():
@@ -125,7 +131,7 @@ def _siding(f, b, reg):
         up = reg ^ rect(STILE, V2 - 0.01, W - STILE, VF)
         for u in WIN_U:
             up = up - rect(u - PW, V2 - 1.0, u + PW, VF + 1.0)
-        pier = reg ^ rect(STILE + 4 * PW, -100.0, STILE + 5 * PW, SIGN_V)
+        pier = reg ^ cs_union([rect(STILE + k * PW, -100.0, STILE + (k + 1) * PW, SIGN_V) for k in PIERS])
         stiles = reg ^ (rect(-1.0, -100.0, STILE, VF) + rect(W - STILE, -100.0, W + 1.0, VF))
         return SK.pressed_metal(up, pw=PW, ph=PH, d=0.4, datum=V2, uoff=STILE) + \
             SK.pressed_metal(pier, pw=PW, ph=SIGN_V / 7, d=0.4, datum=0.0, uoff=STILE) + ext(stiles, -0.02, 0.4)
@@ -161,7 +167,7 @@ def _mansard():
     the cap) with a notch for the dormer, and the dormer: a pedimented front with pilasters
     and the date in an arched panel. Both print on their backs."""
     zb = ZF + VTOP
-    y0, y1 = -0.8, T
+    y0, y1 = -1.8, T
     body = M.hull_points([(x, y, zb) for x in (0.0, W) for y in (y0, y1)] +
                          [(x, y, zb + MH) for x in (HIP, W - HIP) for y in (y1 - 1.0, y1)])
     # slates on the sloping front: frame u = x, v up the slope, w out of it
@@ -177,39 +183,39 @@ def _mansard():
     notch = box([x0 - 0.15, y0 - 2.0, zb - 1.0], [x1 + 0.15, y1 - 1.0, zb + MH + 1.0])
     mansard = body + slates - notch
     # the dormer: body to the pediment, then everything added proud of its front (y < yf)
-    yf, yb = -1.2, y1 - 1.15
-    ped = 2.8
+    yf, yb = -2.0, y1 - 1.15
+    ped = 3.8
     outline = rect(x0, zb, x1, zb + dh) + poly([(x0, zb + dh - 0.01), (x1, zb + dh - 0.01), ((x0 + x1) / 2, zb + dh + ped)])
     Ad = np.array([[1.0, 0, 0, 0], [0, 0, -1.0, yb], [0, 1.0, 0, 0]])        # (x, z, depth) -> (x, y, z)
 
     def front(cs, d0, d1):                   # a relief d0..d1 in front of the plane y = yf
         return ext(cs, d0, d1).transform(np.array([[1.0, 0, 0, 0], [0, 0, -1.0, yf], [0, 1.0, 0, 0]]))
     dormer = ext(outline, 0.0, yb - yf).transform(Ad)
-    for a in (x0, x1 - 1.0):
-        dormer = dormer + front(rect(a, zb, a + 1.0, zb + dh - 1.2), -0.01, 0.4)        # pilasters
-    dormer = dormer + front(rect(x0, zb + dh - 1.2, x1, zb + dh), -0.01, 0.6)          # entablature
+    for a in (x0, x1 - 1.4):
+        dormer = dormer + front(rect(a, zb, a + 1.4, zb + dh - 1.6), -0.01, 0.4)        # pilasters
+    dormer = dormer + front(rect(x0, zb + dh - 1.6, x1, zb + dh), -0.01, 0.6)          # entablature
     tri = poly([(x0, zb + dh), (x1, zb + dh), ((x0 + x1) / 2, zb + dh + ped)])
-    dormer = dormer + front(tri - tri.offset(-0.7), -0.01, 0.6)                         # raking cornice
-    xa, xb = x0 + 1.4, x1 - 1.4
-    panel = arch_cs(xa, xb, zb + 1.2, zb + dh - 1.2 - (xb - xa) / 2 - 0.6, rise=(xb - xa) / 2, seg=32)
+    dormer = dormer + front(tri - tri.offset(-0.9), -0.01, 0.6)                         # raking cornice
+    xa, xb = x0 + 2.0, x1 - 2.0
+    panel = arch_cs(xa, xb, zb + 1.6, zb + dh - 1.6 - (xb - xa) / 2 - 0.6, rise=(xb - xa) / 2, seg=32)
     dormer = dormer - front(panel, -0.4, 0.01)
-    digits = SF.text_cs("1880", 1.6, "roman", grow=0.1)
-    dormer = dormer + front(digits.translate(((x0 + x1) / 2, zb + 2.4)) ^ panel, -0.41, 0.0)
+    digits = SF.text_cs("1880", 2.4, "roman", grow=0.1)
+    dormer = dormer + front(digits.translate(((x0 + x1) / 2, zb + 3.2)) ^ panel, -0.41, 0.0)
     return mansard, dormer, zb, y1, yb
 
 
 def _monitor(zd):
     """A glazed roof monitor over the workroom: low walls with four lights a side, a gable
     roof at 40 degrees with 45 degree undercut eaves. Prints upright on the deck."""
-    x0, x1, y0, y1 = W / 2 - 5.0, W / 2 + 5.0, 18.0, 32.0
-    hwall = 3.6
+    x0, x1, y0, y1 = W / 2 - 8.0, W / 2 + 8.0, 36.0, 64.0
+    hwall = 5.0
     body = box([x0, y0, zd], [x1, y1, zd + hwall])
-    n = 4
+    n = 5
     p = (y1 - y0) / n
     for k in range(n):
-        a, b = y0 + k * p + 0.5, y0 + (k + 1) * p - 0.5
+        a, b = y0 + k * p + 0.6, y0 + (k + 1) * p - 0.6
         for x in (x0, x1):
-            body = body - box([x - 0.3, a, zd + 0.8], [x + 0.3, b, zd + 2.8])
+            body = body - box([x - 0.3, a, zd + 1.0], [x + 0.3, b, zd + 3.8])
     zt = zd + hwall
     xc, half = (x0 + x1) / 2, (x1 - x0) / 2 + 0.6
     rise = half * math.tan(math.radians(40))
@@ -262,7 +268,7 @@ def build(kit=None):
     hw = BAY_W / 2
     plinth = M.extrude(poly([(BAY_U - hw - 0.3, 0.5), (BAY_U - hw + BAY_P - 0.1, -BAY_P - 0.3),
                              (BAY_U + hw - BAY_P + 0.1, -BAY_P - 0.3), (BAY_U + hw + 0.3, 0.5)]), ZF)
-    steps = box([DOOR_U - 4.4, -1.8, 0.0], [DOOR_U + 4.4, 0.5, ZF]) + box([DOOR_U - 4.4, -3.6, 0.0], [DOOR_U + 4.4, -1.79, ZF / 2])
+    steps = box([DOOR_U - 6.0, -2.4, 0.0], [DOOR_U + 6.0, 0.5, ZF]) + box([DOOR_U - 6.0, -4.8, 0.0], [DOOR_U + 6.0, -2.39, ZF / 2])
     kit.add("FOUNDATION", "Base", foundation([MAIN], 0.0, ZF, style="moulded", lip=1.2) + plinth + steps, group="foundation")
 
     # --- the front: sign, frieze, cap, hat sign
@@ -272,20 +278,20 @@ def build(kit=None):
         return A_
 
     sl = W - 2 * STILE - 0.8
-    sign = SF.sign_band(sl, SIGN_H, "Millinery", cap=3.2, font="italic", board=1.0, frame=0.8, relief=0.4)
+    sign = SF.sign_band(sl, SIGN_H, "Millinery", cap=4.6, font="italic", board=1.0, frame=1.0, relief=0.4)
     As = frame_at(STILE + 0.4, SIGN_V)
     kit.add("SIGN", "Sign", sign.transform(As), P=inv34(As), group="front", render=_gilt(sign, As, 1.0, "Sign"))
     ends = [1.0, W - 1.0]
-    fr = SF.frieze_band(W, FR_H, board=1.0, tails=dict(us=ends, w=1.6, d=1.8, style="beaded"), text="MME. DUFRESNE",
-                        cap=2.4, font="roman")
+    fr = SF.frieze_band(W, FR_H, board=1.0, tails=dict(us=ends, w=2.0, d=2.4, style="beaded"), text="MME. DUFRESNE",
+                        cap=3.6, font="roman")
     Afr = frame_at(0.0, VF)
     kit.add("FRIEZE", "Sign", fr.transform(Afr), P=inv34(Afr), group="front", render=_gilt(fr, Afr, 1.0, "Sign"))
-    cap = SF.cornice_cap(W, CAP_PROF) + SF.bracket_row(W, ends + [W / 2 - 9.0, W / 2 + 9.0], 1.6, 2.4, 1.4, 1.8,
-                                                        style="beaded")
+    cap = SF.cornice_cap(W, CAP_PROF) + SF.bracket_row(W, ends + [W / 2 - 16.0, W / 2 + 16.0], 2.0, 3.0, 1.6,
+                                                        CAP_K * 1.8, style="beaded")
     Ac = frame_at(0.0, VK)
-    kit.add("CAP", "Trim", (cap ^ box([0.0, -1.0, 0.0], [W, 4.0, 4.0])).transform(Ac), P=inv34(Ac), group="front")
-    bs = SF.blade_sign(SF.hat_cs(7.0, 5.0), None, t=1.2, arm=10.0, drop=3.4, hang=(-1.0, 0.9))
-    Abl = np.array([[0.0, 0.0, -1.0, BLADE_X], [-1.0, 0.0, 0.0, -0.4], [0.0, 1.0, 0.0, ZF + V2 + 12.0]])
+    kit.add("CAP", "Trim", (cap ^ box([0.0, -1.0, 0.0], [W, 5.2, 5.2])).transform(Ac), P=inv34(Ac), group="front")
+    bs = SF.blade_sign(SF.hat_cs(9.0, 6.4), None, t=1.2, arm=12.0, drop=4.0, hang=(-1.0, 0.9))
+    Abl = np.array([[0.0, 0.0, -1.0, BLADE_X], [-1.0, 0.0, 0.0, -0.4], [0.0, 1.0, 0.0, ZF + V2 + 16.0]])
     kit.add("BLADE", "Blade", bs.transform(Abl), P=inv34(Abl), group="front", render=_gilt(bs, Abl, 0.8, "Blade"))
     print("front", round(time.time() - t0, 1))
 
@@ -308,13 +314,13 @@ def build(kit=None):
         for x in np.arange(bx[0] + sx - off, bx[2] - 0.5, sx):
             grooves.append(box([x - 0.25, ys[j], ZR + 1.0], [x + 0.25, ys[j + 1], ZR + 2.0]))
     zd = ZR + 1.2
-    cw, cd = 6.0, 3.0
+    cw, cd = 9.0, 4.5
     cx, cy = W / 2, D - T - 1.2 - cd / 2
     pocket = box([cx - cw / 2 - 0.4, cy - cd / 2 - 0.4, ZR + 0.6], [cx + cw / 2 + 0.4, cy + cd / 2 + 0.4, ZR + 2.0])
     kit.add("ROOF", "Roof", deck - union(grooves) - pocket, group="roof")
     kit.add("MONITOR", "Trim", _monitor(zd), group="roof")
     zc = ZR + 0.6
-    ch = TW.chimney("twin", w=cw, d=cd, h=round((ZF + HB + 11.0 - zc) / 0.2) * 0.2).translate([cx, cy, zc])
+    ch = TW.chimney("twin", w=cw, d=cd, h=round((ZF + HB + 14.0 - zc) / 0.2) * 0.2).translate([cx, cy, zc])
     kit.add("CHIMNEY", "Brick", ch, group="roof")
     # coping on the side and rear walls
     cop = slab(offset(base, 0.4) - offset(base, -T - 0.3), ZF + HB, ZF + HB + 0.8) - box([-5, -5, 0], [W + 5, T, 400]) - \

@@ -304,6 +304,10 @@ are true HO: the pink house is 206 x 137 mm with a 40.6 mm storey pitch, and the
 - Windows are 8.4 mm wide, 24 mm tall downstairs and 21 mm upstairs, spaced well apart. A
   window no longer fills its storey's height or its wall's width.
 - Porch posts are 20 to 30 mm apart, and round towers and porches use fewer facets.
+- The Main Street shops (Rev C) follow the same standard: about twice their first floor plans
+  (fronts of 60 to 130 mm, 110 to 150 mm deep), 42 mm ground floors (44 to 50 for the tall
+  shop floors) and 38 mm upper storeys, house-size windows, and more bays rather than bigger
+  ones. Signs, cornices, balconies and galleries grew with them.
 
 ## Built-up cornices (`cornice.py`)
 

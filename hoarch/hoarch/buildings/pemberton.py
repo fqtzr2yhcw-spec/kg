@@ -61,12 +61,13 @@ ZR = ZF + VC - 1.2        # roof ledge (the deck sits on it, behind the corbel t
 T = 3.0
 
 # ------------------------------------------------------------------ plan
-X1, Y1 = 76.0, 104.0
+X1, Y1 = 128.0, 150.0
 MAIN = Block("main", [(0, 0), (X1, 0), (X1, Y1), (0, Y1)], ZF, ZP)
 BLOCKS = [MAIN]
-SF_U, SF_W = 30.0, 52.0   # storefront centre and width
-DOOR_U = 65.0
-WIN_U = (13.0, 38.0, 63.0)
+SF_W = 52.0              # storefront width
+SHOPS = ((30.0, "DRY GOODS", ""), (98.0, "BOOTS & SHOES", "-2"))    # storefront centre, sign, part suffix
+DOOR_U = X1 / 2           # the street door to the upper floors, between the two shops
+WIN_U = (16.0, 40.0, 64.0, 88.0, 112.0)
 PIER = 3.0                # end piers on the upper front
 
 
@@ -122,7 +123,8 @@ def _openings():
         L.append(Opening(MAIN, e, u, v0, sp, name, kind))
 
     sf = SF.storefront(SF_W, SF_H, entry=14.0, col=2.4, style="fluted", bulk=7.2, transom=6.4, lite=2.4)
-    add(SF_U, 0, 0.0, sf, "storefront", "door")
+    for u, _, sfx in SHOPS:
+        add(u, 0, 0.0, sf, "storefront" + sfx, "door")
     add(DOOR_U, 0, 0.0, SF.door_commercial(10.0, 34.0, transom=5.0, leaf="four_panel", tstyle="number:112"),
         "street-door", "door")
     w2 = SF.window_commercial(W2, H2, rise=2.0, lites=(2, 2), sill=1.2)
@@ -133,11 +135,11 @@ def _openings():
     # rear: two windows and the back door below, three windows on each floor above
     wr1 = SF.window_commercial(9.0, 22.0, rise=1.6, lites=(1, 1), rows=(1, 2), sill=1.0)
     wr2 = SF.window_commercial(9.0, 21.0, rise=1.6, lites=(1, 1), rows=(1, 1), sill=1.0)
-    add(58.0, Y1, 0.0, SF.door_commercial(9.0, 30.0, transom=4.0, leaf="four_panel", tstyle="number:112", head=None),
+    add(100.0, Y1, 0.0, SF.door_commercial(9.0, 30.0, transom=4.0, leaf="four_panel", tstyle="number:112", head=None),
         "back-door", "door")
-    for x in (16.0, 36.0):
+    for x in (20.0, 44.0, 68.0):
         add(x, Y1, 12.0, wr1, f"R{x:.0f}-1")
-    for x in (14.0, 38.0, 62.0):
+    for x in (16.0, 40.0, 64.0, 88.0, 112.0):
         add(x, Y1, V2, wr2, f"R{x:.0f}-2")
         add(x, Y1, V3 + 1.0, wr2, f"R{x:.0f}-3")
     return L
@@ -146,8 +148,8 @@ def _openings():
 OPENINGS = _openings()
 
 # applied trim on the front (face-up parts): landings where the brick stops
-APPLIED = [("SIGN", SF_U - SF_W / 2, SIGN_V, SF_W, SIGN_H),
-           ("CORNICE-store", 0.0, CAP1_V, X1, 3.4),
+APPLIED = [("SIGN" + sfx, u - SF_W / 2, SIGN_V, SF_W, SIGN_H) for u, _, sfx in SHOPS] + \
+          [("CORNICE-store", 0.0, CAP1_V, X1, 3.4),
            ("FRIEZE", 0.0, VF, X1, FR_H),
            ("CORNICE-top", 0.0, VK, X1, 5.2)]
 
@@ -183,27 +185,28 @@ def build(kit=None):
     st = stacked_shells(BLOCKS, OPENINGS + trim_ops, [S1], t=T, corners="none", siding=_siding, prof=bprof,
                         belt_blocks=None, water_table=False)
     walls_top = st["shells"][1] + _corbel(base, T, ZR)
-    sfo = next(o for o in OPENINGS if o.name == "storefront")
-    posts = sfo.spec["posts"].transform(sfo.local_frame())            # brick posts behind the inner columns
+    sfos = [o for o in OPENINGS if o.name.startswith("storefront")]
+    posts = union([o.spec["posts"].transform(o.local_frame()) for o in sfos])   # brick posts behind the inner columns
     kit.add("WALLS-1", "Brick", st["shells"][0] + posts, group="walls")
     kit.add("SILL-COURSE", "Granite", st["rings"][0], group="walls")
     kit.add("WALLS-2", "Brick", walls_top, group="walls")
 
     # --- the storefront, its recessed entry and the street door
-    ops = {o.name: o for o in OPENINGS}
-    sfo = ops["storefront"]
-    sp = sfo.spec
-    world, P, zones = O.place(sp, sfo.local_frame(), "Iron", "Iron", "Glass")
-    kit.add("STOREFRONT", "Iron", world, P=P, group="storefront", render=zones)
-    eu, ew, eh = sp["entry"]
-    A = sfo.local_frame()
-    Av = A.copy()
-    Av[:, 3] = A[:, 3] + A[:, 0] * eu
-    vest = SF.vestibule(ew, 7.0, eh, bulk=7.2, front=-T)         # behind the brick posts; granite threshold
-    kit.add("VESTIBULE", "Iron", vest.transform(Av), P=_upright(Av), group="storefront")
-    vb = np.array(vest.bounding_box())
+    entries = []
+    for sfo in sfos:
+        sfx = sfo.name[len("storefront"):]
+        sp = sfo.spec
+        world, P, zones = O.place(sp, sfo.local_frame(), "Iron", "Iron", "Glass")
+        kit.add("STOREFRONT" + sfx, "Iron", world, P=P, key="STOREFRONT", group="storefront", render=zones)
+        eu, ew, eh = sp["entry"]
+        A = sfo.local_frame()
+        Av = A.copy()
+        Av[:, 3] = A[:, 3] + A[:, 0] * eu
+        vest = SF.vestibule(ew, 7.0, eh, bulk=7.2, front=-T)         # behind the brick posts; granite threshold
+        kit.add("VESTIBULE" + sfx, "Iron", vest.transform(Av), P=_upright(Av), key="VESTIBULE", group="storefront")
+        entries.append((Av, np.array(vest.bounding_box())))
     for o in OPENINGS:
-        if o.name == "storefront":
+        if o.name.startswith("storefront"):
             continue
         s = o.spec
         b = s["cut"].bounds()
@@ -216,8 +219,9 @@ def build(kit=None):
 
     # --- granite plinth; a pad under the vestibule floor, the lip cut where the entry is
     fnd = foundation(BLOCKS, 0.0, ZF, style="plinth")
-    pad = box([vb[0] + 0.2, -ZF, vb[2] + 0.2], [vb[3] - 0.2, 0.0, -T]).transform(Av)
-    fnd = fnd + pad - box([vb[0] - 0.2, 0.0, vb[2] - 0.2], [vb[3] + 0.2, 2.0, -0.01]).transform(Av)
+    for Av, vb in entries:
+        pad = box([vb[0] + 0.2, -ZF, vb[2] + 0.2], [vb[3] - 0.2, 0.0, -T]).transform(Av)
+        fnd = fnd + pad - box([vb[0] - 0.2, 0.0, vb[2] - 0.2], [vb[3] + 0.2, 2.0, -0.01]).transform(Av)
     kit.add("FOUNDATION", "Granite", fnd, group="foundation")
 
     # --- applied front trim: sign band + store cornice (the lower double eave), and the
@@ -232,12 +236,13 @@ def build(kit=None):
         return kit.add(name, color, local.transform(A_), P=inv34(A_), group="front",
                        render=render(local, A_) if render else None, **kw)
 
-    sign = SF.sign_band(SF_W, SIGN_H, "DRY GOODS", cap=3.4, board=1.0, frame=0.8, relief=0.4)
-    put("SIGN", "Sign", sign, SF_U - SF_W / 2, SIGN_V, render=lambda m, A_: _gilt(m, A_, 1.0))
+    for u, text, sfx in SHOPS:
+        sign = SF.sign_band(SF_W, SIGN_H, text, cap=3.4, board=1.0, frame=0.8, relief=0.4)
+        put("SIGN" + sfx, "Sign", sign, u - SF_W / 2, SIGN_V, render=lambda m, A_: _gilt(m, A_, 1.0))
     cap1 = SF.cornice_cap(X1, CAP1_PROF, dentils=dict(v=0.6, h=1.0, d=2.2, tooth=0.6, gap=0.6))
     put("CORNICE-store", "Iron", cap1, 0.0, CAP1_V)
-    bus = [1.5, 25.5, 50.5, 74.5]
-    frieze = SF.frieze_band(X1, FR_H, board=1.2, panels=[(4.0, 23.6), (27.4, 48.6), (52.4, 72.0)],
+    bus = [1.5 + (X1 - 3.0) * k / 5 for k in range(6)]
+    frieze = SF.frieze_band(X1, FR_H, board=1.2, panels=[(a + 2.5, b - 2.5) for a, b in zip(bus, bus[1:])],
                             tails=dict(us=bus, w=1.6, d=1.8, style="metal"))
     put("FRIEZE", "Cream", frieze, 0.0, VF)
     cap2 = SF.cornice_cap(X1, CAP2_PROF, dentils=dict(v=0.8, h=1.4, d=2.4, tooth=0.6, gap=0.6)) + \
@@ -249,10 +254,10 @@ def build(kit=None):
     cop = slab(offset(base, 0.6) - offset(base, -T - 0.4), ZP, ZP + 0.8) + \
         slab(offset(base, 0.2) - offset(base, -T), ZP + 0.79, ZP + 1.2)
     kit.add("COPING", "Granite", cop, group="roof")
-    tw, th = 30.0, 12.0
+    tw, th = 40.0, 14.0
     rise = th * 0.35
     outline = arch_cs(-tw / 2, tw / 2, 0.0, th - rise, rise=rise, seg=48)
-    tab = SF.name_tablet(tw, th, "PEMBERTON", "1868", cap=2.8, board=1.2, relief=0.4) + \
+    tab = SF.name_tablet(tw, th, "PEMBERTON", "1868", cap=3.4, board=1.2, relief=0.4) + \
         ext(outline + rect(-tw / 2 - 2.4, 0.0, tw / 2 + 2.4, 2.4), -2.4, 0.01)        # a block behind it all
     At = Af.copy()
     At[:, 3] = f.world(X1 / 2, ZP + 1.2 - ZF, -1.0)
@@ -264,11 +269,11 @@ def build(kit=None):
     b = inner.bounds()
     seams = union([box([b[0] + 0.4, y - 0.3, ZR + 1.19], [b[2] - 0.4, y + 0.3, ZR + 1.4])
                    for y in np.arange(b[1] + 7.2, b[3] - 2.0, 7.2)])
-    hx, hy = 52.0, 70.0
+    hx, hy = 84.0, 100.0
     hatch = union([box([hx - 4.5 - g, hy - 5.5 - g, z0], [hx + 4.5 + g, hy + 5.5 + g, z1])       # lid flares at 45 deg
                    for g, z0, z1 in ((0.0, ZR + 1.19, ZR + 2.8), (0.2, ZR + 2.79, ZR + 3.0), (0.4, ZR + 2.99, ZR + 3.4))])
-    cw, cd = 16.0, 6.0
-    cx, cy = T + 0.6 + cd / 2, 48.0
+    cw, cd = 20.0, 7.0
+    cx, cy = T + 0.6 + cd / 2, 70.0
     pocket = box([cx - cd / 2 - 0.4, cy - cw / 2 - 0.4, ZR + 0.6], [cx + cd / 2 + 0.4, cy + cw / 2 + 0.4, ZR + 2.0])
     kit.add("ROOF", "Roof", deck + seams - pocket + hatch, group="roof")
     zc = ZR + 0.6

@@ -24,13 +24,13 @@ BATCHES = {
     "houses1": ("Houses 1-10", ["harcourt", "ardmore", "carrow", "beaumont", "merritt"],
                 ["villa", "fowler", "whitby", "hollis", "delancey"], 45.0, 290.0),
     "shops": ("Main Street, shops 11-20", ["hotel", "bank", "pemberton", "drugstore", "hardware"],
-              ["barber", "general", "bakery", "millinery", "jeweler"], 55.0, 230.0),
+              ["barber", "general", "bakery", "millinery", "jeweler"], 40.0, 300.0),
     "houses2": ("Houses 21-30", ["rosecroft", "larkspur", "camellia", "juniper", "hawthorn"],
                 ["marigold", "wisteria", "twins", "primrose", "magnolia"], 45.0, 290.0),
     "colonial": ("The Colonial batch, houses 31-40", ["ellsworth", "oakhurst", "fairhaven", "westbrook", "winthrop"],
                  ["chatham", "vantassel", "whitmore", "pennock", "hathaway"], 45.0, 310.0),
 }
-VIEW = {"shops": [-10, 27, 50, 0.98, [0, 0, -14]]}       # the shops are small: frame them wider
+VIEW = {}                # per-batch camera, where the default framing does not suit
 FILE = {"houses1": "Houses_01-10", "shops": "Shops_11-20", "houses2": "Houses_21-30", "colonial": "Colonial_31-40"}
 
 

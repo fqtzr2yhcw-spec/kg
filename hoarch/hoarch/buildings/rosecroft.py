@@ -242,7 +242,7 @@ def build(kit=None):
         caps.append(G.ridge_cap(((g0 + g1) / 2, -RAKE), ((g0 + g1) / 2, y_meet), zc, S_CROSS, ZW))
     corners = [(-D_EAVE, -D_EAVE), (W + D_EAVE, -D_EAVE), (W + D_EAVE, D + D_EAVE), (-D_EAVE, D + D_EAVE)]
     ends = [(D / 2, D / 2), (W - D / 2, D / 2), (W - D / 2, D / 2), (D / 2, D / 2)]
-    hips = union([G.hip_cap((c[0], c[1], Z_EAVE), (e[0], e[1], zr), half=1.6, up=0.9, drop=2.2)
+    hips = union([G.hip_cap((c[0], c[1], Z_EAVE), (e[0], e[1], zr), half=1.6, up=0.9, drop=Z_EAVE - ZW)
                   for c, e in zip(corners, ends)])
     roof = roof + ((union(caps) + hips) - walls_env)
     roof = roof - lip_keep(MAIN.cs, 3.0, ZW)
