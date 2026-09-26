@@ -767,9 +767,51 @@ prints upside down on its flat roof, the columns standing up; the PORCH-lace pie
 flat roof, the posts standing up); the walls, the roofs and the chimneys print upright; the
 PORCH-lace pieces face-up.
 """),
+    "prescott": ("THE PRESCOTT - FEDERAL", """  1. FOUNDATION (brownstone, a band of vermiculated blocks along its top).
+  2. WALLS-1 onto the foundation's lip: the whole first storey in one part.
+  3. JOINT onto WALLS-1, then WALLS-2 onto its lip: the whole second storey in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (blind-arched windows with carved fans below, tablet-capped windows above, the tripartite
+     window over the entrance, the Adam doorway at the front and a plainer one at the back).
+  5. The CORNICE-J parts round the storey joint, the CORNICE-E parts round the eave.
+  6. ROOF onto the lip at the wall tops; the four CHIMNEYs into their pockets.
+  7. The roof balustrade: BALUSTRADE-front and BALUSTRADE-back along the level curb at the roof's
+     edge, then BALUSTRADE-west and BALUSTRADE-east between them (their end pedestals meet at the
+     corners); each run is glued by its whole flat foot.
+  8. STEPS-front (brownstone, fitted to the foundation) under the front door, STOOP-back at the
+     back door.
+""", """The cornices' upper parts print upside down; the walls, the roof, the chimneys and the steps
+upright; the balustrade runs on their feet.
+"""),
+    "bellerive": ("THE BELLERIVE - FRENCH COLONIAL (LOUISIANA CREOLE)", """  1. FOUNDATION (a brick sill).
+  2. WALLS-1 onto the foundation's lip: the raised ground storey (rose stucco, spalled to the
+     brick here and there) in one part.
+  3. JOINT onto WALLS-1, then WALLS-2 onto its lip: the main storey (colombage: timber framing
+     with brick between) in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (arched batten doors and windows below, the tall French doors of the main storey, casements
+     of the same pattern across the back). A pair of SHUTTERs beside each French door and each
+     back casement: the timbers stop at the shutters' edges, so each shutter's flat back glues
+     to the brick.
+  5. The CORNICE-J parts round the storey joint, the CORNICE-E parts round the eave.
+  6. The gallery: GALLERY-deck (the planks, the frame, the joists and the stuccoed columns in
+     one piece) stands on its columns across the front and down both ends of the house, its
+     inner edge against the joint cornice. GALLERY-top (the colonnettes, the railings, the cutwork frieze
+     and the flat top in one piece, so no post is glued on its own) lowered onto the deck: the
+     peg under each colonnette drops into its socket in the planks. GALLERY-roof (the cypress
+     skirt roof) on the top's flat, up against the wall under the eave cornice.
+  7. STAIR up to the gallery at the front: its cheeks wrap the two columns either side.
+  8. ROOF onto the lip at the wall tops; the two CHIMNEYs into their pockets; each DORMER-core
+     into its DORMER, the two DORMERs into their pockets on the front slope, a DORMER-roof on
+     each.
+""", """The cornices' upper parts print upside down; the GALLERY-deck prints upside down (its first
+1.2 mm are the planks: change to the Rose of the columns on the first layer above it); the
+GALLERY-top prints upside down on its flat, the colonnettes standing up; the walls, the roofs,
+the stair, the dormers and the chimneys print upright; the shutters on their backs.
+"""),
 }
 
-ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
+ZIPNAME ={"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
 
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}
 SHOPS = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in SHOPS.items()}
