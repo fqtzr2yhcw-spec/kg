@@ -11,9 +11,9 @@ process preset:
   SUPPORTS ON for the Windows_Doors plate only: tree(auto), "On build plate only". Each window
   and door is ONE part: a plug with the glass and sash that pushes into the wall opening, and
   the carved frame on top; the frame prints face-up on supports that touch only its back.
-Brim ON (Bambu 'Auto' is fine) for the tall or thin parts: wall shells, roof, porch frames
-(posts and railings stand up in one piece), arcades (they print on their top edge), chimneys,
-finials, and the flat gable ornaments. Windows and doors are one colour: paint the glass,
+Brim ON (Bambu 'Auto' is fine) for the tall or thin parts: wall shells, roof, the porch tops
+(they print upside down on the roof's flat top, the posts and railings standing up), chimneys,
+finials, and the flat gable ornaments and lace. Windows and doors are one colour: paint the glass,
 sashes and doors after (or colour-paint them in Bambu Studio).
 Optional dark glass: on the Windows_Doors plate the first 0.4 mm (two layers) of every window
 is its glass. Start that plate in a dark grey or black and change filament once to the frame
@@ -34,11 +34,6 @@ plate. It prints upside down: its first 1.2 mm (6 layers at 0.20) are the planks
 brown, and change filament once to the trim colour on the first layer above 1.2 mm (Bambu
 Studio: right-click the slider's 1.4 mm layer > Add color change). The hairline cracks between the planks are meant
 to be there; they print as dark lines between the boards."""
-
-PORCH = """  - Porch: PORCH-deck (planks, frame, skirt and piers in one piece); the porch frames
-    (posts and railings in one piece) drop into the sockets in its planks; arcades on the post
-    tops (their tabs drop into the post slots); PORCH-roof, then its tin top; the steps at
-    the front."""
 
 SHOPS = {
     "pemberton": ("THE PEMBERTON BLOCK - BRICK COMMERCIAL BLOCK WITH A CAST-IRON STOREFRONT", """  1. FOUNDATION (the granite plinth, with a pad under the shop entry).
@@ -252,15 +247,21 @@ JOINTED = """  2. WALLS-1 onto the foundation's lip{w1}.
   4. Windows and doors: clip off the supports and push each plug into its opening from
      outside; the frame drops into the flat landing cut in the siding."""
 
-TURNED_PORCH = """PORCH-deck against the base (see the deck note); the PORCH-frames (posts and railings in
-     one piece) into the sockets in the planks; the PORCH-arcades on the post tops (their tabs
-     drop into the posts' slots); PORCH-roof on them against the walls, then its tin top;
-     the PORCH-steps"""
+TURNED_PORCH = """PORCH-deck against the base (see the deck note); PORCH-top (the porch roof, beams, posts and
+     railings in one piece, so no post is glued on its own) lowered onto the deck: the square
+     peg under each post drops into its socket in the planks (a drop of glue in each socket, out
+     of sight) and its back edge meets the wall under the eave; then its tin top; the
+     PORCH-steps"""
 
-FRIEZE_PORCH = """PORCH-deck against the base (see the deck note); the PORCH-frames (posts and railings in
-     one piece) into the sockets in the planks; the PORCH-friezes on the post tops (their tabs
-     drop into the posts' slots); PORCH-roof on them against the walls, then PORCH-roof-top;
-     the PORCH-steps"""
+LACE = """; the PORCH-lace pieces (the arches, flat) against the face of the beam and posts, each
+     glued by its whole flat back (the mitred ends meet at the corner posts)"""
+
+
+def top_porch(tin="", lace=False):
+    """The one-piece porch-top steps: ``tin`` names the separate tin piece ("" when the tin is
+    printed with the top, as its one colour change); ``lace`` adds the applied arches."""
+    t = TURNED_PORCH.replace("; then its tin top", f"; {tin} on top of it, glued over its whole face" if tin else "")
+    return t.replace("; the\n     PORCH-steps", (LACE if lace else "") + "; the\n     PORCH-steps")
 
 
 def _rewrap(text, width=94):
@@ -274,7 +275,8 @@ def _rewrap(text, width=94):
             first = step[0]
             lead = re.match(r"^(\s*)", first).group(1)
             body = " ".join(x.strip() for x in step)
-            out.extend(textwrap.wrap(body, width, initial_indent=lead, subsequent_indent=" " * 5))
+            out.extend(textwrap.wrap(body, width, initial_indent=lead, subsequent_indent=" " * 5,
+                                     break_on_hyphens=False))
             step.clear()
     for line in text.split("\n"):
         if re.match(r"^\s*\d+\. ", line) or not line.strip():
@@ -305,7 +307,7 @@ NOTES = {
      sunburst and collar) on the wing gable's shingles over the attic window.
   8. Tower: the CORNICE-T parts round its top band (they stop where the main roof climbs
      past); TOWER-SPIRE on the band's lip; TOWER-FINIAL in its seat at the tip.
-  9. Porch (round the front and the west side, past the tower): """ + TURNED_PORCH + """;
+  9. Porch (round the front and the west side, past the tower): """ + top_porch("PORCH-roof-cap (the standing-seam tin)") + """;
      STOOP-back at the back door.
 """),
     "villa": ("THE ASHBY - ITALIANATE VILLA", "  1. FOUNDATION (limestone).\n" + jointed(
@@ -317,7 +319,7 @@ NOTES = {
      CHIMNEYs down into their pockets.
   8. Cupola: CUPOLA-walls on the roof's flat top, its four twin windows, the CORNICE-CUP parts
      round its top band, CUPOLA-roof on the band's lip and the CUPOLA-finial in its seat.
-  9. Porch: """ + TURNED_PORCH.replace("its tin top", "PORCH-roof-tin") + """; STOOP-back at the
+  9. Porch: """ + top_porch("PORCH-roof-tin (the seamed tin)") + """; STOOP-back at the
      back door of the ell.
 """),
     "harcourt": ("THE HARCOURT - SECOND EMPIRE", "  1. FOUNDATION (rock-faced granite).\n" + jointed(
@@ -333,7 +335,7 @@ NOTES = {
      deck; the CHIMNEYs in their deck pockets.
   8. Tower: the CORNICE-T parts round its top band; TOWER-CAP (the concave mansard) on the
      band's lip; TOWER-curb and TOWER-deck; the TOWER-crest strips; TOWER-finial.
-  9. Portico: """ + TURNED_PORCH.replace("its tin top", "PORCH-roof-tin") + """; STOOP-back at the
+  9. Portico: """ + top_porch("PORCH-roof-tin (the seamed tin)") + """; STOOP-back at the
      back door.
 """),
     "fowler": ("THE FOWLER - OCTAGON HOUSE", "  1. FOUNDATION (brick).\n" + jointed() + """
@@ -342,7 +344,7 @@ NOTES = {
      two CHIMNEYs in their pockets.
   7. Cupola: CUPOLA-walls on the roof's flat top, its eight windows, the CORNICE-CUP parts
      round its top band, CUPOLA-roof on the band's lip and the CUPOLA-finial in its seat.
-  8. Veranda: """ + TURNED_PORCH.replace("its tin top", "PORCH-roof-tin") + """; STOOP-back at the
+  8. Veranda: """ + top_porch() + """; STOOP-back at the
      back door.
 """),
     "whitby": ("THE WHITBY - CARPENTER GOTHIC COTTAGE", "  1. FOUNDATION (rubble stone).\n" + jointed(
@@ -353,7 +355,7 @@ NOTES = {
      prints upright); the CHIMNEYs in their ridge pockets.
   7. BARGE boards: glue one to the end of each rake (the two longer boards on the side
      gables, the two steeper ones front and back); the drop and finial sit at the apex.
-  8. Porch: """ + TURNED_PORCH.replace("its tin top", "PORCH-roof-tin") + """; STOOP-back at the
+  8. Porch: """ + top_porch() + """; STOOP-back at the
      back door.
 """),
     "delancey": ("THE DELANCEY - SAN FRANCISCO ITALIANATE ROW HOUSE", "  1. FOUNDATION (the rusticated raised basement); the basement windows push into it.\n" + jointed(
@@ -383,7 +385,7 @@ NOTES = {
      pocket.
   7. TRUSSes: glue one to the end of each rake (two for the main gables, the shorter one for
      the wing).
-  8. Porch: """ + TURNED_PORCH.replace("its tin top", "PORCH-roof-tin") + """; STOOP-back at the
+  8. Porch: """ + top_porch() + """; STOOP-back at the
      back door.
 """),
     "hollis": ("THE HOLLIS - FOLK VICTORIAN FARMHOUSE", "  1. FOUNDATION (block).\n" + jointed(
@@ -392,7 +394,7 @@ NOTES = {
   6. The CORNICE-E parts round the eave band, along the eave walls and across the gable ends.
   7. ROOF onto the lip along the eave walls; the two CHIMNEYs in their pockets; a GABLE
      (the gingerbread) on each gable's rake end.
-  8. Porch (in the corner of the L): """ + TURNED_PORCH.replace("its tin top", "PORCH-roof-tin") + """.
+  8. Porch (in the corner of the L): """ + top_porch() + """.
   9. Back porch (along the back of the wing, its steps at the back door): the same with the BPORCH
      parts.
 """),
@@ -405,7 +407,7 @@ NOTES = {
      GABLE-truss (the arch-braced Tudor truss) on the front gable's rake end.
   7. Turret: the CORNICE-T parts round its top band (they stop where the main roof climbs
      past); TURRET-roof on the band's lip; TURRET-finial in its seat.
-  8. Porch (round the front and the west side): """ + TURNED_PORCH.replace("its tin top", "PORCH-roof-tin") + """;
+  8. Porch (round the front and the west side): """ + top_porch() + """;
      STOOP-back at the back door.
 """),
     "marigold": ("THE MARIGOLD - TURQUOISE GINGERBREAD COTTAGE", """  1. FOUNDATION (the coquina-stone base).
@@ -417,16 +419,8 @@ NOTES = {
      GABLE-hood over the gable window.
   6. ROOF onto the lip at the wall tops; CHIMNEY down through its pocket; a BARGE board on
      each gable's rake ends (the medallion under the apex).
-  7. Porch (the pink-house way: no post is glued on its own):
-     - PORCH-deck against the front of the base (see the deck note).
-     - PORCH-top is the porch roof, beams, posts and railings in one piece. Lower it onto
-       the deck: the square peg under each post drops into its socket in the planks (a
-       drop of glue in each socket, where it cannot be seen), and its back edge meets the
-       wall under the eave cornice.
-     - PORCH-roof-top (the flat tin sheet) on top of it, glued over its whole face.
-     - The PORCH-lace pieces (the lace arches, flat) on the front and ends: each lies flat
-       against the face of the beam and posts, glued by its whole flat back.
-     - The PORCH-steps at the front, STOOP-back at the back door.
+  7. Porch: """ + top_porch("PORCH-roof-tin (the flat tin sheet)", lace=True) + """;
+     STOOP-back at the back door.
   8. Add-ons: the FLOWERBOXes under the front windows, the ROCKER on its mat on the porch.
 """, """Colour changes (optional, each on a plate of its own colour):
   FLOWERBOX: turquoise box, then at 2.2 mm change to pink for the flowers.
@@ -444,10 +438,8 @@ print face-up, lying flat; the ROCKER on its side.
   6. ROOF onto the lip at the wall tops; CHIMNEY down through its pocket; the four WALK
      strips round the flat top (front and back first, the sides between them);
      GABLE-ornament on the wing's rake ends.
-  7. Porch: PORCH-deck against the base (see the deck note); the PORCH-frames into the
-     sockets in the planks; the PORCH-arcades on the post tops; PORCH-roof on them against
-     the wall, then PORCH-roof-top; PORCH-pediment on the porch roof over the steps; the
-     PORCH-steps; STOOP-back at the back door.
+  7. Porch: """ + top_porch() + """; PORCH-pediment on the porch roof over the steps;
+     STOOP-back at the back door.
 """, """The ROOF prints upright; its flat top is carried on a 45 degree fill inside, so no
 supports. The WALK strips and the GABLE-ornament print face-up.
 """),
@@ -462,10 +454,10 @@ supports. The WALK strips and the GABLE-ornament print face-up.
      octagon) on the crown's flat top and the TOWER-lantern (the teal sleeve) down over it;
      TOWER-spire on top; TOWER-finial on the flat at the spire's tip; TOWER-vane (the arrow)
      on the top of the finial's rod.
-  8. Porch (round the tower): """ + FRIEZE_PORCH + """; PORCH-gable on the roof over
+  8. Porch (round the tower): """ + top_porch("PORCH-roof-tin", lace=True) + """; PORCH-gable on the roof over
      the steps; STOOP-back at the back door.
-""", """The PORCH-deck and PORCH-roof print upside down, the GABLE ornaments, the PORCH-gable and
-the vane arrow face-up, the friezes on their top edge. The TOWER-gablets, TOWER-crown, lantern,
+""", """The PORCH-deck and PORCH-top print upside down, the GABLE ornaments, the PORCH-gable, the
+PORCH-lace and the vane arrow face-up. The TOWER-gablets, TOWER-crown, lantern,
 core and spire print upright; the finial's rod and the gablet spikes are fine, so print them
 slowly or glue them with a drop of CA.
 """),
@@ -498,10 +490,10 @@ face-up (flat); the columns, the portico rail and the stoops upright.
      down into its pocket on the front slope (it sits flat on its seat), DORMER-roof on top.
   7. Tower: the CORNICE-T parts round its top band; TOWER-roof (the bell-cast cone) on the
      band's lip; TOWER-finial on the flat at the tip.
-  8. Porch: """ + FRIEZE_PORCH + """; PORCH-pediment on the roof over the steps;
+  8. Porch: """ + top_porch(lace=True) + """; PORCH-pediment on the roof over the steps;
      STOOP-back at the back door.
-""", """The PORCH-deck and PORCH-roof print upside down; the LOGGIA, the GABLE and the
-PORCH-pediment face-up (on their backs); the friezes on their top edge; the dormer, the tower
+""", """The PORCH-deck and PORCH-top print upside down; the LOGGIA, the GABLE, the PORCH-pediment
+and the PORCH-lace face-up (on their backs); the dormer, the tower
 roof and the finial upright.
 """),
     "juniper": ("THE JUNIPER - GREEN QUEEN ANNE WITH A ROUND TOWER", "  1. FOUNDATION (the tuckpointed brick base).\n" + jointed(
@@ -514,10 +506,10 @@ roof and the finial upright.
      into its pocket on the front slope, DORMER-roof on top.
   6. Tower: the CORNICE-T parts round its top band; TOWER-roof (the swallowtail cone) on the
      band's lip; TOWER-finial on the flat at the tip.
-  7. Porch: """ + FRIEZE_PORCH + """; PORCH-gable on the roof over the steps;
+  7. Porch: """ + top_porch(lace=True) + """; PORCH-gable on the roof over the steps;
      STOOP-back at the back door.
-""", """The PORCH-deck and PORCH-roof print upside down; the GABLEs and the PORCH-gable face-up
-(on their backs); the friezes on their top edge; the dormer, the tower roof and the finial
+""", """The PORCH-deck and PORCH-top print upside down; the GABLEs, the PORCH-gable and the
+PORCH-lace face-up (on their backs); the dormer, the tower roof and the finial
 upright.
 """),
     "camellia": ("THE CAMELLIA - PINK QUEEN ANNE WITH A BELL-ROOFED TOWER", "  1. FOUNDATION (the diamond-point base).\n" + jointed(
@@ -529,13 +521,13 @@ upright.
      rakes.
   7. Tower: the CORNICE-T parts round its top band; TOWER-roof (the bell) on the band's lip;
      TOWER-finial (the spike) on the flat at the tip.
-  8. Porch: """ + FRIEZE_PORCH + """; PORCH-pediment on the roof over the steps;
+  8. Porch: """ + top_porch() + """; PORCH-pediment on the roof over the steps;
      STOOP-back at the back door.
   9. Forecourt: the FORECOURT in front of the steps. Each street lamp: drop its LAMP-glass
      into the lantern cage of the LAMP from above, press the LAMP-cap over the four post
      tops, and stand the lamp in its socket at a front corner of the forecourt.
-""", """The PORCH-deck and PORCH-roof print upside down; the GABLEs and the PORCH-pediment face-up
-(on their backs); the friezes on their top edge; the tower roof, the finial and the lamps
+""", """The PORCH-deck and PORCH-top (its frieze included) print upside down; the GABLEs and the
+PORCH-pediment face-up (on their backs); the tower roof, the finial and the lamps
 (standard, glass and cap) upright; the forecourt face-up. Print the lamp standards with a brim.
 """),
     "wisteria": ("THE WISTERIA - LAVENDER COTTAGE WITH A CURVED PORCH", """  1. FOUNDATION (the river-stone base).
@@ -547,9 +539,9 @@ upright.
      three GABLEs (crescent ornaments) on the rakes.
   6. Dormers: DORMER-core into the back of each DORMER, the DORMER down into its pocket on the
      front slope (it sits flat on its seat), then its DORMER-roof on top.
-  7. Porch: """ + FRIEZE_PORCH + """; STOOP-back at the back door.
-""", """The PORCH-deck and PORCH-roof print upside down; the GABLEs face-up (on their backs); the
-friezes on their top edge; the dormers, their roofs and the chimney upright.
+  7. Porch: """ + top_porch(lace=True) + """; STOOP-back at the back door.
+""", """The PORCH-deck and PORCH-top print upside down; the GABLEs and the PORCH-lace face-up (on
+their backs); the dormers, their roofs and the chimney upright.
 """),
     "hawthorn": ("THE HAWTHORN - EASTLAKE HOUSE WITH A SQUARE TOWER", "  1. FOUNDATION (the ledge-stone base).\n" + jointed(
         " (the square tower's lower storeys are part of it)",
@@ -559,9 +551,9 @@ friezes on their top edge; the dormers, their roofs and the chimney upright.
      ornament) on the front gable's rake.
   6. Tower: the CORNICE-T parts round its top band; TOWER-roof (the pyramid) on the band's
      lip; TOWER-finial (the pineapple) on the flat at the tip.
-  7. Porch: """ + FRIEZE_PORCH + """; STOOP-back at the back door.
-""", """The PORCH-deck and PORCH-roof print upside down; the GABLE face-up (on its back); the
-friezes on their top edge; the tower roof, the finial and the chimney upright.
+  7. Porch: """ + top_porch(lace=True) + """; STOOP-back at the back door.
+""", """The PORCH-deck and PORCH-top print upside down; the GABLE and the PORCH-lace face-up (on
+their backs); the tower roof, the finial and the chimney upright.
 """),
     "magnolia": ("THE MAGNOLIA - TWIN-GABLED HOUSE WITH AN ENTRY LOGGIA", """  1. FOUNDATION (the V-jointed ashlar base, with the loggia's floor).
   2. WALLS-1 onto the foundation's lip (the brick ground storey, with the loggia sunk into
@@ -744,13 +736,12 @@ chimneys print upright.
      the DORMERs into their pockets, a DORMER-roof on each and a DORMER-urn in the gap of each
      broken pediment.
   7. TOWER-roof onto the tower's cornice, the TOWER-finial on its neck.
-  8. The porch: PORCH-deck against the foundation; the PORCH-frames (pedestals, columns and
-     railings) into the sockets in the deck; the PORCH-friezes into the slots at the column
-     tops; PORCH-roof on top, PORCH-roof-top on it; PORCH-pediment over the steps; the steps.
+  8. The porch: """ + top_porch(lace=True).replace("post", "column").replace("beams, columns", "beams, pedestals, columns") + """;
+     PORCH-pediment over the steps.
   9. STOOP-back at the back door.
-""", """The cornices' upper parts, the porch deck and the porch roof print upside down; the walls,
-the roofs, the tower roof, the dormers, the urns, the chimney and the porch frames print
-upright; the porch friezes print on their top edges.
+""", """The cornices' upper parts and the porch deck print upside down; the walls, the roofs, the tower
+roof, the dormers, the urns and the chimney print upright; the PORCH-top
+prints upside down on its flat roof, the columns standing up; the PORCH-lace pieces face-up.
 """),
     "fairhaven": ("THE FAIRHAVEN - COLONIAL REVIVAL WITH BAYS", """  1. FOUNDATION (snecked stone).
   2. WALLS-1 onto the foundation's lip: the whole first storey with both bays in one part.
@@ -763,13 +754,11 @@ upright; the porch friezes print on their top edges.
      round the bays and across the gable ends).
   6. ROOF onto the lip at the wall tops; the two CHIMNEYs into their pockets; a BAY-roof on each
      bay's cornice, under the main eave.
-  7. The veranda: PORCH-deck against the foundation between the bays; the PORCH-frames (posts and
-     railings) into the sockets in the deck; the PORCH-friezes into the slots at the post tops;
-     PORCH-roof on top, PORCH-roof-top on it; the steps.
+  7. The veranda: """ + top_porch(lace=True) + """.
   8. STOOP-back at the back door.
-""", """The cornices' upper parts, the porch deck and the porch roof print upside down; the walls,
-the roofs, the chimneys and the porch frames print upright; the porch friezes print on their
-top edges.
+""", """The cornices' upper parts, the porch deck and the PORCH-top print upside down (the top on its
+flat roof, the posts standing up); the walls, the roofs and the chimneys print upright; the
+PORCH-lace pieces face-up.
 """),
 }
 

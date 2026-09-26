@@ -235,9 +235,15 @@ def build(kit=None):
     AL = np.array([[0.0, 1 / n, -S / n, -DE], [-1.0, 0.0, 0.0, y1], [0.0, S / n, 1 / n, ZE - DE * S]])
     AR = np.array([[0.0, -1 / n, S / n, W + DE], [1.0, 0.0, 0.0, Y0R], [0.0, S / n, 1 / n, ZE - DE * S]])
     px, py, pr = PIPE
-    hole = M.cylinder(40.0, pr + 0.3, pr + 0.3, 28).translate([px, py, ZE - 5.0])
+    # the stovepipe stands in a snug socket through a flashing boot on the roof (a roof jack),
+    # so it is glued all round, not left hanging in a hole
+    zu = lambda x: ZE + (W - x) * S                                    # the panel's underside
+    zb = zu(px - pr - 1.2) + 1.2 * n + 1.2
+    boot = M.cylinder(zb - zu(px + pr + 1.2) + 0.4, pr + 1.2, pr + 1.2, 28).translate([px, py, zu(px + pr + 1.2) - 0.4])
+    boot = boot.trim_by_plane([S / n, 0.0, 1.0 / n], (ZE + S * W) / n)
+    hole = M.cylinder(40.0, pr + 0.12, pr + 0.12, 28).translate([px, py, ZE - 5.0])
     left = pan.transform(AL).trim_by_plane([-1.0, 0, 0], -W / 2)
-    right = pan.transform(AR).trim_by_plane([1.0, 0, 0], W / 2) - hole
+    right = (pan.transform(AR).trim_by_plane([1.0, 0, 0], W / 2) + boot) - hole
     kit.add("ROOF-L", "Roof", left, P=inv34(AL), group="roof")
     kit.add("ROOF-R", "Roof", right, P=inv34(AR), group="roof")
     zr = ZE + W / 2 * S + 1.2 * n + 0.45
@@ -254,10 +260,15 @@ def build(kit=None):
     BW_D = 16.0
     bw = SF.boardwalk(W + 2.0, BW_D, ZF, pitch=2.2)
     Ab = np.array([[-1.0, 0, 0, W + 1.0], [0, -1.0, 0, -1.55], [0, 0, 1.0, 0.0]])       # clear of the sill's bolt heads
-    walk = bw.transform(Ab)
+    # the pole stands 1.6 mm deep in a snug socket in the walk, over a pier under the planks
+    PX, PY, PD = 3.0, -13.0, 1.6
+    pier = M.cylinder(ZF - 1.0, 2.8, 2.8, 32).translate([PX, PY, 0.0])
+    sock = M.cylinder(PD + 0.01, 1.8 + 0.12, 1.8 + 0.12, 32).translate([PX, PY, ZF - PD])
+    walk = (bw.transform(Ab) + pier) - sock
     kit.add("BOARDWALK", "Boardwalk", walk, P=print_flip(), group="boardwalk",
             render=FT.plank_zones(walk, ZF, "Planks", "Timber"))
-    pole = SF.barber_pole(h=20.0).translate([3.0, -13.0, ZF])
+    pole = SF.barber_pole(h=20.0) + M.cylinder(PD + 0.02, 1.8, 1.8, 32).translate([0, 0, -PD])
+    pole = pole.translate([PX, PY, ZF])
     kit.add("POLE", "White", pole, group="boardwalk")
     print("specks dropped:", kit.drop_specks())
     return kit
