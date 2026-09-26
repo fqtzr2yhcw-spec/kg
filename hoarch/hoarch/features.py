@@ -1277,9 +1277,15 @@ def column_seats(x, y, z0, z1, foot, head=None, dfoot=1.2, dhead=1.0, clr=0.15, 
 
 
 def _grow(sol, g):
-    """``sol`` grown by about ``g`` each way (the union of six nudged copies)."""
-    return union([sol] + [sol.translate([g * x, g * y, g * z]) for x, y, z in
-                          ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))])
+    """``sol`` grown by ``g`` each way, piece by piece as the convex hull of its corners nudged
+    six ways (robust where the union of nudged copies fails on slivers)."""
+    offs = np.array([(0, 0, 0), (g, 0, 0), (-g, 0, 0), (0, g, 0), (0, -g, 0), (0, 0, g), (0, 0, -g)], float)
+    out = []
+    for c in sol.decompose():
+        v = np.asarray(c.to_mesh().vert_properties)[:, :3]
+        if len(v) >= 4:
+            out.append(M.hull_points([tuple(p) for p in (v[:, None, :] + offs[None, :, :]).reshape(-1, 3)]))
+    return union(out) if out else M()
 
 
 def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
@@ -1297,6 +1303,7 @@ def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
     pb = np.array(pt.solid.bounding_box())
     near = box(list(pb[:3] - depth - 5.0), list(pb[3:] + depth + 5.0))     # only the target round the part
     tgt = union([parts[n].solid ^ near for n in into])
+    tgt.num_vert()                                       # evaluate once (the solids are lazy)
     d = np.asarray(d, float) / np.linalg.norm(d)
     hi = next((t for t in np.arange(0.2, 4.01, 0.2) if (pt.solid.translate(list(d * t)) ^ tgt).volume() > 1e-3), None)
     if hi is None:
@@ -1311,7 +1318,9 @@ def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
     gap = lo
     L = gap + depth
     sweep = union([pt.solid.translate(list(d * t)) for t in np.arange(step, L + 1e-9, step)] + [pt.solid.translate(list(d * L))])
+    sweep.num_vert()
     strip = union([tgt.translate(list(-d * t)) for t in np.arange(0.0, gap + 0.25, 0.1)])
+    strip.num_vert()
     tongue = (sweep + pt.solid) ^ strip                   # overlaps the part, so the union fuses
     keep = [c for c in tongue.decompose() if c.volume() > 1e-3 and (c ^ pt.solid).volume() > 1e-4]
     tongue = union(keep) if keep else M()                  # only what joins the part
@@ -1319,9 +1328,12 @@ def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
         pt.solid = (pt.solid + tongue) - tgt
     else:
         pt.solid = pt.solid + tongue
-        sock = _grow(tongue ^ tgt, clr)
+        core = tongue ^ tgt
+        core.num_vert()
+        sock = _grow(core, clr)
         for n in into:
             parts[n].solid = parts[n].solid - sock
+            parts[n].solid.num_vert()
     return gap
 
 
