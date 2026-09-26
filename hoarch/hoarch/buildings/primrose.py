@@ -30,7 +30,7 @@ import time
 import numpy as np
 from manifold3d import Manifold as M
 
-from hoarch.core import box, compose, cs_union, inv34, offset, poly, rect, scallop_rows, slab, union
+from hoarch.core import box, compose, inv34, offset, rect, scallop_rows, slab, union
 from hoarch import cornice as CO, features as FT, gables as G, openings as O, roof as R, skins as SK, \
     storefront as SF, trimwork as TW
 from hoarch.kit import Kit, print_flip
@@ -206,6 +206,7 @@ def build(kit=None):
     z0 = round((z_roof - 3.0) / 0.2) * 0.2
     pocket = box([cx - CH / 2 - 0.4, cy - CH / 2 - 0.4, z0], [cx + CH / 2 + 0.4, cy + CH / 2 + 0.4, Z_FLAT + 60])
     roof = roof + G.chimney_seat(solid_env, cx, cy, CH / 2, Z_FLAT) - pocket
+    roof = roof.trim_by_plane([0, 0, 1.0], ZW)          # the hip caps' drops end at the base: a flat first layer
     kit.add("ROOF", "Roof", roof, group="roof")
     ch = TW.chimney("crowned", w=CH, d=CH * 0.75, h=round((Z_FLAT + 16.0 - z0) / 0.2) * 0.2).translate([cx, cy, z0])
     kit.add("CHIMNEY", "Brick", ch, group="roof")

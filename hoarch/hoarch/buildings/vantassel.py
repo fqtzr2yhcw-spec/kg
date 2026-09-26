@@ -244,7 +244,7 @@ def build(kit=None):
                     (1.0, DH + th)])                                           # (w, v)
     droof = M.extrude(slab_cs, DL + 2.4).transform(np.array([[0, 0, 1.0, -DL / 2 - 1.2], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
     nn = math.hypot(1.0, dslope)
-    Rl = np.array([[1.0, 0, 0, 0], [0, 1.0 / nn, dslope / nn, 0], [0, -dslope / nn, 1.0 / nn, 0]])   # the slab plane -> (u, v') flat
+    Rl = np.array([[1.0, 0, 0, 0], [0, dslope / nn, -1.0 / nn, 0], [0, 1.0 / nn, dslope / nn, 0]])   # the slab's normal -> up
     # shakes on its top face: from the front edge (w = 1, v = DH + th) up the slope
     a_ = np.array([DH + th, 1.0])
     ttex = scallop_rows(rect(-DL / 2 - 0.9, 0.0, DL / 2 + 0.9, (ddep + 5.0) * nn - 0.3), 1.6, 2.3, d=0.42, shape=SHAKES)
