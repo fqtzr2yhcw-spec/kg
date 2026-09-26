@@ -1277,14 +1277,18 @@ def column_seats(x, y, z0, z1, foot, head=None, dfoot=1.2, dhead=1.0, clr=0.15, 
 
 
 def _grow(sol, g):
-    """``sol`` grown by ``g`` each way, piece by piece as the convex hull of its corners nudged
-    six ways (robust where the union of nudged copies fails on slivers)."""
+    """``sol`` grown by ``g`` each way: the union of six nudged copies (true to its shape), or,
+    where that fails on a sliver, piece by piece the convex hull of its corners nudged six ways."""
+    pieces = [np.asarray(c.to_mesh().vert_properties)[:, :3] for c in sol.decompose()]    # read first
+    try:
+        out = union([sol] + [sol.translate([g * x, g * y, g * z]) for x, y, z in
+                             ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))])
+        out.num_vert()
+        return out
+    except (MemoryError, RuntimeError):
+        pass
     offs = np.array([(0, 0, 0), (g, 0, 0), (-g, 0, 0), (0, g, 0), (0, -g, 0), (0, 0, g), (0, 0, -g)], float)
-    out = []
-    for c in sol.decompose():
-        v = np.asarray(c.to_mesh().vert_properties)[:, :3]
-        if len(v) >= 4:
-            out.append(M.hull_points([tuple(p) for p in (v[:, None, :] + offs[None, :, :]).reshape(-1, 3)]))
+    out = [M.hull_points([tuple(p) for p in (v[:, None, :] + offs[None, :, :]).reshape(-1, 3)]) for v in pieces if len(v) >= 4]
     return union(out) if out else M()
 
 
@@ -1328,9 +1332,7 @@ def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
         pt.solid = (pt.solid + tongue) - tgt
     else:
         pt.solid = pt.solid + tongue
-        core = tongue ^ tgt
-        core.num_vert()
-        sock = _grow(core, clr)
+        sock = _grow(tongue, clr)              # the tongue grown (what lies outside the target cuts nothing)
         for n in into:
             parts[n].solid = parts[n].solid - sock
             parts[n].solid.num_vert()
