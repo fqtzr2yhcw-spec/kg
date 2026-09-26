@@ -393,7 +393,7 @@ def build(kit=None):
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     bld_keep = union([b.solid(grow=1.8, dz0=-20, dz1=0) for b in (MAIN, TOWER, BAY)])
     ptop = FT.add_porch_top(kit, "PORCH", PP, bld_keep + ins_keep + fnd,
-                            "Teal", "Cream", tin_col="Slate", arcade_col="Teal")["top"].solid.bounding_box()[5]
+                            "Teal", "Cream", tin_col="Slate", arcade_col="Teal")["ptop"]
     for k, (sm, A) in enumerate(PP["steps"]):
         kit.add(f"PORCH-steps-{k}", "Stone", sm.transform(A) - fkeep - deck, group="porch")
     fa, fb_ = np.array(runs[steps_run]["a"]), np.array(runs[steps_run]["b"])

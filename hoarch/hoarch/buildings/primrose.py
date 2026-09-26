@@ -265,7 +265,7 @@ def build(kit=None):
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     bld_keep = MAIN.solid(grow=1.8, dz0=-20, dz1=0)
     ptop = FT.add_porch_top(kit, "PORCH", P, bld_keep + ins_keep + fnd,
-                            "Olive", "Olive", tin_col="Roof")["top"].solid.bounding_box()[5]
+                            "Olive", "Olive", tin_col="Roof")["ptop"]
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "Pebble", sm.transform(A) - fkeep, group="porch")
     ped = FT.entry_pediment(18.0, 3.4, 8.8)

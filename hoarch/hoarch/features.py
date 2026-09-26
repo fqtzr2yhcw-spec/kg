@@ -1184,16 +1184,33 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
                 if len(us) < 2:
                     continue
                 f = Facade(r["a"], r["b"], 0.0)
-                ends = []
-                for end, u_post, other in ((0, us[0], k - 1), (1, us[-1], k + 1)):
-                    covered = any(kk == k and jj == other for kk, jj, _ in stops)
-                    covers = any(kk == other and jj == k for kk, jj, _ in stops)
-                    reach = 1.6 if covered else (1.6 + t if covers else 1.6)
-                    ends.append(u_post - reach if end == 0 else u_post + reach)
+                prev = runs[k - 1] if k > 0 and np.allclose(runs[k - 1]["b"], r["a"], atol=0.05) else None
+                nxt = runs[k + 1] if k + 1 < len(runs) and np.allclose(runs[k + 1]["a"], r["b"], atol=0.05) else None
+                # past a shared corner post the piece runs on and is mitred on the bisector there
+                u0 = us[0] - (1.6 + t + 4.0 if prev is not None else 1.6)
+                u1 = us[-1] + (1.6 + t + 4.0 if nxt is not None else 1.6)
                 Ap = f.A.copy()
                 Ap[:, 3] = np.r_[f.p0 - f.n * inset + f.n * 1.6, H_floor]
-                pan = applied_arcade(ends[0], ends[1], us, post_h, beam=beam, t=t, drop=drop, style=arcade)
-                applied.append((pan.transform(Ap), Ap))
+                pan = applied_arcade(u0, u1, us, post_h, beam=beam, t=t, drop=drop, style=arcade).transform(Ap)
+                for other, u_post, sg in ((prev, us[0], 1.0), (nxt, us[-1], -1.0)):
+                    if other is None:
+                        continue
+                    fo = Facade(other["a"], other["b"], 0.0)
+                    m = (fo.u + f.u) if sg > 0 else (f.u + fo.u)
+                    m = np.array([m[0], m[1], 0.0]) / np.linalg.norm(m)
+                    # the corner: where the two post lines cross (the same point for both pieces)
+                    pa, pb = f.p0 - f.n * inset, fo.p0 - fo.n * inset
+                    den = f.u[0] * fo.u[1] - f.u[1] * fo.u[0]
+                    if abs(den) > 1e-9:
+                        tpar = ((pb[0] - pa[0]) * fo.u[1] - (pb[1] - pa[1]) * fo.u[0]) / den
+                        pc = pa + f.u * tpar
+                    else:
+                        pc = f.p0 + f.u * u_post - f.n * inset
+                    P3 = np.array([pc[0], pc[1], 0.0])
+                    pan = pan.trim_by_plane(list(sg * m), float(sg * m @ P3))
+                pan = pan - top_piece                        # clear of the beams and roof at the corners
+                comps = sorted(pan.decompose(), key=lambda c_: -c_.volume())
+                applied.append((comps[0], Ap))
         posts, rails, arcades = [], [], []
     return dict(deck=deck, floor=floor, posts=posts, rails=rails, arcades=arcades, roof=roof, steps=st,
                 sockets=[tuple(p) for p in where], frames=frames, top=top_piece, applied=applied)
@@ -1235,7 +1252,7 @@ def add_porch_top(kit, tag, P, keep, roof_col, frame_col, tin_col=None, arcade_c
                            render=[(roof_col, body - lo), (frame_col, lo)])
     for k, (pan, A) in enumerate(P.get("applied", [])):
         kit.add(f"{tag}-lace-{k}", arcade_col or frame_col, pan - keep, P=compose(ARCADE_FLAT, inv34(A)), group=group)
-    return dict(top=part, cap=cap)
+    return dict(top=part, cap=cap, ptop=ptop)
 
 
 def entry_pediment(w, depth, rise, t=1.0, fan=True):

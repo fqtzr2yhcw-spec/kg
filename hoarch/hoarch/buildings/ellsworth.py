@@ -315,7 +315,7 @@ def build(kit=None):
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     bld_keep = union([b.solid(grow=1.8, dz0=-20, dz1=0) for b in BLOCKS])
     ptop = FT.add_porch_top(kit, "PORCH", PP, bld_keep + ins_keep + fnd,
-                            "Ivory", "Ivory", tin_col="Slate", arcade_col="Ochre")["top"].solid.bounding_box()[5]
+                            "Ivory", "Ivory", tin_col="Slate", arcade_col="Ochre")["ptop"]
     for k, (sm, A) in enumerate(PP["steps"]):
         kit.add(f"PORCH-steps-{k}", "Cobble", sm.transform(A) - fkeep - deck, group="porch")
     edep = 5.0

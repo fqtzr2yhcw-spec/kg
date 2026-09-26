@@ -69,7 +69,8 @@ def _tie(cs, w=MIN_BAR):
     """Thicken the bars, stems and ties of an ornament's outline narrower than ``w`` (rather
     than cutting them away), so no accent hangs by a single nozzle line; drop crumbs."""
     from .lace import sturdy
-    cs = sturdy(cs, w * 0.95, grow=0.35)
+    b = cs.bounds()
+    cs = sturdy(cs, w * 0.95, grow=0.35) ^ rect(b[0] - 5.0, b[1], b[2] + 5.0, b[3] + 5.0)     # never below its foot
     return cs_union([pc for pc in cs.decompose() if pc.area() > 2.0])
 
 

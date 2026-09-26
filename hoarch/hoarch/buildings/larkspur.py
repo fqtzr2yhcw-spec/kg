@@ -416,7 +416,7 @@ def build(kit=None):
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     bld_keep = union([b.solid(grow=1.8, dz0=-20, dz1=0) for b in (MAIN_LO, WING, TOWER)])
     ptop = FT.add_porch_top(kit, "PORCH", PP, bld_keep + ins_keep + fnd,
-                            "Cream", "Cream", tin_col="Slate", arcade_col="Navy")["top"].solid.bounding_box()[5]
+                            "Cream", "Cream", tin_col="Slate", arcade_col="Navy")["ptop"]
     for k, (sm, A) in enumerate(PP["steps"]):
         kit.add(f"PORCH-steps-{k}", "Stone", sm.transform(A) - fkeep - deck, group="porch")
     ped = G.gable_pediment(20.0, 0.8, 0.6, skin=0.8, width=1.2, finial=3.0)
