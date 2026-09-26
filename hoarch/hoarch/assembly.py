@@ -740,6 +740,25 @@ chimneys print upright.
 the roofs, the tower roof, the dormers, the urns, the chimney and the porch frames print
 upright; the porch friezes print on their top edges.
 """),
+    "fairhaven": ("THE FAIRHAVEN - COLONIAL REVIVAL WITH BAYS", """  1. FOUNDATION (snecked stone).
+  2. WALLS-1 onto the foundation's lip: the whole first storey with both bays in one part.
+  3. JOINT onto WALLS-1, then WALLS-2 onto its lip: the second storey, the bays, both end gables
+     and the front cross-gable in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (ogee-hooded windows below, consoled windows above, the Palladian window in the front
+     gable, a lunette in each end gable, the double doors front and back).
+  5. The CORNICE-J parts round the storey joint, the CORNICE-E parts round the eave (they wrap
+     round the bays and across the gable ends).
+  6. ROOF onto the lip at the wall tops; the two CHIMNEYs into their pockets; a BAY-roof on each
+     bay's cornice, under the main eave.
+  7. The veranda: PORCH-deck against the foundation between the bays; the PORCH-frames (posts and
+     railings) into the sockets in the deck; the PORCH-friezes into the slots at the post tops;
+     PORCH-roof on top, PORCH-roof-top on it; the steps.
+  8. STOOP-back at the back door.
+""", """The cornices' upper parts, the porch deck and the porch roof print upside down; the walls,
+the roofs, the chimneys and the porch frames print upright; the porch friezes print on their
+top edges.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

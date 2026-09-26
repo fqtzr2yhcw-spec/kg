@@ -630,3 +630,436 @@ _PW.BALUSTERS.update(pear=(baluster_pear, 1.9))
 _PW.FRIEZES.update(festoons=frieze_festoons)
 _PW.SKIRTS.update(louvres=skirt_louvres)
 _FT.EDGE_EXTRA.update(guttae=edge_guttae)
+
+
+# ================================================================== the Fairhaven (house 40)
+def siding_channel(region, datum=0.0, p=2.2):
+    """Channel rustic siding: flat-faced boards, each joint a square channel (a rabbet) rather
+    than a lap's slanting shadow."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    v = datum
+    while v > v0 - 2.0:
+        v -= p
+    pts = [(v, 0.0)]
+    while v < v1 + 2.0:
+        pts += [(v, 0.1), (v + 0.4, 0.1), (v + 0.4, 0.38), (v + p, 0.38)]
+        v += p
+    pts.append((v, 0.0))
+    strip = M.extrude(poly(pts), (u1 - u0) + 2).transform(frame([u0 - 1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]))
+    return strip ^ M.extrude(region, 0.7).translate([0, 0, -0.1])
+
+
+def siding_alternating(region, datum=0.0, p0=1.2, p1=2.4):
+    """Lap siding in courses of two exposures in turn, a narrow course over every wide one."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    v, k = datum, 0
+    while v > v0 - 4.0:
+        v -= p0 + p1
+    pts = [(v, 0.0)]
+    while v < v1 + 4.0:
+        p = p1 if k % 2 == 0 else p0
+        pts += [(v, 0.32), (v + 0.2, 0.42), (v + p, 0.06)]
+        v += p
+        k += 1
+    pts.append((v, 0.0))
+    strip = M.extrude(poly(pts), (u1 - u0) + 2).transform(frame([u0 - 1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]))
+    return strip ^ M.extrude(region, 0.7).translate([0, 0, -0.1])
+
+
+def foundation_snecked(reg, seed=0):
+    """Snecked rubble: squared stones of two or three heights laid to broken courses, the gaps
+    filled with little square snecks; a chamfered dressed cap on top."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 23)
+    top = zq(b[3] - 1.2)
+    out = []
+    v = zq(b[1])
+    while v < top - 0.8:
+        u = b[0] - rng.uniform(0.0, 2.0)
+        while u < b[2]:
+            L = rng.uniform(2.2, 4.4)
+            h = min(top - v, (1.2, 1.6, 2.4)[int(rng.integers(0, 3))])
+            s = rect(u + 0.15, v + 0.15, u + L - 0.15, v + h - 0.15) ^ reg
+            if not s.is_empty() and s.area() > 0.4:
+                out.append(chamfer_box(*s.bounds()[:2], *s.bounds()[2:], 0.0, rng.uniform(0.38, 0.5), c=0.18, bottom=0.2))
+            if h < 2.3 and v + h + 0.8 <= top:
+                sn = rect(u + L * 0.3, v + h + 0.1, u + L * 0.3 + 0.8, v + h + 0.9) ^ reg
+                if not sn.is_empty():
+                    out.append(chamfer_box(*sn.bounds()[:2], *sn.bounds()[2:], 0.0, 0.3, c=0.1, bottom=0.1))
+            u += L
+        v = zq(v + 1.6)
+    out.append(chamfer_box(b[0], top + 0.2, b[2], b[3], 0.0, 0.6, c=0.3, bottom=0.6))
+    return union(out) ^ M.extrude(reg, 2.0).translate([0, 0, -0.5])
+
+
+def frieze_wheat(L, h, b, pitch, margin, pair, half):
+    """Wheat sheaves: in every bay a sheaf (ears fanning out of a band tied round the stalks),
+    a round boss at every station, fillets along the band's foot and head."""
+    v0, v1 = 0.7, h - 0.7
+    out = [_st(rect(margin * 0.4, v0, L - margin * 0.4, v0 + 0.4), b, 0.25),
+           _st(rect(margin * 0.4, v1 - 0.4, L - margin * 0.4, v1), b, 0.25)]
+    vb, vt = v0 + 0.6, v1 - 0.6
+    vm = vb + (vt - vb) * 0.45
+    for uc, wd in CO._between(L, pitch, margin, pair, 0.6):
+        if wd < 3.0:
+            continue
+        stalks, ears = [], []
+        for a in (-0.5, -0.25, 0.0, 0.25, 0.5):
+            tip = (uc + math.sin(a) * (vt - vm) * 1.1, vm + math.cos(a) * (vt - vm))
+            foot = (uc + a * 0.9, vb)
+            stalks.append(stroke([foot, (uc + a * 0.25, vm), tip], 0.4))
+            ears.append(FC_lens(tip, 1.3, 0.62, math.pi / 2 - a))
+        out.append(_st(cs_union(stalks), b, 0.3))
+        out.append(_st(cs_union(ears), b, 0.45))
+        out.append(_st(rect(uc - 0.9, vm - 0.35, uc + 0.9, vm + 0.35), b, 0.55))
+    for u in CO._us(L, pitch, margin, 0.0):
+        out.append(_st(circle((u, (v0 + v1) / 2), 0.7, 18), b, 0.45))
+    return out, []
+
+
+def FC_lens(c, length, width, ang):
+    from .colonial import _lens
+    return _lens(c, length, width, ang)
+
+
+def frieze_ivy(L, h, b, pitch, margin, pair, half):
+    """Ivy: a trailing stem waving along the band with a heart-shaped leaf on a short stalk
+    at every crest and trough."""
+    v0, v1 = 0.7, h - 0.7
+    vm = (v0 + v1) / 2
+    A = (v1 - v0) * 0.22
+    lam = 6.0
+    u0_, u1_ = margin * 0.4, L - margin * 0.4
+    if u1_ - u0_ < 3.0:
+        return [], []
+    us = np.linspace(u0_, u1_, max(8, int((u1_ - u0_) * 3)))
+    out = [_st(stroke([(u, vm + A * math.sin(2 * math.pi * u / lam)) for u in us], 0.4), b, 0.35)]
+    leaves = []
+    k = math.ceil((u0_ - lam / 4) / (lam / 2))
+    while (k * lam / 2 + lam / 4) < u1_ - 0.8:
+        uc = k * lam / 2 + lam / 4
+        if uc > u0_ + 0.8:
+            sg = 1 if k % 2 == 0 else -1
+            base = (uc, vm + sg * A)
+            lc = (uc + 0.5, vm + sg * (A + 0.9))
+            heart = cs_union([circle((lc[0] - 0.35, lc[1] + sg * 0.25), 0.45, 14), circle((lc[0] + 0.35, lc[1] + sg * 0.25), 0.45, 14),
+                              poly([(lc[0] - 0.75, lc[1] + sg * 0.2), (lc[0] + 0.75, lc[1] + sg * 0.2), (lc[0], lc[1] - sg * 0.75)])])
+            leaves.append(heart)
+            leaves.append(stroke([base, lc], 0.35))
+        k += 1
+    if leaves:
+        out.append(_st(cs_union(leaves) ^ rect(0.0, v0, L, v1), b, 0.45))
+    return out, []
+
+
+def bracket_palmette(h, d, t):
+    """A palmette console: a block whose underside is hollowed in a quarter round, its nose
+    square and notched, a leaf-shaped drop under the notch (side profile, top at v = 0)."""
+    hb = min(h, max(1.8, 0.5 * d))
+    r = min(d - 0.6, hb - 0.4)
+    arc = [(d - 0.6 - r + r * math.cos(a), -hb + r - r * math.sin(a)) for a in np.linspace(0.0, math.pi / 2, 10)]
+    body = poly([(0.0, 0.0), (d, 0.0), (d, -hb * 0.45), (d - 0.3, -hb * 0.55), (d - 0.3, -hb + 0.2), (d - 0.6, -hb)] + arc[::-1][:-1] +
+                [(0.0, -hb + r - r)])
+    return cs_union([body, poly([(d - 0.75, -hb), (d - 0.15, -hb), (d - 0.45, -hb - 0.8)])])
+
+
+def window_ogee_hood(w, h, A=1.1):
+    """The Fairhaven's first-storey window: two over two under an ogee-arched hood moulding
+    (a double curve rising to a point with a little finial), a flat casing with corner beads,
+    a sill on a moulded bed."""
+    from . import openings as O
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = [O.window_insert(w, h, 0, lites=(2, 2), rows=(1, 1), bare=True)["insert"]]
+    parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    cas = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext(cas, 0.0, 0.9))
+    for sg in (-1, 1):
+        parts.append(ext(rect(sg * (w / 2 + A) - 0.4 if sg > 0 else -w / 2 - A, 0.0,
+                              sg * (w / 2 + A) if sg > 0 else -w / 2 - A + 0.4, h + A), 0.89, 1.2))
+    hu = w / 2 + A + 0.4
+    rise = min(5.0, w * 0.45)
+    ts = np.linspace(0.0, 1.0, 20)
+
+    def og(t):                                   # an ogee from the corner (t=0) up to the point (t=1)
+        return 3 * t * t - 2 * t ** 3
+
+    outer = [(-hu + hu * t, h + A + rise * og(t)) for t in ts] + [(hu * t, h + A + rise * og(1 - t)) for t in ts[1:]]
+    band = poly([(-hu, h + A - 0.01)] + outer + [(hu, h + A - 0.01)])
+    inner = band.offset(-0.9, JoinType.Miter, 4.0) ^ rect(-w, h + A + 0.8, w, h + A + 20)
+    parts.append(ext(band, 0.0, 0.8))
+    parts.append(ext(band - inner, 0.79, 1.4))
+    parts.append(ext(cs_union([rect(-0.3, h + A + rise - 0.2, 0.3, h + A + rise + 0.9), circle((0.0, h + A + rise + 1.2), 0.45, 14)]),
+                     0.0, 1.4))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * hu - 0.6, h + A - 0.8, sg * hu + 0.6, h + A + 0.01, 0.0, 1.5, c=0.3, bottom=0.4))
+    top = h + A + rise + 1.7
+    parts.append(chamfer_box(-w / 2 - A - 0.5, -1.0, w / 2 + A + 0.5, 0.01, 0.0, 1.4, c=0.3, bottom=0.5))
+    parts.append(chamfer_box(-w / 2 - A, -1.6, w / 2 + A, -0.99, 0.0, 0.9, c=0.3, bottom=0.5))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, top, -1.6)
+
+
+def window_consoled(w, h, A=1.1):
+    """The Fairhaven's second-storey window: one over one with a bar across the upper sash; a
+    casing with a sunk bead; a flat cornice cap carried on two small scrolled consoles; a
+    raised-panel apron under the sill."""
+    from . import openings as O
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = [O.window_insert(w, h, 0, lites=(1, 1), rows=(1, 2), bare=True)["insert"]]
+    parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    cas = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext(cas, 0.0, 0.9) - ext((op.offset(A * 0.5, JoinType.Miter, 4.0) - op.offset(A * 0.5 - 0.4, JoinType.Miter, 4.0))
+                                          ^ rect(-w, 0.0, w, h + A), 0.6, 1.0))
+    hu = w / 2 + A
+    parts.append(ext(rect(-hu, h + A - 0.01, hu, h + A + 1.6), 0.0, 0.8))
+    for sg in (-1, 1):
+        u = sg * (hu - 0.6)
+        con = cs_union([rect(u - 0.55, h + A - 0.8, u + 0.55, h + A + 1.6), circle((u, h + A - 0.8), 0.55, 14)])
+        parts.append(ext(con, 0.0, 1.4))
+    parts.append(chamfer_box(-hu - 0.7, h + A + 1.59, hu + 0.7, h + A + 2.4, 0.0, 1.8, c=0.4, bottom=0.8))
+    top = h + A + 2.4
+    parts.append(chamfer_box(-w / 2 - A - 0.4, -0.9, w / 2 + A + 0.4, 0.01, 0.0, 1.3, c=0.3, bottom=0.5))
+    ap = rect(-w / 2 + 0.2, -3.0, w / 2 - 0.2, -0.89)
+    parts.append(ext(ap, 0.0, 0.7))
+    parts.append(ext(ap.offset(-0.6, JoinType.Miter, 4.0), 0.69, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, top, -3.0)
+
+
+def window_palladian(wc=9.0, ws=4.6, h=15.0, A=1.1):
+    """A Palladian window for the Fairhaven's front gable: a round-headed centre light between
+    two narrower square-headed side lights, divided by fluted mullion pilasters under a
+    running entablature (at the side lights' heads) from which the centre's archivolt
+    springs, a keystone at its crown and a sill across all three."""
+    from . import openings as O
+    r = wc / 2
+    spring = h - r
+    mw = 1.6                                           # the mullions
+    xs = wc / 2 + mw                                   # the side lights' inner edges
+    c_op = cs_union([rect(-r, 0.0, r, spring), circle((0.0, spring), r, 40) ^ rect(-r, spring, r, h + 1)])
+    sides = [rect(xs, 0.0, xs + ws, spring), rect(-xs - ws, 0.0, -xs, spring)]
+    op = cs_union([c_op] + sides + [rect(-xs - 0.01, 0.0, xs + 0.01, spring)])
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    # the plug: the glazed lights, solid behind the mullions
+    glass = [ext(plug_cs, -pl, -pl + O.GLASS)]
+    bars = cs_union([rect(-r, spring * 0.5 - 0.3, r, spring * 0.5 + 0.3), rect(-0.25, spring, 0.25, h),
+                     stroke([(0.0, spring), (r * math.cos(math.radians(45)), spring + r * math.sin(math.radians(45)))], 0.45),
+                     stroke([(0.0, spring), (-r * math.cos(math.radians(45)), spring + r * math.sin(math.radians(45)))], 0.45)]
+                    + [rect(sg * (xs + ws / 2) - 0.25, 0.0, sg * (xs + ws / 2) + 0.25, spring) for sg in (-1, 1)]
+                    + [rect(-xs - ws, spring * 0.5 - 0.25, xs + ws, spring * 0.5 + 0.25)])
+    ring = plug_cs - plug_cs.offset(-0.6, JoinType.Miter, 4.0)
+    sash = glass + [ext(ring, -pl, 0.0), ext((bars ^ plug_cs), -pl + O.GLASS, -O.SASH_REC),
+                    ext(rect(-xs + 0.15, O.CLR, -r - 0.15, spring - O.CLR), -pl, 0.0),
+                    ext(rect(r + 0.15, O.CLR, xs - 0.15, spring - O.CLR), -pl, 0.0)]
+    parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    # mullion pilasters and outer casings to the entablature, fluted
+    for u0, u1 in ((-xs - ws - A, -xs - ws), (xs + ws, xs + ws + A + 0.0), (-xs, -r), (r, xs)):
+        pil = ext(rect(u0, 0.0, u1, spring + 0.01), 0.0, 1.0)
+        um = (u0 + u1) / 2
+        if u1 - u0 > 1.3:
+            pil = pil - ext(rect(um - 0.2, 1.2, um + 0.2, spring - 1.0), 0.75, 1.2)
+        parts.append(pil)
+    parts.append(chamfer_box(-xs - ws - A - 0.4, spring - 0.01, -r + 0.01, spring + 1.2, 0.0, 1.4, c=0.3, bottom=0.5))
+    parts.append(chamfer_box(r - 0.01, spring - 0.01, xs + ws + A + 0.4, spring + 1.2, 0.0, 1.4, c=0.3, bottom=0.5))
+    arch = (circle((0.0, spring), r + A, 48) - circle((0.0, spring), r, 48)) ^ rect(-r - A - 1, spring + 1.19, r + A + 1, h + A + 1)
+    parts.append(ext(arch, 0.0, 1.1))
+    parts.append(ext(poly([(-0.7, h - 0.4), (0.7, h - 0.4), (1.0, h + A + 0.6), (-1.0, h + A + 0.6)]), 0.0, 1.7))
+    parts.append(chamfer_box(-xs - ws - A - 0.6, -1.0, xs + ws + A + 0.6, 0.01, 0.0, 1.4, c=0.3, bottom=0.5))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 0.6, -1.0)
+
+
+def window_lunette(w=12.0, A=1.0):
+    """A half-round attic light (a lunette) for the Fairhaven's end gables: three bars
+    radiating from the middle of its sill, a moulded arch band with a keystone."""
+    from . import openings as O
+    r = w / 2
+    op = circle((0.0, 0.0), r, 40) ^ rect(-r - 1, 0.0, r + 1, r + 1)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    bars = cs_union([stroke([(0.0, 0.0), (r * 1.2 * math.cos(a), r * 1.2 * math.sin(a))], 0.45, caps=False)
+                     for a in (math.radians(45), math.radians(90), math.radians(135))])
+    sash = [ext(plug_cs, -pl, -pl + O.GLASS), ext(plug_cs - plug_cs.offset(-0.6, JoinType.Miter, 4.0), -pl, 0.0),
+            ext(bars ^ plug_cs, -pl + O.GLASS, -O.SASH_REC)]
+    parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    band = (circle((0.0, 0.0), r + A, 48) - circle((0.0, 0.0), r, 48)) ^ rect(-r - A - 1, 0.0, r + A + 1, r + A + 1)
+    parts.append(ext(band, 0.0, 1.0))
+    parts.append(ext(poly([(-0.6, r - 0.4), (0.6, r - 0.4), (0.9, r + A + 0.5), (-0.9, r + A + 0.5)]), 0.0, 1.5))
+    parts.append(chamfer_box(-r - A - 0.5, -1.0, r + A + 0.5, 0.01, 0.0, 1.3, c=0.3, bottom=0.5))
+    return O._one_piece(sash, parts, op, plug_cs, pl, r + A + 0.5, -1.0)
+
+
+def door_consoled(w=13.0, h=24.0, transom=4.4):
+    """The Fairhaven's front door: a pair of leaves, each a tall glazed panel over a raised
+    panel, under a transom leaded in a fan-and-drape pattern; reeded casings on plinth
+    blocks; a flat hood (a frieze and a cornice) carried on two tall scrolled consoles.
+    Printed face-up, one piece."""
+    from . import openings as O
+    op = rect(-w / 2, 0.0, w / 2, h + transom)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    face = -1.0
+    body = ext(plug_cs, -pl, face)
+    glass_cs, leads, panels = [], [], []
+    for sg in (-1, 1):
+        a, b = sorted((sg * 0.4, sg * (w / 2 - 0.9)))
+        glass_cs.append(rect(a + 0.6, h * 0.45, b - 0.6, h - 1.2))
+        panels.append(rect(a + 0.7, 1.4, b - 0.7, h * 0.45 - 1.4))
+    tr = rect(-w / 2 + 0.9, h + 0.5, w / 2 - 0.9, h + transom - 0.6)
+    glass_cs.append(tr)
+    for a in np.linspace(math.radians(20), math.radians(160), 7):
+        leads.append(stroke([(0.0, h + 0.5), (w * math.cos(a), h + 0.5 + w * math.sin(a))], 0.45, caps=False))
+    ts = np.linspace(0.0, 1.0, 16)
+    leads.append(stroke([(-w / 2 + (w) * t, h + transom - 1.0 - 1.4 * math.sin(math.pi * ((2 * t) % 1.0))) for t in ts], 0.45))
+    gl = cs_union(glass_cs)
+    grooves = [rect(-0.2, 0.0, 0.2, h), rect(-w / 2, h - 0.15, w / 2, h + 0.35)]
+    body = body - ext(gl, -pl + O.GLASS, 0.5) - ext(cs_union(grooves) - gl, face - 0.25, 0.5)
+    sash = [body, ext(gl, -pl, -pl + O.GLASS), ext(cs_union(leads) ^ tr, -pl + O.GLASS - 0.01, face - 0.15),
+            ext(cs_union(panels), face - 0.01, face + 0.3), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
+    parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    ht = h + transom
+    cw = 2.0
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * w / 2, sg * (w / 2 + cw)))
+        cas = ext(rect(u0, 0.0, u1, ht + 0.01), 0.0, 1.0)
+        for du in (0.45, 1.0, 1.55):
+            cas = cas + ext(rect(u0 + du - 0.2, 2.4, u0 + du + 0.2, ht - 0.3), 0.99, 1.3)
+        parts.append(cas)
+        parts.append(chamfer_box(u0 - 0.3, 0.0, u1 + 0.3, 2.4, 0.0, 1.5, c=0.3, bottom=0.0))
+        # the console: a tall scroll standing on the casing's head, carrying the hood
+        cu = (u0 + u1) / 2 + sg * 0.6
+        con = cs_union([rect(cu - 0.7, ht - 3.2, cu + 0.7, ht + 1.8), circle((cu, ht - 3.2), 0.75, 16),
+                        circle((cu + sg * 0.1, ht + 1.4), 0.9, 16)])
+        parts.append(ext(con, 0.0, 1.8))
+    hu = w / 2 + cw + 1.4
+    parts.append(ext(rect(-hu + 0.4, ht - 0.01, hu - 0.4, ht + 1.8), 0.0, 1.1))
+    parts.append(ext(rect(-hu + 1.2, ht + 0.4, hu - 1.2, ht + 1.4), 1.09, 1.4))
+    parts.append(chamfer_box(-hu - 0.4, ht + 1.79, hu + 0.4, ht + 2.8, 0.0, 2.2, c=0.5, bottom=1.0))
+    parts.append(chamfer_box(-hu, ht + 2.79, hu, ht + 3.2, 0.0, 1.6, c=0.3))
+    parts.append(chamfer_box(-w / 2 - cw - 0.4, -0.8, w / 2 + cw + 0.4, 0.01, 0.0, 1.3, c=0.3, bottom=0.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, ht + 3.2, -0.8)
+
+
+def post_candlestick(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A turned candlestick post: a square foot block, a turned base cup, a slim shaft with a
+    triple ring collar a third of the way up and a torus under a square neck block (the
+    Fairhaven)."""
+    from . import porchwork as PW
+    zb, zt = 3.0, h - 3.2
+    L = zt - zb
+    zc = zb + L * 0.33
+    prof = [(0.0, zb - 0.01), (1.15, zb - 0.01), (1.15, zb + 0.25), (0.75, zb + 0.9), (0.85, zb + 1.5), (0.62, zb + 2.0),
+            (0.6, zc - 0.9), (0.9, zc - 0.7), (0.72, zc - 0.45), (0.95, zc - 0.2), (0.95, zc + 0.2), (0.72, zc + 0.45),
+            (0.9, zc + 0.7), (0.6, zc + 0.9), (0.55, zt - 1.0), (0.85, zt - 0.7), (0.85, zt - 0.3), (1.0, zt + 0.01)]
+    body = PW._plinth() + box([-1.2, -1.2, 1.19], [1.2, 1.2, zb]) + PW._revolve(prof, 28)
+    if collar is not None:
+        body = body + box([-1.2, -1.2, collar - 1.6], [1.2, 1.2, collar + 0.2])
+    body = body + box([-1.1, -1.1, zt], [1.1, 1.1, h - 1.8])
+    return body + PW._top(h, abacus / 2, h - 1.8, 1.1, slot, shape="square")
+
+
+def baluster_cupring(h, seg=20):
+    """A cup-and-ring baluster: square ends, a slim stem rising into an open cup with a ring
+    over it, a short neck above (the Fairhaven)."""
+    from . import porchwork as PW
+    H = h - 1.6
+    t = [(0.0, 0.3), (0.35, 0.3), (0.55, 0.5), (0.62, 0.55), (0.66, 0.34), (0.7, 0.5), (0.75, 0.5), (0.8, 0.3),
+         (1.0, 0.3)]
+    prof = [(0.0, 0.79)] + [(r, 0.8 + f * H) for f, r in t]
+    return PW._revolve(prof, seg) + box([-0.5, -0.5, 0.0], [0.5, 0.5, 0.81]) + box([-0.5, -0.5, h - 0.81], [0.5, 0.5, h])
+
+
+def frieze_chainrings(u0, u1, v_bot, v_top):
+    """A porch frieze of interlocking rings: a row of rings hung under the frieze board, each
+    linked through its neighbours, a small boss dropping under every other one (the
+    Fairhaven)."""
+    rail0 = v_top - 1.0
+    parts = [rect(u0, rail0, u1, v_top + 0.05)]
+    R_ = min(1.5, (v_top - v_bot - 1.6) / 2)
+    n = max(2, int((u1 - u0 - 0.6) / (R_ * 1.5)))
+    step = (u1 - u0 - 2 * R_) / (n - 1)
+    vc = rail0 - R_ + 0.3
+    for k in range(n):
+        c = (u0 + R_ + k * step, vc)
+        parts.append(circle(c, R_, 28) - circle(c, R_ - 0.55, 28))
+        if k % 2 == 0:
+            parts.append(poly([(c[0] - 0.3, vc - R_ + 0.2), (c[0] + 0.3, vc - R_ + 0.2), (c[0], vc - R_ - 1.0)]))
+    return cs_union(parts)
+
+
+def skirt_clover(reg, d=1.2):
+    """A skirt of upright boards pierced with a row of cloverleaves (three round lobes) (the
+    Fairhaven)."""
+    u0, v0, u1, v1 = reg.bounds()
+    L = u1 - u0
+    board = reg
+    n = max(1, int(round(L / 3.2)))
+    vm = (v0 + v1) / 2
+    r = min(0.55, (v1 - v0) / 2 - 0.9)
+    holes = []
+    if r > 0.3:
+        for i in range(n):
+            c = u0 + L * (i + 0.5) / n
+            holes.append(cs_union([circle((c, vm + r * 0.9), r, 16), circle((c - r * 0.9, vm - r * 0.4), r, 16),
+                                   circle((c + r * 0.9, vm - r * 0.4), r, 16)]))
+        board = reg - cs_union(holes)
+    out = M.extrude(board, d * 0.6)
+    grooves = cs_union([rect(u, v0 - 1, u + 0.4, v1 + 1) for u in np.arange(u0 + 1.2, u1, 1.6)]) ^ reg
+    return out + M.extrude(board - grooves, d).translate([0, 0, 0.0])
+
+
+def edge_vitruvian(L, z0, zc):
+    """A porch-roof fascia carved with a running Vitruvian scroll (a wave curling over in turn)
+    hung from the crown (the Fairhaven)."""
+    n = max(1, int((L - 1.6) / 2.4))
+    parts = [rect(0.3, zc - 0.5, L - 0.3, zc)]
+    for k in range(n):
+        u = 0.8 + (L - 1.6) * k / n
+        p_ = (L - 1.6) / n
+        c = (u + p_ * 0.62, zc - 1.05)
+        parts.append(circle(c, 0.55, 16) - circle(c, 0.2, 10))
+        parts.append(poly([(u, zc - 0.45), (u + p_ * 0.3, zc - 0.45), (c[0] - 0.4, c[1] + 0.3), (u + p_ * 0.15, zc - 1.6),
+                           (u, zc - 1.6)]))
+    return cs_union(parts) ^ rect(0.0, zc - 1.7, L, zc), 0.5
+
+
+def chimney_quoined(w=12.0, d=10.0, h=30.0):
+    """The Fairhaven's chimney: a Flemish-bond brick stack with stone quoins up every corner
+    (long and short blocks in turn), a stone band two-thirds up, a corbelled neck and a
+    chamfered stone cap with a raised coping round three flue openings. Stands on z = 0."""
+    zc = h - 3.4
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zc]) + TW._skin(w, d, 0.0, zc - 0.2, TW._brick("flemish"))
+    q = []
+    z, k = 0.4, 0
+    while z + 1.4 < zc - 3.4:
+        ax, ay = (2.6, 1.6) if k % 2 == 0 else (1.6, 2.6)
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                x0, x1 = sorted((sx * (w / 2 + 0.25), sx * (w / 2 + 0.25 - ax)))
+                y0, y1 = sorted((sy * (d / 2 + 0.25), sy * (d / 2 + 0.25 - ay)))
+                q.append(box([x0, y0, z], [x1, y1, z + 1.4]))
+        z += 1.6
+        k += 1
+    body = body + union(q)
+    zb = zq(zc * 0.66)
+    body = body + TW._corbel_out(w, d, zb + 0.3, 0.3) + box([-w / 2 - 0.3, -d / 2 - 0.3, zb + 0.29], [w / 2 + 0.3, d / 2 + 0.3, zb + 1.2])
+    body = body + TW._corbel_out(w, d, zc + 0.4, 0.4) + box([-w / 2 - 0.4, -d / 2 - 0.4, zc + 0.39], [w / 2 + 0.4, d / 2 + 0.4, zc + 1.2])
+    body = body + chamfer_box(-w / 2 - 1.0, -d / 2 - 1.0, w / 2 + 1.0, d / 2 + 1.0, zc + 1.19, 1.2, c=0.4, bottom=0.4)
+    body = body + box([-w / 2 + 0.6, -d / 2 + 0.6, zc + 2.39], [w / 2 - 0.6, d / 2 - 0.6, h])
+    for x in (-w * 0.3, 0.0, w * 0.3):
+        body = body - box([x - 1.0, -d / 2 + 1.8, h - 1.4], [x + 1.0, d / 2 - 1.8, h + 1])
+    return body
+
+
+CO.FRIEZE_EXTRA.update(wheat=frieze_wheat, ivy=frieze_ivy)
+TW.BRACKET_EXTRA.update(palmette=bracket_palmette)
+TW.FOUNDATION_EXTRA.update(snecked=foundation_snecked)
+_PW.POSTS.update(candlestick=post_candlestick)
+_PW.BALUSTERS.update(cupring=(baluster_cupring, 1.8))
+_PW.FRIEZES.update(chainrings=frieze_chainrings)
+_PW.SKIRTS.update(clover=skirt_clover)
+_FT.EDGE_EXTRA.update(vitruvian=edge_vitruvian)
