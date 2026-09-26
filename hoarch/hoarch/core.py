@@ -450,6 +450,11 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 for j_ in range(3):
                     pts_ += [(a_ + tw_ * (j_ + 0.5), vk), (a_ + tw_ * (j_ + 1), vk + 0.4)]
                 tabs.append(poly(pts_ + [(b_, top), (a_, top)]))
+            elif shp == "crenel":         # square butts with a square notch cut up the middle (the Bellerive)
+                c = u + wtab / 2
+                nw = max(0.6, (wtab - gap) * 0.3)
+                tabs.append(poly([(u + gap / 2, vk), (c - nw / 2, vk), (c - nw / 2, vk + 0.4), (c + nw / 2, vk + 0.4),
+                                  (c + nw / 2, vk), (u + wtab - gap / 2, vk), (u + wtab - gap / 2, top), (u + gap / 2, top)]))
             elif shp == "stagger":        # square butts of random width, some shorter than their neighbours
                 h_ = (int(u * 7.3 + k * 3.1) % 5)
                 low = 0.4 if h_ % 2 else 0.0

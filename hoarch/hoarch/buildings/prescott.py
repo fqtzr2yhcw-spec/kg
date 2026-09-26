@@ -57,7 +57,7 @@ ZW = ZE + HE
 FASCIA = 1.6
 Z_EAVE = ZW + FASCIA
 D_EAVE = 7.2
-S_MAIN = 0.42
+S_MAIN = 0.62
 V1 = 7.6
 V2 = S1 + RJ + 5.0 - ZF
 
@@ -150,8 +150,11 @@ def build(kit=None):
     hips = union([G.hip_cap((c[0], c[1], Z_EAVE), (e[0], e[1], zr), half=1.2, up=0.6, drop=1.8)
                   for c, e in zip(corners, ends)])
     roof = roof + union(caps) + hips
-    roof = roof + F.roof_balustrade(corners, Z_EAVE - 0.4, h=7.0)
+    ZB = round((Z_EAVE + 1.0) / 0.2) * 0.2                  # the balustrade stands on a level curb round the edge
+    roof = roof + F.roof_curb(corners, Z_EAVE - 0.6, ZB)
+    roof = roof - F.roof_curb(corners, ZB, ZB + 40.0, w=3.0)          # nothing stands up where the balustrade goes
     roof = roof - lip_keep(base, 3.0, ZW)
+    roof = roof.trim_by_plane([0, 0, 1.0], Z_EAVE - FASCIA)          # a flat base: nothing (hip-cap ends) hangs below it
     solid_env, _ = R.hip_roof(pieces, Z_EAVE, S_MAIN, D_EAVE, texture=None, zlo=ZW)
     # four tall stacks, in pairs at the ends
     CW, CD = 8.0, 11.0
@@ -167,6 +170,8 @@ def build(kit=None):
     kit.add("ROOF", "Slate", roof, group="roof")
     for k, s_ in enumerate(stacks):
         kit.add(f"CHIMNEY-{k}", "Brick", s_, key="CHIMNEY", group="roof")
+    for side, run in F.balustrade_runs(corners, ZB, h=7.0):
+        kit.add(f"BALUSTRADE-{side}", "White", run, key=f"BALUSTRADE-{'fb' if side in ('front', 'back') else 'ends'}", group="roof")
     print("roof", round(time.time() - t0, 1))
 
     # --- the steps up to the doors
