@@ -919,17 +919,19 @@ def _braced_spandrel_cs(u0, u1, v_bot, v_top, wood=0.8):
     return cs_union(parts) ^ rect(u0, v_bot, u1, v_top + 0.05)
 
 
-def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0, cap=3.0, style="sawn"):
+def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0, cap=3.0, style="sawn", flat=False):
     """Upper porch work for one run: beam with moulded edges, a square block with a rosette
     over every post, a tab into each post's slot, and a sawn-work spandrel (arch, roundels,
     teardrops, crown drop) in every bay. Local: u along, v up from the floor, w out (front at
-    +tb/2). Prints on its top edge, upside down, so both faces print alike."""
+    +tb/2). Prints on its top edge, upside down, so both faces print alike; or, ``flat``,
+    lying on its back (ARCADE_FLAT): the spandrels and tabs then run the beam's full depth,
+    so no part of a fine lace starts in mid-air and its thin bars lie in the layers."""
     vb = H - beam
     parts = [box([u_start, vb, -tb / 2], [u_end, H, tb / 2])]
     parts.append(box([u_start, vb, tb / 2 - 0.01], [u_end, vb + 0.4, tb / 2 + 0.3]))        # bead
     parts.append(box([u_start, H - 0.4, tb / 2 - 0.01], [u_end, H, tb / 2 + 0.3]))          # fillet
     for u in [u for u in posts_u if u_start + 1.0 <= u <= u_end - 1.0]:
-        parts.append(box([u - 0.5, vb - 0.8, -0.5], [u + 0.5, vb + 0.01, 0.5]))              # tab
+        parts.append(box([u - 0.5, vb - 0.8, -tb / 2 if flat else -0.5], [u + 0.5, vb + 0.01, tb / 2 if flat else 0.5]))  # tab
         blk = chamfer_box(u - 1.2, vb + 0.55, u + 1.2, H - 0.55, tb / 2 - 0.01, 0.45, c=0.25)
         ros = ext(circle((u, (vb + H) / 2), 0.42, 16), tb / 2 + 0.4, tb / 2 + 0.7)
         parts.append(blk + ros)
@@ -942,7 +944,7 @@ def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0,
         fn = {"gothic": _gothic_spandrel_cs, "braced": _braced_spandrel_cs, "sawn": _spandrel_cs,
               "lace": LC.lace_spandrel_cs}.get(style) or PW.FRIEZES[style]
         sp = fn(u0, u1, vb - drop, vb)
-        body = ext(sp, tb / 2 - ts, tb / 2)
+        body = ext(sp, -tb / 2 if flat else tb / 2 - ts, tb / 2)
         rim = ext(sp.offset(-0.55, JoinType.Round).offset(0.05, JoinType.Round), tb / 2 - 0.3, tb / 2 + 1)
         parts.append(body - rim)
     return union(parts)
@@ -952,11 +954,14 @@ def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0,
 Z_UP_TO_FACADE = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
 # print transform for arcades: local (u, v, w) -> (u, w, -v): upside down on the beam's top edge
 ARCADE_PRINT = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
+# ... and for a flat arcade (porch_arcade(flat=True)): lying on its back, the front face up
+ARCADE_FLAT = np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0]])
 
 
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
                  boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0, arcade="sawn", post="turned",
-                 rail="turned", skirt="lattice", pier_tex="brick", roof_edge="dentil", planks=None, drop=5.0):
+                 rail="turned", skirt="lattice", pier_tex="brick", roof_edge="dentil", planks=None, drop=5.0,
+                 flat_arcades=False):
     """Porch with turned posts, upright railings and edge-printed arcades.
     ``planks`` = dict for porch_planks(): the floor is planks printed with the deck (one part,
     upside down, one filament change at the planks' thickness) instead of a separate floor.
@@ -1056,7 +1061,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         if nxt is not None and np.allclose(nxt["a"], r["b"], atol=0.05) and lens[k + 1] > lens[k]:
             u1 = us[-1] - beam / 2 - 0.1
             stops.append((k, k + 1, us[-1]))
-        arc = porch_arcade(u0, u1, us, post_h, beam=beam, style=arcade, drop=drop)
+        arc = porch_arcade(u0, u1, us, post_h, beam=beam, style=arcade, drop=drop, flat=flat_arcades)
         arcades.append((arc.transform(A), A))
     # a stopped end meets the covering beam square only at a right angle: clear it of that
     # beam (on any angle) and of the corner post's square capital below the beam

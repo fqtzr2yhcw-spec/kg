@@ -423,7 +423,8 @@ NOTES = {
   8. Add-ons: the FLOWERBOXes under the front windows, the ROCKER on the porch.
 """, """Colour changes (optional, each on a plate of its own colour):
   FLOWERBOX: turquoise box, then at 2.2 mm change to pink for the flowers.
-The bargeboards print face-up, the ROCKER on its side, the arcades on their top edge.
+The bargeboards (1.6 mm, thickened after a test print broke) and the lace arcades print face-up, lying
+flat; the ROCKER on its side.
 """),
     "primrose": ("THE PRIMROSE - BUTTER-YELLOW EASTLAKE QUEEN ANNE", "  1. FOUNDATION (the pebble-dash base).\n" + jointed(
         "", " (with the wing's gable)") + """

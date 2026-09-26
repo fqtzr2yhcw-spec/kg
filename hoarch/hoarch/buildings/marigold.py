@@ -208,8 +208,8 @@ def build(kit=None):
     kit.add("CHIMNEY", "Brick", ch, group="roof")
     for k, (g, wl) in enumerate(zip(specs, rf["walls"])):
         big = wl["L"] > 40.0
-        bb = LC.lace_bargeboard(wl["L"], wl["slope"], D_EAVE, skin=SKIN, width=5.0 if big else 3.6,
-                                medal=6.0 if big else 3.4, curl=3.0)
+        bb = LC.lace_bargeboard(wl["L"], wl["slope"], D_EAVE, skin=SKIN, width=5.6 if big else 4.2,
+                                medal=6.0 if big else 3.4, curl=3.0, d=1.6, margin=1.1)      # 1.6 thick: 0.8 broke
         fw = wl["facade"]
         A = fw.A.copy()
         A[:, 3] = fw.world(0.0, 0.0, RAKE)
@@ -230,7 +230,7 @@ def build(kit=None):
     post_h = 36.0                   # the porch roof stays under the eave cornice
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, m, 16.0)],
                         planks=dict(pitch=1.8, border=1.2), joined=False, ledger_off=1.5, arcade="lace", post="boxed",
-                        rail="lace", skirt="rings", pier_tex="coquina", roof_edge="scallop", drop=9.6)
+                        rail="lace", skirt="rings", pier_tex="coquina", roof_edge="scallop", drop=9.6, flat_arcades=True)
     fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
@@ -246,7 +246,7 @@ def build(kit=None):
         L_ = rl.bounding_box()
         kit.add(f"PORCH-rail-{k}", "Gold", rl, key=f"PORCH-rail-{max(L_[3] - L_[0], L_[4] - L_[1]):.1f}", group="porch")
     for k, (arc, A) in enumerate(P["arcades"]):
-        kit.add(f"PORCH-arcade-{k}", "Gold", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
+        kit.add(f"PORCH-arcade-{k}", "Gold", arc, P=compose(FT.ARCADE_FLAT, inv34(A)), group="porch")
     bld_keep = MAIN.solid(grow=1.45, dz0=-20, dz1=0)
     proof = P["roof"] - bld_keep - ins_keep
     ptop = proof.bounding_box()[5]

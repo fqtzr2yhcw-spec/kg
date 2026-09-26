@@ -418,7 +418,7 @@ def fill_flat(style, L, vb, vt):
         raise ValueError(style)
     cs = cs_union(parts) ^ rect(0.0, vb - 0.05, L, vt + 0.05)
     cs = cs.offset(-0.25, JoinType.Round).offset(0.25, JoinType.Round)
-    return _flat(cs)
+    return _flat(cs, t=1.1 if style == "lace" else 0.8)          # the lace is pierced finest: a little thicker
 
 
 def baluster_vase(h, seg=24):

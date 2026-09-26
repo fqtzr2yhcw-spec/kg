@@ -108,7 +108,7 @@ def _fit(region, near, rmin=0.9, rmax=3.2):
     return None
 
 
-def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=0.8, finial=5.6, drop=0.0, curl=2.2, medal=3.0):
+def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=0.8, finial=5.6, drop=0.0, curl=2.2, medal=3.0, margin=0.4):
     """A deep lace bargeboard for a gable of wall length L, in the wall's facade frame (v up
     from the eave, u from the wall's left end), hung on the rake's outer end as
     gables.bargeboard is: its top edge follows the roof's top surface from eave to apex. The
@@ -116,7 +116,8 @@ def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=0.8, finial=5.6, dr
     spiral scroll curls at each foot, a pendant hangs under the apex and a fleur finial (a
     spike with three leaves) stands over it. ``medal``: a round medallion of that radius hung
     under the apex (a rim, eight petals and a boss standing 0.4 proud) in place of a king
-    post. Place at w = rake; flat, prints face-up."""
+    post. Place at w = rake; flat, prints face-up. ``margin``: the solid wood left above and
+    below the pierced flowers (the Marigold's printed boards broke at 0.4)."""
     s = slope
     c = math.hypot(1.0, s)
     a_l = np.array([-d_eave, 0.0])
@@ -131,7 +132,7 @@ def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=0.8, finial=5.6, dr
     run = float(np.linalg.norm(tip - a_l))
     cusps, holes = [], []
     pitch = 3.8
-    R = min(width / 2 - 0.4, pitch / 2 - WEB / 2 - 0.2)
+    R = min(width / 2 - margin, pitch / 2 - max(WEB, margin) / 2 - 0.2)
     for a in (a_l, a_r):
         n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
         dirv = (tip - a) / np.linalg.norm(tip - a)
