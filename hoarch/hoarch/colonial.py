@@ -1698,3 +1698,279 @@ def coffered_ceiling(cs, t=1.0, pitch=6.0, rib=0.9, d=0.5):
     ribs = (cs_union(grid) ^ cs) + rim
     slab_ = M.extrude(cs, t)
     return slab_ + M.extrude(ribs, d).translate([0, 0, t - 0.01])
+
+
+# ================================================================== the Van Tassel (house 34)
+# ------------------------------------------------------------------ skins and a frieze
+def tooled_ashlar(region, datum=0.0, seed=0, joint=0.5, d=0.4):
+    """Jersey sandstone: coursed ashlar blocks (courses 2.0 to 2.8 mm, blocks 4 to 9 mm), each
+    face dressed with a pair of horizontal tooled furrows (0.5 mm grooves) along it."""
+    from .shell import _stepped
+    if region.is_empty():
+        return M()
+    rng = np.random.default_rng(seed)
+    u0, v0, u1, v1 = region.bounds()
+    blocks, furrows = [], []
+    v = datum + math.floor((v0 - datum) / 0.2) * 0.2 - 2.8
+    while v < v1 + 0.1:
+        hc = float(rng.choice([2.0, 2.4, 2.8]))
+        u = u0 - rng.uniform(0.0, 6.0)
+        while u < u1 + 0.5:
+            L = rng.uniform(4.0, 9.0)
+            a, e = u + joint / 2, u + L - joint / 2
+            lo, hi = v + 0.2, v + hc - 0.2
+            blocks.append(rect(a, lo, e, hi))
+            for fv in ((lo + hi) / 2 - 0.45, (lo + hi) / 2 + 0.45) if hi - lo > 1.9 else ((lo + hi) / 2,):
+                furrows.append(rect(a + 0.6, fv - 0.25, e - 0.6, fv + 0.25))
+            u += L
+        v += hc
+    cs = cs_union(blocks) ^ region
+    return _stepped(cs, 0.0, d) - ext(cs_union(furrows), d - 0.15, d + 0.2)
+
+
+def shingles_doubled(region, datum=0.0, pitch=2.2, width=2.8, d=0.42):
+    """Double-coursed shingles: wide square-butt shingles with long exposure, each course laid
+    over an under-course whose butt shows 0.4 mm below it (a doubled shadow line), and the
+    shingles of each course a random width."""
+    from .core import scallop_rows
+    if region.is_empty():
+        return M()
+    top = scallop_rows(region, pitch, width, d=d, datum=datum + 0.4, shape="stagger", lap=1.2)
+    under = scallop_rows(region, pitch, width * 0.8, d=d * 0.55, datum=datum, shape="square", lap=1.2)
+    return top + under
+
+
+def frieze_delft(L, h, b, pitch, margin, pair, half):
+    """Delft tiles: a row of square tiles, each with a raised border and a little flower of
+    four petals round a dot in the middle."""
+    v0, v1 = 0.7, h - 0.7
+    t = v1 - v0
+    out = []
+    n = max(1, int((L - margin) / (t + 0.5)))
+    u0 = (L - n * (t + 0.5) + 0.5) / 2
+    for k in range(n):
+        a = u0 + k * (t + 0.5)
+        sq = rect(a, v0, a + t, v1)
+        out.append(_st(sq - sq.offset(-0.5, JoinType.Miter, 4.0), b, 0.3))
+        c = (a + t / 2, (v0 + v1) / 2)
+        pr = t * 0.2
+        for j in range(4):
+            ang = math.pi / 4 + j * math.pi / 2
+            out.append(_st(circle((c[0] + math.cos(ang) * pr, c[1] + math.sin(ang) * pr), min(0.45, pr * 0.8), 12), b, 0.35))
+        out.append(_st(circle(c, 0.3, 10), b, 0.5))
+    return out, []
+
+
+CO.FRIEZE_EXTRA.update(delft=frieze_delft)
+
+
+# ------------------------------------------------------------------ windows and the door
+def _bell_head(w, v, rise=2.6, band=1.2):
+    """An ogee 'bell' head board: a band over an opening whose top swells up in an ogee curve
+    to a point, the Dutch way (outline in (u, v))."""
+    pts = []
+    n = 16
+    for i in range(n + 1):
+        s = i / n                                    # 0 at the left end, 1 at the middle
+        x = -w / 2 + s * w / 2
+        y = v + band + rise * (3 * s * s - 2 * s ** 3)
+        pts.append((x, y))
+    pts += [(-x, y) for x, y in reversed(pts[:-1])]
+    return poly([(-w / 2, v)] + pts + [(w / 2, v)])
+
+
+def window_dutch(w, h, lites=(3, 3), rows=(2, 2), A=1.2):
+    """A Dutch Colonial window: a plank frame with a bead, a sill on two little blocks, and an
+    ogee 'bell' head board over it."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=lites, rows=rows, bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    frame = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext(frame, 0.0, 0.9))
+    parts.append(ext((op.offset(0.7, JoinType.Miter, 4.0) - op.offset(0.3, JoinType.Miter, 4.0)) ^ rect(-w, 0.2, w, h + 0.7), 0.89, 1.1))
+    head = _bell_head(w + 2 * A + 1.2, h + A - 0.01)
+    parts.append(ext(head, 0.0, 1.1))
+    parts.append(ext(head.offset(-0.6, JoinType.Round) ^ rect(-w, h + A + 0.5, w, 99), 1.09, 1.4))
+    parts.append(chamfer_box(-w / 2 - A - 0.8, -1.2, w / 2 + A + 0.8, 0.01, 0.0, 1.5, c=0.35, bottom=0.5))
+    for sg in (-1, 1):
+        parts.append(ext(rect(sg * (w / 2 - 0.8) - 0.8, -2.2, sg * (w / 2 - 0.8) + 0.8, -1.19), 0.0, 1.0))
+    top = head.bounds()[3]
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, top, -2.2)
+
+
+def window_quadrant(r=6.0, left=True, A=1.0):
+    """A quarter-round attic light (a pair flank each gable's chimney): the square corner at
+    the bottom toward the chimney, bars fanning from it, a moulded frame. Local u centred on
+    the square corner's upright edge ... placed like any window (u = 0 at the opening's
+    straight edge, v = 0 at its foot)."""
+    s = -1.0 if left else 1.0
+    op = cs_union([circle((0.0, 0.0), r, 48) ^ rect(min(0, s * r), 0.0, max(0, s * r), r)])
+    op = op.translate((-s * r / 2, 0.0))
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.6, JoinType.Miter, 4.0)
+    c = (-s * r / 2, 0.0)
+    sash = [ext(plug_cs - g, -pl, 0.0), ext(g, -pl, -pl + O.GLASS)]
+    bars = cs_union([stroke([c, (c[0] + s * r * math.cos(a), r * math.sin(a))], RIB) for a in (math.pi / 6, math.pi / 3)]) ^ plug_cs
+    sash.append(ext(bars, -pl + O.GLASS - 0.01, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    ring = (op.offset(A, JoinType.Round) - op) ^ rect(-50, 0.0, 50, 50)
+    parts.append(ext(ring, 0.0, 0.9))
+    parts.append(chamfer_box(op.bounds()[0] - A - 0.4, -0.9, op.bounds()[2] + A + 0.4, 0.01, 0.0, 1.2, c=0.3, bottom=0.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, r + A, -0.9)
+
+
+def door_dutch(w, h, transom=4.0, A=1.3):
+    """A Dutch door: a lower leaf with two raised panels and an upper leaf glazed with four
+    bull's-eye lights (each a boss of crown glass) that opens on its own, under a transom of
+    bull's-eyes; a beaded frame on pilaster strips under an ogee 'bell' head."""
+    op = rect(-w / 2, 0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    split = round(dh * 0.48 / 0.2) * 0.2
+    lx0, lx1 = -w / 2 + O.CLR, w / 2 - O.CLR
+    body = [ext(plug_cs, -pl, -1.0),
+            ext(rect(lx0, 0.4, lx1, split - 0.2), -1.01, -0.8), ext(rect(lx0, split + 0.2, lx1, dh - 0.3), -1.01, -0.8),
+            ext(rect(lx0 - 0.1, split - 0.9, lx1 + 0.1, split - 0.2), -0.81, -0.3)]     # the lower leaf's ledge
+    for u0, u1 in ((lx0 + 0.8, -0.4), (0.4, lx1 - 0.8)):
+        body.append(chamfer_box(u0, 1.4, u1, split - 1.6, -0.81, 0.4, c=0.25))
+    lights = []
+    for u0, u1 in ((lx0 + 0.8, -0.3), (0.3, lx1 - 0.8)):
+        for va, vb in ((split + 1.0, (split + dh) / 2 - 0.25), ((split + dh) / 2 + 0.25, dh - 1.1)):
+            lights.append(rect(u0, va, u1, vb))
+    tcs = rect(-w / 2 + O.CLR + 0.5, dh + 0.3, w / 2 - O.CLR - 0.5, h - O.CLR - 0.5)
+    lights.append(tcs)
+    g = cs_union(lights)
+    body = [p - ext(g, -pl + O.GLASS, 0.5) for p in body]
+    sash = body + [ext(g, -pl, -pl + O.GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
+    bosses = []
+    for L_ in lights[:-1]:
+        b_ = L_.bounds()
+        bosses.append(circle(((b_[0] + b_[2]) / 2, (b_[1] + b_[3]) / 2), min(b_[2] - b_[0], b_[3] - b_[1]) * 0.3, 16))
+    tb = tcs.bounds()
+    for k in range(4):
+        uc = tb[0] + (tb[2] - tb[0]) * (k + 0.5) / 4
+        bosses.append(circle((uc, (tb[1] + tb[3]) / 2), min(1.0, (tb[3] - tb[1]) * 0.35), 16))
+    tbars = [rect(tb[0] + (tb[2] - tb[0]) * k / 4 - 0.25, tb[1], tb[0] + (tb[2] - tb[0]) * k / 4 + 0.25, tb[3]) for k in (1, 2, 3)]
+    sash.append(ext(cs_union(bosses), -pl + O.GLASS - 0.01, -pl + O.GLASS + 0.4))
+    sash.append(ext(cs_union(tbars + [rect(-w, dh - 0.3, w, dh + 0.3)]) ^ plug_cs, -pl + O.GLASS - 0.01, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    frame = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext(frame, 0.0, 1.0) - ext((op.offset(0.75, JoinType.Miter, 4.0) - op.offset(0.4, JoinType.Miter, 4.0))
+                                             ^ rect(-w, 0.3, w, h + 0.75), 0.8, 1.2))
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * (w / 2 + A - 0.01), sg * (w / 2 + A + 1.2)))
+        parts.append(ext(rect(u0, 0.0, u1, h + A), 0.0, 1.3))
+        parts.append(chamfer_box(u0 - 0.2, 0.0, u1 + 0.2, 1.8, 0.0, 1.6, c=0.3, bottom=0.0))
+    head = _bell_head(w + 2 * A + 3.2, h + A - 0.01, rise=3.4, band=1.4)
+    parts.append(ext(head, 0.0, 1.4))
+    parts.append(ext(head.offset(-0.6, JoinType.Round) ^ rect(-w, h + A + 0.6, w, 99), 1.39, 1.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, head.bounds()[3], 0.0)
+
+
+# ------------------------------------------------------------------ shutters, posts, chimney, dormer
+def shutter_crescent(w, h, t=0.8):
+    """A board-and-batten shutter: upright boards (grooves between them), two battens across
+    its back face... shown on the face as raised battens, and a crescent moon cut through it
+    near the top (local frame as features.shutter, prints face-up)."""
+    body = ext(rect(0, 0, w, h), 0.0, 0.55)
+    nb = max(2, int(w / 1.6))
+    grooves = cs_union([rect(w * k / nb - 0.25, -1, w * k / nb + 0.25, h + 1) for k in range(1, nb)])
+    body = body - ext(grooves, 0.4, 1.0)
+    for v in (h * 0.14, h * 0.86):
+        body = body + ext(rect(0.2, v - 0.5, w - 0.2, v + 0.5), 0.54, t)
+    cc = (w / 2, h * 0.72)
+    rr = min(w * 0.28, 1.4)
+    moon = circle(cc, rr, 24) - circle((cc[0] + rr * 0.45, cc[1] + rr * 0.2), rr * 0.8, 24)
+    if h * 0.72 + rr < h * 0.86 - 0.6:
+        body = body - ext(moon, -1, 2)
+    return body
+
+
+def post_dutch(h, r=1.5):
+    """A Dutch porch post: a round shaft with a slight swell, on a square plinth, under a
+    square abacus over a ring. Stands on z = 0, top at h; prints upright."""
+    hp, ha = 1.6, 1.0
+    hs = h - hp - ha - 0.6
+    prof = [(0.0, 0.0), (r * 0.9, 0.0)] + [(r * (0.9 + 0.12 * math.sin(math.pi * t)) - 0.0, hp + hs * t) for t in np.linspace(0, 1, 12)]
+    prof += [(r * 0.9 + 0.3, hp + hs + 0.1), (r * 0.9 + 0.3, hp + hs + 0.6), (0.0, hp + hs + 0.6)]
+    shaft = M.revolve(poly(prof), 32)
+    plinth = box([-r - 0.4, -r - 0.4, 0.0], [r + 0.4, r + 0.4, hp])
+    cap = box([-r - 0.3, -r - 0.3, h - ha], [r + 0.3, r + 0.3, h]) + TW._corbel_out(2 * r * 0.9 + 0.6, 2 * r * 0.9 + 0.6, h - ha + 0.01, 0.01)
+    return shaft + plinth + cap
+
+
+def chimney_stonebrick(w=10.0, d=14.0, h=30.0, stone_h=None, seed=3):
+    """A Hudson Valley stack: tooled sandstone up to ``stone_h`` under a weathered stone slab,
+    brick above it in running bond, a corbelled brick cap of three courses. Stands on z = 0."""
+    h = round(h / 0.2) * 0.2
+    stone_h = round((stone_h if stone_h is not None else h * 0.45) / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, stone_h])
+    body = body + TW._skin(w, d, 0.0, stone_h - 0.2, lambda reg, i: tooled_ashlar(reg, seed=seed + i, d=0.32))
+    body = body + TW._corbel_out(w, d, stone_h + 0.6, 0.6) + box([-w / 2 - 0.6, -d / 2 - 0.6, stone_h + 0.59], [w / 2 + 0.6, d / 2 + 0.6, stone_h + 1.2])
+    bw, bd = w - 1.6, d - 1.6
+    sh = h - 2.4
+    body = body + box([-bw / 2, -bd / 2, stone_h + 1.19], [bw / 2, bd / 2, sh]) + TW._skin(bw, bd, stone_h + 1.4, sh, TW._brick("running"))
+    z = sh
+    for k in range(3):
+        g = 0.25 * (k + 1)
+        body = body + TW._corbel_out(bw + 2 * (g - 0.25), bd + 2 * (g - 0.25), z + 0.25, 0.25) + \
+            box([-bw / 2 - g, -bd / 2 - g, z + 0.24], [bw / 2 + g, bd / 2 + g, z + 0.8])
+        z += 0.8
+    return body - box([-bw / 2 + 1.2, -bd / 2 + 1.2, z - 1.6], [bw / 2 - 1.2, bd / 2 - 1.2, z + 1])
+
+
+def dormer_shed(L, h, dep, slope, n_win=3, lw=6.4, lh=7.0):
+    """A long shed dormer: a front wall ``L`` long and ``h`` tall (its feet at v = 0), sides
+    rising back under a shed roof of ``slope`` (dz per mm back), ``n_win`` lights in plain
+    frames opening onto a dark core. Local u along it (centred), v up, w out (face at w = 0,
+    back to -dep). Returns (body, core, roof_cs as the shed roof's side profile (w, v))."""
+    face = rect(-L / 2, 0.0, L / 2, h)
+    side = poly([(0.0, 0.0), (0.0, h), (-dep, h + dep * slope), (-dep, 0.0)])     # (w, v)
+    body = M.extrude(side, L).transform(np.array([[0, 0, 1.0, -L / 2], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
+    inner = M.extrude(side.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-dep - 5, 1.2, 5, 999), L - 2.4) \
+        .transform(np.array([[0, 0, 1.0, -L / 2 + 1.2], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
+    body = body - inner
+    lights = []
+    for k in range(n_win):
+        uc = -L / 2 + L * (k + 0.5) / n_win
+        lights.append(rect(uc - lw / 2, (h - lh) / 2, uc + lw / 2, (h - lh) / 2 + lh))
+    lc = cs_union(lights)
+    body = body - ext(lc, -1.3, 1.0)
+    bars = []
+    for L_ in lights:
+        b_ = L_.bounds()
+        um, vm = (b_[0] + b_[2]) / 2, (b_[1] + b_[3]) / 2
+        bars += [rect(b_[0], vm - 0.25, b_[2], vm + 0.25), rect(um - 0.25, b_[1], um + 0.25, b_[3])]
+    body = body + ext(cs_union(bars) ^ lc, -1.2, -0.5)
+    body = body + ext(lc.offset(0.9, JoinType.Miter, 4.0) - lc, -0.01, 0.6)
+    body = body + ext(rect(-L / 2, h - 1.0, L / 2, h), -0.01, 0.7)
+    core = ext(face.offset(-1.2, JoinType.Miter, 4.0), -dep + 1.2, -1.2) - ext(rect(-L, h - 1.2, L, 99), -dep - 1, 1)
+    return body, core, side
+
+
+def foundation_boulder(reg, seed=0):
+    """Field boulders: big rounded stones of random size packed along the base, a smaller one
+    wedged in each gap, under a flat sill of sandstone slabs."""
+    from .shell import _stepped
+    rng = np.random.default_rng(seed + 23)
+    b = reg.bounds()
+    top = b[3] - 1.4
+    big, small = [], []
+    u = b[0] - 2.0
+    while u < b[2] + 2.0:
+        r = rng.uniform(1.6, 2.6)
+        vc = b[1] + rng.uniform(r * 0.8, max(r * 0.8 + 0.01, top - b[1] - r))
+        big.append(oval((u + r, vc), r, min(r * rng.uniform(0.7, 0.95), (top - b[1]) / 2 - 0.2), 20))
+        small.append(circle((u + 2 * r + 0.1, top - rng.uniform(1.0, 1.8)), rng.uniform(0.6, 0.9), 12))
+        u += 2 * r + 0.6
+    region = reg ^ rect(b[0] - 1, b[1] - 1, b[2] + 1, top - 0.2)
+    out = _stepped(cs_union(big) ^ region, 0.0, 0.5) + _stepped((cs_union(small) - cs_union(big).offset(0.3)) ^ region, 0.0, 0.3)
+    sill = rect(b[0], top, b[2], b[3])
+    joints = cs_union([rect(b[0] + k * 9.0 - 0.25, top - 1, b[0] + k * 9.0 + 0.25, b[3] + 1) for k in range(1, int((b[2] - b[0]) / 9.0) + 1)])
+    return out + ext(sill, 0.0, 0.7) - ext(joints, 0.45, 1.0)
+
+
+TW.FOUNDATION_EXTRA.update(boulder=foundation_boulder)

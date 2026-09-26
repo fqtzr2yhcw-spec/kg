@@ -652,6 +652,23 @@ the stoop and the roofs upright. The datestone (J P 1768) is carved in the west 
 upright (brim on); the railings, the balustrade runs and the PEDIMENT flat on their backs;
 the beam, the cupola, the dome, the dormers, the chimneys and the roof upright.
 """),
+    "vantassel": ("THE VAN TASSEL - DUTCH COLONIAL WITH A GAMBREL ROOF", """  1. FOUNDATION (field boulders under a sandstone sill).
+  2. WALLS onto the foundation's lip: the whole storey of sandstone and both shingled gable
+     ends in one part (two colours: see its plate name).
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the quarter-round lights in the gables too); a pair of SHUTTERs beside each shuttered
+     window.
+  4. The CORNICE-E parts round the eave band (across the gable feet too).
+  5. ROOF onto the lip at the wall tops: the gable walls slip up inside its ends, the kick
+     sweeps out over the porch. A CHIMNEY into each pocket at the ends of the ridge.
+  6. DORMER-core into the DORMER, the DORMER into its pocket on the back slope, DORMER-roof on it.
+  7. The porch: PORCH-base against the front, PORCH-deck on it (see the deck note), the six
+     PORCH-posts on the deck, PORCH-beam on the posts under the kick; STEPS-front.
+  8. STOOP-back at the back door.
+""", """The ROOF prints standing on its west end (its section is the same all along, so the kick
+and the eaves need no support); the PORCH-deck upside down; the DORMER-roof lying on its
+underside; the posts, the walls, the dormer and the chimneys upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
