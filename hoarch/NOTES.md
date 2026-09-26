@@ -159,6 +159,21 @@ one clear cause:
     medallion, thick-banded scroll feet, the finial on a block; `lace.sturdy` thickens any
     remaining bar under 1 mm instead of cutting it away.
   - Small add-ons get a flat foot (the rocking chair stands on a mat).
+  - Porticos with a flat deck (the Whitmore, the Westbrook) are done the same way: the
+    entablature, deck and columns are one part, printed upside down, each column's foot
+    in a snug recess in the floor. Columns that must stay separate (a beam that prints
+    upright, a portico printed on its back) sit in sockets at both ends
+    (`features.column_seats`): the foot 1.0-1.6 mm down into a recess in the floor, a peg on
+    the capital up into a pocket in the beam, 0.15 mm clear all round.
+  - Finials print in one piece with the roof they top (`features.crown`), with one
+    filament change at the tip when the colours differ. The Rosecroft's vane is a flat piece
+    whose stem plugs 5.5 mm down into the finial.
+  - Signs, hoists, drops, crest strips and rails that met their wall or deck on a thin edge
+    get a tongue into a snug slot (`features.key_into`); steps and stoops that stood off
+    the foundation run on to it and take the shape of its stonework (`conform=True`).
+  - The audit (`glue_audit.py`, scratchpad) estimates each small part's glue area by
+    nudging it 0.25 mm each way; anything under 12 mm2 is fixed. A socket with clearance
+    counts at about half its true area, so a plug that reads 10 mm2 is really about 20.
 
 The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers**,
 **0.16 mm** at the finest):

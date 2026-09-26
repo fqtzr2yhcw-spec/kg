@@ -540,12 +540,11 @@ def finial(style, r=1.2, h=8.0, seg=28):
     elif style == "stack":
         prof = [(0, 0), (1.3, 0), (1.3, 1.0), (1.0, 1.3), (1.0, 2.0), (0.8, 2.2), (0.8, 3.0), (0.6, 3.2),
                 (0.6, 4.0), (0.45, 4.2), (0.45, 6.0), (0, 7.0)]
-    elif style == "vane":                # a turned base and ball, then a rod to h that carries a weathervane arrow
-        prof = [(0, 0), (1.3, 0), (1.3, 0.8), (0.8, 1.3), (0.7, 3.0), (1.0, 3.4), (1.0, 3.8), (0.5, 4.3), (0.4, 5.2),
-                (0.75, 5.6), (0.85, 6.2), (0.7, 6.8), (0.3, 7.2)]
-        prof = [(x * k, z * k) for x, z in prof] + [(0.4, h), (0.0, h)]
+    elif style == "vane":                # a stout turned base, collar and ball: the weathervane's own stem plugs into its top
+        prof = [(0, 0), (1.3, 0), (1.3, 0.8), (1.0, 1.1), (1.0, 3.0), (1.2, 3.4), (1.2, 3.8), (0.95, 4.3), (0.95, 5.4),
+                (1.15, 5.8), (1.15, 6.6), (0.95, 6.9), (0.8, 7.2), (0.0, 7.2)]
         from .porchwork import _clamp45
-        return M.revolve(poly(_clamp45([(max(x, 0.4) if 0 < x < 0.4 else x, z) for x, z in prof])), seg)
+        return M.revolve(poly(_clamp45([(x * k, z * k) for x, z in prof])), seg)
     elif style == "fleur":               # a rod carrying a fleur-de-lis head (added below) over a turned collar (the Juniper)
         prof = [(0, 0), (1.2, 0), (1.2, 0.6), (0.8, 1.0), (0.7, 2.0), (1.0, 2.3), (1.0, 2.7), (0.45, 3.1), (0.4, 7.0),
                 (0.0, 7.0)]

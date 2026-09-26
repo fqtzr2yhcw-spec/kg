@@ -21,7 +21,7 @@ import numpy as np
 from manifold3d import Manifold as M
 
 from hoarch.core import box, cs_union, inv34, poly, rect, union
-from hoarch import openings as O, skins as SK, storefront as SF, trimwork as TW
+from hoarch import features as FT, openings as O, skins as SK, storefront as SF, trimwork as TW
 from hoarch.kit import Kit, print_flip
 from hoarch.ornament import ext
 from hoarch.shell import Block, Opening, foundation, wall_shell
@@ -183,6 +183,9 @@ def build(kit=None):
     zlow = round((ZE + (W - cx - cw / 2) * S - 3.0) / 0.2) * 0.2
     ch = TW.chimney("tapered", w=cw, d=cw, h=round((zr + 9.0 - zlow) / 0.2) * 0.2).translate([cx, cy, zlow])
     kit.add("CHIMNEY", "Brick", ch, group="roof")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.key_into(kit, "BLADE", ["WALLS"], (0, 1, 0))
+    FT.key_into(kit, "RIDGE", ["ROOF-L", "ROOF-R"], (0, 0, -1), depth=0.3, conform=True)
     print("specks dropped:", kit.drop_specks())
     return kit
 

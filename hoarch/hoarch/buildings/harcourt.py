@@ -326,6 +326,10 @@ def build(kit=None):
     A[:, 3] = f.world(u, -ZF, 1.8)                     # clear of the rock-faced granite
     kit.add("STOOP-back", "Granite", FT.steps(17.0, ZF - 0.6, 5).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.crown(kit, "TOWER-finial", "TOWER-deck")
+    for p_ in [p_ for p_ in kit.parts if p_.name.startswith("BAY-crest")]:
+        FT.key_into(kit, p_.name, ["BAY-roof"], (0, 0, -1), depth=0.6)
     print("specks dropped:", kit.drop_specks())
     return kit
 

@@ -267,18 +267,22 @@ def build(kit=None):
     print("roof", round(time.time() - t0, 1))
 
     # --- the bowed portico
-    for k, c_ in enumerate(PO["cols"]):
-        kit.add(f"PORTICO-column-{k}", "White", c_, key="PORTICO-column", group="portico")
     ent = (PO["ent"] ^ front_keep)
     # the balcony floor inside the entablature's ring, flush with its top
     arc_in = [(PC[0] + (PO["Rc"] - 1.0) * math.cos(a), PC[1] + (PO["Rc"] - 1.0) * math.sin(a)) for a in np.linspace(A0, A1, 40)]
     deck_cs = poly([(XC - HALF, 0.0)] + arc_in[1:-1] + [(XC + HALF, 0.0)]) ^ rect(-500, -500, 500, -0.02)
     ent = ent + slab(deck_cs, zcol + 1.6, ZPT)
+    # the columns in one piece with it (printed upside down on the flat deck), each foot
+    # dropping into a snug recess in the floor: no column is glued on its own
+    Rc = PR - 2.6
+    cxy = [(PC[0] + Rc * math.cos(a), PC[1] + Rc * math.sin(a)) for a in np.linspace(A0 + 0.27, A1 - 0.27, 6)]
+    seats = [FT.column_seats(x, y, H_FLOOR, zcol, ("round", 1.6 + 0.6), dfoot=1.6) for x, y in cxy]
+    ent = ent + union(PO["cols"]) + union([a_ for a_, _, _ in seats])
     ent = ent - MAIN.solid(grow=0.0, dz0=-1, dz1=1) - st["rings"][0]
-    kit.add("PORTICO-roof", "White", ent, P=print_flip(), group="portico")
+    kit.add("PORTICO-top", "White", ent, P=print_flip(), group="portico")
     rail = (PO["rail"] ^ front_keep) - MAIN.solid(grow=0.0, dz0=-1, dz1=1)
     kit.add("BALCONY-rail", "White", rail, group="portico")
-    pf = portico_floor() - fnd
+    pf = portico_floor() - fnd - union([f_ for _, f_, _ in seats])
     kit.add("PORTICO-floor", "PorchDeck", pf, P=print_flip(), group="portico",
             render=FT.plank_zones(pf, H_FLOOR, "Planks", "PorchDeck"))
     f0 = MAIN.facades()[0]

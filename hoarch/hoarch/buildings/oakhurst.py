@@ -279,9 +279,12 @@ def build(kit=None):
     beam = slab(beam_cs, ZA, ZW)
     beam = beam + slab(beam_cs.offset(0.4, JoinType.Miter, 4.0) ^ rect(-500, -500, 500, -0.5), ZA + 2.4, ZE - 0.2)
     beam = beam + (CO.ledge(PORT_PTS, ZE, LEDGE) - MAIN.solid(grow=7.4, dz0=-5, dz1=5))
-    kit.add("PORTICO-beam", "White", beam - roof, group="portico")
+    # each giant column's foot drops 1.2 mm into a recess in the floor and a square peg on its
+    # abacus 1.6 mm up into a pocket in the beam: both ends glued round their sides
+    seats = [FT.column_seats(x, COL_Y, ZF, ZA, ("round", COL_R), head=("square", 2.0), dhead=1.6) for x in COL_X]
+    kit.add("PORTICO-beam", "White", beam - roof - union([t_ for _, _, t_ in seats]), group="portico")
     for k, x in enumerate(COL_X):
-        kit.add(f"PORTICO-column-{k}", "White", C.column_doric(ZA - ZF, COL_R).translate([x, COL_Y, ZF]),
+        kit.add(f"PORTICO-column-{k}", "White", C.column_doric(ZA - ZF, COL_R).translate([x, COL_Y, ZF]) + seats[k][0],
                 key="PORTICO-column", group="portico")
     ceil_cs = rect(PX0 + PB + 0.2, -PD + PB + 0.2, PX1 - PB - 0.2, -0.3)
     ceil = C.coffered_ceiling(ceil_cs, t=0.8, pitch=6.0).mirror([0, 0, 1.0]).translate([0, 0, ZW])
@@ -306,7 +309,7 @@ def build(kit=None):
     ppts = [(PX0 - 1.0, 0.0), (PX0 - 1.0, -PD - 1.0), (PX1 + 1.0, -PD - 1.0), (PX1 + 1.0, 0.0)]
     pcs = poly(ppts) ^ rect(-500, -500, 500, -0.02)
     planks = FT.porch_planks(ppts, [0, 1, 2], H=ZF, pitch=1.6, crack=0.25, border=1.4, along=(0.0, -1.0))
-    pfloor = (slab(pcs, ZF - 2.0, ZF - 1.19) + planks) - fnd
+    pfloor = (slab(pcs, ZF - 2.0, ZF - 1.19) + planks) - fnd - union([f_ for _, f_, _ in seats])
     kit.add("PORTICO-floor", "PorchDeck", pfloor, P=print_flip(), group="portico",
             render=FT.plank_zones(pfloor, ZF, "Planks", "PorchDeck"))
     fr = MAIN.facades()[0]
@@ -347,6 +350,10 @@ def build(kit=None):
     A = fb.A.copy()
     A[:, 3] = fb.world(u, -ZF, 1.4)
     kit.add("STOOP-back", "Brick", FT.steps(16.0, ZF - 0.6, 6).transform(A) - fnd, group="stoop")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.crown(kit, "CUPOLA-finial", "CUPOLA-dome")
+    for k_ in range(3):
+        FT.key_into(kit, f"BALCONY-rail-{k_}", ["BALCONY"], (0, 0, -1), depth=0.6)
     print("specks dropped:", kit.drop_specks())
     print("wing", round(time.time() - t0, 1))
     return kit

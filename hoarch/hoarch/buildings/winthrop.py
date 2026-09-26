@@ -194,6 +194,11 @@ def build(kit=None):
     A = fb.A.copy()
     A[:, 3] = fb.world(u, -ZF, 1.8)
     kit.add("STOOP-back", "Rubble", FT.steps(15.0, ZF - 0.6, 3).transform(A) - fnd, group="stoop")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    for k_ in range(6):
+        FT.key_into(kit, f"DROP-{k_}", ["JOINT"], (0, 0, 1))
+    FT.key_into(kit, "STOOP-front", ["FOUNDATION"], (0, 1, 0), depth=0.8, conform=True)
+    FT.key_into(kit, "STOOP-back", ["FOUNDATION"], (0, -1, 0), depth=0.8, conform=True)
     print("specks dropped:", kit.drop_specks())
     print("done", round(time.time() - t0, 1))
     return kit

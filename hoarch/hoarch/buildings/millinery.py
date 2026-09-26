@@ -26,7 +26,7 @@ import numpy as np
 from manifold3d import Manifold as M
 
 from hoarch.core import arch_cs, box, cs_union, inv34, offset, poly, rect, slab, union
-from hoarch import openings as O, skins as SK, storefront as SF, trimwork as TW
+from hoarch import features as FT, openings as O, skins as SK, storefront as SF, trimwork as TW
 from hoarch.kit import Kit
 from hoarch.ornament import chamfer_box, ext
 from hoarch.shell import Block, Opening, _corbel, foundation, stacked_shells
@@ -327,6 +327,8 @@ def build(kit=None):
         box([T + 0.1, -5, 0], [W - T - 0.1, T + 1.0, 400])        # none across the front: the front wall rises there
     kit.add("COPING", "Base", cop, group="roof")
     print("roof", round(time.time() - t0, 1))
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.key_into(kit, "BLADE", ["FRONT-2"], (0, 1, 0))
     print("specks dropped:", kit.drop_specks())
     return kit
 

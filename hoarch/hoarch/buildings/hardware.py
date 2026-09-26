@@ -22,7 +22,7 @@ import numpy as np
 from manifold3d import Manifold as M
 
 from hoarch.core import ashlar, box, cs_union, inv34, poly, rect, union
-from hoarch import openings as O, skins as SK, storefront as SF, trimwork as TW
+from hoarch import features as FT, openings as O, skins as SK, storefront as SF, trimwork as TW
 from hoarch.kit import Kit
 from hoarch.ornament import ext
 from hoarch.shell import Block, Opening, foundation, stacked_shells
@@ -211,6 +211,8 @@ def build(kit=None):
     pan = SF.shingle_panel(Lr, Vr, t=1.2, pitch=1.8, width=2.0)
     Am = np.array([[-1.0, 0.0, 0.0, W - T - 0.15], [0.0, -1 / n, S / n, y1], [0.0, S / n, 1 / n, z1]])
     kit.add("ROOF", "Roof", pan.transform(Am), P=inv34(Am), group="roof")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.key_into(kit, "HOIST", ["WALLS-2"], (0, 1, 0))
     print("specks dropped:", kit.drop_specks())
     return kit
 

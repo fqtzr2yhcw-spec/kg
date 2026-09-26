@@ -269,6 +269,8 @@ def build(kit=None):
                                                                            inv34(A)), key="FLOWERBOX", group="extras",
                 render=[("FlowerBox", (bx ^ box([-5, -5, -5], [20, 2.2, 5])).transform(A)),
                         ("Blooms", (bx - box([-5, -5, -5], [20, 2.2, 5])).transform(A))])
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.key_into(kit, "PORCH-steps-0", ["PORCH-deck"], (0, 1, 0), depth=0.8, conform=True)
     print("specks dropped:", kit.drop_specks())
     return kit
 

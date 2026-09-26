@@ -342,15 +342,22 @@ def build(kit=None):
     zs = round((zl + HL + 0.8 + SS * (LA + 0.8) - 1.4) / 0.2) * 0.2      # the spire stops flat for the finial's seat
     spire = spire.trim_by_plane([0, 0, -1.0], -zs)
     kit.add("TOWER-spire", "Slate", spire, group="tower")
-    HV = 15.0                                     # the rod's top, where the arrow's hub stands
+    HV = 15.0                                     # the stem's top, where the arrow's hub stands
     fin = TW.finial("vane", 1.8, HV).translate([TC[0], TC[1], zs])
+    ftop = fin.bounding_box()[5]
+    # the vane: the arrow and its stem in one flat piece (0.8 thick); the stem plugs 5.5 mm down
+    # into a snug socket in the finial, glued round its four sides
+    SW_, SD_, VT_ = 1.1, 5.5, 0.8
+    fin = fin - box([TC[0] - SW_ / 2 - 0.1, TC[1] - VT_ / 2 - 0.1, ftop - SD_], [TC[0] + SW_ / 2 + 0.1, TC[1] + VT_ / 2 + 0.1, ftop + 1.0])
     kit.add("TOWER-finial", "Teal", fin, group="tower")
+    zv = zs + HV + 1.8
     arrow = cs_union([stroke([(-4.0, 0.0), (3.2, 0.0)], 0.6), poly([(3.0, -1.0), (4.6, 0.0), (3.0, 1.0)]),
                       poly([(-4.0, -0.3), (-3.0, -0.3), (-3.6, -1.4), (-4.6, -1.4)]),
                       poly([(-4.0, 0.3), (-3.0, 0.3), (-3.6, 1.4), (-4.6, 1.4)]), rect(-0.5, -1.2, 0.5, 2.4),
-                      circle((0.0, 2.6), 0.6, 16)])
-    Av = np.array([[1.0, 0, 0, TC[0]], [0, 0, -1.0, TC[1] + 0.3], [0, 1.0, 0, zs + HV + 1.8]])
-    kit.add("TOWER-vane", "Teal", ext(arrow.scale((1.4, 1.4)), 0.0, 0.6).transform(Av), P=inv34(Av), group="tower")
+                      circle((0.0, 2.6), 0.6, 16)]).scale((1.4, 1.4))
+    arrow = arrow + rect(-SW_ / 2, ftop - SD_ - zv, SW_ / 2, -1.0)
+    Av = np.array([[1.0, 0, 0, TC[0]], [0, 0, -1.0, TC[1] + VT_ / 2], [0, 1.0, 0, zv]])
+    kit.add("TOWER-vane", "Teal", ext(arrow, 0.0, VT_).transform(Av), P=inv34(Av), group="tower")
     print("tower", round(time.time() - t0, 1))
 
     # --- the porch round the tower: its outline is the tower's octagon grown by PORCH_D, cut at
@@ -406,6 +413,8 @@ def build(kit=None):
     A[:, 3] = fb.world(u, -ZF, 1.4)
     kit.add("STOOP-back", "Stone", FT.steps(14.0, ZF - 0.6, 5).transform(A), group="porch")
 
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.crown(kit, "TOWER-finial", "TOWER-spire")
     print("specks dropped:", kit.drop_specks())
     return kit
 

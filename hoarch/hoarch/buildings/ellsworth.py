@@ -326,6 +326,10 @@ def build(kit=None):
     A = fb.A.copy()
     A[:, 3] = fb.world(u, -ZF, 1.4)
     kit.add("STOOP-back", "Cobble", FT.steps(16.0, ZF - 0.6, 4).transform(A) - fnd, group="porch")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.crown(kit, "TOWER-finial", "TOWER-roof")
+    for k_ in range(2):
+        FT.key_into(kit, f"DORMER-urn-{k_}", [f"DORMER-{k_}"], (0, 1, 0), depth=2.0)
     print("specks dropped:", kit.drop_specks())
     print("done", round(time.time() - t0, 1))
     return kit

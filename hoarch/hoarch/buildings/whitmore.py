@@ -331,14 +331,17 @@ def build(kit=None):
         kit.add(f"BAY-roof-{k}", "Copper", (broof + btex) - keep, key="BAY-roof", group="bay")
 
     # --- the portico
-    for k, c_ in enumerate(PO["cols"]):
-        kit.add(f"PORTICO-column-{k}", "White", c_, key="PORTICO-column", group="portico")
     for k, p_ in enumerate(PO["pilasters"]):
         kit.add(f"PORTICO-pilaster-{k}", "White", p_ - st["rings"][0], P=inv34(np.array([[1.0, 0, 0, 0], [0, 0, -1.0, PY], [0, 1.0, 0, 0]])),
                 key="PORTICO-pilaster", group="portico")
-    ent = PO["ent"] - PAV.solid(grow=0.0, dz0=-1, dz1=1)
-    kit.add("PORTICO-roof", "White", ent, P=print_flip(), group="portico")
-    kit.add("PORTICO-floor", "Cream", PO["floor"] - fnd, group="portico")
+    # the entablature and both columns in one piece, printed upside down on the flat deck: each
+    # column's foot drops into a snug recess in the floor, so no column is glued on its own
+    zcol = ZPT - ENT_H
+    seats = [FT.column_seats(x, COL_Y, ZF, zcol, ("round", COL_R + 0.6)) for x in COL_X]
+    tie = union([M.cylinder(0.21, COL_R + 0.6, COL_R + 0.6, 36).translate([x, COL_Y, zcol - 0.01]) for x in COL_X])
+    ent = (PO["ent"] + union(PO["cols"]) + tie + union([a_ for a_, _, _ in seats])) - PAV.solid(grow=0.0, dz0=-1, dz1=1)
+    kit.add("PORTICO-top", "White", ent, P=print_flip(), group="portico")
+    kit.add("PORTICO-floor", "Cream", PO["floor"] - fnd - union([f_ for _, f_, _ in seats]), group="portico")
     for k, (rl, A) in enumerate(PO["rails"]):
         kit.add(f"BALCONY-rail-{k}", "White", rl, P=inv34(A), group="portico")
     fr = PAV.facades()[0]

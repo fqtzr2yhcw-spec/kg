@@ -24,7 +24,7 @@ import numpy as np
 from manifold3d import Manifold as M
 
 from hoarch.core import box, inv34, offset, poly, rect, slab, union
-from hoarch import openings as O, skins as SK, storefront as SF, trimwork as TW
+from hoarch import features as FT, openings as O, skins as SK, storefront as SF, trimwork as TW
 from hoarch.kit import Kit
 from hoarch.ornament import ext
 from hoarch.shell import Block, Opening, _corbel, foundation, stacked_shells, wall_shell
@@ -169,13 +169,17 @@ def build(kit=None):
     corb = M.revolve(poly(prof), 8).rotate([0, 0, 22.5]).translate([TC[0], TC[1], 0])
     k = math.sqrt(0.5)
     corb = corb.trim_by_plane([-k, -k, 0.0], -(C - 0.05) * k) - ring - st["shells"][0]     # flat against the corner
-    kit.add("CORBEL", "Plum", corb, group="turret")
     zb = ZF - 1.0                                  # it stands on the stone platform
     hc = zc0 - zb
+    # its base drops 1.0 mm into a recess in the platform and a round peg on its head 1.2 mm up
+    # into the corbel: both ends glued round their sides
+    col_add, col_floor, col_top = FT.column_seats(TC[0], TC[1], zb, zc0, ("round", 1.6 * 1.4), head=("round", 1.6),
+                                                  dfoot=1.0, dhead=1.2)
+    kit.add("CORBEL", "Plum", corb - col_top, group="turret")
     cprof = [(1.4 * r, z) for r, z in
              [(0, 0), (1.6, 0), (1.6, 0.8), (1.3, 1.1), (1.3, 1.8), (1.05, 2.3), (1.05, hc - 4.2), (1.3, hc - 3.6),
               (1.3, hc - 3.0), (1.1, hc - 2.8), (1.6, hc - 1.0), (2.1, hc - 0.4), (2.1, hc), (0, hc)]]
-    column = M.revolve(poly(cprof), 32).translate([TC[0], TC[1], zb])
+    column = M.revolve(poly(cprof), 32).translate([TC[0], TC[1], zb]) + col_add
     kit.add("COLUMN", "Iron", column, group="turret")
     # the turret's copper bell roof on a flared eave, and its finial
     rp = [(0.0, 0.0), (TV - 0.1, 0.0), (TV + 1.3, 1.4), (TV + 1.3, 2.2)]
@@ -208,7 +212,7 @@ def build(kit=None):
     Ac = fc.A.copy()
     Ac[:, 3] = fc.world(fc.L / 2, 0.0, 0.0)
     steps = box([-9.0, -ZF, 1.4], [9.0, -1.2, 9.4])                   # the door sill is one step up
-    kit.add("STEPS", "Stone", steps.transform(Ac), group="foundation")
+    kit.add("STEPS", "Stone", steps.transform(Ac) - col_floor, group="foundation")
 
     # --- signs, the double cornice (dying into the turret), coping, blade sign
     facs = MAIN.facades()
@@ -261,6 +265,9 @@ def build(kit=None):
     kit.add("ROOF", "Roof", deck - pocket - _turret_prism(ZR - 1, ZR + 5, grow=0.8), group="roof")
     ch = TW.chimney("stepped", w=cw, d=cd, h=round((zt + 10.0 - (zdk - 0.6)) / 0.2) * 0.2)
     kit.add("CHIMNEY", "Brick", ch.rotate([0, 0, 90]).translate([cx, cy, zdk - 0.6]), group="roof")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.crown(kit, "FINIAL", "TURRET-roof")
+    FT.key_into(kit, "BLADE", ["WALLS-2"], (0, 1, 0))
     print("specks dropped:", kit.drop_specks())
     return kit
 

@@ -303,6 +303,8 @@ def build(kit=None):
     A[:, 3] = f.world(u, -ZF, 2.0)                     # clear of the boulder courses
     kit.add("STEPS-back", "Granite", FT.steps(15.0, ZF - 0.6, 5).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.crown(kit, "TOWER-finial", "TOWER-roof")
     print("specks dropped:", kit.drop_specks())
     return kit
 

@@ -36,22 +36,22 @@ Studio: right-click the slider's 1.4 mm layer > Add color change). The hairline 
 to be there; they print as dark lines between the boards."""
 
 SHOPS = {
-    "pemberton": ("THE PEMBERTON BLOCK - BRICK COMMERCIAL BLOCK WITH A CAST-IRON STOREFRONT", """  1. FOUNDATION (the granite plinth, with a pad under the shop entry).
-  2. WALLS-1 (the whole ground floor, with the brick posts that stand behind the storefront's
+    "pemberton": ('THE PEMBERTON BLOCK - BRICK COMMERCIAL BLOCK WITH TWO CAST-IRON STOREFRONTS', """  1. FOUNDATION (the granite plinth, with a pad under each shop entry).
+  2. WALLS-1 (the whole ground floor, with the brick posts that stand behind the storefronts'
      inner columns) onto the foundation's locating lip.
-  3. VESTIBULE (the recessed entry with its doors) drops in from above onto the pad, behind
-     the entry. Then push the STOREFRONT's plug into the big opening from outside: the V
-     notches in its back slide over the brick posts.
-  4. SIGN over the storefront, then CORNICE-store above it (the lower double cornice); each
-     sits flat in the landing left in the brick.
+  3. VESTIBULE and VESTIBULE-2 (the recessed entries with their doors) drop in from above onto
+     the pads, behind the entries. Then push each STOREFRONT's plug into its opening from
+     outside: the V notches in its back slide over the brick posts.
+  4. SIGN (DRY GOODS) and SIGN-2 (BOOTS & SHOES) over the storefronts, then CORNICE-store
+     above them (the lower double cornice); each sits flat in the landing left in the brick.
   5. SILL-COURSE onto the lip at the top of WALLS-1, then WALLS-2 onto its lip.
   6. Windows and doors: push each plug into its opening from outside.
   7. ROOF drops inside the walls onto the ledge; the CHIMNEY stands in its pocket.
   8. FRIEZE, then CORNICE-top (the upper double cornice) on the front parapet; COPING on top of
      the walls; the TABLET stands on the coping at the centre of the front.
 """, """Colour changes (optional, each on a plate of its own colour):
-  SIGN: prints face-up. Black for the board, then at 1.0 mm change to gold: the letters and
-    the frame come out gilt on black.
+  SIGN and SIGN-2: print face-up. Black for the board, then at 1.0 mm change to gold: the
+    letters and the frame come out gilt on black.
   TABLET (on the Cream plate with the FRIEZE, which is finished by then): at 3.6 mm change to
     gold or a dark colour for the name, date and rim.
 """),
@@ -65,11 +65,11 @@ SHOPS = {
      the TABLET stands on the coping.
   5. Windows and doors: push each plug into its opening from outside.
   6. ROOF-L and ROOF-R rest on the walls' sloped tops, their front ends against the back of
-     the false front; RIDGE on top; the STOVEPIPE goes down through the hole in ROOF-R.
-  7. BOARDWALK along the front; the barber POLE at its curb, left of the door.
+     the false front; RIDGE on top; the STOVEPIPE down into its socket in the roof jack on ROOF-R.
+  7. BOARDWALK along the front; the barber POLE into its socket at the curb, left of the door.
 """, """Colour changes (optional, each on a plate of its own colour):
   AWNING: prints on its side, so its stripes are bands of height. Start red and change
-    filament every 2.2 mm (2.2, 4.4, 6.6 ... 30.8: 14 changes, red and white in turn). Or
+    filament every 2.2 mm (2.2, 4.4, 6.6 ... 52.8: 24 changes, red and white in turn). Or
     print it in one colour.
   SIGN: red for the board, then at 1.0 mm change to white for the letters and frame.
   TABLET: white, then at 3.6 mm change to navy for the date and rim.
@@ -118,13 +118,14 @@ SHOPS = {
   3. Push the two storefronts (STORE-FRONT, STORE-SIDE) into their openings from outside
      (their V notches slide over the posts); SIGN-front and SIGN-side above them.
   4. BELT onto the lip at the top of WALLS-1; the CORBEL goes under the belt at the corner,
-     on the COLUMN, which stands on the steps platform.
+     on the COLUMN, which stands in the recess in the steps platform (its head pegs up into
+     the corbel).
   5. WALLS-2 onto the belt's lip; the TURRET stands on the belt and corbel at the corner,
-     its back against the cut-away corner of WALLS-2. TURRET-roof on top, FINIAL in it.
+     its back against the cut-away corner of WALLS-2. TURRET-roof (its finial printed on it) on top.
   6. Windows and doors: push each plug into its opening from outside.
   7. ROOF (gravel) drops inside onto the ledge; the CHIMNEY stands in its pocket.
   8. FRIEZE-front / -side and CORNICE-front / -side on the top of the walls (their ends die
-     into the turret); COPING on top; the BLADE sign's wall plate on its landing beside the
+     into the turret); COPING on top; the BLADE sign's tongue into its slot in the wall beside the
      turret.
 """, """Colour changes (optional, each on a plate of its own colour):
   SIGN plate: plum boards, then at 1.0 mm change to cream for the letters and frames.
@@ -139,7 +140,7 @@ SHOPS = {
   4. The BRACKETs on their landings under the second floor; the BALCONY deck on them (it
      prints upside down); RAIL-front along its edge and the two RAIL-end pieces back to the
      wall (they print flat: stand them up).
-  5. SIGN, CAP and the CREST on the false front; the VSIGN's two wall plates on their
+  5. SIGN, CAP and the CREST on the false front; the VSIGN's tongue into its slot and its wall plates on their
      landings at the right-hand end.
   6. ROOF-L and ROOF-R on the walls' sloped tops against the back of the false front; RIDGE
      on top; the CHIMNEYs go down through their holes.
@@ -154,9 +155,9 @@ SHOPS = {
   3. Windows and doors: push each plug into its opening from outside.
   4. The COPING caps on the crow steps (the numbers match the steps from the bottom, L and
      R), the crown cap on top; the DATE stone under it; the SIGN over the shop window; the
-     BLADE (pretzel) sign's wall plate on its landing beside the window.
+     BLADE (pretzel) sign's tongue into its slot in the wall beside the window.
   5. ROOF-L and ROOF-R on the walls' sloped tops against the back of the stepped gable;
-     RIDGE on top; the CHIMNEY goes down through its hole.
+     RIDGE on top (its underside fits the two slopes); the CHIMNEY goes down through its hole.
 """, """Colour changes (optional, each on a plate of its own colour):
   SIGN: green board, then at 1.0 mm change to gold for the letters and frame.
   BLADE: prints lying flat. Black for the arm and plate, then at 0.8 mm change to gold for the
@@ -167,7 +168,7 @@ SHOPS = {
      parapet and the stepped side parapets) onto the belt's lip.
   3. Windows and doors: push each plug into its opening from outside (the fanlight goes over
      the front doors).
-  4. The SHUTTERs beside the upstairs front windows; the HOIST's wall plate over the loading
+  4. The SHUTTERs beside the upstairs front windows; the HOIST's tongue into its slot over the loading
      door; FRIEZE, CAP and the date PANEL on the front parapet.
   5. ROOF between the side parapets, its front end on the ledge behind the frieze and its
      back on the rear wall.
@@ -183,7 +184,7 @@ SHOPS = {
   4. BAY: push its back into the big ground-floor opening; it stands on the stone plinth.
      Windows and doors: push each plug into its opening from outside.
   5. SIGN between the stiles over the bay and the door; FRIEZE and CAP at the top of the
-     front; the BLADE (hat) sign's wall plate on the right-hand stile, upstairs.
+     front; the BLADE (hat) sign's tongue into its slot in the right-hand stile, upstairs.
   6. ROOF on the ledge inside the walls; MONITOR on the deck (it sits over the middle);
      CHIMNEY down through its pocket at the back; COPING on the side and rear walls.
   7. MANSARD on the front wall and the cap, its flat back flush with the inside of the
@@ -206,7 +207,7 @@ their flat backs, the BAY standing on its floor.
      push its flat back into its opening upstairs; ORIEL-roof on the oriel's cornice against
      the wall.
   5. FRIEZE and CAP at the top of the front; the date PANEL on the parapet over the cap; the
-     BLADE (pocket watch) sign's wall plate on the right-hand pier beside the arch.
+     BLADE (pocket watch) sign's tongue into its slot in the right-hand pier beside the arch.
   6. ROOF on the ledge inside the walls; CHIMNEY down through its pocket at the back; COPING
      on the side and rear walls.
   7. SIDEWALK against the base (the step goes in front of the door); CLOCK on the sidewalk
@@ -306,7 +307,7 @@ NOTES = {
      sits flat on its seat), WIN-dormer into its face, DORMER-roof on top; GABLE-trim (the
      sunburst and collar) on the wing gable's shingles over the attic window.
   8. Tower: the CORNICE-T parts round its top band (they stop where the main roof climbs
-     past); TOWER-SPIRE on the band's lip; TOWER-FINIAL in its seat at the tip.
+     past); TOWER-SPIRE (its finial printed on it) on the band's lip.
   9. Porch (round the front and the west side, past the tower): """ + top_porch("PORCH-roof-cap (the standing-seam tin)") + """;
      STOOP-back at the back door.
 """),
@@ -318,7 +319,7 @@ NOTES = {
   7. The CORNICE-E parts round the eave band; ROOF-main onto the lip at the wall tops; the
      CHIMNEYs down into their pockets.
   8. Cupola: CUPOLA-walls on the roof's flat top, its four twin windows, the CORNICE-CUP parts
-     round its top band, CUPOLA-roof on the band's lip and the CUPOLA-finial in its seat.
+     round its top band, CUPOLA-roof (its finial printed on it) on the band's lip.
   9. Porch: """ + top_porch("PORCH-roof-tin (the seamed tin)") + """; STOOP-back at the
      back door of the ell.
 """),
@@ -326,7 +327,7 @@ NOTES = {
         " (the first storey, the tower's first storey and the east bay)",
         " (the second storey and the whole tower above the joint)") + """
   5. Bay: the CORNICE-B parts round the bay's top band; BAY-roof (the deck) on them; the
-     BAY-crest strips along its edges.
+     BAY-crest strips into the grooves along its edges.
   6. The CORNICE-E parts round the eave band (the piece round the tower slides on from the
      front).
   7. MANSARD (it prints upside down) down over the walls onto the eave's crown, hugging the
@@ -334,7 +335,7 @@ NOTES = {
      (upside down) on the mansard's top, ROOF-deck into the curb; the CREST strips round the
      deck; the CHIMNEYs in their deck pockets.
   8. Tower: the CORNICE-T parts round its top band; TOWER-CAP (the concave mansard) on the
-     band's lip; TOWER-curb and TOWER-deck; the TOWER-crest strips; TOWER-finial.
+     band's lip; TOWER-curb and TOWER-deck (its finial printed on it); the TOWER-crest strips.
   9. Portico: """ + top_porch("PORCH-roof-tin (the seamed tin)") + """; STOOP-back at the
      back door.
 """),
@@ -343,7 +344,7 @@ NOTES = {
   6. The CORNICE-E parts round the eave band; ROOF-main onto the lip at the wall tops; the
      two CHIMNEYs in their pockets.
   7. Cupola: CUPOLA-walls on the roof's flat top, its eight windows, the CORNICE-CUP parts
-     round its top band, CUPOLA-roof on the band's lip and the CUPOLA-finial in its seat.
+     round its top band, CUPOLA-roof (its finial printed on it) on the band's lip.
   8. Veranda: """ + top_porch() + """; STOOP-back at the
      back door.
 """),
@@ -373,7 +374,7 @@ NOTES = {
   6. ROOF onto the lip along the eave walls, round the tower; the CHIMNEYs in their ridge
      pockets.
   7. Tower: the CORNICE-T parts round its top band (they stop where the main roof climbs
-     past); TOWER-roof (the cone) on the band's lip; TOWER-finial in its seat.
+     past); TOWER-roof (the cone, its finial printed on it) on the band's lip.
   8. Entrance loggia: PORCH-floor into the loggia; PORTAL (the great arch, printed on its
      back) round the loggia's arched opening; PORCH-deck on the loggia walls (it prints
      upside down), PORCH-parapet on the deck; STEPS-front and STEPS-back.
@@ -406,7 +407,7 @@ NOTES = {
   6. ROOF onto the lip along the eave walls, round the turret; the CHIMNEY in its pocket;
      GABLE-truss (the arch-braced Tudor truss) on the front gable's rake end.
   7. Turret: the CORNICE-T parts round its top band (they stop where the main roof climbs
-     past); TURRET-roof on the band's lip; TURRET-finial in its seat.
+     past); TURRET-roof (its finial printed on it) on the band's lip.
   8. Porch (round the front and the west side): """ + top_porch() + """;
      STOOP-back at the back door.
 """),
@@ -452,14 +453,13 @@ supports. The WALK strips and the GABLE-ornament print face-up.
   7. Tower: the CORNICE-T parts round its top band; TOWER-gablets (the ring of eight pointed
      gables) on the band's lip; TOWER-crown down into the ring; TOWER-lantern-core (the dark
      octagon) on the crown's flat top and the TOWER-lantern (the teal sleeve) down over it;
-     TOWER-spire on top; TOWER-finial on the flat at the spire's tip; TOWER-vane (the arrow)
-     on the top of the finial's rod.
+     TOWER-spire (the finial printed on its tip) on top; TOWER-vane (the arrow on its stem): the
+     stem plugs 5.5 mm down into the socket in the finial.
   8. Porch (round the tower): """ + top_porch("PORCH-roof-tin", lace=True) + """; PORCH-gable on the roof over
      the steps; STOOP-back at the back door.
 """, """The PORCH-deck and PORCH-top print upside down, the GABLE ornaments, the PORCH-gable, the
-PORCH-lace and the vane arrow face-up. The TOWER-gablets, TOWER-crown, lantern,
-core and spire print upright; the finial's rod and the gablet spikes are fine, so print them
-slowly or glue them with a drop of CA.
+PORCH-lace and the vane (arrow and stem) face-up. The TOWER-gablets, TOWER-crown, lantern,
+core and spire print upright; the gablet spikes are fine, so print them slowly.
 """),
     "twins": ("LAUREL & MYRTLE - SAN FRANCISCO ITALIANATE PAIR", """  1. FOUNDATION (the panelled raised basement under both houses).
   2. Each house (L = the cream Laurel, M = the sage Myrtle): its WALLS-1 onto the foundation's
@@ -472,10 +472,12 @@ slowly or glue them with a drop of CA.
      its wall top; each CHIMNEY into the pocket in its deck. The L-PEDIMENT stands on the
      Laurel's cornice over the bay; the M-CRESTING strips stand just inside the Myrtle's
      fascia along the front.
-  5. Porticoes: each house's COLUMNs on the stoop landing either side of the door, its
+  5. Porticoes: each house's COLUMNs in the recesses in the stoop landing either side of the
+     door (the peg on each capital goes up into its pocket under the portico), its
      PORTICO over them against the wall; the M-PORTICO-rail on the Myrtle's portico.
   6. Each STOOP up to its door, each STOOP-back at its back door; the RAILINGs in front of
-     the bays.
+     the bays (the long run's end tongues into the stoop's cheek, the short return's into the
+     basement).
 """, """The EAVE-roofs print upside down: the first 0.8 mm are the roof deck and the fascia's top
 fillet, so a filament change there (a dark grey, then the trim colour) gives a dark roof over
 a coloured cornice. The PORTICOs print on their backs, the PEDIMENT, CRESTING and RAILINGs
@@ -488,8 +490,8 @@ face-up (flat); the columns, the portico rail and the stoops upright.
      the wall tops, round the tower; CHIMNEY down through its pocket; GABLE (the pediment
      with the fan) on the wing's rake; DORMER-core into the back of the DORMER, the DORMER
      down into its pocket on the front slope (it sits flat on its seat), DORMER-roof on top.
-  7. Tower: the CORNICE-T parts round its top band; TOWER-roof (the bell-cast cone) on the
-     band's lip; TOWER-finial on the flat at the tip.
+  7. Tower: the CORNICE-T parts round its top band; TOWER-roof (the bell-cast cone, its
+     finial printed on it) on the band's lip.
   8. Porch: """ + top_porch(lace=True) + """; PORCH-pediment on the roof over the steps;
      STOOP-back at the back door.
 """, """The PORCH-deck and PORCH-top print upside down; the LOGGIA, the GABLE, the PORCH-pediment
@@ -504,8 +506,8 @@ roof and the finial upright.
      the wall tops, round the tower; CHIMNEY down through its pocket; the two GABLEs on the
      front and side gable rakes; DORMER-core into the back of the DORMER, the DORMER down
      into its pocket on the front slope, DORMER-roof on top.
-  6. Tower: the CORNICE-T parts round its top band; TOWER-roof (the swallowtail cone) on the
-     band's lip; TOWER-finial on the flat at the tip.
+  6. Tower: the CORNICE-T parts round its top band; TOWER-roof (the swallowtail cone,
+     its finial printed on it) on the band's lip.
   7. Porch: """ + top_porch(lace=True) + """; PORCH-gable on the roof over the steps;
      STOOP-back at the back door.
 """, """The PORCH-deck and PORCH-top print upside down; the GABLEs, the PORCH-gable and the
@@ -519,8 +521,8 @@ upright.
   6. The CORNICE-E parts round the eave band (they stop at the tower); ROOF onto the lip at
      the wall tops, round the tower; CHIMNEY down through its pocket; the two GABLEs on the
      rakes.
-  7. Tower: the CORNICE-T parts round its top band; TOWER-roof (the bell) on the band's lip;
-     TOWER-finial (the spike) on the flat at the tip.
+  7. Tower: the CORNICE-T parts round its top band; TOWER-roof (the bell, its spike
+     finial printed on it) on the band's lip.
   8. Porch: """ + top_porch() + """; PORCH-pediment on the roof over the steps;
      STOOP-back at the back door.
   9. Forecourt: the FORECOURT in front of the steps. Each street lamp: drop its LAMP-glass
@@ -549,8 +551,8 @@ their backs); the dormers, their roofs and the chimney upright.
   5. The CORNICE-E parts round the eave band (they stop at the tower); ROOF onto the lip at
      the wall tops, round the tower; CHIMNEY down through its pocket; GABLE (the star
      ornament) on the front gable's rake.
-  6. Tower: the CORNICE-T parts round its top band; TOWER-roof (the pyramid) on the band's
-     lip; TOWER-finial (the pineapple) on the flat at the tip.
+  6. Tower: the CORNICE-T parts round its top band; TOWER-roof (the pyramid, its
+     pineapple finial printed on it) on the band's lip.
   7. Porch: """ + top_porch(lace=True) + """; STOOP-back at the back door.
 """, """The PORCH-deck and PORCH-top print upside down; the GABLE and the PORCH-lace face-up (on
 their backs); the tower roof, the finial and the chimney upright.
@@ -581,16 +583,17 @@ the chimney upright.
      (the round-headed French window over the portico and the oculus in the pediment too); a
      pair of SHUTTERs beside each shuttered window.
   5. The portico: PORTICO-floor against the front of the pavilion; the two PORTICO-pilasters
-     flat on the wall either side of the door; the two PORTICO-columns on the floor;
-     PORTICO-roof on the columns and pilasters against the wall; the three BALCONY-rail runs on
-     its deck (the front, then the two returns); STEPS-front.
+     flat on the wall either side of the door; PORTICO-top (the entablature, deck and both
+     columns in one piece, so no column is glued on its own) lowered onto the floor, each
+     column's foot into its recess, its back against the wall and the pilasters; the three
+     BALCONY-rail runs on its deck (the front, then the two returns); STEPS-front.
   6. The CORNICE-E parts round the eave band; PEDIMENT (the white tympanum with its raking
      cornices) on the gable wall round the oculus.
   7. ROOF onto the lip at the wall tops; a CHIMNEY into each end pocket; each DORMER-core into
      its DORMER, the DORMERs into their pockets on the front slope, a DORMER-roof on each.
   8. STOOP-back at the back door.
-""", """The PORTICO-roof and the cornices' upper parts print upside down; the columns upright (brim
-on); the pilasters, the balcony rails and the PEDIMENT flat on their backs; the dormers, the
+""", """The PORTICO-top (on its flat deck, the columns standing up; brim on) and the cornices' upper
+parts print upside down; the pilasters, the balcony rails and the PEDIMENT flat on their backs; the dormers, the
 chimneys and the roof upright.
 """),
     "westbrook": ("THE WESTBROOK - COLONIAL REVIVAL WITH A BOWED PORTICO", """  1. FOUNDATION (rubble under a dressed cap).
@@ -601,15 +604,16 @@ chimneys and the roof upright.
   4. Windows and doors: clip off the supports and push each plug into its opening from outside
      (the fanlit entrance and the French doors under the portico, the pair onto the balcony);
      a pair of SHUTTERs beside each shuttered window.
-  5. The portico: PORTICO-floor against the front (see the deck note); the six PORTICO-columns
-     on it; PORTICO-roof on the columns against the wall; BALCONY-rail on its edge (its two
-     straight ends run back to the wall); STEPS-front.
+  5. The portico: PORTICO-floor against the front (see the deck note); PORTICO-top (the curved
+     entablature, deck and all six columns in one piece, so no column is glued on its own)
+     lowered onto it, each column's foot into its recess in the planks, its ends against the
+     wall; BALCONY-rail on its edge (its two straight ends run back to the wall); STEPS-front.
   6. The CORNICE-E parts round the eave band; ROOF onto the lip at the wall tops; a CHIMNEY
      into each pocket at the ridge; each DORMER-core into its DORMER, the DORMERs into their
      pockets, a DORMER-roof on each.
   7. STOOP-back at the back door.
-""", """The PORTICO-roof and the PORTICO-floor print upside down; the columns and the balustrade
-upright (brim on); the dormers, the chimneys and the roof upright.
+""", """The PORTICO-top (on its flat deck, the columns standing up; brim on) and the PORTICO-floor
+print upside down; the balustrade upright; the dormers, the chimneys and the roof upright.
 """),
     "pennock": ("THE PENNOCK - PENNSYLVANIA FIELDSTONE COLONIAL", """  1. FOUNDATION (dry-laid ledgestone).
   2. WALLS-1 onto the foundation's lip (the kitchen ell at the back is part of it). Round the
@@ -641,16 +645,18 @@ the stoop and the roofs upright. The datestone (J P 1768) is carved in the west 
   4. Windows and doors: clip off the supports and push each plug into its opening from outside
      (the entrance, the French doors onto the balcony and the terrace); a pair of SHUTTERs
      beside each shuttered window.
-  5. BALCONY on the joint cornice over the entrance; its three BALCONY-rail runs on it.
+  5. BALCONY on the joint cornice over the entrance; its three BALCONY-rail runs into the
+     grooves along its edges.
   6. The CORNICE-E parts round the eave band (they stop at the portico).
   7. The portico: PORTICO-base against the basement, PORTICO-floor on it (see the deck note),
-     STEPS-front; the four PORTICO-columns on the floor; PORTICO-beam on the columns, its ends
+     STEPS-front; the four PORTICO-columns, each foot into its recess in the floor;
+     PORTICO-beam on the columns (the peg on each capital goes up into its pocket), its ends
      against the wall; the CORNICE-P parts round the beam; PORTICO-ceiling up inside the beam.
   8. ROOF onto the lip at the wall tops (its front runs out over the portico as the
      pediment's roof); PEDIMENT on the beam under it; a CHIMNEY into each pocket; each
      DORMER-core into its DORMER, the DORMERs into their pockets on the end slopes, a
      DORMER-roof on each.
-  9. CUPOLA into the pocket on the ridge, CUPOLA-dome on it, CUPOLA-finial on top.
+  9. CUPOLA into the pocket on the ridge, CUPOLA-dome (its finial printed on it) on it.
  10. STOOP-back at the back door.
 """, """The PORTICO-floor, the TERRACE-deck and the PORTICO-ceiling print upside down; the columns
 upright (brim on); the railings, the balustrade runs and the PEDIMENT flat on their backs;
@@ -667,7 +673,8 @@ the beam, the cupola, the dome, the dormers, the chimneys and the roof upright.
      sweeps out over the porch. A CHIMNEY into each pocket at the ends of the ridge.
   6. DORMER-core into the DORMER, the DORMER into its pocket on the back slope, DORMER-roof on it.
   7. The porch: PORCH-base against the front, PORCH-deck on it (see the deck note), the six
-     PORCH-posts on the deck, PORCH-beam on the posts under the kick; STEPS-front.
+     PORCH-posts, each plinth into its recess in the deck; PORCH-beam on the posts under the
+     kick (the peg on each post's cap goes up into its pocket); STEPS-front.
   8. STOOP-back at the back door.
 """, """The ROOF prints standing on its west end (its section is the same all along, so the kick
 and the eaves need no support); the PORCH-deck upside down; the DORMER-roof lying on its
@@ -708,8 +715,8 @@ and the millstone step upright.
   3. JOINT onto WALLS-1: the girt. At the front it runs out 5 mm past the brick wall; that
      overhang (the jetty) carries the upper storey.
   4. WALLS-2 onto the JOINT's lip: the clapboard upper storey and both gables in one part.
-  5. The six DROPs (turned acorns) under the jetty's edge: two at the corners, four between the
-     windows.
+  5. The six DROPs (turned acorns) under the jetty's edge, each tongue up into its pocket: two
+     at the corners, four between the windows.
   6. Windows and doors: clip off the supports and push each plug into its opening from outside
      (segmental-arched lights below, key-capped lights above, small lights in the gables, a
      Tudor-arched door front and back).
@@ -734,8 +741,8 @@ chimneys print upright.
      eave (they stop against the tower), the CORNICE-T parts round the tower's top.
   6. ROOF onto the lip at the wall tops; CHIMNEY into its pocket; each DORMER-core into its DORMER,
      the DORMERs into their pockets, a DORMER-roof on each and a DORMER-urn in the gap of each
-     broken pediment.
-  7. TOWER-roof onto the tower's cornice, the TOWER-finial on its neck.
+     broken pediment, its tongue into the slot in the dormer's face.
+  7. TOWER-roof (its finial printed on it) onto the tower's cornice.
   8. The porch: """ + top_porch(lace=True).replace("post", "column").replace("beams, columns", "beams, pedestals, columns") + """;
      PORCH-pediment over the steps.
   9. STOOP-back at the back door.
@@ -765,3 +772,4 @@ PORCH-lace pieces face-up.
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
 
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}
+SHOPS = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in SHOPS.items()}

@@ -264,6 +264,8 @@ def build(kit=None):
     A[:, 3] = f.world(u, -ZF, 1.4)
     kit.add("STOOP-back", "Brick", FT.steps(17.0, ZF - 0.6, 5).transform(A), group="porch")
     print("porch", round(time.time() - t0, 1))
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.crown(kit, "CUPOLA-finial", "CUPOLA-roof")
     print("specks dropped:", kit.drop_specks())
     return kit
 

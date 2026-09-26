@@ -1255,6 +1255,99 @@ def add_porch_top(kit, tag, P, keep, roof_col, frame_col, tin_col=None, arcade_c
     return dict(top=part, cap=cap, ptop=ptop)
 
 
+def column_seats(x, y, z0, z1, foot, head=None, dfoot=1.2, dhead=1.0, clr=0.15, seg=36):
+    """Seats for a column standing at (x, y) from z0 up to z1, so that no end is a bare butt
+    joint on a dab of glue: the foot runs ``dfoot`` down into a snug recess in the floor and,
+    with ``head``, the top runs ``dhead`` up into a pocket in the beam over it. The glue goes
+    round the sides, out of sight. ``foot``/``head``: ("round", r) or ("square", half-width).
+    Returns (add, floor_cut, top_cut): the solid to union to the column and the sockets to cut
+    from the floor and the beam (top_cut is None without ``head``)."""
+    def shape(sp, za, zb, g):
+        kind, r = sp
+        if kind == "round":
+            return M.cylinder(zb - za, r + g, r + g, seg).translate([x, y, za])
+        return box([x - r - g, y - r - g, za], [x + r + g, y + r + g, zb])
+    add = [shape(foot, z0 - dfoot, z0 + 0.01, 0.0)]
+    floor_cut = shape(foot, z0 - dfoot, z0 + 1.0, clr)
+    top_cut = None
+    if head is not None:
+        add.append(shape(head, z1 - 0.01, z1 + dhead, 0.0))
+        top_cut = shape(head, z1 - 1.0, z1 + dhead, clr)
+    return union(add), floor_cut, top_cut
+
+
+def _grow(sol, g):
+    """``sol`` grown by about ``g`` each way (the union of six nudged copies)."""
+    return union([sol] + [sol.translate([g * x, g * y, g * z]) for x, y, z in
+                          ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))])
+
+
+def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
+    """Give part ``name`` a glue joint it cannot miss: find the gap along the unit vector ``d``
+    to the parts named in ``into``, and run the part's face on across that gap and ``depth``
+    into them.
+      - conform=False: a tongue, and a snug socket (``clr`` all round) cut in those parts for
+        it (a blade sign into its wall, drops into the soffit, a rail into its deck);
+      - conform=True: the part's face simply runs on up to theirs and takes its shape (a
+        flight of steps against the stonework of a foundation), glued over the whole face.
+    Only the strip in front of those parts and inside them is added, so the part's ornament
+    is untouched. Returns the gap it closed (mm)."""
+    parts = {p.name: p for p in kit.parts}
+    pt = parts[name]
+    pb = np.array(pt.solid.bounding_box())
+    near = box(list(pb[:3] - depth - 5.0), list(pb[3:] + depth + 5.0))     # only the target round the part
+    tgt = union([parts[n].solid ^ near for n in into])
+    d = np.asarray(d, float) / np.linalg.norm(d)
+    hi = next((t for t in np.arange(0.2, 4.01, 0.2) if (pt.solid.translate(list(d * t)) ^ tgt).volume() > 1e-3), None)
+    if hi is None:
+        raise ValueError(f"{name}: nothing of {into} within 4 mm along {d}")
+    lo = hi - 0.2
+    for _ in range(10):                                  # the gap, by bisection
+        mid = (lo + hi) / 2
+        if (pt.solid.translate(list(d * mid)) ^ tgt).volume() > 1e-3:
+            hi = mid
+        else:
+            lo = mid
+    gap = lo
+    L = gap + depth
+    sweep = union([pt.solid.translate(list(d * t)) for t in np.arange(step, L + 1e-9, step)] + [pt.solid.translate(list(d * L))])
+    strip = union([tgt.translate(list(-d * t)) for t in np.arange(0.0, gap + 0.25, 0.1)])
+    tongue = (sweep - pt.solid) ^ strip
+    n0 = len(pt.solid.decompose())
+    keep = [c for c in tongue.decompose() if c.volume() > 1e-3 and len((pt.solid + c).decompose()) <= n0]
+    tongue = union(keep) if keep else M()                  # only what joins the part
+    if conform:
+        pt.solid = (pt.solid + tongue) - tgt
+    else:
+        pt.solid = pt.solid + tongue
+        sock = _grow(tongue ^ tgt, clr)
+        for n in into:
+            parts[n].solid = parts[n].solid - sock
+    return gap
+
+
+def crown(kit, fin, roof, pin=0.6):
+    """Print finial ``fin`` in one piece with the roof it tops (both upright), so nothing tiny
+    is glued at the tip: a hidden pin joins them, and when the colours differ the roof takes
+    one filament change at its tip (roof colour below, the finial's colour above)."""
+    from .kit import I34
+    parts = {p.name: p for p in kit.parts}
+    f, r = parts[fin], parts[roof]
+    assert r.change is None and np.allclose(np.asarray(r.P), np.asarray(I34)) and np.allclose(np.asarray(f.P), np.asarray(I34)), (fin, roof)
+    fb, rb = f.solid.bounding_box(), r.solid.bounding_box()
+    c = ((fb[0] + fb[3]) / 2, (fb[1] + fb[4]) / 2)
+    tie = M.cylinder(1.6, pin, pin, 16).translate([c[0], c[1], fb[2] - 1.0])
+    old, n0 = r.solid, len(r.solid.decompose())
+    r.solid = old + f.solid + tie
+    assert len(r.solid.decompose()) <= n0, (fin, "does not join", roof)
+    if f.color != r.color:
+        h = math.ceil((rb[5] - rb[2]) / 0.2 - 1e-6) * 0.2
+        r.change = (round(h, 1), f.color)
+        r.render = (r.render or [(r.color, old)]) + [(f.color, f.solid)]
+    kit.parts.remove(f)
+    return r
+
+
 def entry_pediment(w, depth, rise, t=1.0, fan=True):
     """A small gabled pediment for a porch entry, standing on the porch roof over the steps:
     a triangular gable face ``w`` wide with a raised rim and a half-round fan on its base, and

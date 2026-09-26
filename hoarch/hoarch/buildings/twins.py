@@ -451,23 +451,30 @@ def build(kit=None):
         tg = H["tag"]
         Ad = _door_frame(H, z=ZF)
         canopy, _ = portico_canopy(H)
-        kit.add(f"{tg}-PORTICO", H["trim"], canopy.transform(Ad), P=inv34(Ad), group=f"portico-{tg}")
+        # each column's plinth drops 1.2 mm into a recess in the stoop's landing and a square peg
+        # on its abacus 1.0 mm up into a pocket in the portico: both ends glued round their sides
+        seats = []
         for sg in (-1, 1):
+            Ac = Ad.copy()
+            Ac[:, 3] = Ad[:, 3] + Ad[:, 0] * sg * UC + Ad[:, 2] * 6.0
+            seats.append((sg, Ac, FT.column_seats(Ac[0, 3], Ac[1, 3], Ac[2, 3], Ac[2, 3] + PH,
+                                                  ("square", 1.6 if tg == "L" else 1.9), head=("square", 1.2))))
+        kit.add(f"{tg}-PORTICO", H["trim"], canopy.transform(Ad) - union([s_[2] for _, _, s_ in seats]), P=inv34(Ad),
+                group=f"portico-{tg}")
+        for sg, Ac, (add, _, _) in seats:
             if tg == "L":
                 col = corinthian(PH, 1.1)
             else:
                 col = fluted(PH, 1.4, square=True)
-            Ac = Ad.copy()
-            Ac[:, 3] = Ad[:, 3] + Ad[:, 0] * sg * UC + Ad[:, 2] * 6.0
             Acol = np.array([[1.0, 0, 0, Ac[0, 3]], [0, 1.0, 0, Ac[1, 3]], [0, 0, 1.0, Ac[2, 3]]])
-            kit.add(f"{tg}-COLUMN-{'ab'[sg > 0]}", H["trim"], col.transform(Acol), key=f"{tg}-COLUMN", group=f"portico-{tg}")
+            kit.add(f"{tg}-COLUMN-{'ab'[sg > 0]}", H["trim"], col.transform(Acol) + add, key=f"{tg}-COLUMN", group=f"portico-{tg}")
         if tg == "M":
             Ar = Ad.copy()
             Ar[:, 3] = Ad[:, 3] + Ad[:, 1] * (PH + 5.0)
             kit.add("M-PORTICO-rail", "Forest", portico_rail(H).transform(Ar), group="portico-M")
         sw = stoop(H).transform(_door_frame(H, z=0.0))
         door = next(p.solid for p in kit.parts if p.name == f"DOOR-{tg}-door")
-        kit.add(f"{tg}-STOOP", "Stone", sw - fnd - H["walls1"] - door, group=f"stoop-{tg}")
+        kit.add(f"{tg}-STOOP", "Stone", sw - fnd - H["walls1"] - door - union([s_[1] for _, _, s_ in seats]), group=f"stoop-{tg}")
         # a plain flight down from the back door
         e, u = H["main"].locate(H["X"](44.0), D)
         f = H["main"].facades()[e]
@@ -487,6 +494,11 @@ def build(kit=None):
         for k, ((x, y), (ux, uy), L_) in enumerate(runs):
             A = np.array([[ux, 0.0, uy, x], [uy, 0.0, -ux, y], [0.0, 1.0, 0.0, 0.0]])
             kit.add(f"{tg}-RAILING-{k}", "Iron", EX.iron_fence(L_).transform(A), P=inv34(A), group=f"extras-{tg}")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.key_into(kit, "L-RAILING-0", ["L-STOOP"], (1, 0, 0))
+    FT.key_into(kit, "M-RAILING-0", ["M-STOOP"], (-1, 0, 0))
+    FT.key_into(kit, "L-RAILING-1", ["FOUNDATION"], (0, 1, 0))
+    FT.key_into(kit, "M-RAILING-1", ["FOUNDATION"], (0, 1, 0))
     print("specks dropped:", kit.drop_specks())
     return kit
 

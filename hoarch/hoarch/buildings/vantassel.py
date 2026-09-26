@@ -264,14 +264,18 @@ def build(kit=None):
     kit.add("PORCH-base", "Boulder", pb - fnd, group="porch")
     ppts = [(-0.5, -1.7), (-0.5, -FL + 1.0), (W + 0.5, -FL + 1.0), (W + 0.5, -1.7)]
     planks = FT.porch_planks(ppts, [0, 1, 2], H=ZF, pitch=1.6, crack=0.25, border=1.4, along=(0.0, -1.0))
-    deck = (slab(poly(ppts), ZF - 2.2, ZF - 1.19) + planks) - fnd
-    kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch", render=FT.plank_zones(deck, ZF, "Planks", "PorchDeck"))
     xs = [4.0 + (W - 8.0) * k / 5 for k in range(6)]
+    # each post's plinth drops 1.2 mm into a recess in the deck and a square peg on its cap
+    # 1.2 mm up into a pocket in the beam: both ends glued round their sides
+    seats = [FT.column_seats(x, POST_Y, ZF, BEAM_Z0, ("square", 1.9), head=("square", 0.8), dhead=1.2) for x in xs]
+    deck = (slab(poly(ppts), ZF - 2.2, ZF - 1.19) + planks) - fnd - union([f_ for _, f_, _ in seats])
+    kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch", render=FT.plank_zones(deck, ZF, "Planks", "PorchDeck"))
     for k, x in enumerate(xs):
-        kit.add(f"PORCH-post-{k}", "Cream", C.post_dutch(BEAM_Z0 - ZF).translate([x, POST_Y, ZF]), key="PORCH-post", group="porch")
+        kit.add(f"PORCH-post-{k}", "Cream", C.post_dutch(BEAM_Z0 - ZF).translate([x, POST_Y, ZF]) + seats[k][0],
+                key="PORCH-post", group="porch")
     beam = box([-RG + 1.0, POST_Y - 1.6, BEAM_Z0], [W + RG - 1.0, POST_Y + 1.6, Z_KB + 1.9]) - env
     beam = beam + box([-RG + 1.0, POST_Y - 1.9, BEAM_Z0], [W + RG - 1.0, POST_Y + 1.9, BEAM_Z0 + 0.8])
-    kit.add("PORCH-beam", "Cream", beam, group="porch")
+    kit.add("PORCH-beam", "Cream", beam - union([t_ for _, _, t_ in seats]), group="porch")
     fr = MAIN.facades()[0]
     A = fr.A.copy()
     A[:, 3] = fr.world(XC, -ZF, FL - 1.0 + 0.9)
@@ -281,6 +285,8 @@ def build(kit=None):
     A = fb.A.copy()
     A[:, 3] = fb.world(u, -ZF, 1.4)
     kit.add("STOOP-back", "Boulder", FT.steps(15.0, ZF - 0.6, 3).transform(A) - fnd, group="stoop")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.key_into(kit, "STEPS-front", ["PORCH-base"], (0, 1, 0), depth=0.8, conform=True)
     print("specks dropped:", kit.drop_specks())
     print("porch", round(time.time() - t0, 1))
     return kit

@@ -435,6 +435,8 @@ def build(kit=None):
         kit.add(f"LAMP-{k}", "Black", std.translate(p), group="extras")
         kit.add(f"LAMP-glass-{k}", "Lamp", glass.translate(p), group="extras")
         kit.add(f"LAMP-cap-{k}", "Black", cap.translate(p), group="extras")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.crown(kit, "TOWER-finial", "TOWER-roof")
     print("specks dropped:", kit.drop_specks())
     return kit
 

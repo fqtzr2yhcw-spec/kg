@@ -226,6 +226,8 @@ def build(kit=None):
         zlow = round(zlow / 0.2) * 0.2
         ch = TW.chimney("slab", w=cwid, d=cwid, h=round((zr + 6.0 - zlow) / 0.2) * 0.2).translate([x, y, zlow])
         kit.add(f"CHIMNEY-{k}", "Brick", ch, key="CHIMNEY", group="roof")
+    # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
+    FT.key_into(kit, "VSIGN", ["WALLS-3"], (0, 1, 0))
     print("specks dropped:", kit.drop_specks())
     return kit
 
