@@ -152,26 +152,24 @@ def frieze_torches(L, h, b, pitch, margin, pair, half):
     return out, []
 
 
-def frieze_eggdart(L, h, b, pitch, margin, pair, half):
-    """Egg and dart: a row of eggs, each in its raised shell, with a dart hanging between
-    each pair."""
+def frieze_waterleaf(L, h, b, pitch, margin, pair, half):
+    """Waterleaf and tongue: broad upright leaves, each with a sunk midrib, a round-topped
+    tongue standing between each pair, a fillet along the foot."""
     v0, v1 = 0.6, h - 0.6
-    vm = (v0 + v1) / 2
-    ry = (v1 - v0) / 2
-    step = 2.9
+    step = 2.8
     n = max(1, int((L - margin * 0.6) / step))
     ua = (L - n * step) / 2 + step / 2
-    out = []
+    out = [_st(rect(margin * 0.3, v0, L - margin * 0.3, v0 + 0.4), b, 0.25)]
     for k in range(n):
         u = ua + k * step
-        shell = oval((u, vm), 1.2, ry, 28) - oval((u, vm), 0.75, ry - 0.45, 28)
-        out.append(_st(shell, b, 0.3))
-        out.append(_st(oval((u, vm - 0.05), 0.62, ry - 0.6, 24), b, 0.55))
+        ts = np.linspace(0.0, 1.0, 12)
+        right = [(u + 1.0 * math.sin(math.pi * (0.15 + 0.85 * t)) * (1 - 0.35 * t), v0 + 0.35 + (v1 - v0 - 0.4) * t) for t in ts]
+        left = [(2 * u - x, y) for x, y in reversed(right)]
+        leaf = poly(right + left) - rect(u - 0.2, v0 + 0.8, u + 0.2, v1 - 0.9)
+        out.append(_st(leaf, b, 0.5))
         if k < n - 1:
-            ud = u + step / 2
-            dart = cs_union([rect(ud - 0.2, vm - 0.2, ud + 0.2, v1 - 0.1),
-                             poly([(ud - 0.45, vm), (ud + 0.45, vm), (ud, vm - ry * 0.75)])])
-            out.append(_st(dart, b, 0.35))
+            ut = u + step / 2
+            out.append(_st(cs_union([rect(ut - 0.3, v0 + 0.35, ut + 0.3, v1 - 1.3), circle((ut, v1 - 1.3), 0.3, 12)]), b, 0.3))
     return out, []
 
 
@@ -186,7 +184,7 @@ def bracket_ogee(h, d, t):
     return cs_union([body, circle((d - 0.45, -hn - 0.15), 0.45, 14)])
 
 
-CO.FRIEZE_EXTRA.update(lyres=frieze_lyres, torches=frieze_torches, eggdart=frieze_eggdart)
+CO.FRIEZE_EXTRA.update(lyres=frieze_lyres, torches=frieze_torches, waterleaf=frieze_waterleaf)
 TW.BRACKET_EXTRA.update(ogee=bracket_ogee)
 TW.FOUNDATION_EXTRA.update(cobble=foundation_cobble)
 
@@ -571,26 +569,33 @@ def dormer_broken(w=15.0, dep=18.0, hwall=12.0, pitch=1.0):
     body = body + ext(arch, -0.01, 0.6)
     body = body + ext(poly([(-0.6, 1.8 + lh - 0.2), (0.6, 1.8 + lh - 0.2), (0.85, 1.8 + lh + 1.3), (-0.85, 1.8 + lh + 1.3)]), -0.01, 1.0)
     body = body + chamfer_box(-r - 1.4, 0.9, r + 1.4, 1.8, -0.01, 1.0, c=0.3, bottom=0.8)
-    # the cornice across, the raking cornices broken short of the apex, the urn in the gap
-    body = body + chamfer_box(-w / 2 - 0.5, hwall - 0.8, w / 2 + 0.5, hwall + 0.4, -0.01, 1.3, c=0.35, bottom=0.8)
-    gap = 2.4
+    # the cornice across, the raking cornices broken well short of the apex (the urn, its own
+    # part, stands in the gap on a plinth)
+    body = body + chamfer_box(-w / 2 - 0.5, hwall - 0.8, w / 2 + 0.5, hwall + 0.4, -0.01, 1.4, c=0.35, bottom=0.8)
+    gap = 4.4
+    va = hwall + rise
     for sg in (-1, 1):
         a = (sg * (w / 2 + 0.5), hwall + 0.4)
-        b = (sg * gap / 2, hwall + rise - gap / 2 * pitch)
-        rake = poly([a, b, (b[0], b[1] - 1.2), (a[0], a[1] - 1.2)]) if sg < 0 else poly([b, a, (a[0], a[1] - 1.2), (b[0], b[1] - 1.2)])
-        body = body + ext(rake, -0.01, 1.2)
-    zu = hwall + rise - gap / 2 * pitch - 1.2
-    urn = cs_union([rect(-0.8, zu - 0.01, 0.8, zu + 0.5), poly([(-0.5, zu + 0.5), (0.5, zu + 0.5), (1.0, zu + 1.6), (0.7, zu + 2.4),
-                                                               (-0.7, zu + 2.4), (-1.0, zu + 1.6)]),
-                    rect(-0.25, zu + 2.39, 0.25, zu + 2.9), circle((0.0, zu + 3.1), 0.35, 12)])
-    body = body + ext(urn ^ face.offset(-0.01), -0.01, 1.0)
+        b = (sg * gap / 2, va - gap / 2 * pitch)
+        for dh, d0, d1 in ((1.5, -0.01, 1.2), (0.6, 1.19, 1.6)):
+            rk = poly([a, b, (b[0], b[1] - dh), (a[0], a[1] - dh)])
+            if sg > 0:
+                rk = poly([b, a, (a[0], a[1] - dh), (b[0], b[1] - dh)])
+            body = body + ext(rk ^ face.offset(1.0, JoinType.Miter, 4.0), d0, d1)
     side = poly([(0.0, 0.3), (0.0, hwall - 0.2), (-dep, hwall - 0.2), (-dep, 0.3)])
     tex = shingles_undulating(side, datum=0.3, pitch=1.4, wtab=1.6, d=0.35, amp=0.3, wave=9.0)
     for sg in (-1, 1):
         Ac = np.array([[0, 0, sg * 1.0, sg * (w / 2 - 0.02)], [0, 1.0, 0, 0], [1.0, 0, 0, 0]])
         body = body + tex.transform(Ac)
     core = ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, hwall), -dep + 1.2, -1.2)
-    return body, core, face
+    # the urn: a square plinth set in the gap against the tympanum, a turned urn on it
+    from . import porchwork as PW
+    vp = va - gap / 2 * pitch - 1.5
+    plinth = box([-1.3, 0.0, 0.0], [1.3, 1.6, 1.2])
+    urn = PW._revolve([(0.0, 1.19), (0.9, 1.19), (0.9, 1.5), (0.45, 1.9), (0.5, 2.3), (1.05, 3.1), (1.05, 3.6),
+                       (0.7, 4.2), (0.35, 4.5), (0.5, 4.8), (0.5, 5.1), (0.25, 5.4), (0.0, 5.6)], 24).translate([0.0, 1.1, 0.0])
+    urn = (plinth + urn).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, vp], [0, 1.0, 0, 0]]))
+    return body, core, face, urn
 
 
 def entry_segmental(w, depth, rise, t=1.0):

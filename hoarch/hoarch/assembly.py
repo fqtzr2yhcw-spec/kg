@@ -717,6 +717,29 @@ and the millstone step upright.
 """, """The cornices' upper parts and the acorn drops print upside down; the walls, the roof and the
 chimneys print upright.
 """),
+    "ellsworth": ("THE ELLSWORTH - COLONIAL REVIVAL WITH A TOWER", """  1. FOUNDATION (cobblestones in rows).
+  2. WALLS-1 onto the foundation's lip: the whole first storey and the tower's first storey in one
+     part.
+  3. JOINT onto WALLS-1, then WALLS-2 onto its lip: the second storey and the tower's upper two
+     stages in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (divided-sash windows below, six-over-one windows above, round-headed lights in the tower,
+     the leaded doorway front and back). The two TOWER-panels go on the bare fields of the
+     tower's top stage.
+  5. The CORNICE-J parts round the storey joint (tower included), the CORNICE-E parts round the
+     eave (they stop against the tower), the CORNICE-T parts round the tower's top.
+  6. ROOF onto the lip at the wall tops; CHIMNEY into its pocket; each DORMER-core into its DORMER,
+     the DORMERs into their pockets, a DORMER-roof on each and a DORMER-urn in the gap of each
+     broken pediment.
+  7. TOWER-roof onto the tower's cornice, the TOWER-finial on its neck.
+  8. The porch: PORCH-deck against the foundation; the PORCH-frames (pedestals, columns and
+     railings) into the sockets in the deck; the PORCH-friezes into the slots at the column
+     tops; PORCH-roof on top, PORCH-roof-top on it; PORCH-pediment over the steps; the steps.
+  9. STOOP-back at the back door.
+""", """The cornices' upper parts, the porch deck and the porch roof print upside down; the walls,
+the roofs, the tower roof, the dormers, the urns, the chimney and the porch frames print
+upright; the porch friezes print on their top edges.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

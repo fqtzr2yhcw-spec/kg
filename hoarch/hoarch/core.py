@@ -435,6 +435,14 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 a_, b_ = u + gap / 2, u + wtab - gap / 2
                 q = min(0.6, (b_ - a_) * 0.4)
                 tabs.append(poly([(a_, vk), (b_ - q, vk), (b_, vk + q), (b_, top), (a_, top)]))
+            elif shp == "ogee":           # an ogee point: each butt curving down in an S from its corners to a point (the Ellsworth)
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                c = (a_ + b_) / 2
+                dd = min(0.9, (b_ - a_) * 0.45)
+                ts_ = np.linspace(0.0, 1.0, 7)
+                left = [(a_ + (c - a_) * t, vk + dd * (1 - (3 * t * t - 2 * t ** 3))) for t in ts_]
+                right = [(c + (b_ - c) * t, vk + dd * (3 * t * t - 2 * t ** 3)) for t in ts_[1:]]
+                tabs.append(poly(left + right + [(b_, top), (a_, top)]))
             elif shp == "stagger":        # square butts of random width, some shorter than their neighbours
                 h_ = (int(u * 7.3 + k * 3.1) % 5)
                 low = 0.4 if h_ % 2 else 0.0
