@@ -628,6 +628,30 @@ upright (brim on); the dormers, the chimneys and the roof upright.
 bed); the DORMER-roofs stand on their front ends; the settles, the dormers, the chimneys,
 the stoop and the roofs upright. The datestone (J P 1768) is carved in the west gable.
 """),
+    "oakhurst": ("THE OAKHURST - SOUTHERN COLONIAL WITH A GIANT PORTICO", """  1. FOUNDATION (the raised red-brick basement with its arched vents).
+  2. WALLS-1 onto the foundation's lip (the east wing is part of it). Round the wing's top the
+     CORNICE-W parts (the lotus frieze, then the white crown); TERRACE-deck onto the wing's
+     lip (see the deck note); the three TERRACE-rail runs on its edge (the long sides first).
+  3. JOINT onto WALLS-1's lip; the CORNICE-J parts round it (they stop either side of the
+     terrace); then WALLS-2 onto the joint's lip.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the entrance, the French doors onto the balcony and the terrace); a pair of SHUTTERs
+     beside each shuttered window.
+  5. BALCONY on the joint cornice over the entrance; its three BALCONY-rail runs on it.
+  6. The CORNICE-E parts round the eave band (they stop at the portico).
+  7. The portico: PORTICO-base against the basement, PORTICO-floor on it (see the deck note),
+     STEPS-front; the four PORTICO-columns on the floor; PORTICO-beam on the columns, its ends
+     against the wall; the CORNICE-P parts round the beam; PORTICO-ceiling up inside the beam.
+  8. ROOF onto the lip at the wall tops (its front runs out over the portico as the
+     pediment's roof); PEDIMENT on the beam under it; a CHIMNEY into each pocket; each
+     DORMER-core into its DORMER, the DORMERs into their pockets on the end slopes, a
+     DORMER-roof on each.
+  9. CUPOLA into the pocket on the ridge, CUPOLA-dome on it, CUPOLA-finial on top.
+ 10. STOOP-back at the back door.
+""", """The PORTICO-floor, the TERRACE-deck and the PORTICO-ceiling print upside down; the columns
+upright (brim on); the railings, the balustrade runs and the PEDIMENT flat on their backs;
+the beam, the cupola, the dome, the dormers, the chimneys and the roof upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

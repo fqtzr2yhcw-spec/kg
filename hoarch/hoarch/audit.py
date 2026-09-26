@@ -28,7 +28,7 @@ from hoarch.core import cs_union
 
 HOUSES = ["beaumont", "villa", "harcourt", "fowler", "whitby", "delancey", "ardmore", "merritt", "hollis", "carrow",
           "marigold", "primrose", "rosecroft", "twins", "larkspur", "juniper", "camellia", "wisteria", "hawthorn",
-          "magnolia", "whitmore", "pennock", "westbrook"]
+          "magnolia", "whitmore", "pennock", "oakhurst", "westbrook"]
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "out")
 BED = 256.0
