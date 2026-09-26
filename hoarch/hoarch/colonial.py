@@ -1213,6 +1213,8 @@ def chimney_stonehood(w=8.0, d=15.0, h=30.0, seed=5):
         end = poly([(-e_, z - 0.01), (e_, z - 0.01), (e_, ze - 0.35 + (hw - e_)), (0.0, ze + rise - 0.35), (-e_, ze - 0.35 + (hw - e_))])
         body = body + M.extrude(end, y1 - y0).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, y0], [0, 1.0, 0, 0]]))
     roof = poly([(-hw, ze - 0.4), (0.0, ze + rise - 0.4), (hw, ze - 0.4), (hw, ze + 0.5), (0.0, ze + rise + 0.5), (-hw, ze + 0.5)])
+    # the eaves are cut level where the slabs meet the end stones, so no slab starts in mid-air
+    roof = roof ^ rect(-50, ze - 0.4 + (hw - (w / 2 - 0.4)), 50, 999)
     body = body + M.extrude(roof, d + 0.4).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, -d / 2 - 0.2], [0, 1.0, 0, 0]]))
     return body
 

@@ -167,7 +167,10 @@ def build(kit=None):
     main_keep = MAIN.solid(grow=0.8, dz0=-2, dz1=400)
     wing_ledge = CO.ledge(WING.pts, WING_ZE, LEDGE) - main_keep
     wing_lip = (_corbel(WING.cs, 3.0, WING_ZW) + lip_ring(WING.cs, 3.0, WING_ZW)) - MAIN.solid(grow=0.2, dz0=-2, dz1=400)
-    kit.add("WALLS-1", "Buttermilk", st["shells"][0] + wing_ledge + wing_lip, group="walls")
+    # the wing's walls run on above the storey joint, behind its cornice, up to the terrace deck
+    wing_band = (slab(WING.cs, S1 - 0.01, WING_ZW) - slab(offset(WING.cs, -3.0), S1 - 1.0, WING_ZW + 1.0)) - \
+        MAIN.solid(grow=0.0, dz0=-2, dz1=400) - st["rings"][0]
+    kit.add("WALLS-1", "Buttermilk", st["shells"][0] + wing_band + wing_ledge + wing_lip, group="walls")
     kit.add("JOINT", "Buttermilk", st["rings"][0] - box([W + 0.02, WY0 - 6.0, S1 - 1.0], [W + 10.0, WY1 + 6.0, S1 + RJ + 1.0]),
             group="walls")
     eave_path = max(base.to_polygons(), key=lambda L_: abs(poly(L_).area()))

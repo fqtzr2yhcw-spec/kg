@@ -238,7 +238,10 @@ def build(kit=None):
     ell_ledge = CO.ledge(ELL.pts, ELL_ZE, LEDGE) - MAIN.solid(grow=0.2, dz0=-1, dz1=1)
     ell_lip = (_corbel(ELL.cs, 3.0, ELL_ZW) + lip_ring(ELL.cs, 3.0, ELL_ZW)) - MAIN.solid(grow=0.3, dz0=-5, dz1=5) - \
         box([EX0 - 1, EY1 - 5.0, ELL_ZW - 1], [EX1 + 1, EY1 + 1, ELL_ZW + 5])
-    kit.add("WALLS-1", "Fieldstone", st["shells"][0] + ell_ledge + ell_lip, group="walls")
+    # the ell's walls run on above the storey joint, behind its cornice, up to its roof
+    ell_band = (slab(ELL.cs, S1 - 0.01, ELL_ZW) - slab(offset(ELL.cs, -3.0), S1 - 1.0, ELL_ZW + 1.0)) - \
+        MAIN.solid(grow=0.0, dz0=-2, dz1=400) - st["rings"][0]
+    kit.add("WALLS-1", "Fieldstone", st["shells"][0] + ell_band + ell_ledge + ell_lip, group="walls")
     ell_cut = box([EX0 - D_EAVE_E - 0.8, D + 0.02, S1 - 1.0], [EX1 + D_EAVE_E + 0.8, D + 8.0, S1 + RJ + 1.0])
     kit.add("JOINT", "Fieldstone", st["rings"][0] - ell_cut, group="walls")
     eave_path = max(base.to_polygons(), key=lambda L_: abs(poly(L_).area()))
