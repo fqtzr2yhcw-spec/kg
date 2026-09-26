@@ -36,29 +36,30 @@ RENDER_MAT = {"Stone": "stone", "Granite": "granite", "Trim": "trim", "Frieze": 
               "Iron": "iron", "Windows_Doors": "bronze", "Sash": "sash", "Door": "door", "Glass": "glass"}
 
 # ------------------------------------------------------------------ levels (v from the block base)
-ZF = 5.6                  # polished granite base
-H1 = 40.0                 # banking hall
+ZF = 7.2                  # polished granite base
+H1 = 44.0                 # banking hall
 S1 = ZF + H1
 RH = 4.4
-VF, FR_H = 70.8, 5.2      # frieze
+VF, FR_H = H1 + RH + 38.0, 6.4      # frieze over a 38 mm upper storey
 VK = VF + FR_H            # cornice cap
-CAP_PROF = [(0.0, 0.0), (1.8, 0.0), (1.8, 0.6), (2.0, 0.6), (2.0, 2.4), (4.4, 2.4), (4.4, 3.2), (4.6, 3.4),
-            (4.8, 3.8), (4.8, 4.4), (5.0, 4.8), (0.0, 4.8)]
-VTOP = VK + 4.8           # wall top: the balustrade stands on it
-BAL_H = 5.6
+CAP_PROF = [(1.25 * a, 1.25 * b) for a, b in
+            [(0.0, 0.0), (1.8, 0.0), (1.8, 0.6), (2.0, 0.6), (2.0, 2.4), (4.4, 2.4), (4.4, 3.2), (4.6, 3.4),
+             (4.8, 3.8), (4.8, 4.4), (5.0, 4.8), (0.0, 4.8)]]
+VTOP = VK + 6.0           # wall top: the balustrade stands on it
+BAL_H = 7.0
 ZR = ZF + VK - 1.2        # roof ledge
 T = 3.0
 
 # ------------------------------------------------------------------ plan
-W, D, C = 48.0, 62.0, 11.0
+W, D, C = 100.0, 128.0, 20.0
 MAIN = Block("main", [(C, 0), (W, 0), (W, D), (0, D), (0, C)], ZF, ZF + VTOP)
 BLOCKS = [MAIN]
 FRONT, RIGHT, REAR, LEFT, CORNER = 0, 1, 2, 3, 4
 STREET = (LEFT, CORNER, FRONT)            # in order round the corner
-V_W1, W1, H1W = 7.0, 8.0, 25.0            # ground-floor windows: sill, width, height
-V_W2, W2, H2W = S1 - ZF + RH + 4.6, 7.0, 15.0
-FRONT_X = (17.5, 29.5, 41.5)
-LEFT_Y = (20.0, 33.0, 46.0)
+V_W1, W1, H1W = 8.0, 10.0, 28.0           # ground-floor windows: sill, width, height
+V_W2, W2, H2W = S1 - ZF + RH + 5.0, 8.4, 21.0
+FRONT_X = (34.0, 52.0, 70.0, 88.0)
+LEFT_Y = (34.0, 54.0, 74.0, 94.0, 114.0)
 
 
 def _siding(f, b, reg):
@@ -87,13 +88,14 @@ def _openings():
     for y in LEFT_Y:
         add(0, y, V_W1, arch, f"L{y:.0f}-1")
         add(0, y, V_W2, ped, f"L{y:.0f}-2")
-    add(C / 2, C / 2, 0.0, SF.door_commercial(6.4, 22.0, transom=5.0, leaf="grille", tstyle="ring", head="temple",
+    add(C / 2, C / 2, 0.0, SF.door_commercial(9.6, 30.0, transom=6.0, leaf="grille", tstyle="ring", head="temple",
                                               text="BANK", leaves=2), "corner-door", "door")
-    rear = SF.window_commercial(7.0, 16.0, rise=2.0, lites=(1, 1), rows=(1, 1), sill=1.0)
-    add(40.0, D, 0.0, SF.door_commercial(7.0, 21.0, transom=3.6, leaf="grille", tstyle="ring", head=None), "back-door",
+    rear = SF.window_commercial(8.4, 20.0, rise=2.4, lites=(1, 1), rows=(1, 1), sill=1.0)
+    add(78.0, D, 0.0, SF.door_commercial(10.0, 30.0, transom=4.4, leaf="grille", tstyle="ring", head=None), "back-door",
         "door")
-    add(22.0, D, 10.0, rear, "R22-1")
-    for x in (12.0, 36.0):
+    for x in (26.0, 50.0):
+        add(x, D, 12.0, rear, f"R{x:.0f}-1")
+    for x in (26.0, 50.0, 78.0):
         add(x, D, V_W2, rear, f"R{x:.0f}-2")
     return L
 
@@ -176,12 +178,11 @@ def build(kit=None):
     fc = MAIN.facades()[CORNER]
     Ac = fc.A.copy()
     Ac[:, 3] = fc.world(fc.L / 2, 0.0, 0.0)
-    steps = union([box([-6.0, -ZF, 1.4], [6.0, -ZF + 1.8 * (k + 1) + (0.2 if k == 2 else 0.0), 1.4 + 2.2 * (3 - k)])
-                   for k in range(3)])
+    steps = union([box([-9.0, -ZF, 1.4], [9.0, -ZF + 1.8 * (k + 1), 1.4 + 2.4 * (4 - k)]) for k in range(4)])
     kit.add("STEPS", "Granite", steps.transform(Ac), group="foundation")
 
     # --- the double cornice round the street fronts, mitred at the corners, and the balustrade
-    texts = {FRONT: ("MERCHANTS BANK", 2.2), CORNER: ("1882", 2.2), LEFT: ("SAVINGS", 2.2)}
+    texts = {FRONT: ("MERCHANTS BANK", 3.2), CORNER: ("1882", 3.2), LEFT: ("SAVINGS", 3.2)}
     for e in STREET:
         f = MAIN.facades()[e]
 
@@ -197,9 +198,9 @@ def build(kit=None):
                 render=_gilt(fr.transform(inv34(A)), A, 1.2))
 
         def cap(u0, u1, f=f):
-            m = SF.cornice_cap(u1 - u0, CAP_PROF, dentils=dict(v=0.6, h=1.2, d=1.8, tooth=0.6, gap=0.6)).translate([u0, 0, 0])
-            us = np.arange(u0 + 1.6, u1 - 1.0, 3.2)
-            m = m + SF.bracket_row(u1 - u0, us, 1.6, 4.2, 1.0, 2.4, style="modillion")
+            m = SF.cornice_cap(u1 - u0, CAP_PROF, dentils=dict(v=0.75, h=1.5, d=2.2, tooth=0.6, gap=0.6)).translate([u0, 0, 0])
+            us = np.arange(u0 + 2.0, u1 - 1.2, 4.0)
+            m = m + SF.bracket_row(u1 - u0, us, 2.0, 5.2, 1.2, 3.0, style="modillion")
             return m.translate([0, VK, 0])
         cp, A = _mitred(e, cap)
         Ap = A.copy()
@@ -207,7 +208,7 @@ def build(kit=None):
         kit.add(f"CORNICE-{e}", "Trim", cp, P=inv34(Ap), group="top")
 
         i = STREET.index(e)
-        inner = {FRONT: [12.5, 24.5], LEFT: [22.5, 35.5]}.get(e, [])
+        inner = {FRONT: [23.0, 41.0, 59.0], LEFT: [24.0, 44.0, 64.0, 84.0]}.get(e, [])
         peds_u = [0.0 if i > 0 else 1.3] + inner + [f.L if i < len(STREET) - 1 else f.L - 1.3]
 
         def bal(u0, u1, peds_u=peds_u):
@@ -224,14 +225,14 @@ def build(kit=None):
     # --- roof: deck on the ledge, a hipped glass skylight over the hall, a coped chimney
     inner = offset(base, -T - 0.15)
     deck = slab(inner, ZR, ZR + 1.2)
-    sw, sd = 14.0, 22.0
-    sx, sy = W / 2 - sw / 2 + 2.0, 18.0
-    sk, glass = SF.skylight(sw, sd, h=5.0)
+    sw, sd = 28.0, 44.0
+    sx, sy = W / 2 - sw / 2 + 2.0, 34.0
+    sk, glass = SF.skylight(sw, sd, h=8.0)
     zdk = ZR + 1.2
     kit.add("SKYLIGHT", "Iron", sk.translate([sx, sy, zdk - 0.6]), group="roof",
             render=[("Iron", (sk - glass).translate([sx, sy, zdk - 0.6])), ("Glass", glass.translate([sx, sy, zdk - 0.6]))])
-    cw, cd = 12.0, 7.0
-    cx, cy = W - T - 0.6 - cd / 2, D - 16.0
+    cw, cd = 15.0, 9.0
+    cx, cy = W - T - 0.6 - cd / 2, D - 30.0
     pocket = box([cx - cd / 2 - 0.4, cy - cw / 2 - 0.4, zdk - 0.6], [cx + cd / 2 + 0.4, cy + cw / 2 + 0.4, zdk + 1])
     spocket = box([sx - 0.4, sy - 0.4, zdk - 0.6], [sx + sw + 0.4, sy + sd + 0.4, zdk + 1])
     kit.add("ROOF", "Roof", deck - pocket - spocket, group="roof")

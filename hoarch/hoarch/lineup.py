@@ -46,6 +46,8 @@ def scene(batch):
     os.makedirs(d_out, exist_ok=True)
     data, pal, labels = {}, {}, {}
     for row, keys in ((0, front), (1, back)):
+        if not keys:
+            continue
         items = []
         for n in keys:
             d = np.load(os.path.join(OUT, n, f"{n}.npz"))

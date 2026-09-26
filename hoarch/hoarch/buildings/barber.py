@@ -40,27 +40,29 @@ RENDER_MAT = {"White": "siding", "Navy": "navy", "Red": "red", "Roof": "roof", "
 STRIPE = 2.2              # awning stripes: 11 layers each
 
 # ------------------------------------------------------------------ levels (v from the block base)
-ZF = 3.2                  # timber sill = the boardwalk's top
-ZE = ZF + 36.0            # eaves (outer face of the side walls)
-S = 0.4                   # roof slope
+ZF = 4.0                  # timber sill = the boardwalk's top
+ZE = ZF + 46.0            # eaves (outer face of the side walls)
+S = 0.35                  # roof slope
 T = 3.0
-SF_W, SF_H = 32.0, 30.0
+SF_W, SF_H = 58.0, 38.0
 AW_V = SF_H + 2.0         # awning rail top
-SIGN_V, SIGN_H = 34.0, 7.6
-FR_V, FR_H = 42.4, 4.4
+SIGN_V, SIGN_H = 43.0, 10.0
+FR_V, FR_H = 56.0, 5.6
 CAP_V = FR_V + FR_H
-CAP_PROF = [(0.0, 0.0), (1.2, 0.0), (1.2, 0.6), (1.6, 0.6), (1.6, 1.4), (3.0, 1.4), (3.0, 2.0), (3.2, 2.2),
-            (3.4, 2.6), (3.6, 3.0), (3.6, 3.2), (0.0, 3.2)]
-HF = CAP_V + 3.2          # false-front top
+CAP_PROF = [(1.3 * a, 1.3 * b) for a, b in
+            [(0.0, 0.0), (1.2, 0.0), (1.2, 0.6), (1.6, 0.6), (1.6, 1.4), (3.0, 1.4), (3.0, 2.0), (3.2, 2.2),
+             (3.4, 2.6), (3.6, 3.0), (3.6, 3.2), (0.0, 3.2)]]
+CAP_H = 1.3 * 3.2
+HF = CAP_V + CAP_H        # false-front top
 
 # ------------------------------------------------------------------ plan
-W, D = 38.0, 56.0
+W, D = 80.0, 120.0
 HB = ZE - ZF + T * S      # block height: the side walls are trimmed to the roof planes
 MAIN = Block("main", [(0, 0), (W, 0), (W, D), (0, D)], ZF, ZF + HB)
 BLOCKS = [MAIN]
-DE = 1.6                  # eave overhang
+DE = 2.4                  # eave overhang
 Y0R = T + 0.15            # the roof starts behind the false front
-PIPE = (28.0, D - 12.0, 1.2)
+PIPE = (58.0, D - 30.0, 1.5)
 
 
 def _siding(f, b, reg):
@@ -76,25 +78,28 @@ def _openings():
         e, u = MAIN.locate(x, y)
         L.append(Opening(MAIN, e, u, v0, sp, name, kind))
 
-    sf = SF.storefront(SF_W, SF_H, entry=8.0, col=1.8, style="panel", bulk=6.4, transom=4.4, beam=1.6, lite=5.4,
+    sf = SF.storefront(SF_W, SF_H, entry=11.0, col=2.4, style="panel", bulk=8.0, transom=5.6, beam=2.0, lite=5.4,
                        bulk_style="lozenge", mullion=False, posts=True, t=T)
     add(W / 2, 0, 0.0, sf, "storefront", "door")
-    win = SF.window_commercial(8.0, 18.0, rise=0, lites=(2, 2), rows=(2, 2), sill=1.0, head="hood", hood_w=1.0)
-    for y in (18.0, 38.0):
-        add(W, y, 10.0, win, f"E{y:.0f}")
-    add(0, 38.0, 10.0, win, "W38")
-    add(W - 28.0, D, 10.0, win, "N10")
-    add(W - 10.0, D, 0.0, SF.door_commercial(9.0, 28.0, transom=3.6, leaf="store", tstyle="twin", head=None),
+    win = SF.window_commercial(8.4, 24.0, rise=0, lites=(2, 2), rows=(2, 2), sill=1.0, head="hood", hood_w=1.2)
+    for y in (30.0, 60.0, 90.0):
+        add(W, y, 12.0, win, f"E{y:.0f}")
+    for y in (60.0, 90.0):
+        add(0, y, 12.0, win, f"W{y:.0f}")
+    for x in (20.0, 42.0):
+        add(W - x, D, 12.0, win, f"N{x:.0f}")
+    add(W - 64.0, D, 0.0, SF.door_commercial(10.0, 32.0, transom=4.4, leaf="store", tstyle="twin", head=None),
         "back-door", "door")
     return L
 
 
 OPENINGS = _openings()
-AW_U, AW_L = 2.5, 15 * STRIPE
+AW_L = 25 * STRIPE
+AW_U = (W - AW_L) / 2
 APPLIED = [("AWNING", AW_U, AW_V - 2.0, AW_L, 2.0),
            ("SIGN", (W - SF_W) / 2, SIGN_V, SF_W, SIGN_H),
            ("FRIEZE", 0.0, FR_V, W, FR_H),
-           ("CORNICE", 0.0, CAP_V, W, 3.2)]
+           ("CORNICE", 0.0, CAP_V, W, CAP_H)]
 
 
 def _applied_openings():
@@ -165,7 +170,7 @@ def build(kit=None):
     eu, ew, eh = sp["entry"]
     Av = A.copy()
     Av[:, 3] = A[:, 3] + A[:, 0] * eu
-    vest = SF.vestibule(ew, 3.0, eh, bulk=6.4, front=-T, doors="single")
+    vest = SF.vestibule(ew, 4.0, eh, bulk=8.0, front=-T, doors="single")
     R_up = np.array([[1.0, 0, 0], [0, 0, -1.0], [0, 1.0, 0]])
     kit.add("VESTIBULE", "Navy", vest.transform(Av), P=R_up @ inv34(Av), group="storefront")
     # the timber sill; a pad under the entry floor, the locating lip cut where the entry is
@@ -193,31 +198,31 @@ def build(kit=None):
         A_[:, 3] = f.world(u0, v0, w0)
         return A_
 
-    aw = SF.awning(AW_L, depth=10.0, drop=5.0, valance=2.6, point=STRIPE)
+    aw = SF.awning(AW_L, depth=14.0, drop=6.6, valance=3.2, point=STRIPE)
     Aa = frame_at(AW_U, AW_V)
     R_side = np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]])        # (u, v, w) -> (v, w, u): on its side
     kit.add("AWNING", "Awning", aw.transform(Aa), P=R_side @ inv34(Aa), group="front",
             render=_stripes(aw, Aa, AW_L, STRIPE))
-    sign = SF.sign_band(SF_W, SIGN_H, "BARBER", cap=4.0, font="sans", board=1.0, frame=0.8, relief=0.4)
+    sign = SF.sign_band(SF_W, SIGN_H, "BARBER SHOP", cap=5.0, font="sans", board=1.0, frame=1.0, relief=0.4)
     As = frame_at((W - SF_W) / 2, SIGN_V)
     kit.add("SIGN", "Sign", sign.transform(As), P=inv34(As), group="front", render=_upper(sign, As, 1.0, "Red", "White"))
-    tails = [1.2, 12.9, 25.1, 36.8]
-    fr = SF.frieze_band(W, FR_H, board=1.2, panels=[(3.0, 11.1), (14.7, 23.3), (26.9, 35.0)],
-                        tails=dict(us=tails, w=1.2, d=2.4, style="sawn"))
+    tails = [1.2 + (W - 2.4) * k / 6 for k in range(7)]
+    fr = SF.frieze_band(W, FR_H, board=1.2, panels=[(a + 1.8, b - 1.8) for a, b in zip(tails, tails[1:])],
+                        tails=dict(us=tails, w=1.4, d=3.0, style="sawn"))
     Af = frame_at(0.0, FR_V)
     kit.add("FRIEZE", "Navy", fr.transform(Af), P=inv34(Af), group="front")
     cap = SF.cornice_cap(W, CAP_PROF)
     Ac = frame_at(0.0, CAP_V)
     kit.add("CORNICE", "Red", cap.transform(Ac), P=inv34(Ac), group="front")
     zc = ZF + HF
-    cop = box([-0.4, -3.8, zc], [W + 0.4, T + 0.4, zc + 0.8])
+    cop = box([-0.5, -CAP_PROF[-3][0] - 0.2, zc], [W + 0.5, T + 0.4, zc + 1.0])
     kit.add("COPING", "Navy", cop, group="front")
-    tw, th = 14.0, 6.4
+    tw, th = 20.0, 8.4
     rise = th * 0.35
     outline = poly([(-tw / 2, 0), (tw / 2, 0), (tw / 2, th - rise), (0, th), (-tw / 2, th - rise)])
-    tab = SF.name_tablet(tw, th, None, "1891", cap=2.6, head="gable", board=1.2, relief=0.4) + \
+    tab = SF.name_tablet(tw, th, None, "1891", cap=3.4, head="gable", board=1.2, relief=0.4) + \
         ext(outline + rect(-tw / 2 - 2.4, 0.0, tw / 2 + 2.4, 2.4), -2.4, 0.01)
-    At = frame_at(W / 2, HF + 0.8, -1.0)
+    At = frame_at(W / 2, HF + 1.0, -1.0)
     kit.add("TABLET", "Tablet", tab.transform(At), P=inv34(At), group="front", render=_upper(tab, At, 1.2, "White", "Navy"))
     print("front", round(time.time() - t0, 1))
 
@@ -246,13 +251,13 @@ def build(kit=None):
     print("roof", round(time.time() - t0, 1))
 
     # --- the boardwalk and the barber pole
-    BW_D = 11.0
+    BW_D = 16.0
     bw = SF.boardwalk(W + 2.0, BW_D, ZF, pitch=2.2)
     Ab = np.array([[-1.0, 0, 0, W + 1.0], [0, -1.0, 0, -1.55], [0, 0, 1.0, 0.0]])       # clear of the sill's bolt heads
     walk = bw.transform(Ab)
     kit.add("BOARDWALK", "Boardwalk", walk, P=print_flip(), group="boardwalk",
             render=FT.plank_zones(walk, ZF, "Planks", "Timber"))
-    pole = SF.barber_pole(h=16.0).translate([1.6, -9.2, ZF])
+    pole = SF.barber_pole(h=20.0).translate([3.0, -13.0, ZF])
     kit.add("POLE", "White", pole, group="boardwalk")
     print("specks dropped:", kit.drop_specks())
     return kit
