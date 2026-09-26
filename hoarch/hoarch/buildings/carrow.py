@@ -288,24 +288,16 @@ def build(kit=None):
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, DOOR_X - (-PD + CH_), 18.0)],
                         planks=dict(pitch=1.5, border=1.6),
                         joined=True, ledger_off=1.5, post="eastlake", rail="sawn", arcade="fret", skirt="arches",
-                        pier_tex="coursed", roof_edge="reeded")
+                        pier_tex="coursed", roof_edge="reeded", top=True)
     fkeep = slab(offset(base, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-    tabs = union([arc for arc, _ in P["arcades"]])
-    fnd = foundation(BLOCKS, 0.0, ZF, style="coursed")
-    for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
-        kit.add(f"PORCH-frame-{k}", "Cream", fr - tabs - fnd, group="porch")
-    for k, (arc, A) in enumerate(P["arcades"]):
-        kit.add(f"PORCH-arcade-{k}", "Cream", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = MAIN.solid(grow=2.0, dz0=-20, dz1=0) + TURRET.solid(grow=2.0, dz0=-20, dz1=0)
-    proof = P["roof"] - bld_keep - ins_keep
-    ptop = proof.bounding_box()[5]
-    kit.add("PORCH-roof", "Cream", proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), P=print_flip(), group="porch")
-    kit.add("PORCH-roof-tin", "Slate", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
+    fnd = foundation(BLOCKS, 0.0, ZF, style="coursed")
+    FT.add_porch_top(kit, "PORCH", P, bld_keep + ins_keep + fnd, "Cream", "Cream", tin_col="Slate")
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "Granite", sm.transform(A) - fkeep, group="porch")
     e, u = MAIN.locate(124.0, D)

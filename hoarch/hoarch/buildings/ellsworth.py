@@ -305,23 +305,17 @@ def build(kit=None):
     post_h = S1 - 2.0 - 5.6 - H_floor
     PP = FT.porch_turned(ppts, runs, H_floor, post_h, steps_at=[(1, ud, 18.0)],
                          planks=dict(pitch=1.8, border=1.2), joined=True, ledger_off=1.5, post="pedestal",
-                         rail="pear", arcade="festoons", skirt="louvres", pier_tex="cobble", roof_edge="guttae")
+                         rail="pear", arcade="festoons", skirt="louvres", pier_tex="cobble", roof_edge="guttae",
+                         top=True, flat_arcades=True)
     fkeep = slab(offset(base, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     deck = PP["deck"] - fkeep
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-    tabs = union([arc_ for arc_, _ in PP["arcades"]])
-    for k, fr in enumerate(sorted(PP["frames"], key=lambda m_: -m_.volume())):
-        kit.add(f"PORCH-frame-{k}", "Ivory", fr - tabs - fnd, group="porch")
-    for k, (arc_, A) in enumerate(PP["arcades"]):
-        kit.add(f"PORCH-frieze-{k}", "Ochre", arc_, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = union([b.solid(grow=1.8, dz0=-20, dz1=0) for b in BLOCKS])
-    proof = PP["roof"] - bld_keep - ins_keep
-    ptop = proof.bounding_box()[5]
-    kit.add("PORCH-roof", "Ivory", proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), P=print_flip(), group="porch")
-    kit.add("PORCH-roof-top", "Slate", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
+    ptop = FT.add_porch_top(kit, "PORCH", PP, bld_keep + ins_keep + fnd,
+                            "Ivory", "Ivory", tin_col="Slate", arcade_col="Ochre")["top"].solid.bounding_box()[5]
     for k, (sm, A) in enumerate(PP["steps"]):
         kit.add(f"PORCH-steps-{k}", "Cobble", sm.transform(A) - fkeep - deck, group="porch")
     edep = 5.0

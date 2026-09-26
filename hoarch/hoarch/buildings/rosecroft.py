@@ -382,7 +382,8 @@ def build(kit=None):
     post_h = S1 - 2.0 - 5.6 - H_floor              # the porch roof stays under the belt
     PP = FT.porch_turned(ppts, runs, H_floor, post_h, steps_at=[(steps_run, front_L / 2, 22.0)],
                          planks=dict(pitch=2.0, border=1.8), joined=True, ledger_off=1.5, post="notched",
-                         rail="ladder", arcade="drops", skirt="sawtooth", pier_tex="banded", roof_edge="notched")
+                         rail="ladder", arcade="drops", skirt="sawtooth", pier_tex="banded", roof_edge="notched",
+                         top=True, flat_arcades=True)
     base = cs_union([b.cs for b in BLOCKS])
     fkeep = slab(offset(base, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
@@ -390,16 +391,9 @@ def build(kit=None):
     deck = PP["deck"] - fkeep
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-    tabs = union([arc_ for arc_, _ in PP["arcades"]])
-    for k, fr in enumerate(sorted(PP["frames"], key=lambda m_: -m_.volume())):
-        kit.add(f"PORCH-frame-{k}", "Cream", fr - tabs - fnd, group="porch")
-    for k, (arc_, A) in enumerate(PP["arcades"]):
-        kit.add(f"PORCH-frieze-{k}", "Teal", arc_, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = union([b.solid(grow=1.8, dz0=-20, dz1=0) for b in (MAIN, TOWER, BAY)])
-    proof = PP["roof"] - bld_keep - ins_keep
-    ptop = proof.bounding_box()[5]
-    kit.add("PORCH-roof", "Teal", proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), P=print_flip(), group="porch")
-    kit.add("PORCH-roof-top", "Slate", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
+    ptop = FT.add_porch_top(kit, "PORCH", PP, bld_keep + ins_keep + fnd,
+                            "Teal", "Cream", tin_col="Slate", arcade_col="Teal")["top"].solid.bounding_box()[5]
     for k, (sm, A) in enumerate(PP["steps"]):
         kit.add(f"PORCH-steps-{k}", "Stone", sm.transform(A) - fkeep - deck, group="porch")
     fa, fb_ = np.array(runs[steps_run]["a"]), np.array(runs[steps_run]["b"])

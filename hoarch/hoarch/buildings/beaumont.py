@@ -408,27 +408,21 @@ def build(kit=None):
             dict(a=(WX0, -40.0), b=(WX0, WY0), posts=[1.6])]
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(3, DOOR_X + 20.0, 18.0)],
                         planks=dict(pitch=1.8, border=1.6), joined=True, ledger_off=1.5,
-                        pier_tex="fieldstone", roof_edge="dentil")
+                        pier_tex="fieldstone", roof_edge="dentil", top=True)
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-    for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
-        kit.add(f"PORCH-frame-{k}", "Cream", fr, group="porch")
-    for k, (arc, A) in enumerate(P["arcades"]):
-        kit.add(f"PORCH-arcade-{k}", "Cream", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = union([b.solid(grow=1.45, dz0=-20, dz1=0) for b in BLOCKS]) + TOWER.solid(grow=1.45, dz0=-20, dz1=300)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
-    proof = P["roof"] - bld_keep - ins_keep - box([WX0 + 2.4, -80, 0], [300, WY0 + 0.5, 300])    # stops at the wing
-    ptop = proof.bounding_box()[5]
-    below = proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8))
-    cap = proof.trim_by_plane([0, 0, 1.0], ptop - 0.8)                # standing-seam tin, square to each wall
+    wing_cut = box([WX0 + 2.4, -80, 0], [300, WY0 + 0.5, 300])       # the porch roof stops at the wing
+    cap = FT.add_porch_top(kit, "PORCH", P, bld_keep + ins_keep + wing_cut, "Cream", "Cream", tin="custom")["cap"]
+    ptop = cap.bounding_box()[5]                                       # standing-seam tin, square to each wall
     inner = M.extrude(cap.slice(ptop - 0.4).offset(-0.5), 5).translate([0, 0, ptop - 1])
     ribs = union([box([x - 0.25, -80, ptop - 0.01], [x + 0.25, 0.0, ptop + 0.4]) for x in np.arange(-36.4, WX0 + 1, 5.2)])
     ribs = ribs + union([box([-80, y - 0.25, ptop - 0.01], [0.0, y + 0.25, ptop + 0.4]) for y in np.arange(2.6, 120, 5.2)])
     ribs = ribs ^ inner
-    kit.add("PORCH-roof", "Cream", below, P=print_flip(), group="porch")
     kit.add("PORCH-roof-cap", "Slate", cap + ribs, group="porch")
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "PorchGray", sm.transform(A) - fkeep, group="porch")

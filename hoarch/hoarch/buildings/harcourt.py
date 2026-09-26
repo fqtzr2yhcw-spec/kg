@@ -297,7 +297,7 @@ def build(kit=None):
     P = FT.porch_turned([(px0, y0), (px0, y1), (px1, y1), (px1, y0)], runs, H_floor, post_h,
                         steps_at=[(1, (px1 - px0) / 2, 18.0)], planks=dict(pitch=1.4, border=1.6), joined=True,
                         post="fluted", rail="urn", arcade="entablature", skirt="square", pier_tex="granite",
-                        roof_edge="fillet")
+                        roof_edge="fillet", top=True)
     fkeep = slab(offset(cs_union([b.cs for b in BLOCKS]), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     # keep-out boxes round the inserts, their tops and bottoms on the layer grid (the porch
     # roof is notched by them and prints upside down)
@@ -307,22 +307,15 @@ def build(kit=None):
     deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-    for k, fr in enumerate(sorted(P["frames"], key=lambda m: m.bounding_box()[0])):
-        kit.add(f"PORCH-frame-{k}", "Limestone", fr, group="porch")
-    for k, (arc, A) in enumerate(P["arcades"]):
-        kit.add(f"PORCH-arcade-{k}", "Limestone", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = union([b.solid(grow=1.45, dz0=-20, dz1=0) for b in BLOCKS]) + TOWER.solid(grow=1.45, dz0=-20, dz1=300)
-    proof = P["roof"] - bld_keep - ins_keep
-    ptop = proof.bounding_box()[5]
-    below = proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8))
-    cap_ = proof.trim_by_plane([0, 0, 1.0], ptop - 0.8)
+    cap_ = FT.add_porch_top(kit, "PORCH", P, bld_keep + ins_keep, "Limestone", "Limestone", tin="custom")["cap"]
+    ptop = cap_.bounding_box()[5]
     inner_cs = M.extrude(cap_.slice(ptop - 0.4).offset(-0.5), 5).translate([0, 0, ptop - 1])
     # flat-seam tin: battens both ways, a grid of panels (the Ashby's tin has ribs one way only)
     ribs = union([box([x - 0.25, y1 - 10, ptop - 0.01], [x + 0.25, y0, ptop + 0.4])
                   for x in np.arange(px0 + 1.0, px1, 5.2)] +
                  [box([px0 - 10, y - 0.25, ptop - 0.01], [px1 + 10, y + 0.25, ptop + 0.4])
                   for y in np.arange(y1 + 2.6, y0, 5.2)]) ^ inner_cs
-    kit.add("PORCH-roof", "Limestone", below, P=print_flip(), group="porch")
     kit.add("PORCH-roof-tin", "Slate", cap_ + ribs, group="porch")
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "Granite", sm.transform(A) - fkeep, group="porch")

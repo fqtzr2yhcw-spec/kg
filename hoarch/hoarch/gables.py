@@ -62,6 +62,22 @@ def gabled_roof(pieces, z_eave, d_eave, gables, texture="fish", tex_kw=None, ski
     return dict(body=body, tex=body_tex, skins=skins, skin_tex=skin_tex, walls=walls, zlo=zlo)
 
 
+MIN_BAR = 1.0        # no bar, stem or tie of a gable ornament narrower than this (in its plane)
+
+
+def _tie(cs, w=MIN_BAR):
+    """Thicken the bars, stems and ties of an ornament's outline narrower than ``w`` (rather
+    than cutting them away), so no accent hangs by a single nozzle line; drop crumbs."""
+    from .lace import sturdy
+    cs = sturdy(cs, w * 0.95, grow=0.35)
+    return cs_union([pc for pc in cs.decompose() if pc.area() > 2.0])
+
+
+def _text(cs, w0, w1):
+    """ext() for the gable ornaments: a piece that starts on the back (w0 = 0) is tied first."""
+    return ext(_tie(cs) if w0 <= 0.01 else cs, w0, w1)
+
+
 def bargeboard(L, slope, d_eave, skin=1.8, width=2.6, d=TRIM_D, finial=5.0, drop=3.0, pierce="trefoil"):
     """Pierced bargeboard for a gable of wall length L, in the wall's facade frame (v up from
     the eave, u from the wall's left end). It hangs on the rake's outer end: its top edge runs
@@ -100,20 +116,19 @@ def bargeboard(L, slope, d_eave, skin=1.8, width=2.6, d=TRIM_D, finial=5.0, drop
         board = board - cs_union(holes)
     # a king post at the apex ties the two halves (and the drop and finial) together
     board = board + rect(L / 2 - 1.1, tip[1] - depth * c - 0.6, L / 2 + 1.1, tip[1])
-    board = board.offset(-0.26, JoinType.Round).offset(0.26, JoinType.Round)
     board = cs_union([pc for pc in board.decompose() if pc.area() > 2.0])
-    parts = [ext(board, 0.0, d)]
+    parts = [_text(board, 0.0, d)]
     ay = tip[1] - depth * c - 0.4
     if drop:
         dcs = cs_union([rect(L / 2 - 0.45, ay - drop, L / 2 + 0.45, ay + 0.3),
                         circle((L / 2, ay - drop + 0.6), 0.75, 20),
                         poly([(L / 2 - 0.5, ay - drop + 0.2), (L / 2 + 0.5, ay - drop + 0.2), (L / 2, ay - drop - 1.0)])])
-        parts.append(ext(dcs, 0.0, d + 0.2))
+        parts.append(_text(dcs, 0.0, d + 0.2))
     if finial:
         fcs = cs_union([rect(L / 2 - 0.5, tip[1] - 0.6, L / 2 + 0.5, tip[1] + finial - 1.2),
                         circle((L / 2, tip[1] + finial * 0.45), 0.8, 20),
                         poly([(L / 2 - 0.5, tip[1] + finial - 1.2), (L / 2 + 0.5, tip[1] + finial - 1.2), (L / 2, tip[1] + finial)])])
-        parts.append(ext(fcs, 0.0, d + 0.2))
+        parts.append(_text(fcs, 0.0, d + 0.2))
     return union(parts)
 
 
@@ -191,20 +206,19 @@ def gable_truss(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, collar=0.42, fi
             p1 = (L / 2 + 30 * math.cos(a), vc + 30 * math.sin(a))
             sticks.append(stroke([(L / 2, vc - 0.2), p1], 0.55))
     frame_cs = (cs_union(sticks) ^ poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])) + rafters
-    frame_cs = frame_cs.offset(-0.26, JoinType.Round).offset(0.26, JoinType.Round)
     frame_cs = cs_union([pc for pc in frame_cs.decompose() if pc.area() > 2.0])
-    parts = [ext(frame_cs, 0.0, d)]
-    parts.append(ext(rect(u_c - 0.3, vc - 1.5, L - u_c + 0.3, vc - 0.9), 0.0, d + 0.4))      # a bead on the collar
+    parts = [_text(frame_cs, 0.0, d)]
+    parts.append(_text(rect(u_c - 0.3, vc - 1.5, L - u_c + 0.3, vc - 0.9), 0.0, d + 0.4))      # a bead on the collar
     if drop:
         dcs = cs_union([rect(L / 2 - 0.45, kp_bot - drop, L / 2 + 0.45, kp_bot + 0.3),
                         circle((L / 2, kp_bot - drop + 0.6), 0.75, 20),
                         poly([(L / 2 - 0.5, kp_bot - drop + 0.2), (L / 2 + 0.5, kp_bot - drop + 0.2), (L / 2, kp_bot - drop - 1.0)])])
-        parts.append(ext(dcs, 0.0, d + 0.2))
+        parts.append(_text(dcs, 0.0, d + 0.2))
     if finial:
         fcs = cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 1.2),
                         circle((L / 2, H + finial * 0.45), 0.8, 20),
                         poly([(L / 2 - 0.5, H + finial - 1.2), (L / 2 + 0.5, H + finial - 1.2), (L / 2, H + finial)])])
-        parts.append(ext(fcs, 0.0, d + 0.2))
+        parts.append(_text(fcs, 0.0, d + 0.2))
     return union(parts)
 
 
@@ -254,14 +268,13 @@ def gable_sunburst(L, slope, d_eave, skin=1.8, width=1.4, d=TRIM_D, collar=0.36,
                 scal.append(sc)
     if scal:
         frame_cs = frame_cs - cs_union(scal)
-    frame_cs = frame_cs.offset(-0.26, JoinType.Round).offset(0.26, JoinType.Round)
     frame_cs = cs_union([pc for pc in frame_cs.decompose() if pc.area() > 2.0])
-    out = [ext(frame_cs, 0.0, d), ext(hub.offset(-0.15), 0.0, d + 0.4)]
+    out = [_text(frame_cs, 0.0, d), _text(hub.offset(-0.15), 0.0, d + 0.4)]
     if finial:
         fcs = cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 1.2),
                         circle((L / 2, H + finial * 0.45), 0.8, 20),
                         poly([(L / 2 - 0.5, H + finial - 1.2), (L / 2 + 0.5, H + finial - 1.2), (L / 2, H + finial)])])
-        out.append(ext(fcs, 0.0, d + 0.2))
+        out.append(_text(fcs, 0.0, d + 0.2))
     return union(out)
 
 
@@ -297,14 +310,13 @@ def gable_tudor(L, slope, d_eave, skin=1.8, width=1.4, d=TRIM_D, finial=4.0):
         us = L / 2 + sg * (L / 2 - u_c) * 0.7
         parts.append(rect(us - 0.35, vc + 1.0, us + 0.35, s * (min(us, L - us) + d_eave) - 0.2))
     frame_cs = (cs_union(parts) ^ tri) + rafters
-    frame_cs = frame_cs.offset(-0.26, JoinType.Round).offset(0.26, JoinType.Round)
     frame_cs = cs_union([pc for pc in frame_cs.decompose() if pc.area() > 2.0])
-    out = [ext(frame_cs, 0.0, d)]
+    out = [_text(frame_cs, 0.0, d)]
     kb = vc - 2.0
-    out.append(ext(cs_union([rect(L / 2 - 0.45, kb - 2.4, L / 2 + 0.45, kb + 0.3), circle((L / 2, kb - 2.6), 0.7, 20)]),
+    out.append(_text(cs_union([rect(L / 2 - 0.45, kb - 2.4, L / 2 + 0.45, kb + 0.3), circle((L / 2, kb - 2.6), 0.7, 20)]),
                    0.0, d + 0.2))
     if finial:
-        out.append(ext(cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 1.0),
+        out.append(_text(cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 1.0),
                                  circle((L / 2, H + finial - 1.0), 0.75, 20)]), 0.0, d + 0.2))
     return union(out)
 
@@ -333,22 +345,21 @@ def gable_gingerbread(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.
     u_r = vr / s - d_eave + depth * c * 0.5
     tri = poly([(-d_eave, 0.0), (L + d_eave, 0.0), tuple(tip)])
     parts = [rect(u_r, vr - 0.7, L - u_r, vr), rect(L / 2 - 0.55, vr - 2.4, L / 2 + 0.55, H - 0.5)]
-    n = max(3, int((L - 2 * u_r) / 1.4))
+    n = max(3, int((L - 2 * u_r) / 2.4))            # spindles 1 mm thick, 1.4 mm apart: each stands clear
     for k in range(n):
         x = u_r + (L - 2 * u_r) * (k + 0.5) / n
         ytop = s * (min(x, L - x) + d_eave) - depth * c + 0.3
         if ytop - vr < 1.0:
             continue
-        parts += [rect(x - 0.28, vr - 0.1, x + 0.28, ytop), circle((x, vr + 0.7), 0.42, 12)]
+        parts += [rect(x - 0.5, vr - 0.1, x + 0.5, ytop), circle((x, vr + 0.8), 0.62, 16)]
     frame_cs = (cs_union(parts) ^ tri) + rafters
-    frame_cs = frame_cs.offset(-0.26, JoinType.Round).offset(0.26, JoinType.Round)
     frame_cs = cs_union([pc for pc in frame_cs.decompose() if pc.area() > 2.0])
-    out = [ext(frame_cs, 0.0, d)]
+    out = [_text(frame_cs, 0.0, d)]
     kb = vr - 2.4
-    out.append(ext(cs_union([rect(L / 2 - 0.4, kb - 1.8, L / 2 + 0.4, kb + 0.3), circle((L / 2, kb - 2.0), 0.6, 18),
+    out.append(_text(cs_union([rect(L / 2 - 0.4, kb - 1.8, L / 2 + 0.4, kb + 0.3), circle((L / 2, kb - 2.0), 0.6, 18),
                              poly([(L / 2 - 0.45, kb - 2.4), (L / 2 + 0.45, kb - 2.4), (L / 2, kb - 3.3)])]), 0.0, d + 0.2))
     if finial:
-        out.append(ext(cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 1.2),
+        out.append(_text(cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 1.2),
                                  poly([(L / 2 - 0.7, H + finial - 1.2), (L / 2 + 0.7, H + finial - 1.2), (L / 2, H + finial)])]),
                        0.0, d + 0.2))
     return union(out)
@@ -390,15 +401,15 @@ def gable_eastlake(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, tie=0.3, fin
         drops.append(cs_union([rect(x - 0.45, -2.2, x + 0.45, 0.2), circle((x, -2.2), 0.7, 16),
                                poly([(x - 0.45, -2.6), (x + 0.45, -2.6), (x, -3.4)])]))
     frame = frame + cs_union(drops)
-    parts = [ext(frame, 0.0, d)]
+    parts = [_text(frame, 0.0, d)]
     n = max(3, int((L - 2 * u_t) / 2.8))
     for k in range(n):
         u = u_t + 0.6 + (L - 2 * u_t - 1.2) * (k + 0.5) / n
-        parts.append(ext(rect(u - 0.9, vt - 1.4, u + 0.9, vt), d - 0.01, d + 0.4))
-        parts.append(ext(circle((u, vt - 0.7), 0.4, 12), d + 0.39, d + 0.8))
+        parts.append(_text(rect(u - 0.9, vt - 1.4, u + 0.9, vt), d - 0.01, d + 0.4))
+        parts.append(_text(circle((u, vt - 0.7), 0.4, 12), d + 0.39, d + 0.8))
     fcs = cs_union([rect(L / 2 - 0.5, H - 0.6, L / 2 + 0.5, H + finial - 2.2), circle((L / 2, H + finial - 1.6), 0.8, 20),
                     poly([(L / 2 - 0.4, H + finial - 1.0), (L / 2 + 0.4, H + finial - 1.0), (L / 2, H + finial)])])
-    parts.append(ext(fcs, 0.0, d + 0.2))
+    parts.append(_text(fcs, 0.0, d + 0.2))
     return union(parts)
 
 
@@ -447,7 +458,7 @@ def gable_wheel(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, collar=0.34, fi
     frame = frame + cs_union(drops)
     fcs = cs_union([rect(L / 2 - 0.45, H - 0.6, L / 2 + 0.45, H + finial - 1.0),
                     poly([(L / 2 - 0.45, H + finial - 1.0), (L / 2 + 0.45, H + finial - 1.0), (L / 2, H + finial)])])
-    return ext(frame, 0.0, d) + ext(fcs, 0.0, d + 0.2)
+    return _text(frame, 0.0, d) + _text(fcs, 0.0, d + 0.2)
 
 
 def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.0, fan_v=None, clear=None, fan_r=None):
@@ -482,12 +493,12 @@ def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.0, 
         rim, rays, hub = rim - clear, rays - clear, hub - clear
     parts += [rim, rays, hub]
     frame = (cs_union(parts) ^ tri) + rafters
-    out = [ext(frame, 0.0, d), ext(rim.offset(-0.15) + hub.offset(-0.15), 0.0, d + 0.4),
-           ext(rect(-d_eave, vb - 0.6, L + d_eave, vb) ^ tri, 0.0, d + 0.4)]
+    out = [_text(frame, 0.0, d), _text(rim.offset(-0.15) + hub.offset(-0.15), 0.0, d + 0.4),
+           _text(rect(-d_eave, vb - 0.6, L + d_eave, vb) ^ tri, 0.0, d + 0.4)]
     if finial:
         fcs = cs_union([rect(L / 2 - 0.45, H - 0.6, L / 2 + 0.45, H + finial - 1.0),
                         poly([(L / 2 - 0.45, H + finial - 1.0), (L / 2 + 0.45, H + finial - 1.0), (L / 2, H + finial)])])
-        out.append(ext(fcs, 0.0, d + 0.2))
+        out.append(_text(fcs, 0.0, d + 0.2))
     return union(out)
 
 
@@ -521,11 +532,11 @@ def gable_pendant(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.0):
         quad = rect(min(cx, cx + sg * R), pv, max(cx, cx + sg * R), H)
         braces.append(ring ^ quad)
     frame = (cs_union([post] + braces) ^ tri) + rafters + drop
-    out = [ext(frame, 0.0, d), ext(post.offset(-0.2) ^ tri, 0.0, d + 0.4)]
+    out = [_text(frame, 0.0, d), _text(post.offset(-0.2) ^ tri, 0.0, d + 0.4)]
     if finial:
         fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.0),
                         poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
-        out.append(ext(fcs, 0.0, d + 0.2))
+        out.append(_text(fcs, 0.0, d + 0.2))
     return union(out)
 
 
@@ -556,7 +567,7 @@ def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=TRIM_D, finial=5.0, c
                 side = rect(-d_eave - 5, -5, L / 2 - 0.8, H + 5) if a[0] < L / 2 else rect(L / 2 + 0.8, -5, L + d_eave + 5, H + 5)
                 cuts.append(circle(tuple(q + n * (depth + 0.55)), run / n_c * 0.62, 28) ^ side)
             if 0 < k < n_c - 1:                           # a ball hung at each cusp point
-                balls.append(circle(tuple(p + n * (depth + 0.1)), 0.42, 16))
+                balls.append(circle(tuple(p + n * (depth - 0.1)), 0.62, 16))     # a ball well into the cusp
             if 0 < k < n_c - 2 and k % 2 == 1:            # a keyhole in the board over every other scallop
                 q = a + dirv * (run * (k + 0.5) / n_c) + n * (skin + width * 0.28)
                 holes.append(cs_union([circle(tuple(q), 0.5, 16),
@@ -593,11 +604,11 @@ def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=TRIM_D, finial=5.0, c
                            poly([(cx - 0.6, vc - 2.9), (cx + 0.6, vc - 2.9), (cx, vc - 4.4)])]))
     frame = cs_union(parts)
     frame = cs_union([pc for pc in frame.decompose() if pc.area() > 2.0])
-    out = [ext(frame, 0.0, d)]
+    out = [_text(frame, 0.0, d)]
     if finial:
         fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.2), circle((cx, H + finial * 0.4), 0.7, 20),
                         poly([(cx - 0.45, H + finial - 1.2), (cx + 0.45, H + finial - 1.2), (cx, H + finial)])])
-        out.append(ext(fcs, 0.0, d + 0.2))
+        out.append(_text(fcs, 0.0, d + 0.2))
     return union(out)
 
 
@@ -645,11 +656,11 @@ def gable_crescent(L, slope, d_eave, skin=1.8, width=1.8, d=TRIM_D, finial=4.4):
         parts.append(apex_panel - dia)
     frame = cs_union(parts)
     frame = cs_union([pc for pc in frame.decompose() if pc.area() > 2.0])
-    out = [ext(frame, 0.0, d)]
+    out = [_text(frame, 0.0, d)]
     if finial:
         fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.0),
                         poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
-        out.append(ext(fcs, 0.0, d + 0.2))
+        out.append(_text(fcs, 0.0, d + 0.2))
     return union(out)
 
 
@@ -683,11 +694,11 @@ def gable_star(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.4):
                      poly([(cx - 0.5, vc - 2.6), (cx + 0.5, vc - 2.6), (cx, vc - 3.6)])])
     frame = cs_union([rafters, collar, post, disc, drop]) - (star - circle((cx, cy), 0.55, 16))
     frame = cs_union([pc for pc in frame.decompose() if pc.area() > 2.0])
-    out = [ext(frame, 0.0, d)]
+    out = [_text(frame, 0.0, d)]
     if finial:
         fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.0),
                         poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
-        out.append(ext(fcs, 0.0, d + 0.2))
+        out.append(_text(fcs, 0.0, d + 0.2))
     return union(out)
 
 
@@ -732,9 +743,9 @@ def gable_arcade(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.4, ba
     parts = [rafters, arc_band - cs_union(holes), post, ring] + drops
     frame = cs_union(parts)
     frame = cs_union([pc for pc in frame.decompose() if pc.area() > 2.0])
-    out = [ext(frame, 0.0, d)]
+    out = [_text(frame, 0.0, d)]
     if finial:
         fcs = cs_union([rect(cx - 0.45, H - 0.6, cx + 0.45, H + finial - 1.0),
                         poly([(cx - 0.45, H + finial - 1.0), (cx + 0.45, H + finial - 1.0), (cx, H + finial)])])
-        out.append(ext(fcs, 0.0, d + 0.2))
+        out.append(_text(fcs, 0.0, d + 0.2))
     return union(out)

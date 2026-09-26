@@ -256,23 +256,16 @@ def build(kit=None):
     post_h = S1 - 2.0 - 5.6 - H_floor          # the porch roof tucks under the flared skirt
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(5, ud, 16.0)],
                         planks=dict(pitch=1.6, border=1.4), joined=True, ledger_off=1.5, post="bobbin", rail="bead",
-                        arcade="rosette", skirt="shingles", pier_tex="pebble", roof_edge="beadreel")
+                        arcade="rosette", skirt="shingles", pier_tex="pebble", roof_edge="beadreel", top=True)
     fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     deck = P["deck"] - fkeep
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-    tabs = union([arc_ for arc_, _ in P["arcades"]])
-    for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
-        kit.add(f"PORCH-frame-{k}", "Olive", fr - tabs - fnd, group="porch")
-    for k, (arc_, A) in enumerate(P["arcades"]):
-        kit.add(f"PORCH-arcade-{k}", "Olive", arc_, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = MAIN.solid(grow=1.8, dz0=-20, dz1=0)
-    proof = P["roof"] - bld_keep - ins_keep
-    ptop = proof.bounding_box()[5]
-    kit.add("PORCH-roof", "Olive", proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), P=print_flip(), group="porch")
-    kit.add("PORCH-roof-top", "Roof", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
+    ptop = FT.add_porch_top(kit, "PORCH", P, bld_keep + ins_keep + fnd,
+                            "Olive", "Olive", tin_col="Roof")["top"].solid.bounding_box()[5]
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "Pebble", sm.transform(A) - fkeep, group="porch")
     ped = FT.entry_pediment(18.0, 3.4, 8.8)

@@ -10,7 +10,7 @@ import numpy as np
 from manifold3d import JoinType, Manifold as M
 
 from .core import (RIB, SLOT, Facade, box, brick, ccw, circle, cs_union, lattice, miters, offset, poly, rect, slab,
-                   sweep_run, union)
+                   sweep_run, union, compose, inv34)
 from .ornament import chamfer_box, chimney_pot, dentils, ext, keystone, spandrel, stroke
 from . import openings as O
 
@@ -1024,6 +1024,10 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
     the face of the beam and posts (``applied``, [(world solid, A)]), glued by their flat
     backs."""
     pts = ccw(poly_pts)
+    if top:                                     # the one-piece top replaces the upright frames
+        joined = False
+        if flat_arcades:
+            over = max(over, 2.4)               # the roof's edge covers the applied arcades
     edges = []
     for i in range(len(pts)):
         a, b = np.array(pts[i]), np.array(pts[(i + 1) % len(pts)])
@@ -1193,6 +1197,45 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         posts, rails, arcades = [], [], []
     return dict(deck=deck, floor=floor, posts=posts, rails=rails, arcades=arcades, roof=roof, steps=st,
                 sockets=[tuple(p) for p in where], frames=frames, top=top_piece, applied=applied)
+
+
+def add_porch_top(kit, tag, P, keep, roof_col, frame_col, tin_col=None, arcade_col=None, tin="flat", group="porch"):
+    """Add the pieces of a one-piece porch top (P from porch_turned(top=True)) to ``kit``:
+    ``{tag}-top`` (roof, beams, arcades, posts and railings, printed upside down on the
+    roof's flat top) and, for applied arcades, ``{tag}-lace-k`` (flat, in ``arcade_col``).
+    ``keep``: what to cut away (the house, the inserts). The top 0.8 mm of the roof is its tin:
+      - tin="flat" and roof_col == frame_col: printed with the top, the part's one filament
+        change at 0.8 mm (tin colour, then the trim colour);
+      - otherwise a flat sheet of its own (``{tag}-roof-tin``), and the top prints in
+        roof_col with its one change at the fascia's foot to frame_col (when they differ);
+      - tin="custom": the caller adds its own tin (a ribbed one); this returns it bare.
+    Returns dict(top=part, cap=the tin's solid or None)."""
+    from .kit import print_flip
+    top = P["top"] - keep
+    ptop = top.bounding_box()[5]
+    cap = None
+    if tin_col is not None and tin == "flat" and roof_col == frame_col:
+        sheet = top ^ box([-1e3, -1e3, ptop - 0.8], [1e3, 1e3, 1e3])
+        part = kit.add(f"{tag}-top", tin_col, top, P=print_flip(), change=(0.8, frame_col), group=group,
+                       render=[(tin_col, sheet), (frame_col, top - sheet)])
+    else:
+        body, btop = top, ptop
+        if tin_col is not None or tin == "custom":
+            cap = top.trim_by_plane([0, 0, 1.0], ptop - 0.8)
+            body, btop = top.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), ptop - 0.8
+            if tin == "flat":
+                kit.add(f"{tag}-roof-tin", tin_col, cap, group=group)          # the flat tin sheet
+        if roof_col == frame_col:
+            part = kit.add(f"{tag}-top", roof_col, body, P=print_flip(), group=group)
+        else:                                   # roof and fascia, then one change for the beams, posts, railings
+            zf = P["roof"].bounding_box()[2]
+            hc = round(math.ceil((btop - zf) / 0.2 - 1e-6) * 0.2, 1)
+            lo = body ^ box([-1e3, -1e3, -1e3], [1e3, 1e3, btop - hc])
+            part = kit.add(f"{tag}-top", roof_col, body, P=print_flip(), change=(hc, frame_col), group=group,
+                           render=[(roof_col, body - lo), (frame_col, lo)])
+    for k, (pan, A) in enumerate(P.get("applied", [])):
+        kit.add(f"{tag}-lace-{k}", arcade_col or frame_col, pan - keep, P=compose(ARCADE_FLAT, inv34(A)), group=group)
+    return dict(top=part, cap=cap)
 
 
 def entry_pediment(w, depth, rise, t=1.0, fan=True):

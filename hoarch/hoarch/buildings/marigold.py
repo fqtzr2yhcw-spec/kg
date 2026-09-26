@@ -242,19 +242,9 @@ def build(kit=None):
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     bld_keep = MAIN.solid(grow=1.45, dz0=-20, dz1=0)
-    pt = P["top"] - bld_keep - ins_keep
-    ptop = pt.bounding_box()[5]
-    kit.add("PORCH-roof-top", "Roof", pt.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")      # the flat tin sheet
-    body = pt.trim_by_plane([0, 0, -1.0], -(ptop - 0.8))
-    # gold roof and fascia, then one change to orange for the beams, posts and railings
-    zf = P["roof"].bounding_box()[2]                     # the fascia's foot
-    hc = math.ceil((ptop - 0.8 - zf) / 0.2 - 1e-6) * 0.2
-    zc = ptop - 0.8 - hc
-    lo = body ^ box([-1e3, -1e3, -1e3], [1e3, 1e3, zc])
-    kit.add("PORCH-top", "Gold", body, P=print_flip(), change=(round(hc, 1), "Orange"), group="porch",
-            render=[("Gold", body - lo), ("Orange", lo)])
-    for k, (pan, A) in enumerate(P["applied"]):
-        kit.add(f"PORCH-lace-{k}", "Gold", pan, P=compose(FT.ARCADE_FLAT, inv34(A)), group="porch")
+    # gold roof and fascia, then one change to orange for the beams, posts and railings; a flat
+    # tin sheet on top; the gold lace applied flat
+    FT.add_porch_top(kit, "PORCH", P, bld_keep + ins_keep, "Gold", "Orange", tin_col="Roof", arcade_col="Gold")
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "Stone", sm.transform(A) - fkeep, group="porch")
     e, u = MAIN.locate(W - 16.0, D)

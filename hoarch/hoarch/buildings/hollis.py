@@ -258,19 +258,11 @@ def build(kit=None):
     def porch(tag, ppoly, runs, steps_at):
         P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=steps_at, planks=dict(pitch=2.4, border=0.0),
                             joined=True, ledger_off=1.5, arcade="spindle", post="spindle", rail="spindle",
-                            skirt="hslats", pier_tex="block", roof_edge="button")
+                            skirt="hslats", pier_tex="block", roof_edge="button", top=True)
         deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
         kit.add(f"{tag}-deck", "PorchDeck", deck, P=print_flip(), group="porch",
                 render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-        tabs = union([arc for arc, _ in P["arcades"]])
-        for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
-            kit.add(f"{tag}-frame-{k}", "White", fr - tabs - fnd, group="porch")
-        for k, (arc, A) in enumerate(P["arcades"]):
-            kit.add(f"{tag}-arcade-{k}", "White", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
-        proof = P["roof"] - bld_keep - ins_keep - shut_keep
-        ptop = proof.bounding_box()[5]
-        kit.add(f"{tag}-roof", "White", proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), P=print_flip(), group="porch")
-        kit.add(f"{tag}-roof-tin", "TinRed", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
+        FT.add_porch_top(kit, tag, P, bld_keep + ins_keep + shut_keep + fnd, "White", "White", tin_col="TinRed")
         for k, (sm, A) in enumerate(P["steps"]):
             kit.add(f"{tag}-steps-{k}", "Fieldstone", sm.transform(A) - fkeep, group="porch")
 

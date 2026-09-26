@@ -279,28 +279,20 @@ def build(kit=None):
     P = FT.porch_turned([(0.0, y0), (0.0, y1), (W, y1), (W, y0)], runs, H_floor, post_h,
                         steps_at=[(1, DOOR_X, 18.0)], planks=dict(pitch=2.2, border=1.6), joined=True,
                         post="chamfered", rail="vase", arcade="scroll", skirt="panels", pier_tex="limestone",
-                        roof_edge="modillion")
+                        roof_edge="modillion", top=True)
     fkeep = slab(offset(poly(MAIN.pts), 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
     deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-    # posts and railings: one upright piece each side of the steps (round all the way round)
-    for k, fr in enumerate(sorted(P["frames"], key=lambda m: m.bounding_box()[0])):
-        kit.add(f"PORCH-frame-{k}", "White", fr, group="porch")
-    for k, (arc, A) in enumerate(P["arcades"]):
-        kit.add(f"PORCH-arcade-{k}", "White", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = MAIN.solid(grow=1.45, dz0=-20, dz1=0)
-    proof = P["roof"] - bld_keep - ins_keep
-    ptop = proof.bounding_box()[5]
-    cap = proof.trim_by_plane([0, 0, 1.0], ptop - 0.8)          # standing-seam tin cap, its own colour
-    bx = proof.bounding_box()
+    cap = FT.add_porch_top(kit, "PORCH", P, bld_keep + ins_keep, "White", "White", tin="custom")["cap"]
+    ptop = cap.bounding_box()[5]                                # standing-seam tin cap, its own colour
+    bx = cap.bounding_box()
     cap_cs = cap.slice(ptop - 0.4)
     ribs = union([box([x - 0.25, -1000, ptop - 0.01], [x + 0.25, 1000, ptop + 0.4])
                   for x in np.arange(bx[0] + 2.6, bx[3] - 1.0, 5.2)]) ^ M.extrude(cap_cs.offset(-0.5), 5).translate([0, 0, ptop - 1])
-    below = proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8))
-    kit.add("PORCH-roof", "White", below, P=print_flip(), group="porch")
     kit.add("PORCH-roof-tin", "Charcoal", cap + ribs, group="porch")
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "Stone", sm.transform(A) - fkeep, group="porch")
