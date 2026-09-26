@@ -30,7 +30,7 @@ BATCHES = {
     "colonial": ("The Colonial batch, houses 31-40", ["ellsworth", "oakhurst", "fairhaven", "westbrook", "winthrop"],
                  ["chatham", "vantassel", "whitmore", "pennock", "hathaway"], 45.0, 310.0),
 }
-VIEW = {}                # per-batch camera, where the default framing does not suit
+VIEW = {"shops": [-12, 31, 50, 0.84, [0, -18, -18]]}    # per-batch camera: the shop rows are shallower
 FILE = {"houses1": "Houses_01-10", "shops": "Shops_11-20", "houses2": "Houses_21-30", "colonial": "Colonial_31-40"}
 
 
