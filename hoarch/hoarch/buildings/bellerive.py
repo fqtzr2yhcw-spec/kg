@@ -101,7 +101,7 @@ def _openings():
     gwin = F.door_batten_arched(8.0, 12.6, rise=2.0)
     fdoor = F.door_creole(10.0, 31.0)
     fwin = F.door_creole(9.0, 22.0, transom=4.0)
-    v_main = H_FLOOR - ZF + 0.4
+    v_main = H_FLOOR - ZF + 0.8                  # the sills bear on the joint cornice's crown
     for x in FRONT_X:
         if x == XC:
             add(x, 0.0, 0.4, gdoor, "S-ground-door", "door")
@@ -154,7 +154,7 @@ def build(kit=None):
     kit.add("WALLS-1", "Rose", st["shells"][0], group="walls")
     kit.add("JOINT", "Rose", st["rings"][0], group="walls")
     lip = _corbel(base, 3.0, ZW) + lip_ring(base, 3.0, ZW)
-    kit.add("WALLS-2", "Limewash", st["shells"][1] + lip + CO.ledge(MAIN.pts, ZE, LEDGE), group="walls")
+    walls2 = kit.add("WALLS-2", "Limewash", st["shells"][1] + lip + CO.ledge(MAIN.pts, ZE, LEDGE), group="walls")
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
     CO.add_level(kit, rings, "CORNICE-J", "cornice")
     rings, _ = CO.level(MAIN.pts, ZE, EAVE)
@@ -163,7 +163,7 @@ def build(kit=None):
     kit.add("FOUNDATION", "Brick", fnd, group="foundation")
 
     # windows, doors and shutters
-    ins_keep = []
+    ins_keep, shut = [], []
     for o in OPENINGS:
         A = o.local_frame()
         sp = o.spec
@@ -177,8 +177,11 @@ def build(kit=None):
             w_op, h_op = b[2] - b[0], b[3] - b[1]
             left, right = C.shutters_pair(w_op, h_op - 2.0, casing=1.1, gap=0.6, make=F.shutter_batten)
             for s_, m in (("L", left), ("R", right)):
-                kit.add(f"SHUTTER-{o.name}-{s_}", "Green", m.translate([0, 0, 0.32]).transform(A),
-                        P=inv34(A), key=f"SHUTTER-{h_op:.1f}", group="shutters")
+                sp_ = kit.add(f"SHUTTER-{o.name}-{s_}", "Green", m.translate([0, 0, 0.32]).transform(A),
+                              P=inv34(A), key=f"SHUTTER-{h_op:.1f}", group="shutters")
+                shut.append(sp_.solid)
+    # the colombage timbers stop at the shutters' edges, so each shutter's flat back glues to the nogging
+    walls2.solid = walls2.solid - union(shut)
     print("walls + cornices + inserts", round(time.time() - t0, 1))
 
     # --- the gallery: planks on stuccoed columns (one part, upside down), the pink-house top
@@ -230,7 +233,8 @@ def build(kit=None):
     fr = FT.Facade((-GD, -GD), (W + GD, -GD), 0.0)
     A = fr.A.copy()
     A[:, 3] = fr.world((W + 2 * GD) / 2, 0.0, 0.0)
-    kit.add("STAIR", "Rose", F.stair_creole(18.0, H_FLOOR, 12, cheek=2.0).transform(A), group="gallery")
+    # the cheeks wrap the two columns that flank the stair, so the stair nests against the deck
+    kit.add("STAIR", "Rose", F.stair_creole(18.0, H_FLOOR, 12, cheek=2.0).transform(A) - deck, group="gallery")
     print("gallery", round(time.time() - t0, 1))
 
     # --- the main roof: a steep hip of crenel-cut shingles, two dormers, two stacks
@@ -294,7 +298,7 @@ if __name__ == "__main__":
     if "check" in sys.argv:
         bad = kit.interference()
         print("interfering pairs:", len(bad))
-        for b in bad[:40]:
+        for b in bad[:80]:
             print("  ", b)
         print("bed:", kit.bed_check())
     kit.render_npz(os.path.join(OUT, "bellerive.npz"))
