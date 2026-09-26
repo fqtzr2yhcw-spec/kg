@@ -173,19 +173,24 @@ def build(kit=None):
     AR = np.array([[0.0, -1 / n, S / n, W + DE], [1.0, 0.0, 0.0, Y0R], [0.0, S / n, 1 / n, ZE - DE * S]])
     cx, cy, cw = 56.0, 80.0, 9.0
     hole = box([cx - cw / 2 - 0.3, cy - cw / 2 - 0.3, ZE - 10], [cx + cw / 2 + 0.3, cy + cw / 2 + 0.3, ZE + 80])
-    kit.add("ROOF-L", "Tile", pan.transform(AL).trim_by_plane([-1.0, 0, 0], -W / 2), P=inv34(AL), group="roof")
-    kit.add("ROOF-R", "Tile", pan.transform(AR).trim_by_plane([1.0, 0, 0], W / 2) - hole, P=inv34(AR), group="roof")
+    roof_l = pan.transform(AL).trim_by_plane([-1.0, 0, 0], -W / 2)
+    roof_r = pan.transform(AR).trim_by_plane([1.0, 0, 0], W / 2) - hole
+    kit.add("ROOF-L", "Tile", roof_l, P=inv34(AL), group="roof")
+    kit.add("ROOF-R", "Tile", roof_r, P=inv34(AR), group="roof")
     zr = ZE + W / 2 * S + 1.2 * n + 1.2
     rsec = poly([(W / 2 - 2.0, zr - 2.0 * S), (W / 2, zr), (W / 2 + 2.0, zr - 2.0 * S), (W / 2 + 2.0, zr + 1.0),
                  (W / 2 - 2.0, zr + 1.0)])
     ridge = M.extrude(rsec, Lp - 0.4).rotate([90, 0, 0]).translate([0, y1, 0])          # clear of the crown's cap
+    # its underside runs on down over the pantiles and takes their shape: glued along both slopes
+    band = poly([(W / 2 - 2.0, zr - 2.0 * S), (W / 2, zr), (W / 2 + 2.0, zr - 2.0 * S), (W / 2 + 2.0, zr - 2.0 * S - 1.25),
+                 (W / 2, zr - 1.25), (W / 2 - 2.0, zr - 2.0 * S - 1.25)])
+    ridge = ridge + (M.extrude(band, Lp - 0.4).rotate([90, 0, 0]).translate([0, y1, 0]) - roof_l - roof_r)
     kit.add("RIDGE", "Tile", ridge, P=print_flip(), group="roof")
     zlow = round((ZE + (W - cx - cw / 2) * S - 3.0) / 0.2) * 0.2
     ch = TW.chimney("tapered", w=cw, d=cw, h=round((zr + 9.0 - zlow) / 0.2) * 0.2).translate([cx, cy, zlow])
     kit.add("CHIMNEY", "Brick", ch, group="roof")
     # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
     FT.key_into(kit, "BLADE", ["WALLS"], (0, 1, 0), depth=2.0)
-    FT.key_into(kit, "RIDGE", ["ROOF-L", "ROOF-R"], (0, 0, -1), depth=0.3, conform=True)
     print("specks dropped:", kit.drop_specks())
     return kit
 
