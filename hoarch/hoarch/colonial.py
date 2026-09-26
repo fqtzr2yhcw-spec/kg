@@ -12,7 +12,7 @@ import math
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from .core import RIB, SLOT, box, circle, cs_union, poly, rect, union
+from .core import RIB, SLOT, box, circle, cs_union, frame, poly, rect, union
 from .ornament import chamfer_box, ext, oval, stroke
 from . import cornice as CO, moulding as MD, openings as O, trimwork as TW
 
@@ -1974,3 +1974,191 @@ def foundation_boulder(reg, seed=0):
 
 
 TW.FOUNDATION_EXTRA.update(boulder=foundation_boulder)
+
+
+# ================================================================== the Hathaway (house 35)
+def clapboard_graduated(region, datum=0.0, p0=1.2, p1=1.8, span=40.0):
+    """Graduated clapboard: each storey starts with narrow courses at its foot, the exposure
+    growing course by course (``p0`` to ``p1`` over ``span``, on the 0.2 grid), every butt
+    finished with a little bead."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    pts = [(v0 - 2.0, 0.0)]
+    v = datum
+    while v > v0 - 2.0:                          # courses below the datum repeat the narrowest
+        v -= p0
+    while v < v1 + 2.0:
+        f = min(1.0, max(0.0, (v - datum) / span)) if v >= datum else 0.0
+        p = round((p0 + (p1 - p0) * f) / 0.2) * 0.2
+        pts += [(v, 0.30), (v + 0.2, 0.46), (v + 0.4, 0.40), (v + p, 0.06)]
+        v += p
+    pts.append((v, 0.0))
+    strip = M.extrude(poly(pts), (u1 - u0) + 2).transform(frame([u0 - 1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]))
+    return strip ^ M.extrude(region, 0.7).translate([0, 0, -0.1])
+
+
+def frieze_chain(L, h, b, pitch, margin, pair, half):
+    """A chain: long oval links along the band, every other one seen edge-on as a bar through
+    the ones either side."""
+    v0, v1 = 0.8, h - 0.8
+    vm = (v0 + v1) / 2
+    hh = v1 - v0
+    out = []
+    ln, lh = 3.2, min(hh, 2.4)
+    u = margin * 0.5
+    k = 0
+    while u + ln < L - margin * 0.5:
+        if k % 2 == 0:
+            o = oval((u + ln / 2, vm), ln / 2, lh / 2, 28)
+            out.append(_st(o - oval((u + ln / 2, vm), ln / 2 - 0.5, max(0.2, lh / 2 - 0.5), 28), b, 0.4))
+        else:
+            out.append(_st(rect(u - 0.3, vm - 0.3, u + ln + 0.3, vm + 0.3), b, 0.55))
+        u += ln - 0.6
+        k += 1
+    return out, []
+
+
+def frieze_trees(L, h, b, pitch, margin, pair, half):
+    """Trees of life: in every bay a stem with three pairs of branches curling up, a bud at the
+    top; a little mound at every station."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, 0.6):
+        if wd < 3.0:
+            continue
+        out.append(_st(rect(uc - 0.25, v0, uc + 0.25, v1 - 0.9), b, 0.4))
+        for j, t in enumerate((0.25, 0.5, 0.72)):
+            vy = v0 + hh * t
+            reach = min(wd / 2 - 0.5, 2.2 - j * 0.5)
+            for sg in (-1, 1):
+                pts = [(uc, vy), (uc + sg * reach * 0.6, vy + 0.3), (uc + sg * reach, vy + 0.9)]
+                out.append(_st(stroke(pts, 0.45), b, 0.35))
+        out.append(_st(oval((uc, v1 - 0.6), 0.45, 0.6), b, 0.45))
+    for u in CO._us(L, pitch, margin, 0.0):
+        out.append(_st(circle((u, v0), 0.9, 16) ^ rect(u - 1, v0, u + 1, v0 + 1), b, 0.35))
+    return out, []
+
+
+def foundation_splitgranite(reg, seed=0):
+    """Split granite: long slabs in two courses, the top edge of each still showing the row of
+    half-round drill holes it was split along (feather and wedge)."""
+    from .shell import _stepped
+    rng = np.random.default_rng(seed + 7)
+    b = reg.bounds()
+    hgt = b[3] - b[1]
+    courses = [(b[1], b[1] + hgt * 0.5), (b[1] + hgt * 0.5, b[3])]
+    blocks, holes = [], []
+    for k, (va, vb) in enumerate(courses):
+        u = b[0] - rng.uniform(0.0, 8.0) - k * 5.0
+        while u < b[2]:
+            L = rng.uniform(8.0, 15.0)
+            r = rect(u + 0.25, va + 0.2, u + L - 0.25, vb - 0.2)
+            blocks.append(r)
+            x = u + 1.2
+            while x < u + L - 1.0:
+                holes.append(circle((x, vb - 0.2), 0.35, 10))
+                x += 1.3
+            u += L
+    cs = cs_union(blocks) ^ reg
+    return _stepped(cs, 0.0, 0.5) - ext(cs_union(holes), 0.0, 0.8)
+
+
+CO.FRIEZE_EXTRA.update(chain=frieze_chain, trees=frieze_trees)
+TW.FOUNDATION_EXTRA.update(splitgranite=foundation_splitgranite)
+
+
+def window_smallpane(w, h, lites=(3, 3), rows=(3, 3), A=1.0, head="drip"):
+    """An early New England window: small panes (nine over nine), a narrow flat frame with a
+    bead, a thin sill; ``head`` "drip": a drip board with a bed moulding over the head (below),
+    "flush": the frame alone, tight under the eave (above)."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=lites, rows=rows, bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    frame_ = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext(frame_, 0.0, 0.8))
+    parts.append(ext((op.offset(A, JoinType.Miter, 4.0) - op.offset(A - 0.4, JoinType.Miter, 4.0)) ^ rect(-w, 0.0, w, h + A), 0.79, 1.1))
+    top = h + A
+    if head == "drip":
+        parts.append(ext(rect(-w / 2 - A - 0.3, h + A - 0.01, w / 2 + A + 0.3, h + A + 0.6), 0.0, 1.0))
+        parts.append(chamfer_box(-w / 2 - A - 0.7, h + A + 0.59, w / 2 + A + 0.7, h + A + 1.3, 0.0, 1.5, c=0.35))
+        top = h + A + 1.3
+    parts.append(chamfer_box(-w / 2 - A - 0.4, -1.0, w / 2 + A + 0.4, 0.01, 0.0, 1.3, c=0.3, bottom=0.5))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, top, -1.0)
+
+
+def door_swanneck(w, h, transom=4.0, A=1.3, pediment=True):
+    """A Connecticut River valley doorway: a six-panel door under a four-light transom between
+    fluted pilasters, an entablature, and over it a broken scroll (swan-neck) pediment: two
+    S-scrolls rising from the ends to curled rosettes, a turned urn finial between them. Flat
+    relief, printed face-up."""
+    op = rect(-w / 2, 0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    body = [ext(plug_cs, -pl, -1.0)]
+    lp, _ = O._leaf("six_panel", -w / 2 + 0.2, w - 0.4, dh, True)
+    body += lp
+    tcs = rect(-w / 2 + O.CLR + 0.5, dh + 0.3, w / 2 - O.CLR - 0.5, h - O.CLR - 0.5)
+    body = [p - ext(tcs, -pl + O.GLASS, 0.5) for p in body]
+    sash = body + [ext(tcs, -pl, -pl + O.GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
+    tb = tcs.bounds()
+    bars = [rect(-w, dh - 0.3, w, dh + 0.3)] + [rect(tb[0] + (tb[2] - tb[0]) * k / 4 - 0.25, dh, tb[0] + (tb[2] - tb[0]) * k / 4 + 0.25, h)
+                                                for k in (1, 2, 3)]
+    sash.append(ext(cs_union(bars) ^ plug_cs, -pl + O.GLASS - 0.01, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    pw = 2.0
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * w / 2, sg * (w / 2 + A + pw)))
+        um = (u0 + u1) / 2
+        pil = ext(rect(u0, 0.0, u1, h + 0.01), 0.0, 1.2)
+        for dx in (-0.55, 0.0, 0.55):
+            pil = pil - ext(rect(um + dx - 0.18, 2.4, um + dx + 0.18, h - 1.4), 0.95, 1.5)
+        parts.append(pil)
+        parts.append(chamfer_box(u0 - 0.3, 0.0, u1 + 0.3, 2.0, 0.0, 1.5, c=0.3, bottom=0.0))
+        parts.append(chamfer_box(u0 - 0.3, h - 1.2, u1 + 0.3, h + 0.01, 0.0, 1.5, c=0.3))
+    fw = w / 2 + A + pw + 0.6
+    parts.append(ext(rect(-fw + 0.4, h - 0.01, fw - 0.4, h + 2.6), 0.0, 1.2))
+    parts.append(chamfer_box(-fw, h + 2.59, fw, h + 3.6, 0.0, 1.8, c=0.4))
+    zb = h + 3.59
+    if not pediment:                          # the back door: the pilasters and entablature alone
+        return O._one_piece(sash, parts, op, plug_cs, pl, zb, 0.0)
+    for sg in (-1, 1):
+        pts = []
+        for t in np.linspace(0.0, 1.0, 20):          # an S from the outer end up and in
+            x = sg * (fw - 0.6 - (fw - 3.2) * t)
+            y = zb + 0.4 + 6.0 * (3 * t * t - 2 * t ** 3) + 0.8 * math.sin(math.pi * t)
+            pts.append((x, y))
+        parts.append(ext(stroke(pts, 1.0), 0.0, 1.6))
+        tip = pts[-1]
+        parts.append(ext(circle(tip, 1.2, 20), 0.0, 1.9))
+        parts.append(ext(circle(tip, 0.45, 12), 1.89, 2.3))
+        parts.append(ext(poly([(sg * (fw - 0.2), zb - 0.01), (sg * (fw - 0.2), zb + 1.2), (sg * (fw - 2.2), zb - 0.01)]), 0.0, 1.6))
+    urn = poly([(-0.7, zb - 0.01), (0.7, zb - 0.01), (0.5, zb + 0.6), (1.1, zb + 1.8), (0.8, zb + 3.0), (0.3, zb + 3.4),
+                (0.35, zb + 4.4), (0.0, zb + 5.2), (-0.35, zb + 4.4), (-0.3, zb + 3.4), (-0.8, zb + 3.0), (-1.1, zb + 1.8), (-0.5, zb + 0.6)])
+    parts.append(ext(urn, 0.0, 1.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, zb + 7.4, 0.0)
+
+
+def chimney_massive(w=18.0, d=12.0, h=30.0):
+    """A massive centre stack: brick with a pier standing proud at each corner, a projecting
+    band two thirds up, a corbelled cap, four square pots in a row. Stands on z = 0."""
+    h = round(h / 0.2) * 0.2
+    sh = round((h - 3.8) / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + TW._skin(w, d, 0.0, sh, TW._brick("common"))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            body = body + box([sx * w / 2 - (1.6 if sx > 0 else 0.0) - (0.0 if sx > 0 else 0.4), sy * d / 2 - (1.6 if sy > 0 else 0.0) - (0.0 if sy > 0 else 0.4), 0.0],
+                              [sx * w / 2 + (0.4 if sx > 0 else 1.6), sy * d / 2 + (0.4 if sy > 0 else 1.6), sh])
+    zb = round(sh * 0.62 / 0.2) * 0.2
+    body = body + TW._corbel_out(w + 0.8, d + 0.8, zb, 0.4) + box([-w / 2 - 0.8, -d / 2 - 0.8, zb - 0.01], [w / 2 + 0.8, d / 2 + 0.8, zb + 1.0])
+    z = sh
+    for g in (0.3, 0.7):
+        body = body + TW._corbel_out(w + 0.8 + 2 * (g - 0.3), d + 0.8 + 2 * (g - 0.3), z + 0.4, 0.4) + \
+            box([-w / 2 - 0.4 - g, -d / 2 - 0.4 - g, z + 0.39], [w / 2 + 0.4 + g, d / 2 + 0.4 + g, z + 1.0])
+        z += 1.0
+    for k in range(4):
+        body = body + TW._pot(1.1, 2.4, "square").translate([-w / 2 + w * (k + 0.5) / 4, 0, z - 0.01])
+    return body

@@ -669,6 +669,21 @@ the beam, the cupola, the dome, the dormers, the chimneys and the roof upright.
 and the eaves need no support); the PORCH-deck upside down; the DORMER-roof lying on its
 underside; the posts, the walls, the dormer and the chimneys upright.
 """),
+    "hathaway": ("THE HATHAWAY - NEW ENGLAND SALTBOX", """  1. FOUNDATION (split granite).
+  2. WALLS-1 onto the foundation's lip (the lean-to behind is part of it); the CORNICE-L parts
+     round the lean-to's eave (three sides).
+  3. JOINT onto WALLS-1's lip at the front block; the CORNICE-J parts round it; WALLS-2 onto the
+     joint's lip (both front gables are part of it).
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the swan-neck doorway at the front, the attic lights in the gables).
+  5. The CORNICE-E parts round the front eave band (across the gable feet too).
+  6. A LEAN-gable on the top of each of the lean-to's end walls, against the front block.
+  7. ROOF onto the lips at the wall tops (it runs from the front eave over the ridge and all the
+     way down the catslide to the lean-to's eave); CHIMNEY into the pocket at the ridge.
+  8. STOOP-front and STOOP-back (granite steps) at the doors.
+""", """The ROOF prints standing on its west end; the cornices' upper parts upside down; the walls,
+the lean-to's gables and the chimney upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

@@ -42,7 +42,7 @@ BUILDINGS = [
     ("marigold", "The Marigold"), ("primrose", "The Primrose"), ("rosecroft", "The Rosecroft"), ("twins", "Laurel & Myrtle"),
     ("larkspur", "The Larkspur"), ("juniper", "The Juniper"), ("camellia", "The Camellia"), ("wisteria", "The Wisteria"),
     ("hawthorn", "The Hawthorn"), ("magnolia", "The Magnolia"),
-    ("whitmore", "The Whitmore"), ("pennock", "The Pennock"), ("oakhurst", "The Oakhurst"), ("vantassel", "The Van Tassel"), ("westbrook", "The Westbrook"),
+    ("whitmore", "The Whitmore"), ("pennock", "The Pennock"), ("oakhurst", "The Oakhurst"), ("vantassel", "The Van Tassel"), ("hathaway", "The Hathaway"), ("westbrook", "The Westbrook"),
 ]
 NAMES = dict(BUILDINGS)
 HO = 87.1
@@ -272,7 +272,7 @@ def filament_table(G):
 
 
 def plates_table(G):
-    rows = [[Paragraph(f"<b>{h}</b>", ST["small"]) for h in ("Plate", "Colour", "Parts", "Time", "PLA", "Notes")]]
+    rows = [[Paragraph(f"<b>{h}</b>", ST["small"]) for h in ("Plate", "Colour", "Qty", "Time", "PLA", "Notes")]]
     for p in G["man"]["plates"]:
         sl = p.get("slice") or {}
         notes = []
@@ -449,13 +449,13 @@ def build_story(G):
     rest = [(n, p) for n, p in G["renders"].items() if n not in ("hero",)]
     if rest:
         s.append(Paragraph("Gallery", ST["h2"]))
-        cells = [img(p, 3.15 * inch, max_h=2.25 * inch) for _, p in rest[:6]]
+        cells = [img(p, 2.1 * inch, max_h=1.55 * inch) for _, p in rest[:6]]
         caps = [n.title() for n, _ in rest[:6]]
         rows = []
-        for i in range(0, len(cells), 2):
-            rows.append(cells[i:i + 2] + [""] * (2 - len(cells[i:i + 2])))
-            rows.append([Paragraph(c, ST["caption"]) for c in caps[i:i + 2]] + [""] * (2 - len(caps[i:i + 2])))
-        t = Table(rows, colWidths=[3.25 * inch] * 2)
+        for i in range(0, len(cells), 3):
+            rows.append(cells[i:i + 3] + [""] * (3 - len(cells[i:i + 3])))
+            rows.append([Paragraph(c, ST["caption"]) for c in caps[i:i + 3]] + [""] * (3 - len(caps[i:i + 3])))
+        t = Table(rows, colWidths=[2.17 * inch] * 3)
         t.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")]))
         s.append(t)
     return s
