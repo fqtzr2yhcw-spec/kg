@@ -223,6 +223,8 @@ def main():
     ap.add_argument("--palette", default=None,
                     help="JSON: {materials: {name: [hex, rough, metal]}, views: {...}, walk: [x, y_front, width]}")
     ap.add_argument("--ground", default="lawn", choices=["lawn", "none"])
+    ap.add_argument("--labels", default=None,
+                    help="JSON {name: [x, y, z]}: write <view>_labels.json with each point's pixel position")
     args = ap.parse_args()
     global WALK
     if args.palette:
@@ -256,6 +258,14 @@ def main():
         sc.render.filepath = os.path.join(args.out, f"{v}.png")
         bpy.ops.render.render(write_still=True)
         backdrop(sc.render.filepath)
+        if args.labels:
+            from bpy_extras.object_utils import world_to_camera_view
+            pts = json.load(open(args.labels))
+            pix = {}
+            for k, p in pts.items():
+                c = world_to_camera_view(sc, sc.camera, Vector(p))
+                pix[k] = [c.x * rx, (1.0 - c.y) * ry, c.z]
+            json.dump(pix, open(os.path.join(args.out, f"{v}_labels.json"), "w"), indent=1)
         print("rendered", v)
 
 

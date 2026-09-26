@@ -129,6 +129,9 @@ def _openings():
     for x in (26.0, 58.0):
         add(MAIN, x, D, V1, lo, f"N{x:.0f}-1", shutters=True)
         add(MAIN, x, D, V2, up, f"N{x:.0f}-2", shutters=True)
+    # and two upstairs over the kitchen ell, far enough out that its roof clears their sills
+    for x in (116.0, 156.0):
+        add(MAIN, x, D, V2, up, f"N{x:.0f}-2", shutters=True)
     # kitchen ell
     add(ELL, 168, 181.0, 7.0, ell_w, "ellE181", shutters=True)
     add(ELL, 104, 186.0, 7.0, ell_w, "ellW186", shutters=True)
