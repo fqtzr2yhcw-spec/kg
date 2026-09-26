@@ -143,6 +143,9 @@ one clear cause:
   squiggle.
 - **Porch panels**: spindles of 0.6–0.9 mm, right at the nozzle limit. The best of the
   batch, but the junctions blobbed.
+- **Gable trim (the Marigold's gold bargeboards, printed later)**: 0.8 mm thick, it snapped
+  on the plate. Every gable ornament, bargeboard and applied gable piece is now one
+  thickness, `gables.TRIM_D` = 2.2 mm (11 layers), with small raised details on top.
 
 The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers**,
 **0.16 mm** at the finest):

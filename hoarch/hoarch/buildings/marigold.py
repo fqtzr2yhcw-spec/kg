@@ -209,7 +209,7 @@ def build(kit=None):
     for k, (g, wl) in enumerate(zip(specs, rf["walls"])):
         big = wl["L"] > 40.0
         bb = LC.lace_bargeboard(wl["L"], wl["slope"], D_EAVE, skin=SKIN, width=5.6 if big else 4.2,
-                                medal=6.0 if big else 3.4, curl=3.0, d=1.6, margin=1.1)      # 1.6 thick: 0.8 broke
+                                medal=6.0 if big else 3.4, curl=3.0, margin=1.1)      # G.TRIM_D thick: 0.8 broke
         fw = wl["facade"]
         A = fw.A.copy()
         A[:, 3] = fw.world(0.0, 0.0, RAKE)

@@ -16,6 +16,8 @@ from .core import Facade, box, circle, cs_union, poly, rect, slab, union
 from .ornament import ext, stroke
 from . import roof as R
 
+TRIM_D = 2.2        # every gable ornament and bargeboard: 11 layers, thick enough not to snap (0.8 broke)
+
 
 def gabled_roof(pieces, z_eave, d_eave, gables, texture="fish", tex_kw=None, skin=1.8, rake=3.2, t=3.0,
                 inner_cs=None, hollow=2.4, fascia=1.6, clr=0.15):
@@ -60,7 +62,7 @@ def gabled_roof(pieces, z_eave, d_eave, gables, texture="fish", tex_kw=None, ski
     return dict(body=body, tex=body_tex, skins=skins, skin_tex=skin_tex, walls=walls, zlo=zlo)
 
 
-def bargeboard(L, slope, d_eave, skin=1.8, width=2.6, d=0.8, finial=5.0, drop=3.0, pierce="trefoil"):
+def bargeboard(L, slope, d_eave, skin=1.8, width=2.6, d=TRIM_D, finial=5.0, drop=3.0, pierce="trefoil"):
     """Pierced bargeboard for a gable of wall length L, in the wall's facade frame (v up from
     the eave, u from the wall's left end). It hangs on the rake's outer end: its top edge runs
     with the roof's top surface from eave to apex (covering the skin's end), its lower edge is
@@ -157,7 +159,7 @@ def hip_cap(a, b, half=1.0, up=0.7, drop=1.6):
     return M.hull_points(pts)
 
 
-def gable_truss(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, collar=0.42, finial=5.0, drop=3.4, fan=True):
+def gable_truss(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, collar=0.42, finial=5.0, drop=3.4, fan=True):
     """Stick-style gable truss hung on the rake like a bargeboard (same frame and placement):
     plain rafters over the skin's end, a collar tie across the gable at ``collar`` of its
     height, a king post from the apex through the collar ending in a drop, struts from the
@@ -206,7 +208,7 @@ def gable_truss(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, collar=0.42, finia
     return union(parts)
 
 
-def gable_sunburst(L, slope, d_eave, skin=1.8, width=1.4, d=0.8, collar=0.36, finial=4.4):
+def gable_sunburst(L, slope, d_eave, skin=1.8, width=1.4, d=TRIM_D, collar=0.36, finial=4.4):
     """Folk Victorian gable ornament hung on the rake like a bargeboard: narrow rafters with a
     scalloped lower edge, a collar across the gable over a frieze of short spindles, and a
     sunburst (a half-round hub and rays) standing on the collar, with a spike finial."""
@@ -263,7 +265,7 @@ def gable_sunburst(L, slope, d_eave, skin=1.8, width=1.4, d=0.8, collar=0.36, fi
     return union(out)
 
 
-def gable_tudor(L, slope, d_eave, skin=1.8, width=1.4, d=0.8, finial=4.0):
+def gable_tudor(L, slope, d_eave, skin=1.8, width=1.4, d=TRIM_D, finial=4.0):
     """Queen Anne / Tudor gable truss hung on the rake: plain rafters, a collar, a king post
     and two curved braces rising from the collar ends to the king post (an arch-braced
     truss), with a turned drop under the king post and a finial."""
@@ -307,7 +309,7 @@ def gable_tudor(L, slope, d_eave, skin=1.8, width=1.4, d=0.8, finial=4.0):
     return union(out)
 
 
-def gable_gingerbread(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
+def gable_gingerbread(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.0):
     """Folk Victorian gingerbread: a narrow rafter board edged with a row of sawn drops, and
     a spindle screen (a rail with short spindles and balls) hung across the peak from a
     king post that ends in a turned drop."""
@@ -352,7 +354,7 @@ def gable_gingerbread(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
     return union(out)
 
 
-def gable_eastlake(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, tie=0.3, finial=6.0):
+def gable_eastlake(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, tie=0.3, finial=6.0):
     """Eastlake gable ornament hung on the rake like a bargeboard: narrow rafters with a drop
     at each foot; a tie beam across the gable ``tie`` of the way up, faced with a row of
     square rosette panels; a half-round fan standing on the tie beam, its rays raised; a king
@@ -400,7 +402,7 @@ def gable_eastlake(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, tie=0.3, finial
     return union(parts)
 
 
-def gable_wheel(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, collar=0.34, finial=4.0):
+def gable_wheel(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, collar=0.34, finial=4.0):
     """Stick-style gable ornament hung on the rake: narrow rafters with a drop at each foot, a
     collar across the gable with a row of pendant drops under it, and a spoked wheel (a rim,
     eight spokes and a hub) standing on the collar and touching the rafters; a spike over the
@@ -448,7 +450,7 @@ def gable_wheel(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, collar=0.34, finia
     return ext(frame, 0.0, d) + ext(fcs, 0.0, d + 0.2)
 
 
-def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0, fan_v=None, clear=None, fan_r=None):
+def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.0, fan_v=None, clear=None, fan_r=None):
     """Free Classic gable ornament hung on the rake: raking boards, a cornice board across the
     gable's foot closing it into a pediment, and in the tympanum a half-round fan (a moulded
     rim, rays and a hub) standing on the cornice; a spike over the apex (the Larkspur). Flat,
@@ -489,7 +491,7 @@ def gable_pediment(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0, fan
     return union(out)
 
 
-def gable_pendant(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
+def gable_pendant(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.0):
     """Queen Anne gable ornament hung on the rake: raking boards, a pair of curved braces
     springing from the rafters to a turned king pendant that hangs below them from the apex,
     and a spike over the apex (the Juniper). Flat, prints face-up; place at w = rake."""
@@ -527,7 +529,7 @@ def gable_pendant(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.0):
     return union(out)
 
 
-def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=0.8, finial=5.0, collar=0.42):
+def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=TRIM_D, finial=5.0, collar=0.42):
     """Deep gingerbread bargeboards (the Camellia): each rafter board's foot cut into a row of
     cusps with a ball at every point and pierced with keyholes, a collar tie across the gable
     with a diamond-lattice panel above it up to the apex, a teardrop pendant under the collar
@@ -599,7 +601,7 @@ def gable_keyhole(L, slope, d_eave, skin=1.8, width=3.0, d=0.8, finial=5.0, coll
     return union(out)
 
 
-def gable_crescent(L, slope, d_eave, skin=1.8, width=1.8, d=0.8, finial=4.4):
+def gable_crescent(L, slope, d_eave, skin=1.8, width=1.8, d=TRIM_D, finial=4.4):
     """A crescent gable (the Wisteria): raking boards, a crescent arch hung between them from
     about a third of the way up (thick at its crown, thinning to its springings), a turned drop
     at each springing, a pierced diamond in the apex panel above the arch, and a spike over
@@ -651,7 +653,7 @@ def gable_crescent(L, slope, d_eave, skin=1.8, width=1.8, d=0.8, finial=4.4):
     return union(out)
 
 
-def gable_star(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4):
+def gable_star(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.4):
     """A star gable (the Hawthorn): raking boards, a collar tie across the gable, a king post
     from the apex down through a disc pierced with an eight-pointed star to the collar, a
     turned drop under the collar and a spike over the apex. Flat, prints face-up; place at
@@ -689,7 +691,7 @@ def gable_star(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4):
     return union(out)
 
 
-def gable_arcade(L, slope, d_eave, skin=1.8, width=1.6, d=0.8, finial=4.4, band_at=0.34):
+def gable_arcade(L, slope, d_eave, skin=1.8, width=1.6, d=TRIM_D, finial=4.4, band_at=0.34):
     """An arcaded gable (the Magnolia): raking boards and, across the gable, a band pierced
     with a row of little round-headed arches, a drop hung under each pier between them, a
     king post from the band to the apex carrying a ring, and a spike over the apex.

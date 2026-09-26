@@ -372,7 +372,7 @@ def build(kit=None):
     kit.add("DORMER-roof", "Slate", max(droof.decompose(), key=lambda m_: m_.volume()), group="roof")
     # the gable's sunburst and collar, flat on the shingles
     gf = MAIN.facades()[2]
-    kit.add("GABLE-trim", "Cream", gf.place(ext(GABLE_TRIM, 0.0, 0.8)), P=inv34(gf.A), group="roof")
+    kit.add("GABLE-trim", "Cream", gf.place(ext(GABLE_TRIM, 0.0, G.TRIM_D)), P=inv34(gf.A), group="roof")
     print("roof", round(time.time() - t0, 1))
 
     # --- the tower's hollow slate spire on its cornice, and a separate finial

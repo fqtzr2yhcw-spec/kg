@@ -21,6 +21,7 @@ import numpy as np
 from manifold3d import CrossSection as CS, JoinType, Manifold as M
 
 from .core import circle, cs_union, poly, rect, union
+from .gables import TRIM_D
 from .ornament import ext, stroke
 
 WEB = 0.55          # thinnest bar of wood left between two piercings
@@ -108,7 +109,7 @@ def _fit(region, near, rmin=0.9, rmax=3.2):
     return None
 
 
-def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=0.8, finial=5.6, drop=0.0, curl=2.2, medal=3.0, margin=0.4):
+def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=TRIM_D, finial=5.6, drop=0.0, curl=2.2, medal=3.0, margin=0.4):
     """A deep lace bargeboard for a gable of wall length L, in the wall's facade frame (v up
     from the eave, u from the wall's left end), hung on the rake's outer end as
     gables.bargeboard is: its top edge follows the roof's top surface from eave to apex. The
@@ -182,7 +183,7 @@ def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=0.8, finial=5.6, dr
     return union(parts)
 
 
-def gable_screen(L, slope, v0=0.0, band=1.8, corner=5.2, d=0.8):
+def gable_screen(L, slope, v0=0.0, band=1.8, corner=5.2, d=TRIM_D):
     """The band across a gable's foot (u 0..L, v0..v0 + band, on the wall face), pierced with
     eyelets, and a lace corner rising up each rake: a triangle ``corner`` long, its long
     side cut in cusps, pierced with a flower and eyelets. Face-up, sits in a landing on the
@@ -215,7 +216,7 @@ def medallion(r=3.0, d=0.8):
     return ext(disc, 0.0, d) + ext(rim + petals + circle((0.0, 0.0), 0.7, 16), d - 0.01, d + 0.4)
 
 
-def fan_hood(w, spring, band=1.2, ear=2.2, d=0.8, rays=9, fan=2.6):
+def fan_hood(w, spring, band=1.2, ear=2.2, d=TRIM_D, rays=9, fan=2.6):
     """A hood for a round-headed window ``w`` wide springing at ``spring``: a half-disc fan
     ``fan`` deep round the casing with a sunburst of raised rays, a raised round band along
     its inner edge, and a spiral ear at each springing. Local u centred, v from 0 (the
