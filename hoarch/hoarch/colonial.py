@@ -2164,3 +2164,229 @@ def chimney_massive(w=18.0, d=12.0, h=30.0):
     for k in range(4):
         body = body + TW._pot(1.1, 2.4, "square").translate([-w / 2 + w * (k + 0.5) / 4, 0, z - 0.01])
     return body
+
+
+# ================================================================== the Chatham (house 36)
+def shingles_diamond_band(region, datum=0.0, pitch=1.6, wtab=2.2, d=0.42):
+    """Weathered square shingles with every fifth course cut to diamond points (a band)."""
+    from .core import scallop_rows
+    return scallop_rows(region, pitch, wtab, d=d, datum=datum, shape=("square", "square", "square", "square", "diamond"), lap=1.6)
+
+
+def foundation_tabby(reg, seed=0):
+    """Tabby (lime, sand and oyster shell): a rough face studded with little shells (ovals and
+    half shells at random), under a smooth rendered cap."""
+    from .shell import _stepped
+    rng = np.random.default_rng(seed + 41)
+    b = reg.bounds()
+    top = b[3] - 1.2
+    face = rect(b[0], b[1], b[2], top)
+    shells = []
+    n = int((b[2] - b[0]) * (top - b[1]) / 5.0)
+    for _ in range(n):
+        c = (rng.uniform(b[0] + 0.6, b[2] - 0.6), rng.uniform(b[1] + 0.6, top - 0.6))
+        rx, ry = rng.uniform(0.35, 0.7), rng.uniform(0.3, 0.5)
+        o = oval(c, rx, ry, 14)
+        if rng.random() < 0.4:
+            o = o ^ rect(c[0] - 1, c[1], c[0] + 1, c[1] + 1)
+        shells.append(o)
+    out = ext(face, 0.0, 0.2) + _stepped(cs_union(shells) ^ face, 0.19, 0.35)
+    return out + chamfer_box(b[0], top, b[2], b[3], 0.0, 0.6, c=0.25, square=("u0", "u1"), bottom=0.6)
+
+
+def frieze_anchors(L, h, b, pitch, margin, pair, half):
+    """Anchors: a fouled anchor (shank, stock, crown and flukes) in every bay, a rope bead
+    between the stations."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, 0.6):
+        if wd < 2.6:
+            continue
+        s = min(hh, wd * 0.9)
+        base = v0 + (hh - s) / 2
+        out.append(_st(rect(uc - 0.25, base + 0.6, uc + 0.25, base + s - 0.3), b, 0.4))           # shank
+        out.append(_st(rect(uc - s * 0.3, base + s - 1.1, uc + s * 0.3, base + s - 0.6), b, 0.4))  # stock
+        out.append(_st(circle((uc, base + s - 0.2), 0.35, 10) - circle((uc, base + s - 0.2), 0.12, 8), b, 0.4))
+        arc = [(uc + s * 0.38 * math.cos(a), base + 0.9 + s * 0.3 * math.sin(a)) for a in np.linspace(math.pi * 1.05, 1.95 * math.pi, 12)]
+        out.append(_st(stroke(arc, 0.45), b, 0.4))                                                # crown
+        for sg in (-1, 1):
+            tip = (uc + sg * s * 0.38 * math.cos(0.05 * math.pi), base + 0.9 + s * 0.3 * math.sin(0.05 * math.pi))
+            out.append(_st(poly([tip, (tip[0] - sg * 0.1, tip[1] + 0.9), (tip[0] + sg * 0.45, tip[1] + 0.3)]), b, 0.4))
+    for u in CO._us(L, pitch, margin, 0.0):
+        for dv in (-0.5, 0.0, 0.5):
+            out.append(_st(circle((u + dv * 0.4, (v0 + v1) / 2 + dv), 0.3, 10), b, 0.35))
+    return out, []
+
+
+def frieze_knots(L, h, b, pitch, margin, pair, half):
+    """Sailor's knots: a rope along the band tied in a figure-of-eight knot in every bay."""
+    v0, v1 = 0.8, h - 0.8
+    vm = (v0 + v1) / 2
+    hh = v1 - v0
+    out = [_st(rect(margin * 0.4, vm - 0.22, L - margin * 0.4, vm + 0.22), b, 0.3)]
+    for uc, wd in CO._between(L, pitch, margin, pair, 0.6):
+        r = min(hh / 4, wd / 6)
+        if r < 0.5:
+            continue
+        for dx in (-r, r):
+            c = (uc + dx, vm)
+            out.append(_st(circle(c, r + 0.25, 20) - circle(c, max(0.15, r - 0.25), 16), b, 0.4))
+        out.append(_st(stroke([(uc - 0.4, vm - r), (uc + 0.4, vm + r)], 0.45), b + 0.3, 0.2))
+    return out, []
+
+
+CO.FRIEZE_EXTRA.update(anchors=frieze_anchors, knots=frieze_knots)
+TW.FOUNDATION_EXTRA.update(tabby=foundation_tabby)
+
+
+def window_hooded(w, h, lites=(3, 3), rows=(2, 2), A=1.0, hood=True):
+    """A Cape window: a plain frame and sill, and over it (``hood``) a little shed hood on two
+    knee brackets, its top sloping back to the wall; without the hood a plain cap board."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=lites, rows=rows, bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    parts.append(ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.9))
+    parts.append(chamfer_box(-w / 2 - A - 0.5, -1.1, w / 2 + A + 0.5, 0.01, 0.0, 1.3, c=0.3, bottom=0.5))
+    top = h + A
+    if hood:
+        hw = w / 2 + A + 0.9
+        v = h + A - 0.01
+        hh = 3.2
+        k = 0
+        while k * 0.4 < hh - 0.01:                       # the hood's sloping top, 0.4 at a time
+            dep = 2.6 - 2.0 * (k * 0.4) / hh
+            parts.append(ext(rect(-hw, v + k * 0.4, hw, v + (k + 1) * 0.4 + 0.01), 0.0, dep))
+            k += 1
+        for sg in (-1, 1):
+            u = sg * (w / 2 + A - 0.3)
+            for j in range(5):                           # knee brackets under it, deepest at the top
+                parts.append(ext(rect(u - 0.4, v - (j + 1) * 0.5, u + 0.4, v - j * 0.5 + 0.01), 0.0, 2.4 - j * 0.45))
+        top = v + hh
+    else:
+        parts.append(chamfer_box(-w / 2 - A - 0.5, h + A - 0.01, w / 2 + A + 0.5, h + A + 0.9, 0.0, 1.3, c=0.3))
+        top = h + A + 0.9
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, top, -1.1)
+
+
+def door_crossbible(w, h, transom=3.8, A=1.3):
+    """A Cape door: a 'cross and bible' leaf (four panels framing a cross above, two side by
+    side below), a five-light transom, pilasters with sunk lozenges, a dentilled cornice cap."""
+    op = rect(-w / 2, 0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(-w / 2 + O.CLR, 0.4, w / 2 - O.CLR, dh - 0.3), -1.01, -0.8)]
+    x0, x1 = -w / 2 + O.CLR + 0.7, w / 2 - O.CLR - 0.7
+    lock = round(dh * 0.42 / 0.2) * 0.2
+    cx, cyl = 0.4, lock + (dh - 1.0 - lock) * 0.55              # the cross's stile half-width and arm height
+    panels = [(x0, 1.1, -0.35, lock - 0.4), (0.35, 1.1, x1, lock - 0.4),
+              (x0, lock + 0.4, -cx - 0.1, cyl - 0.4), (cx + 0.1, lock + 0.4, x1, cyl - 0.4),
+              (x0, cyl + 0.4, -cx - 0.1, dh - 1.0), (cx + 0.1, cyl + 0.4, x1, dh - 1.0)]
+    for u0, v0, u1, v1 in panels:
+        body.append(chamfer_box(u0, v0, u1, v1, -0.81, 0.4, c=0.25))
+    tcs = rect(-w / 2 + O.CLR + 0.5, dh + 0.3, w / 2 - O.CLR - 0.5, h - O.CLR - 0.5)
+    body = [p - ext(tcs, -pl + O.GLASS, 0.5) for p in body]
+    sash = body + [ext(tcs, -pl, -pl + O.GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
+    tb = tcs.bounds()
+    bars = [rect(-w, dh - 0.3, w, dh + 0.3)] + [rect(tb[0] + (tb[2] - tb[0]) * k / 5 - 0.22, dh, tb[0] + (tb[2] - tb[0]) * k / 5 + 0.22, h)
+                                                for k in (1, 2, 3, 4)]
+    sash.append(ext(cs_union(bars) ^ plug_cs, -pl + O.GLASS - 0.01, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * w / 2, sg * (w / 2 + A + 1.8)))
+        um = (u0 + u1) / 2
+        pil = ext(rect(u0, 0.0, u1, h + 0.01), 0.0, 1.2)
+        for vc in (h * 0.3, h * 0.72):
+            pil = pil - ext(poly([(um, vc - 2.2), (um + 0.8, vc), (um, vc + 2.2), (um - 0.8, vc)]), 0.95, 1.5)
+        parts.append(pil)
+        parts.append(chamfer_box(u0 - 0.3, 0.0, u1 + 0.3, 1.8, 0.0, 1.5, c=0.3, bottom=0.0))
+    fw = w / 2 + A + 2.4
+    parts.append(ext(rect(-fw + 0.4, h - 0.01, fw - 0.4, h + 2.2), 0.0, 1.2))
+    teeth = cs_union([rect(u - 0.3, h + 2.19, u + 0.3, h + 2.9) for u in np.arange(-fw + 0.9, fw - 0.6, 1.2)])
+    parts.append(ext(teeth, 0.0, 1.6))
+    parts.append(chamfer_box(-fw, h + 2.89, fw, h + 3.8, 0.0, 1.9, c=0.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 3.8, 0.0)
+
+
+def shutter_pine(w, h, t=0.8):
+    """A board shutter with a pine tree cut through it near the top, two battens across its face
+    (local frame as features.shutter, prints face-up)."""
+    body = ext(rect(0, 0, w, h), 0.0, 0.55)
+    nb = max(2, int(w / 1.7))
+    body = body - ext(cs_union([rect(w * k / nb - 0.25, -1, w * k / nb + 0.25, h + 1) for k in range(1, nb)]), 0.4, 1.0)
+    for v in (h * 0.12, h * 0.5):
+        body = body + ext(rect(0.2, v - 0.45, w - 0.2, v + 0.45), 0.54, t)
+    cx, vb = w / 2, h * 0.64
+    tw = min(w * 0.36, 1.8)
+    tree = cs_union([poly([(cx - tw, vb + 0.9), (cx + tw, vb + 0.9), (cx, vb + 3.0)]),
+                     poly([(cx - tw * 0.8, vb + 2.0), (cx + tw * 0.8, vb + 2.0), (cx, vb + 3.9)]),
+                     rect(cx - 0.3, vb, cx + 0.3, vb + 1.0)])
+    return body - ext(tree, -1, 2)
+
+
+def chimney_soldier(w=11.0, d=11.0, h=24.0):
+    """A Cape stack: running-bond brick with a band of soldier bricks (stood on end) two thirds
+    up, a two-course corbelled cap, three short square flues on it. Stands on z = 0."""
+    from .skins import soldier_band
+    h = round(h / 0.2) * 0.2
+    sh = round((h - 4.4) / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + TW._skin(w, d, 0.0, sh, TW._brick("running"))
+    zb = round(sh * 0.66 / 0.2) * 0.2
+    body = body + TW._skin(w, d, zb, zb + 2.4, lambda reg, i: soldier_band(reg, zb, h=2.4, d=0.45))
+    z = sh
+    for g in (0.3, 0.6):
+        body = body + TW._corbel_out(w + 2 * (g - 0.3), d + 2 * (g - 0.3), z + 0.3, 0.3) + \
+            box([-w / 2 - g, -d / 2 - g, z + 0.29], [w / 2 + g, d / 2 + g, z + 0.8])
+        z += 0.8
+    for k in (-1, 0, 1):
+        f = box([k * w * 0.3 - 1.3, -1.3, z - 0.01], [k * w * 0.3 + 1.3, 1.3, h])
+        body = body + f - box([k * w * 0.3 - 0.7, -0.7, h - 1.0], [k * w * 0.3 + 0.7, 0.7, h + 1])
+    return body
+
+
+def dormer_cape(w=14.0, dep=16.0, hwall=11.0, pitch=1.0):
+    """A Cape dormer: a gabled front with a six-over-six light, a flat bargeboard with a turned
+    drop under its apex, and shingled cheeks. Local as dormer_pedimented; returns (body, core,
+    face)."""
+    rise = w / 2 * pitch
+    face = poly([(-w / 2, 0.0), (w / 2, 0.0), (w / 2, hwall), (0.0, hwall + rise), (-w / 2, hwall)])
+    body = ext(face, -dep, 0.0) - ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, 99), -dep - 1, -1.2)
+    lw, lh = w * 0.5, hwall - 3.4
+    light = rect(-lw / 2, 1.8, lw / 2, 1.8 + lh)
+    body = body - ext(light, -1.3, 1.0)
+    mr = 1.8 + lh / 2
+    bars = cs_union([rect(-lw / 2, mr - 0.3, lw / 2, mr + 0.3)] + [rect(x - 0.22, 1.8, x + 0.22, 1.8 + lh) for x in (-lw / 6, lw / 6)] +
+                    [rect(-lw / 2, v - 0.22, lw / 2, v + 0.22) for v in ((1.8 + mr) / 2, (mr + 1.8 + lh) / 2)]) ^ light
+    body = body + ext(bars, -1.2, -0.5) + ext(light.offset(0.8, JoinType.Miter, 4.0) - light, -0.01, 0.6)
+    body = body + chamfer_box(-lw / 2 - 1.0, 1.0, lw / 2 + 1.0, 1.8, -0.01, 0.9, c=0.3, bottom=0.9)
+    barge = face - face.offset(-1.0, JoinType.Miter, 4.0)
+    body = body + ext(barge ^ rect(-50, hwall - 0.4, 50, 99), -0.01, 0.7)
+    body = body + ext(poly([(-0.5, hwall + rise - 1.0), (0.5, hwall + rise - 1.0), (0.35, hwall + rise - 2.6), (0.0, hwall + rise - 3.2),
+                            (-0.35, hwall + rise - 2.6)]), -0.01, 0.9)
+    # the cheeks: shingles on each side face
+    side = poly([(0.0, 0.3), (0.0, hwall - 0.2), (-dep, hwall - 0.2), (-dep, 0.3)])               # (w, v)
+    tex = shingles_diamond_band(side, datum=0.3, pitch=1.4, wtab=1.8, d=0.35)
+    for sg in (-1, 1):
+        Ac = np.array([[0, 0, sg * 1.0, sg * w / 2], [0, 1.0, 0, 0], [sg * -1.0 if sg > 0 else 1.0, 0, 0, 0]])
+        Ac = np.array([[0, 0, sg * 1.0, sg * (w / 2 - 0.02)], [0, 1.0, 0, 0], [1.0, 0, 0, 0]])
+        body = body + tex.transform(Ac)
+    core = ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, hwall), -dep + 1.2, -1.2)
+    return body, core, face
+
+
+def millstone_step(r=6.0, t=1.8):
+    """A millstone for a doorstep: a flat disc with an eye in the middle and dressed furrows
+    (grooves in tangent sets) across its face. Local: centred, top at z = t."""
+    disc = M.cylinder(t, r, r, 64)
+    grooves = []
+    for k in range(8):
+        a = k * math.pi / 4
+        c, s = math.cos(a), math.sin(a)
+        for off in (0.0, 1.1):
+            p0 = (c * 1.4 - s * off, s * 1.4 + c * off)
+            p1 = (c * (r - 0.4) - s * (off + 1.6), s * (r - 0.4) + c * (off + 1.6))
+            grooves.append(stroke([p0, p1], 0.5))
+    disc = disc - ext(cs_union(grooves) ^ circle((0, 0), r - 0.3, 48), t - 0.2, t + 1)
+    return disc - M.cylinder(t + 2, 0.9, 0.9, 20).translate([0, 0, t - 0.6])

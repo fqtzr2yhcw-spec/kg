@@ -684,6 +684,21 @@ underside; the posts, the walls, the dormer and the chimneys upright.
 """, """The ROOF prints standing on its west end; the cornices' upper parts upside down; the walls,
 the lean-to's gables and the chimney upright.
 """),
+    "chatham": ("THE CHATHAM - CAPE COD", """  1. FOUNDATION (tabby: lime and oyster shell).
+  2. WALLS onto the foundation's lip: the whole storey, both gables and the east wing in one part.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the hooded windows, the cross-and-bible doors, the lights in the gables); a pair of
+     SHUTTERs beside each shuttered window.
+  4. The CORNICE-E parts round the main eave band (across the west gable's foot; they stop where
+     the wing meets the house); the CORNICE-W parts round the wing's eave.
+  5. ROOF onto the lip at the wall tops; CHIMNEY into the pocket at the ridge; each DORMER-core
+     into its DORMER, the three DORMERs into their pockets on the front slope, a DORMER-roof on
+     each.
+  6. WING-roof onto the wing's lip, against the east gable.
+  7. STOOP-front (the millstone) under the front door, STOOP-back at the back door.
+""", """The cornices' upper parts print upside down; the walls, the roofs, the dormers, the chimney
+and the millstone step upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
