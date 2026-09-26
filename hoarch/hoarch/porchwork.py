@@ -699,11 +699,19 @@ FRIEZES = {"scroll": frieze_scroll, "entablature": frieze_entablature, "valance"
            "tudor": frieze_tudor}
 
 
+# more styles, registered by other modules (hoarch.freeclassic): BALUSTERS[style] = (baluster(h),
+# pitch) for the turned railings; SKIRTS[style](reg, d) -> solid, as skirt_fill
+BALUSTERS = {}
+SKIRTS = {}
+
+
 # ------------------------------------------------------------------ skirts (under the deck)
 def skirt_fill(style, reg, d=1.2):
     """Skirt infill between the piers, in the deck's facade frame (u, v, w from 0 to d)."""
     if reg.is_empty():
         return M()
+    if style in SKIRTS:
+        return SKIRTS[style](reg, d)
     u0, v0, u1, v1 = reg.bounds()
     if style == "square":
         vs = cs_union([rect(u, v0 - 1, u + 0.5, v1 + 1) for u in np.arange(u0 + 0.6, u1, 1.6)]) ^ reg
