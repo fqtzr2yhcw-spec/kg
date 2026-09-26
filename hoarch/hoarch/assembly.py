@@ -699,6 +699,24 @@ the lean-to's gables and the chimney upright.
 """, """The cornices' upper parts print upside down; the walls, the roofs, the dormers, the chimney
 and the millstone step upright.
 """),
+    "winthrop": ("THE WINTHROP - GARRISON COLONIAL", """  1. FOUNDATION (galleted stone: chips of flint pressed into the joints).
+  2. WALLS-1 onto the foundation's lip: the brick lower storey (rat-trap bond) in one part.
+  3. JOINT onto WALLS-1: the girt. At the front it runs out 5 mm past the brick wall; that
+     overhang (the jetty) carries the upper storey.
+  4. WALLS-2 onto the JOINT's lip: the clapboard upper storey and both gables in one part.
+  5. The six DROPs (turned acorns) under the jetty's edge: two at the corners, four between the
+     windows.
+  6. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (segmental-arched lights below, key-capped lights above, small lights in the gables, a
+     Tudor-arched door front and back).
+  7. The CORNICE-J parts round the joint, the CORNICE-E parts round the eave band; each ring is in
+     two halves that meet the chimneys at the gable ends.
+  8. ROOF onto the lip at the wall tops.
+  9. The two CHIMNEYs stand on the ground against the gables, up through the notches in the rakes.
+ 10. STOOP-front and STOOP-back (stone steps) at the doors.
+""", """The cornices' upper parts and the acorn drops print upside down; the walls, the roof and the
+chimneys print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

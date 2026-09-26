@@ -2390,3 +2390,280 @@ def millstone_step(r=6.0, t=1.8):
             grooves.append(stroke([p0, p1], 0.5))
     disc = disc - ext(cs_union(grooves) ^ circle((0, 0), r - 0.3, 48), t - 0.2, t + 1)
     return disc - M.cylinder(t + 2, 0.9, 0.9, 20).translate([0, 0, t - 0.6])
+
+
+# ================================================================== the Winthrop (house 37)
+def brick_rattrap(region, datum=0.0, bl=2.4, bh=1.2, bed=0.2, d=0.28):
+    """Rat-trap bond: bricks laid on edge, so each shows a taller face, stretcher and header in
+    turn along each course (a Flemish pattern at a larger scale)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    hl = bh
+    unit = bl + hl
+    cells = []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        top = v + bh - bed
+        u = u0 - 2 * unit + (k % 2) * unit / 2
+        while u < u1 + unit:
+            cells.append(rect(u + SLOT / 2, v, u + bl - SLOT / 2, top))
+            cells.append(rect(u + bl + SLOT / 2, v, u + unit - SLOT / 2, top))
+            u += unit
+        k += 1
+    return M.extrude(cs_union(cells) ^ region, d)
+
+
+def clapboard_scarfed(region, datum=0.0, pitch=1.6, seed=5):
+    """Clapboards joined end to end in long diagonal scarf joints (a slanting groove across the
+    course) instead of butt joints, staggered from course to course."""
+    from .skins import _lap
+    if region.is_empty():
+        return M()
+    lap = _lap(region, pitch, [(0.0, 0.44), (0.2, 0.42), (pitch, 0.08)], datum)
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed)
+    cuts = []
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    for k in range(k0, math.ceil((v1 - datum) / pitch) + 1):
+        vk = datum + k * pitch
+        u = u0 - rng.uniform(0.0, 16.0)
+        while u < u1:
+            u += rng.uniform(14.0, 20.0)
+            cuts.append(stroke([(u - 0.7, vk + 0.1), (u + 0.7, vk + pitch - 0.1)], 0.4, caps=False))
+    return lap - ext(cs_union(cuts), 0.16, 1.0) if cuts else lap
+
+
+def frieze_linenfold(L, h, b, pitch, margin, pair, half):
+    """Linenfold: in every bay a panel carved like folded linen, upright folds with their ends
+    cut in a scalloped curl, inside a raised frame."""
+    v0, v1 = 0.7, h - 0.7
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, 0.4):
+        pw = min(wd - 0.8, 5.2)
+        if pw < 2.4:
+            continue
+        fr = rect(uc - pw / 2, v0, uc + pw / 2, v1)
+        out.append(_st(fr - fr.offset(-0.45, JoinType.Miter, 4.0), b, 0.4))
+        n = max(2, int((pw - 1.2) / 0.9))
+        for j in range(n):
+            x = uc - pw / 2 + 0.6 + (pw - 1.2) * (j + 0.5) / n
+            fold = cs_union([rect(x - 0.25, v0 + 0.9, x + 0.25, v1 - 0.9), circle((x, v0 + 0.9), 0.3, 10), circle((x, v1 - 0.9), 0.3, 10)])
+            out.append(_st(fold, b, 0.3 if j % 2 else 0.45))
+    return out, []
+
+
+def frieze_acorns(L, h, b, pitch, margin, pair, half):
+    """Acorns and oak leaves: in every bay an acorn in its cup between two lobed oak leaves; a
+    little stem at every station."""
+    v0, v1 = 0.7, h - 0.7
+    vm = (v0 + v1) / 2
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, 0.6):
+        if wd < 3.0:
+            continue
+        a = min(hh * 0.32, 1.1)
+        out.append(_st(oval((uc, vm - 0.2), a * 0.75, a), b, 0.4))
+        out.append(_st(poly([(uc - a * 0.9, vm + a * 0.3), (uc + a * 0.9, vm + a * 0.3), (uc + a * 0.7, vm + a * 1.0),
+                             (uc - a * 0.7, vm + a * 1.0)]), b, 0.5))
+        for sg in (-1, 1):
+            lc = (uc + sg * (a + 1.1), vm)
+            leaf = cs_union([_lens(lc, min(2.4, wd / 2 - a - 0.3), 0.9, sg * 0.3)] +
+                            [circle((lc[0] + sg * dx, vm + dy), 0.32, 8) for dx, dy in ((-0.5, 0.45), (0.2, 0.5), (-0.5, -0.45), (0.2, -0.5))])
+            out.append(_st(leaf, b, 0.35))
+    for u in CO._us(L, pitch, margin, 0.0):
+        out.append(_st(stroke([(u, v0 + 0.3), (u + 0.3, v1 - 0.3)], 0.4), b, 0.3))
+    return out, []
+
+
+def foundation_galleted(reg, seed=0):
+    """Galleted rubble: rough stones with little pebbles (gallets) pressed into the wide mortar
+    joints between them."""
+    from .shell import _stepped
+    rng = np.random.default_rng(seed + 5)
+    b = reg.bounds()
+    stones, gallets = [], []
+    v = b[1]
+    while v < b[3] - 0.5:
+        hc = float(rng.choice([2.0, 2.6, 3.2]))
+        u = b[0] - rng.uniform(0.0, 4.0)
+        while u < b[2]:
+            L = rng.uniform(3.0, 6.5)
+            cut = [float(rng.choice([0.2, 0.4, 0.6])) for _ in range(4)]
+            if min(L - 0.9, hc - 0.9) > 1.4:
+                stones.append(_knocked(u + 0.45, v + 0.4, u + L - 0.45, min(v + hc - 0.4, b[3] - 0.2), cut))
+            gallets.append(circle((u + L, v + hc * rng.uniform(0.3, 0.7)), 0.28, 8))
+            u += L
+        v += hc
+    region = reg
+    return _stepped(cs_union(stones) ^ region, 0.0, 0.45) + _stepped(cs_union(gallets) ^ region, 0.0, 0.3)
+
+
+CO.FRIEZE_EXTRA.update(linenfold=frieze_linenfold, acorns=frieze_acorns)
+TW.FOUNDATION_EXTRA.update(galleted=foundation_galleted)
+
+
+def window_segmental(w, h, rise=2.0, lites=(3, 3), rows=(4, 4), A=1.0):
+    """A window in a segmental-headed opening (the brick storey): the frame follows the arch,
+    a plain sill on a brick-on-edge course below; twelve over twelve."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, rise, lites=lites, rows=rows, bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    ring = (op.offset(A, JoinType.Round) - op) ^ rect(-w, 0.0, w, h + A + 1)
+    parts.append(ext(ring, 0.0, 0.9))
+    parts.append(chamfer_box(-w / 2 - A - 0.6, -1.2, w / 2 + A + 0.6, 0.01, 0.0, 1.4, c=0.35, bottom=0.6))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A, -1.2)
+
+
+def window_keycap(w, h, lites=(3, 3), rows=(4, 4), A=1.0):
+    """A window for the clapboard storey: a plain frame, twelve over twelve, under a moulded cap
+    broken in the middle by a raised key block."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=lites, rows=rows, bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.9)]
+    parts.append(chamfer_box(-w / 2 - A - 0.7, h + A - 0.01, w / 2 + A + 0.7, h + A + 1.0, 0.0, 1.5, c=0.35))
+    parts.append(chamfer_box(-1.0, h + A - 0.8, 1.0, h + A + 1.8, 0.0, 1.9, c=0.3))
+    parts.append(chamfer_box(-w / 2 - A - 0.4, -1.0, w / 2 + A + 0.4, 0.01, 0.0, 1.3, c=0.3, bottom=0.5))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A + 1.8, -1.0)
+
+
+def _tudor_arch(w, h, rise):
+    """A four-centred (Tudor) arch outline: straight jambs to ``h - rise``, then two quick
+    curves at the shoulders and two long flat ones to a low point."""
+    pts = [(-w / 2, 0.0), (w / 2, 0.0), (w / 2, h - rise)]
+    for t in np.linspace(0.0, 1.0, 12)[1:]:
+        a = t * math.pi / 2
+        x = w / 2 - (w * 0.18) * (1 - math.cos(a))
+        y = h - rise + rise * 0.55 * math.sin(a)
+        pts.append((x, y))
+    x1, y1 = pts[-1]
+    for t in np.linspace(0.0, 1.0, 10)[1:]:
+        pts.append((x1 * (1 - t), y1 + (h - y1) * math.sin(t * math.pi / 2)))
+    right = pts[2:]
+    left = [(-x, y) for x, y in reversed(right[:-1])]
+    return poly(pts[:2] + right + left)
+
+
+def door_tudor(w, h, rise=4.0, A=1.4):
+    """A seventeenth-century door: a pair of leaves of boards laid in a chevron and studded with
+    rows of nail heads, in a four-centred (Tudor) arched opening, a moulded frame following
+    the arch with carved spandrels."""
+    op = _tudor_arch(w, h, rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    body = [ext(plug_cs, -pl, -0.8)]
+    leaf = plug_cs.offset(-0.3, JoinType.Miter, 4.0)
+    chev = []
+    for k in range(-12, 30):
+        v = k * 1.4
+        for sg in (-1, 1):
+            chev.append(stroke([(0.0, v), (sg * w, v + w * 0.8)], 0.35, caps=False))
+    body.append(ext(leaf, -0.81, -0.6) - ext(cs_union(chev) ^ leaf, -0.75, -0.5))
+    body.append(ext(rect(-0.25, 0.3, 0.25, h - 0.5) ^ leaf, -0.81, -0.35))
+    studs = []
+    for v in np.arange(2.0, h - rise, 3.2):
+        for x in np.linspace(-w / 2 + 1.0, w / 2 - 1.0, 5):
+            studs.append(circle((x, v), 0.3, 8))
+    body.append(ext(cs_union(studs) ^ leaf, -0.61, -0.25))
+    sash = body + [ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    fr = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-50, 0.0, 50, 99)
+    parts.append(ext(fr, 0.0, 1.1) - ext(op.offset(0.75, JoinType.Miter, 4.0) - op.offset(0.35, JoinType.Miter, 4.0), 0.9, 1.3))
+    ob = op.offset(A, JoinType.Miter, 4.0).bounds()
+    # the head: a label moulding with a crown and a carved lozenge at its centre, returned down
+    # over a fluted pilaster each side (plinth at the foot, a carved stop for its capital)
+    xo = ob[2] + 2.0
+    parts.append(ext(rect(-xo, ob[3] - 0.01, xo, ob[3] + 1.0), 0.0, 1.5))
+    parts.append(ext(rect(-xo - 0.6, ob[3] + 0.99, xo + 0.6, ob[3] + 1.6), 0.0, 1.9))
+    parts.append(ext(poly([(0.0, ob[3] - 0.1), (1.1, ob[3] + 0.5), (0.0, ob[3] + 1.1), (-1.1, ob[3] + 0.5)]), 0.0, 1.9))
+    zs = ob[3] - 3.0
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * (ob[2] - 0.6), sg * xo))
+        xm = (x0 + x1) / 2
+        parts.append(ext(rect(x0, zs, x1, ob[3] + 0.01), 0.0, 1.5))
+        stop = ext(rect(x0 - 0.2, zs - 1.6, x1 + 0.2, zs + 0.01), 0.0, 1.6)
+        parts.append(stop + ext(circle((xm, zs - 0.8), 0.55, 16), 1.59, 2.0))
+        parts.append(ext(rect(x0 - 0.3, 0.0, x1 + 0.3, 2.2), 0.0, 1.3) + ext(rect(x0 - 0.1, 2.19, x1 + 0.1, 2.7), 0.0, 1.1))
+        shaft = ext(rect(x0, 2.69, x1, zs - 1.59), 0.0, 0.9)
+        flutes = cs_union([rect(xm + du - 0.22, 3.4, xm + du + 0.22, zs - 2.3) for du in (-0.55, 0.55)])
+        parts.append(shaft - ext(flutes, 0.6, 1.0))
+        # the spandrel: a flat plate carved with a trefoil at its roomiest point
+        sp = (rect(0.0, h - rise, sg * ob[2], ob[3]) if sg > 0 else rect(sg * ob[2], h - rise, 0.0, ob[3])) - op.offset(A, JoinType.Miter, 4.0)
+        parts.append(ext(sp, 0.0, 0.7))
+        for dd in np.arange(1.2, 0.25, -0.05):
+            core = sp.offset(-dd, JoinType.Round)
+            if not core.is_empty():
+                b = core.bounds()
+                cx, cy, r = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2, min(0.5, dd * 0.5)
+                leaf = cs_union([circle((cx + r * 0.9 * math.cos(a), cy + r * 0.9 * math.sin(a)), r, 12)
+                                 for a in (math.pi / 2, math.pi / 2 + 2.1, math.pi / 2 - 2.1)] + [circle((cx, cy), r * 0.6, 10)])
+                parts.append(ext(leaf ^ sp, 0.69, 1.15))
+                break
+    return O._one_piece(sash, parts, op, plug_cs, pl, ob[3] + 1.0, 0.0)
+
+
+def drop_acorn(h=6.0, r=1.2):
+    """A turned acorn drop for under the jetty: a square block at the top, a neck, a cup and an
+    acorn swelling to a point. Built hanging (the block at z = 0, the tip at -h); print it
+    flipped."""
+    prof = [(0.0, 0.0), (r * 0.55, 0.0), (r * 0.55, -h * 0.18), (r * 0.9, -h * 0.28), (r * 0.9, -h * 0.4), (r * 0.7, -h * 0.44)]
+    prof += [(r * (0.72 + 0.28 * math.sin(math.pi * t)), -h * (0.44 + 0.4 * t)) for t in np.linspace(0.05, 1.0, 8)]
+    prof += [(r * 0.3, -h * 0.94), (0.0, -h)]
+    body = M.revolve(poly([(x, -z) for x, z in prof]), 32).mirror([0, 0, 1.0])
+    return body + box([-r, -r, -h * 0.12], [r, r, 0.0])
+
+
+def chimney_shouldered(wb, d, h, shoulders=((0.3, 0.72), (0.55, 0.5)), cap=1.4):
+    """An exterior end chimney: a broad base (the fireplace's width ``wb``) that narrows in two
+    sloping shoulders (weatherings at 45 degrees, on the heights and widths given as fractions)
+    to a stack, a corbelled cap. u across the gable (x centred), y out from the wall (0 at the
+    wall face, d deep), z up from the ground. English-bond brick; prints upright."""
+    h = round(h / 0.2) * 0.2
+    body = None
+    z = 0.0
+    wcur = wb
+    segs = []
+    for (fz, fw) in shoulders:
+        zt = round(h * fz / 0.2) * 0.2
+        segs.append((z, zt, wcur))
+        wnext = wb * fw
+        z = zt
+        segs.append(("shoulder", zt, wcur, wnext))
+        z = zt + (wcur - wnext) / 2
+        wcur = wnext
+    segs.append((z, h - cap - 1.2, wcur))
+    parts = []
+    for s in segs:
+        if s[0] == "shoulder":
+            _, zt, w0, w1 = s
+            parts.append(M.hull_points([(x, y, zt - 0.01) for x in (-w0 / 2, w0 / 2) for y in (0.0, d)] +
+                                       [(x, y, zt + (w0 - w1) / 2) for x in (-w1 / 2, w1 / 2) for y in (0.0, d)]))
+        else:
+            z0, z1, w = s
+            parts.append(box([-w / 2, 0.0, z0], [w / 2, d, z1]))
+            face = TW._skin(w, d, z0, z1 - 0.2, TW._brick("english")).translate([0, d / 2, 0])
+            parts.append(face ^ box([-w / 2 - 1, 0.01, z0], [w / 2 + 1, d + 1, z1]))
+    body = union(parts)
+    zc = h - cap - 1.2
+    body = body + TW._corbel_out(wcur, d, zc + 0.4, 0.4).translate([0, d / 2, 0]) + \
+        box([-wcur / 2 - 0.4, -0.0, zc + 0.39], [wcur / 2 + 0.4, d + 0.4, zc + 1.2])
+    body = body + TW._corbel_out(wcur + 0.8, d + 0.4, zc + 1.6, 0.4).translate([0, d / 2 + 0.2, 0]) + \
+        box([-wcur / 2 - 0.8, 0.0, zc + 1.59], [wcur / 2 + 0.8, d + 0.8, h])
+    body = body - box([-wcur / 2 + 1.4, 1.4, h - 1.6], [wcur / 2 - 1.4, d - 1.0, h + 1])
+    # a sunk panel on the stack's outer face, a column of raised lozenges in it
+    zs0 = segs[-1][0]
+    pw, p0, p1 = wcur - 3.2, zs0 + (zc - zs0) * 0.35, zc - 3.0
+    if p1 - p0 > 8.0:
+        body = body - box([-pw / 2, d - 0.5, p0], [pw / 2, d + 2.0, p1])
+        nd = max(2, int(round((p1 - p0 - 1.6) / (pw * 1.15))))
+        hh = (p1 - p0 - 1.6) / nd
+        for k in range(nd):
+            zm = p0 + 0.8 + hh * (k + 0.5)
+            dia = poly([(0.0, zm - hh / 2), (pw * 0.34, zm), (0.0, zm + hh / 2), (-pw * 0.34, zm)])
+            body = body + ext(dia, 0.0, 0.5).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, d - 0.51], [0, 1.0, 0, 0]]))
+    return body
