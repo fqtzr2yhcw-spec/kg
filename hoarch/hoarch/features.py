@@ -758,14 +758,16 @@ def baluster(h, rmax=0.55, rmin=0.36, seg=20):
 
 
 def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pitch=8.0, foot_margin=0.5,
-                    stiles=True, style="turned"):
+                    stiles=True, style="turned", flat_cap=False):
     """Baluster railing between two posts, printed upright. Local frame: u along 0..L, v up
     from the porch floor (= print z), w across, centred. Feet carry the bottom rail
     ``foot`` above the floor; turned balusters; a hand rail with a rounded top.
     ``sink``: the feet run that far below the floor (into sockets), level with the posts'
     plinths when the railing is printed in one piece with its posts. There the posts are the
     stiles (``stiles=False``) and ``foot_margin`` keeps the end feet clear of the plinths: a
-    foot half over a plinth leaves a sliver PrusaSlicer fails on ("negative spacing")."""
+    foot half over a plinth leaves a sliver PrusaSlicer fails on ("negative spacing").
+    ``flat_cap``: a hand rail with a flat top and chamfered underside, for a railing printed
+    upside down in one piece with its porch roof (the top is then a flat bridge)."""
     parts = []
     nf = max(2, int((L - 2 * foot_margin + 1.0) / foot_pitch) + 1)
     for j in range(nf):
@@ -787,8 +789,12 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
             u = 0.7 + (L - 1.4) * (j + 0.5) / n
             parts.append(mk(vt - vb + 0.02).translate([u, 0.0, vb - 0.01]))
     # hand rail: square under-rail, rounded cap (in (w, v), extruded along u)
-    cap = poly([(-rail_w / 2, vt), (rail_w / 2, vt), (rail_w / 2, h - 0.4), (rail_w / 2 - 0.2, h - 0.2),
-                (rail_w / 2 - 0.4, h), (-rail_w / 2 + 0.4, h), (-rail_w / 2 + 0.2, h - 0.2), (-rail_w / 2, h - 0.4)])
+    if flat_cap:
+        cap = poly([(-rail_w / 2 + 0.3, vt), (rail_w / 2 - 0.3, vt), (rail_w / 2, vt + 0.3), (rail_w / 2, h),
+                    (-rail_w / 2, h), (-rail_w / 2, vt + 0.3)])
+    else:
+        cap = poly([(-rail_w / 2, vt), (rail_w / 2, vt), (rail_w / 2, h - 0.4), (rail_w / 2 - 0.2, h - 0.2),
+                    (rail_w / 2 - 0.4, h), (-rail_w / 2 + 0.4, h), (-rail_w / 2 + 0.2, h - 0.2), (-rail_w / 2, h - 0.4)])
     rail = M.extrude(cap, L).transform(np.array([[0, 0, 1.0, 0], [1.0, 0, 0, 0], [0, 1.0, 0, 0]]))
     parts.append(rail)
     return union(parts)
@@ -950,6 +956,36 @@ def porch_arcade(u_start, u_end, posts_u, H, beam=2.2, tb=2.2, ts=1.0, drop=5.0,
     return union(parts)
 
 
+def applied_arcade(u0, u1, posts_u, H, beam=2.2, t=2.2, drop=5.0, cap=3.0, style="lace", bays=None):
+    """A flat arcade applied to the face of a one-piece porch top (the pink-house way: the
+    fine work is its own flat piece with one big flat back to glue): a beam strip along the
+    whole run, a block and rosette over every post, and a spandrel in every bay. Local: u
+    along, v up from the floor, back at w = 0 against the beam's and posts' faces, front at
+    w = t. Prints lying on its back (ARCADE_FLAT); a lace never starts in mid-air.
+    ``bays``: the (a, b) post pairs that get a spandrel (default: every pair)."""
+    vb = H - beam
+    parts = [box([u0, vb, 0.0], [u1, H, t])]
+    parts.append(box([u0, vb, t - 0.01], [u1, vb + 0.4, t + 0.3]))            # bead
+    parts.append(box([u0, H - 0.4, t - 0.01], [u1, H, t + 0.3]))              # fillet
+    for u in [u for u in posts_u if u0 + 1.0 <= u <= u1 - 1.0]:
+        blk = chamfer_box(u - 1.2, vb + 0.55, u + 1.2, H - 0.55, t - 0.01, 0.45, c=0.25)
+        ros = ext(circle((u, (vb + H) / 2), 0.42, 16), t + 0.4, t + 0.7)
+        parts.append(blk + ros)
+    from . import porchwork as PW
+    from . import lace as LC
+    fn = {"gothic": _gothic_spandrel_cs, "braced": _braced_spandrel_cs, "sawn": _spandrel_cs,
+          "lace": LC.lace_spandrel_cs}.get(style) or PW.FRIEZES[style]
+    for a, b in (bays if bays is not None else zip(posts_u[:-1], posts_u[1:])):
+        ua, ub = a + cap / 2 + 0.1, b - cap / 2 - 0.1
+        if ub - ua < 6.0:
+            continue
+        sp = fn(ua, ub, vb - drop, vb)
+        body = ext(sp, 0.0, t)
+        rim = ext(sp.offset(-0.55, JoinType.Round).offset(0.05, JoinType.Round), t - 0.3, t + 1)
+        parts.append(body - rim)
+    return union(parts)
+
+
 # (x, y, z) z-up part -> facade local (u, v, w) = (x, z, -y)
 Z_UP_TO_FACADE = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, -1.0, 0, 0]])
 # print transform for arcades: local (u, v, w) -> (u, w, -v): upside down on the beam's top edge
@@ -961,7 +997,7 @@ ARCADE_FLAT = np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0]])
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
                  boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0, arcade="sawn", post="turned",
                  rail="turned", skirt="lattice", pier_tex="brick", roof_edge="dentil", planks=None, drop=5.0,
-                 flat_arcades=False):
+                 flat_arcades=False, top=False, peg=1.6):
     """Porch with turned posts, upright railings and edge-printed arcades.
     ``planks`` = dict for porch_planks(): the floor is planks printed with the deck (one part,
     upside down, one filament change at the planks' thickness) instead of a separate floor.
@@ -979,7 +1015,14 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
     A)], roof, steps=[(local, A)], sockets=[(x, y)]).
     ``joined``: the posts and railings of each connected chain of runs are one piece
     (``frames``), printed upright on the plinths and the railing feet, which drop into
-    sockets in the floor; ``posts`` and ``rails`` are then empty."""
+    sockets in the floor; ``posts`` and ``rails`` are then empty.
+    ``top``: the pink-house way. The roof, the beams (with the arcades, when they print on
+    edge), the posts and the railings are one piece (``top``), printed upside down on the
+    roof's flat top: the posts stand upright, the arches are upside down and need nothing
+    under them, and nothing but the whole top is glued. A square ``peg`` under every post
+    drops into a socket in the floor. ``flat_arcades`` then become flat pieces applied to
+    the face of the beam and posts (``applied``, [(world solid, A)]), glued by their flat
+    backs."""
     pts = ccw(poly_pts)
     edges = []
     for i in range(len(pts)):
@@ -1012,8 +1055,18 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
     ph = post_h - beam + 0.4                    # plinth sits 0.4 down in a floor socket
     from . import porchwork as PW
     post_style = post
-    post = PW.POSTS[post_style](ph, collar=(rail_h + 0.4) if joined else None)
-    posts = [post.translate([p[0], p[1], H_floor - 0.4]) for p in where]
+    if top:                                     # the plinth stands on the floor; the post runs up into the beam
+        ph = post_h - beam + 0.2
+        try:
+            post = PW.POSTS[post_style](ph, collar=None, slot=None)
+        except TypeError:
+            post = PW.POSTS[post_style](ph, collar=None)
+        posts = [post.translate([p[0], p[1], H_floor]) for p in where]
+        pegs = [box([p[0] - peg / 2, p[1] - peg / 2, H_floor - 1.8], [p[0] + peg / 2, p[1] + peg / 2, H_floor + 0.2])
+                for p in where]
+    else:
+        post = PW.POSTS[post_style](ph, collar=(rail_h + 0.4) if joined else None)
+        posts = [post.translate([p[0], p[1], H_floor - 0.4]) for p in where]
     floor = None
     if boards is not None:
         floor = porch_floor(pts, outer, H=H_floor, **boards)
@@ -1033,7 +1086,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         skip = [(u - w / 2, u + w / 2) for (ri, u, w) in steps_at if ri == k]
         # the square plinths stay square to the plan: on a slanted run they reach further;
         # a joined railing runs into the round shafts instead
-        clr = 0.8 if joined else max(1.75, 1.6 * (abs(f.u[0]) + abs(f.u[1])) + 0.15)
+        clr = 0.8 if (joined or top) else max(1.75, 1.6 * (abs(f.u[0]) + abs(f.u[1])) + 0.15)
         for a_, b_ in zip(us[:-1], us[1:]):
             if any(not (b_ <= s0 or a_ >= s1) for s0, s1 in skip):
                 continue
@@ -1041,9 +1094,10 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             if L < 3.0:
                 continue
             # railing_section is built z-up; facade frames are (u, v up, w out)
-            if joined:        # end feet clear of the square plinths (they reach further on a slant)
+            if joined or top:  # end feet clear of the square plinths (they reach further on a slant)
                 ext_ = 1.6 * (abs(f.u[0]) + abs(f.u[1]))
-                rs = railing_section(L, rail_h, sink=0.4, foot_margin=ext_ + 0.8 - clr, stiles=False, style=rail)
+                rs = railing_section(L, rail_h, sink=0.0 if top else 0.4, foot_margin=ext_ + 0.8 - clr, stiles=False,
+                                     style=rail, flat_cap=top)
             else:
                 rs = railing_section(L, rail_h, style=rail)
             rails.append(rs.translate([a_ + clr, 0, 0]).transform(Z_UP_TO_FACADE).transform(A))
@@ -1061,7 +1115,10 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         if nxt is not None and np.allclose(nxt["a"], r["b"], atol=0.05) and lens[k + 1] > lens[k]:
             u1 = us[-1] - beam / 2 - 0.1
             stops.append((k, k + 1, us[-1]))
-        arc = porch_arcade(u0, u1, us, post_h, beam=beam, style=arcade, drop=drop, flat=flat_arcades)
+        if top and flat_arcades:                 # a plain beam flush with the posts' faces; the arcade is applied
+            arc = box([us[0] - 1.6, post_h - beam, -1.6], [us[-1] + 1.6, post_h, 1.6])
+        else:
+            arc = porch_arcade(u0, u1, us, post_h, beam=beam, style=arcade, drop=drop, flat=flat_arcades)
         arcades.append((arc.transform(A), A))
     # a stopped end meets the covering beam square only at a right angle: clear it of that
     # beam (on any angle) and of the corner post's square capital below the beam
@@ -1108,8 +1165,34 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
                 deck = deck - sock
                 deck = union([c for c in deck.decompose() if c.volume() > 0.5])
         posts, rails = [], []
+    top_piece, applied = None, []
+    if top:
+        top_piece = union([roof] + posts + pegs + rails + [a for a, _ in arcades])
+        sock = union([box([p[0] - peg / 2 - 0.2, p[1] - peg / 2 - 0.2, H_floor - 2.0],
+                          [p[0] + peg / 2 + 0.2, p[1] + peg / 2 + 0.2, H_floor + 1.0]) for p in where])
+        if floor is not None:
+            floor = floor - sock
+        deck = deck - sock
+        if flat_arcades:
+            t = 2.2
+            for k, r in enumerate(runs):
+                us = sorted(r["posts"])
+                if len(us) < 2:
+                    continue
+                f = Facade(r["a"], r["b"], 0.0)
+                ends = []
+                for end, u_post, other in ((0, us[0], k - 1), (1, us[-1], k + 1)):
+                    covered = any(kk == k and jj == other for kk, jj, _ in stops)
+                    covers = any(kk == other and jj == k for kk, jj, _ in stops)
+                    reach = 1.6 if covered else (1.6 + t if covers else 1.6)
+                    ends.append(u_post - reach if end == 0 else u_post + reach)
+                Ap = f.A.copy()
+                Ap[:, 3] = np.r_[f.p0 - f.n * inset + f.n * 1.6, H_floor]
+                pan = applied_arcade(ends[0], ends[1], us, post_h, beam=beam, t=t, drop=drop, style=arcade)
+                applied.append((pan.transform(Ap), Ap))
+        posts, rails, arcades = [], [], []
     return dict(deck=deck, floor=floor, posts=posts, rails=rails, arcades=arcades, roof=roof, steps=st,
-                sockets=[tuple(p) for p in where], frames=frames)
+                sockets=[tuple(p) for p in where], frames=frames, top=top_piece, applied=applied)
 
 
 def entry_pediment(w, depth, rise, t=1.0, fan=True):

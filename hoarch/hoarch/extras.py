@@ -80,10 +80,12 @@ def iron_fence(L, h=7.0, pitch=1.4, bar=0.6, t=0.8, post=1.8):
     return ext(cs_union(cells), 0.0, t)
 
 
-def rocking_chair(scale=1.0):
+def rocking_chair(scale=1.0, rug=False):
     """A porch rocking chair: two flat side frames (a rocker, legs, an arm and a high back)
     joined by the seat and the back. Local: x forward, y up, z across (0..3.4); it prints
-    lying on its side (z = 0 on the bed). About 7 mm tall at HO."""
+    lying on its side (z = 0 on the bed). About 7 mm tall at HO. ``rug``: it stands on a
+    small round-ended mat 0.8 thick (y = -0.5..0.3), a flat foot to glue instead of two
+    rocker edges."""
     s = scale
     side = cs_union([stroke([(-2.6 * s, 0.6 * s), (-1.0 * s, 0.1 * s), (1.2 * s, 0.1 * s), (2.6 * s, 0.7 * s)], 0.6 * s),
                      rect(-1.6 * s, 0.1 * s, -1.0 * s, 3.2 * s), rect(1.0 * s, 0.1 * s, 1.6 * s, 3.2 * s),
@@ -94,7 +96,12 @@ def rocking_chair(scale=1.0):
     sides = [ext(side, 0.0, 0.6 * s), ext(side, wdt - 0.6 * s, wdt)]
     seat = ext(rect(-1.8 * s, 2.8 * s, 1.8 * s, 3.4 * s), 0.0, wdt)
     back = ext(poly([(-1.8 * s, 3.3 * s), (-1.2 * s, 3.3 * s), (-2.2 * s, 7.0 * s), (-2.8 * s, 7.0 * s)]), 0.0, wdt)
-    return union(sides + [seat, back])
+    parts = sides + [seat, back]
+    if rug:
+        mat = cs_union([rect(-3.0 * s + wdt / 2, 0.0, 3.0 * s - wdt / 2, wdt), circle((-3.0 * s + wdt / 2, wdt / 2), wdt / 2, 24),
+                        circle((3.0 * s - wdt / 2, wdt / 2), wdt / 2, 24)])
+        parts.append(M.extrude(mat, 0.8).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, -0.5], [0, 1.0, 0, 0]])))
+    return union(parts)
 
 
 def flower_box(L, h=2.2, d=2.0, blooms=True):

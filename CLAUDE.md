@@ -40,6 +40,13 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
   - Double eaves are welcome for more detail.
 - Porch floors are slotted boards (planks), with extra detail (blocks and so on) like the pink
   house.
+- Porches are built like the pink house: the posts are one piece with the porch top (roof,
+  beams, railings), so no post is glued on its own; pegs under the posts drop into the floor.
+- Every part needs a surface that is easy to glue. Super glue leaves a crust, so small pieces
+  (posts, finials, little accents) must not hang on a tiny glue spot: join them to a bigger
+  part, or give them a flat face, a socket or a peg.
+- V-shaped gable trim (bargeboards like the Marigold's): solid ties between the accents
+  (flowers, scrolls, medallion, finial) so nothing breaks off.
 - Windows and doors:
   - Frame and glass/inlay are one part (a plug plus a frame), with supports under the frame.
   - Frames must fit into the window openings.

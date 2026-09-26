@@ -218,7 +218,9 @@ def build(kit=None):
         kit.add(f"BARGE-{k}", "Gold", bw, P=inv34(A), key=f"BARGE-{wl['L']:.0f}", group="gable")
     print("roof", round(time.time() - t0, 1))
 
-    # --- the porch across the front: boxed posts, lace arches and railings, planked floor
+    # --- the porch across the front, the pink-house way: the roof, beam, boxed posts and lace
+    # railings are one piece (printed upside down on the roof's flat top), pegged into the
+    # planked floor; the lace arches are flat pieces glued flat to the beam and posts
     PX0, PX1 = -1.0, W + 1.0
     ppoly = [(PX0, -PD), (PX1, -PD), (PX1, 0.0), (PX0, 0.0)]
     Lf = PX1 - PX0
@@ -230,28 +232,29 @@ def build(kit=None):
     post_h = 36.0                   # the porch roof stays under the eave cornice
     P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(1, m, 16.0)],
                         planks=dict(pitch=1.8, border=1.2), joined=False, ledger_off=1.5, arcade="lace", post="boxed",
-                        rail="lace", skirt="rings", pier_tex="coquina", roof_edge="scallop", drop=9.6, flat_arcades=True)
+                        rail="lace", skirt="rings", pier_tex="coquina", roof_edge="scallop", drop=9.6, flat_arcades=True,
+                        top=True, over=2.4)
     fkeep = slab(offset(MAIN.cs, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
-    socks = union([box([x - 1.75, y - 1.75, H_floor - 0.4], [x + 1.75, y + 1.75, H_floor + 1]) for x, y in P["sockets"]])
-    deck = P["deck"] - fkeep - socks
+    deck = P["deck"] - fkeep                   # (the pegs' sockets are cut in it already)
     deck = union([c for c in deck.decompose() if c.volume() > 0.5])
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
             render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-    tabs = union([arc for arc, _ in P["arcades"]])
-    for k, po in enumerate(P["posts"]):
-        kit.add(f"PORCH-post-{k}", "Orange", po - tabs, key="PORCH-post", group="porch")
-    for k, rl in enumerate(P["rails"]):
-        L_ = rl.bounding_box()
-        kit.add(f"PORCH-rail-{k}", "Gold", rl, key=f"PORCH-rail-{max(L_[3] - L_[0], L_[4] - L_[1]):.1f}", group="porch")
-    for k, (arc, A) in enumerate(P["arcades"]):
-        kit.add(f"PORCH-arcade-{k}", "Gold", arc, P=compose(FT.ARCADE_FLAT, inv34(A)), group="porch")
     bld_keep = MAIN.solid(grow=1.45, dz0=-20, dz1=0)
-    proof = P["roof"] - bld_keep - ins_keep
-    ptop = proof.bounding_box()[5]
-    kit.add("PORCH-roof", "Gold", proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), P=print_flip(), group="porch")
-    kit.add("PORCH-roof-top", "Roof", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
+    pt = P["top"] - bld_keep - ins_keep
+    ptop = pt.bounding_box()[5]
+    kit.add("PORCH-roof-top", "Roof", pt.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")      # the flat tin sheet
+    body = pt.trim_by_plane([0, 0, -1.0], -(ptop - 0.8))
+    # gold roof and fascia, then one change to orange for the beams, posts and railings
+    zf = P["roof"].bounding_box()[2]                     # the fascia's foot
+    hc = math.ceil((ptop - 0.8 - zf) / 0.2 - 1e-6) * 0.2
+    zc = ptop - 0.8 - hc
+    lo = body ^ box([-1e3, -1e3, -1e3], [1e3, 1e3, zc])
+    kit.add("PORCH-top", "Gold", body, P=print_flip(), change=(round(hc, 1), "Orange"), group="porch",
+            render=[("Gold", body - lo), ("Orange", lo)])
+    for k, (pan, A) in enumerate(P["applied"]):
+        kit.add(f"PORCH-lace-{k}", "Gold", pan, P=compose(FT.ARCADE_FLAT, inv34(A)), group="porch")
     for k, (sm, A) in enumerate(P["steps"]):
         kit.add(f"PORCH-steps-{k}", "Stone", sm.transform(A) - fkeep, group="porch")
     e, u = MAIN.locate(W - 16.0, D)
@@ -263,9 +266,9 @@ def build(kit=None):
 
     # --- add-ons: a rocking chair and flower boxes
     a = math.radians(200.0)
-    Rz = np.array([[math.cos(a), -math.sin(a), 0.0, 14.0], [math.sin(a), math.cos(a), 0.0, -PD + 10.0], [0, 0, 1.0, H_floor + 0.3]])
+    Rz = np.array([[math.cos(a), -math.sin(a), 0.0, 14.0], [math.sin(a), math.cos(a), 0.0, -PD + 10.0], [0, 0, 1.0, H_floor + 0.5]])
     Ark = compose(Rz, np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))       # (x fwd, y up, z across) -> world
-    kit.add("ROCKER", "Blue", EX.rocking_chair().transform(Ark), P=inv34(Ark), group="extras")
+    kit.add("ROCKER", "Blue", EX.rocking_chair(rug=True).transform(Ark), P=inv34(Ark), group="extras")   # on a mat
     for k, x in enumerate(WIN_X):
         e, u = MAIN.locate(x, 0.0)
         fw = MAIN.facades()[e]

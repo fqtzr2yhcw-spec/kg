@@ -40,6 +40,26 @@ def flower(c, R, seg=16):
     return cs_union(out)
 
 
+def quatrefoil(c, R, seg=16):
+    """A blunt four-lobed piercing of radius R about c: four overlapping round lobes, so the
+    wood left round it has short, broad cusps and no loose spikes."""
+    cx, cy = c
+    r = R * 0.5
+    return cs_union([circle((cx + r * math.cos(a), cy + r * math.sin(a)), r, seg)
+                     for a in (0.25 * math.pi, 0.75 * math.pi, 1.25 * math.pi, 1.75 * math.pi)])
+
+
+def sturdy(cs, w=1.0, grow=0.4):
+    """Thicken every bar, spike and tip of ``cs`` narrower than ``w`` by ``grow`` on each side
+    (where _clean would cut it away): the fine work stays, but nothing is left a single
+    nozzle line wide to snap."""
+    keep = cs.offset(-w / 2, JoinType.Miter, 2.0).offset(w / 2, JoinType.Miter, 2.0)
+    thin = cs - keep.offset(0.05, JoinType.Miter, 2.0)
+    if thin.is_empty():
+        return cs
+    return cs_union([cs, thin.offset(grow, JoinType.Round)])
+
+
 def _clean(board, web=WEB):
     """Close up bars thinner than ``web`` and fill slots narrower than ``web``; drop crumbs."""
     # mitred rather than round joins: a round join adds arcs whose level facets would fall
@@ -49,17 +69,20 @@ def _clean(board, web=WEB):
     return cs_union([p for p in out.decompose() if p.area() > 1.0])
 
 
-def pierce(board, pitch=3.0, keep=None, margin=0.7, rows=None, eyelets=True, origin=(0.0, 0.0)):
+def pierce(board, pitch=3.0, keep=None, margin=0.7, rows=None, eyelets=True, origin=(0.0, 0.0), hole=None, tie=None):
     """Pierce ``board`` with lace: flowers on a square grid of ``pitch`` (rows staggered by
     half a pitch), each where it fits wholly inside the board less ``margin`` and clear of
-    ``keep``, and a round eyelet between neighbouring flowers where one fits."""
+    ``keep``, and a round eyelet between neighbouring flowers where one fits. ``hole``: the
+    piercing's shape (default flower; quatrefoil for blunt, sturdy work), ``tie``: the wood
+    left between neighbouring piercings (default WEB)."""
     room = board.offset(-margin, JoinType.Round)
     if keep is not None:
         room = room - keep.offset(margin, JoinType.Round)
     if room.is_empty():
         return board
     b = room.bounds()
-    R = pitch / 2 - WEB / 2
+    R = pitch / 2 - (tie if tie else WEB) / 2
+    mk = hole or flower
     holes, centres = [], []
     j0 = math.floor((b[1] - origin[1]) / pitch) - 1
     j1 = math.ceil((b[3] - origin[1]) / pitch) + 1
@@ -74,7 +97,7 @@ def pierce(board, pitch=3.0, keep=None, margin=0.7, rows=None, eyelets=True, ori
             x = origin[0] + off + i * pitch
             disc = circle((x, y), R, 20)
             if (disc - room).area() < 1e-3:
-                holes.append(flower((x, y), R))
+                holes.append(mk((x, y), R))
                 centres.append((x, y))
     if eyelets:
         for (x0, y0) in centres:
@@ -89,11 +112,11 @@ def pierce(board, pitch=3.0, keep=None, margin=0.7, rows=None, eyelets=True, ori
     return _clean(board - cs_union(holes))
 
 
-def scroll(c, r, sense=1, a0=0.0, turns=1.2):
+def scroll(c, r, sense=1, a0=0.0, turns=1.2, band=0.65, gap=0.75):
     """A spiral scroll of outer radius r about c (a band a nozzle and a half wide winding in
     to an eye); sense +1 winds counter-clockwise inward."""
     from .ornament import volute
-    return volute(c, r, turns=turns, band=0.65, gap=0.75, a0=a0, sense=sense)
+    return volute(c, r, turns=turns, band=band, gap=gap, a0=a0, sense=sense)
 
 
 def _fit(region, near, rmin=0.9, rmax=3.2):
@@ -109,7 +132,8 @@ def _fit(region, near, rmin=0.9, rmax=3.2):
     return None
 
 
-def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=TRIM_D, finial=5.6, drop=0.0, curl=2.2, medal=3.0, margin=0.4):
+def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=TRIM_D, finial=5.6, drop=0.0, curl=2.2, medal=3.0, margin=0.4,
+                    tie=1.2):
     """A deep lace bargeboard for a gable of wall length L, in the wall's facade frame (v up
     from the eave, u from the wall's left end), hung on the rake's outer end as
     gables.bargeboard is: its top edge follows the roof's top surface from eave to apex. The
@@ -118,7 +142,10 @@ def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=TRIM_D, finial=5.6,
     spike with three leaves) stands over it. ``medal``: a round medallion of that radius hung
     under the apex (a rim, eight petals and a boss standing 0.4 proud) in place of a king
     post. Place at w = rake; flat, prints face-up. ``margin``: the solid wood left above and
-    below the pierced flowers (the Marigold's printed boards broke at 0.4)."""
+    below the pierced flowers (the Marigold's printed boards broke at 0.4). ``tie``: the
+    narrowest wood between two piercings; the flowers are blunt quatrefoils with no eyelets
+    between them, the scrolls, finial and medallion join the band broadly, and a last pass
+    thickens anything narrower than 1 mm, so no accent hangs on a single line."""
     s = slope
     c = math.hypot(1.0, s)
     a_l = np.array([-d_eave, 0.0])
@@ -133,35 +160,49 @@ def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=TRIM_D, finial=5.6,
     run = float(np.linalg.norm(tip - a_l))
     cusps, holes = [], []
     pitch = 3.8
-    R = min(width / 2 - margin, pitch / 2 - max(WEB, margin) / 2 - 0.2)
+    cut = 0.3                                   # how deep the cusps bite the lower edge
+    R = min((width - cut) / 2 - max(tie, margin), (pitch - tie) / 2)
+    mc = (L / 2, tip[1] - depth * c - (medal * 0.55 if medal else 0.0))
+    ya = tip[1] - depth * c                     # the V's inner corner
+    apex = (circle(mc, medal, 48) + poly([(L / 2 - (ya - mc[1]) / s, mc[1]), (L / 2 + (ya - mc[1]) / s, mc[1]),
+                                          (L / 2, ya + 0.5)])) if medal else rect(L / 2 - 1.2, ya - 0.8, L / 2 + 1.2, tip[1])
+    clear = apex.offset(tie, JoinType.Round)       # no piercing within a tie of the medallion
     for a in (a_l, a_r):
         n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
         dirv = (tip - a) / np.linalg.norm(tip - a)
         k = 1
-        while 1.7 * k < run - 2.0:
-            cusps.append(circle(tuple(a + dirv * (1.7 * k) + n * (depth + 0.3)), 0.7, 16))
+        t_in = (L / 2 - a[0] - n[0] * depth) / dirv[0]        # where the lower edge meets the other arm's
+        while 1.7 * k < min(run - 2.0, t_in - 1.0):
+            cu = circle(tuple(a + dirv * (1.7 * k) + n * (depth + 0.4)), 0.7, 16)
+            if (cu ^ clear).is_empty():
+                cusps.append(cu)
             k += 1
+    inner = (board - cs_union(cusps)).offset(-tie + 0.15, JoinType.Round) if R > 0.3 else None
+    for a in (a_l, a_r):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        dirv = (tip - a) / np.linalg.norm(tip - a)
         t = 3.6
-        while t < run - 4.0:
-            p = a + dirv * t + n * (skin + width * 0.5)
-            holes.append(flower(tuple(p), R))
-            q = a + dirv * (t + pitch / 2) + n * (skin + width * 0.5)
-            if t + pitch < run - 4.0:
-                holes.append(circle(tuple(q), 0.4, 12))
+        while inner is not None and t < run - 4.0:
+            p = a + dirv * t + n * (skin + (width - cut) * 0.5)
+            q = quatrefoil(tuple(p), R)
+            if (q ^ clear).is_empty() and (q - inner).is_empty():
+                holes.append(q)
             t += pitch
-    board = board - cs_union(cusps) - cs_union(holes)
-    mc = (L / 2, tip[1] - depth * c - (medal * 0.55 if medal else 0.0))
-    if medal:
-        board = board + circle(mc, medal, 48)
+    if medal:                                   # the medallion set into the V: the corner above it is solid
+        board = board + apex
     else:
         board = board + rect(L / 2 - 1.2, tip[1] - depth * c - 0.8, L / 2 + 1.2, tip[1])  # king post
     for a, sg in ((a_l, 1), (a_r, -1)):
         n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
         foot = a + n * depth
         cc = (float(foot[0]) + sg * 0.2, -curl + 0.35)
-        board = board + scroll(cc, curl, sense=sg, a0=math.pi / 2) + \
-            rect(min(a[0], foot[0]) - 0.1, -0.6, max(a[0], foot[0]) + 0.1, 0.2)
-    board = _clean(board)
+        board = board + scroll(cc, curl, sense=sg, a0=math.pi / 2, band=1.1, gap=1.0) + \
+            rect(min(a[0], foot[0]) - 0.1, -1.2, max(a[0], foot[0]) + 0.1, 0.4)
+    if finial:                                  # a block at the apex for the finial to stand on
+        board = board + rect(L / 2 - 1.6, tip[1] - 2.4, L / 2 + 1.6, tip[1] + 0.2)
+    # thicken the board's own shapes first; the piercings and cusps are cut after (their ties
+    # are set by the spacing, and the small cusps inside a quatrefoil must not be swollen shut)
+    board = _clean(sturdy(board, 0.95) - cs_union(cusps) - cs_union(holes))
     parts = [ext(board, 0.0, d)]
     if medal:
         petals = cs_union([(circle(mc, 0.3, 8) + circle((mc[0] + (medal - 1.1) * math.cos(a), mc[1] + (medal - 1.1) * math.sin(a)),
@@ -175,10 +216,10 @@ def lace_bargeboard(L, slope, d_eave, skin=1.8, width=3.2, d=TRIM_D, finial=5.6,
         parts.append(ext(dcs, 0.0, d + 0.2))
     if finial:
         f0 = tip[1] - 0.6
-        leaves = cs_union([circle((L / 2 - 0.75, f0 + finial * 0.5), 0.55, 16), circle((L / 2 + 0.75, f0 + finial * 0.5), 0.55, 16),
-                           circle((L / 2, f0 + finial * 0.5 + 0.7), 0.6, 16)])
-        fcs = cs_union([rect(L / 2 - 0.45, f0, L / 2 + 0.45, f0 + finial - 1.0), leaves,
-                        poly([(L / 2 - 0.45, f0 + finial - 1.0), (L / 2 + 0.45, f0 + finial - 1.0), (L / 2, f0 + finial + 0.4)])])
+        leaves = cs_union([circle((L / 2 - 0.9, f0 + finial * 0.5), 0.75, 16), circle((L / 2 + 0.9, f0 + finial * 0.5), 0.75, 16),
+                           circle((L / 2, f0 + finial * 0.5 + 0.9), 0.8, 16)])
+        fcs = cs_union([rect(L / 2 - 0.7, f0 - 1.6, L / 2 + 0.7, f0 + finial - 1.0), leaves,
+                        poly([(L / 2 - 0.7, f0 + finial - 1.0), (L / 2 + 0.7, f0 + finial - 1.0), (L / 2, f0 + finial + 0.6)])])
         parts.append(ext(fcs, 0.0, d + 0.2))
     return union(parts)
 
@@ -280,4 +321,5 @@ def lace_panel_cs(L, vb, vt):
     """A railing panel of lace between the bottom rail (top at vb) and the hand rail (bottom
     at vt), u 0..L: a board pierced all over with staggered rows of flowers."""
     board = rect(0.0, vb, L, vt)
-    return pierce(board, pitch=2.3, margin=0.45, eyelets=False, origin=(L / 2, vb + (vt - vb) / 2 - 1.15))
+    return pierce(board, pitch=2.3, margin=0.45, eyelets=False, origin=(L / 2, vb + (vt - vb) / 2 - 1.15),
+                  hole=quatrefoil, tie=0.8)

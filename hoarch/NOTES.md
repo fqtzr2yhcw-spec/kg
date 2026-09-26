@@ -146,6 +146,19 @@ one clear cause:
 - **Gable trim (the Marigold's gold bargeboards, printed later)**: 0.8 mm thick, it snapped
   on the plate. Every gable ornament, bargeboard and applied gable piece is now one
   thickness, `gables.TRIM_D` = 2.2 mm (11 layers), with small raised details on top.
+- **Glue and joints (the owner, after printing the Marigold)**: super glue leaves a crust,
+  so small pieces on tiny glue spots are a problem. The standard now:
+  - Porches the pink-house way (`features.porch_turned(top=True)`): the roof, beams, posts
+    and railings are one part, printed upside down on the roof's flat top (the posts stand
+    upright, the arches are upside down and need nothing under them, the hand rails are
+    short flat bridges). A 1.6 mm square peg under each post drops into a socket in the
+    deck. Lace arches that must print flat are applied pieces (`applied_arcade`) glued by
+    their whole flat back to the beam and post faces, which stand flush for them.
+  - Lace and V trim (`lace.lace_bargeboard`): blunt quatrefoil piercings (no loose spikes)
+    with 1.2 mm ties, no eyelets, cusps that stop at the V's corner, a solid apex round the
+    medallion, thick-banded scroll feet, the finial on a block; `lace.sturdy` thickens any
+    remaining bar under 1 mm instead of cutting it away.
+  - Small add-ons get a flat foot (the rocking chair stands on a mat).
 
 The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers**,
 **0.16 mm** at the finest):

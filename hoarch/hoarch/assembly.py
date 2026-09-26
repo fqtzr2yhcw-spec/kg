@@ -417,15 +417,25 @@ NOTES = {
      GABLE-hood over the gable window.
   6. ROOF onto the lip at the wall tops; CHIMNEY down through its pocket; a BARGE board on
      each gable's rake ends (the medallion under the apex).
-  7. Porch: PORCH-deck against the front of the base (see the deck note); a PORCH-post into
-     each socket in the planks; the PORCH-rails between the posts (the gap in the middle is
-     for the steps); the PORCH-arcades on the post tops; PORCH-roof on the arcades against
-     the wall, then PORCH-roof-top; the PORCH-steps at the front, STOOP-back at the back door.
-  8. Add-ons: the FLOWERBOXes under the front windows, the ROCKER on the porch.
+  7. Porch (the pink-house way: no post is glued on its own):
+     - PORCH-deck against the front of the base (see the deck note).
+     - PORCH-top is the porch roof, beams, posts and railings in one piece. Lower it onto
+       the deck: the square peg under each post drops into its socket in the planks (a
+       drop of glue in each socket, where it cannot be seen), and its back edge meets the
+       wall under the eave cornice.
+     - PORCH-roof-top (the flat tin sheet) on top of it, glued over its whole face.
+     - The PORCH-lace pieces (the lace arches, flat) on the front and ends: each lies flat
+       against the face of the beam and posts, glued by its whole flat back.
+     - The PORCH-steps at the front, STOOP-back at the back door.
+  8. Add-ons: the FLOWERBOXes under the front windows, the ROCKER on its mat on the porch.
 """, """Colour changes (optional, each on a plate of its own colour):
   FLOWERBOX: turquoise box, then at 2.2 mm change to pink for the flowers.
-The bargeboards (2.2 mm, thickened after a test print broke) and the lace arcades print face-up, lying
-flat; the ROCKER on its side.
+  PORCH-top: prints upside down on its flat roof, the posts standing up. Gold for the roof
+    and its scalloped fascia, then at 4.4 mm change to orange for the beams, posts and
+    railings. The railings' hand rails are short bridges between the posts.
+The bargeboards (2.2 mm thick, with 1.2 mm ties between every accent: blunt quatrefoils, a
+solid apex round the medallion, thick scroll feet, the finial on a block) and the lace arches
+print face-up, lying flat; the ROCKER on its side.
 """),
     "primrose": ("THE PRIMROSE - BUTTER-YELLOW EASTLAKE QUEEN ANNE", "  1. FOUNDATION (the pebble-dash base).\n" + jointed(
         "", " (with the wing's gable)") + """
