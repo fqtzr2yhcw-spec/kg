@@ -245,7 +245,7 @@ def build(kit=None):
     kit.add("COPING", "Buff", cop, group="roof")
     print("roof", round(time.time() - t0, 1))
     # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
-    FT.key_into(kit, "BLADE", ["FRONT-1"], (-1, 0, 0))
+    FT.key_into(kit, "BLADE", ["FRONT-1"], (-1, 0, 0), depth=2.0)
     print("specks dropped:", kit.drop_specks())
     return kit
 

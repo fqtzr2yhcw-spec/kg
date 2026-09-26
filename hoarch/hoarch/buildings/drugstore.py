@@ -267,7 +267,7 @@ def build(kit=None):
     kit.add("CHIMNEY", "Brick", ch.rotate([0, 0, 90]).translate([cx, cy, zdk - 0.6]), group="roof")
     # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
     FT.crown(kit, "FINIAL", "TURRET-roof")
-    FT.key_into(kit, "BLADE", ["WALLS-2"], (0, 1, 0))
+    FT.key_into(kit, "BLADE", ["WALLS-2"], (0, 1, 0), depth=2.0)
     print("specks dropped:", kit.drop_specks())
     return kit
 
