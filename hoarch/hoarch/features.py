@@ -1277,22 +1277,19 @@ def column_seats(x, y, z0, z1, foot, head=None, dfoot=1.2, dhead=1.0, clr=0.15, 
 
 
 def _grow(sol, g):
-    """``sol`` grown by ``g`` each way: the union of six nudged copies (true to its shape), or,
-    where that fails on a sliver, piece by piece the convex hull of its corners nudged six ways."""
-    pieces = [np.asarray(c.to_mesh().vert_properties)[:, :3] for c in sol.decompose()]    # read first
-    try:
-        out = union([sol] + [sol.translate([g * x, g * y, g * z]) for x, y, z in
-                             ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))])
-        out.num_vert()
-        return out
-    except (MemoryError, RuntimeError):
-        pass
+    """``sol`` grown by ``g`` each way, piece by piece as the convex hull of its corners nudged six
+    ways: robust (a union of nudged copies can hang the solver). Tongues are kept convex (see
+    ``key_into``'s ``band``) so the hull fits them snugly."""
     offs = np.array([(0, 0, 0), (g, 0, 0), (-g, 0, 0), (0, g, 0), (0, -g, 0), (0, 0, g), (0, 0, -g)], float)
-    out = [M.hull_points([tuple(p) for p in (v[:, None, :] + offs[None, :, :]).reshape(-1, 3)]) for v in pieces if len(v) >= 4]
+    out = []
+    for c in sol.decompose():
+        v = np.asarray(c.to_mesh().vert_properties)[:, :3]
+        if len(v) >= 4:
+            out.append(M.hull_points([tuple(p) for p in (v[:, None, :] + offs[None, :, :]).reshape(-1, 3)]))
     return union(out) if out else M()
 
 
-def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
+def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2, band=None):
     """Give part ``name`` a glue joint it cannot miss: find the gap along the unit vector ``d``
     to the parts named in ``into``, and run the part's face on across that gap and ``depth``
     into them.
@@ -1301,7 +1298,8 @@ def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
       - conform=True: the part's face simply runs on up to theirs and takes its shape (a
         flight of steps against the stonework of a foundation), glued over the whole face.
     Only the strip in front of those parts and inside them is added, so the part's ornament
-    is untouched. Returns the gap it closed (mm)."""
+    is untouched. ``band`` = (z0, z1) above the part's foot keeps the tongue to that height (a
+    plain plinth rather than a waisted urn), so its socket fits. Returns the gap it closed (mm)."""
     parts = {p.name: p for p in kit.parts}
     pt = parts[name]
     pb = np.array(pt.solid.bounding_box())
@@ -1326,6 +1324,8 @@ def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
     strip = union([tgt.translate(list(-d * t)) for t in np.arange(0.0, gap + 0.25, 0.1)])
     strip.num_vert()
     tongue = (sweep + pt.solid) ^ strip                   # overlaps the part, so the union fuses
+    if band is not None:
+        tongue = tongue ^ box([pb[0] - 9, pb[1] - 9, pb[2] + band[0]], [pb[3] + 9, pb[4] + 9, pb[2] + band[1]])
     keep = [c for c in tongue.decompose() if c.volume() > 1e-3 and (c ^ pt.solid).volume() > 1e-4]
     tongue = union(keep) if keep else M()                  # only what joins the part
     if conform:

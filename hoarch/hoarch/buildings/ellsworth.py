@@ -329,7 +329,7 @@ def build(kit=None):
     # glue joints: nothing small is left butted on a dab of glue (see NOTES.md)
     FT.crown(kit, "TOWER-finial", "TOWER-roof")
     for k_ in range(2):
-        FT.key_into(kit, f"DORMER-urn-{k_}", [f"DORMER-{k_}"], (0, 1, 0), depth=2.0)
+        FT.key_into(kit, f"DORMER-urn-{k_}", [f"DORMER-{k_}"], (0, 1, 0), depth=2.0, band=(0.0, 1.2))
     print("specks dropped:", kit.drop_specks())
     print("done", round(time.time() - t0, 1))
     return kit
