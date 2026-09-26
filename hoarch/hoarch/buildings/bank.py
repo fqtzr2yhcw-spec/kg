@@ -195,7 +195,7 @@ def build(kit=None):
         Ap = A.copy()
         Ap[:, 3] = A[:, 3] + A[:, 1] * VF
         kit.add(f"FRIEZE-{e}", "Frieze", fr, P=inv34(Ap), group="top",
-                render=_gilt(fr.transform(inv34(A)), A, 1.2))
+                render=_gilt(fr.transform(inv34(A)), A, 1.21))
 
         def cap(u0, u1, f=f):
             m = SF.cornice_cap(u1 - u0, CAP_PROF, dentils=dict(v=0.75, h=1.5, d=2.2, tooth=0.6, gap=0.6)).translate([u0, 0, 0])

@@ -37,30 +37,34 @@ RENDER_MAT = {"Ochre": "siding", "Cream": "trim", "Green": "green", "Roof": "roo
               "Door": "door", "Glass": "glass"}
 
 # ------------------------------------------------------------------ levels (v from the block base)
-ZF = 3.6                  # stone piers; the flagstone sidewalk is level with the floor
-H1 = 32.0
+ZF = 5.0                  # stone piers; the flagstone sidewalk is level with the floor
+H1 = 42.0
 S1 = ZF + H1
 RH = 4.4
 Z_DECK = S1 + RH          # the balcony is level with the upper floor
-Z_TOP = Z_DECK + 22.0     # upper gallery beam
-Z_GR = ZF + 62.6          # the gallery roof meets the wall here
-HB = 68.0                 # block height at the front (the shed roof falls to the rear)
-SIGN_V, SIGN_H = 65.6, 7.2
-FR_V, FR_H = 73.6, 2.8
+Z_TOP = Z_DECK + 30.0     # upper gallery beam
+Z_GR = Z_TOP + 5.6        # the gallery roof meets the wall here
+HB = Z_GR - ZF + 7.0      # block height at the front (the shed roof falls to the rear)
+SIGN_V, SIGN_H = Z_GR - ZF + 3.0, 10.0
+FR_V, FR_H = SIGN_V + SIGN_H + 1.0, 3.6
 CAP_V = FR_V + FR_H
-CAP_PROF = [(0.0, 0.0), (1.0, 0.0), (1.0, 0.6), (1.4, 0.6), (1.4, 1.2), (2.6, 1.2), (2.6, 2.4), (3.0, 2.8), (3.0, 3.2),
-            (0.0, 3.2)]
-FF_V = CAP_V + 3.2        # false-front top
-ARCH = (10.0, 34.0, 6.0)  # arched centre: u0, u1, rise
+CAP_K = 1.3
+CAP_PROF = [(CAP_K * a, CAP_K * b) for a, b in
+            [(0.0, 0.0), (1.0, 0.0), (1.0, 0.6), (1.4, 0.6), (1.4, 1.2), (2.6, 1.2), (2.6, 2.4), (3.0, 2.8), (3.0, 3.2),
+             (0.0, 3.2)]]
+CAP_H = CAP_K * 3.2
+FF_V = CAP_V + CAP_H      # false-front top
+ARCH = (26.0, 66.0, 9.0)  # arched centre: u0, u1, rise
 T = 3.0
 
 # ------------------------------------------------------------------ plan
-W, D = 44.0, 58.0
+W, D = 92.0, 124.0
 MAIN = Block("main", [(0, 0), (W, 0), (W, D), (0, D)], ZF, ZF + HB)
 BLOCKS = [MAIN]
-S_ROOF = 4.0 / (D - T)    # shed roof slope, front to back
-GAL_Y = -12.75            # gallery post line
-POSTS_X = (-1.0, 10.5, 22.0, 33.5, 45.0)
+S_ROOF = 8.0 / (D - T)    # shed roof slope, front to back
+GAL_Y = -18.0             # gallery post line
+POSTS_X = (-1.0, 22.5, 46.0, 69.5, 93.0)
+RAIL_H = 9.0              # the balcony railing
 
 
 def _siding(f, b, reg):
@@ -74,31 +78,34 @@ def _openings():
         e, u = MAIN.locate(x, y)
         L.append(Opening(MAIN, e, u, v0, sp, name, kind))
 
-    sf = SF.storefront(34.0, 28.0, entry=8.0, col=2.2, style="chamfered", bulk=6.0, transom=4.0, beam=1.6, lite=3.0,
+    sf = SF.storefront(62.0, 36.0, entry=11.0, col=2.6, style="chamfered", bulk=7.6, transom=5.0, beam=2.0, lite=3.0,
                        bulk_style="boards", mullion=False, posts=True, t=T, grid=(3, 3))
     add(W / 2, 0, 0.0, sf, "storefront", "door")
-    up = SF.window_commercial(8.0, 16.0, rise=1.4, lites=(3, 3), rows=(2, 2), sill=1.0)
+    up = SF.window_commercial(8.4, 21.0, rise=1.8, lites=(3, 3), rows=(2, 2), sill=1.0)
     v_up = Z_DECK - ZF
-    for x in (10.0, 34.0):
-        add(x, 0, v_up + 4.0, up, f"F{x:.0f}-2")
-    add(W / 2, 0, v_up, SF.door_commercial(7.0, 20.0, transom=3.2, leaf="six_light",
+    for x in (16.0, 30.0, W - 30.0, W - 16.0):
+        add(x, 0, v_up + 5.0, up, f"F{x:.0f}-2")
+    add(W / 2, 0, v_up, SF.door_commercial(10.0, 28.0, transom=4.0, leaf="six_light",
                                            tstyle="cross", head=None), "balcony-door", "door")
-    side = SF.window_commercial(8.0, 16.0, rise=1.4, lites=(2, 2), rows=(2, 2), sill=1.0)
-    for y in (20.0, 40.0):
-        add(W, y, 9.0, side, f"E{y:.0f}-1")
-        add(W, y, v_up + 4.0, side, f"E{y:.0f}-2")
-    add(0, 30.0, v_up + 4.0, side, "W30-2")
-    add(W - 12.0, D, 0.0, SF.door_commercial(9.0, 24.0, transom=3.0, leaf="six_light", tstyle="cross", head=None),
+    side = SF.window_commercial(8.4, 21.0, rise=1.8, lites=(2, 2), rows=(2, 2), sill=1.0)
+    for y in (30.0, 62.0, 94.0):
+        add(W, y, 10.0, side, f"E{y:.0f}-1")
+        add(W, y, v_up + 5.0, side, f"E{y:.0f}-2")
+    for y in (46.0, 78.0):
+        add(0, y, v_up + 5.0, side, f"W{y:.0f}-2")
+    add(W - 18.0, D, 0.0, SF.door_commercial(10.0, 30.0, transom=4.0, leaf="six_light", tstyle="cross", head=None),
         "back-door", "door")
-    add(W - 32.0, D, 9.0, side, "N12-1")
-    add(W - 22.0, D, v_up + 4.0, side, "N22-2")
+    for x in (46.0, 70.0):
+        add(W - x, D, 10.0, side, f"N{x:.0f}-1")
+    for x in (30.0, 60.0):
+        add(W - x, D, v_up + 5.0, side, f"N{x:.0f}-2")
     return L
 
 
 OPENINGS = _openings()
-APPLIED = [("SIGN", 2.0, SIGN_V, W - 4.0, SIGN_H),
+APPLIED = [("SIGN", 3.0, SIGN_V, W - 6.0, SIGN_H),
            ("FRIEZE", 0.0, FR_V, W, FR_H),
-           ("CORNICE", 0.0, CAP_V, W, 3.2),
+           ("CORNICE", 0.0, CAP_V, W, CAP_H),
            ("GROOF", 0.0, Z_GR - ZF - 1.4, W, 2.8)]
 
 
@@ -147,7 +154,7 @@ def build(kit=None):
     eu, ew, eh = sp["entry"]
     Av = A.copy()
     Av[:, 3] = A[:, 3] + A[:, 0] * eu
-    vest = SF.vestibule(ew, 3.0, eh, bulk=6.0, front=-T, doors="glass_pair")
+    vest = SF.vestibule(ew, 4.0, eh, bulk=7.6, front=-T, doors="glass_pair")
     R_up = np.array([[1.0, 0, 0], [0, 0, -1.0], [0, 1.0, 0]])
     kit.add("VESTIBULE", "Green", vest.transform(Av), P=R_up @ inv34(Av), group="storefront")
     vb = np.array(vest.bounding_box())
@@ -167,7 +174,7 @@ def build(kit=None):
     print("walls + storefront", round(time.time() - t0, 1))
 
     # --- the two-storey gallery
-    walk = SF.flag_sidewalk(W + 4.0, 12.8, ZF).translate([-2.0, -14.8, 0.0])
+    walk = SF.flag_sidewalk(W + 4.0, 18.2, ZF).translate([-2.0, -20.2, 0.0])
     kit.add("SIDEWALK", "Stone", walk, group="gallery")
     deck_d = -GAL_Y + 1.0 - 1.45                                   # from the belt's face out past the posts
     deck = SF.boardwalk(W + 4.0, deck_d, Z_DECK, pitch=2.0, base=1.8, stringers=3)
@@ -178,7 +185,7 @@ def build(kit=None):
     lower = SF.gallery_frame(POSTS_X, z_under - ZF)
     Ag = np.array([[1.0, 0, 0, 0.0], [0, 0, -1.0, GAL_Y], [0, 1.0, 0, ZF]])       # (u, v, w) -> (x, y = GAL_Y - w, z)
     kit.add("GALLERY-lower", "Cream", lower.transform(Ag), P=R_up @ inv34(Ag), group="gallery")
-    upper = SF.gallery_frame(POSTS_X, Z_TOP - Z_DECK, rail=dict(h=7.6, pitch=1.8, picket=0.8))
+    upper = SF.gallery_frame(POSTS_X, Z_TOP - Z_DECK, rail=dict(h=RAIL_H, pitch=1.8, picket=0.8))
     Au = Ag.copy()
     Au[:, 3] = [0.0, GAL_Y, Z_DECK]
     kit.add("GALLERY-upper", "Cream", upper.transform(Au), P=R_up @ inv34(Au), group="gallery")
@@ -186,8 +193,8 @@ def build(kit=None):
     for k, x in enumerate((POSTS_X[0], POSTS_X[-1])):
         yl = GAL_Y + 1.0
         L = -2.0 - yl
-        rail = union([box([0.0, 0.0, -0.5], [L, 0.8, 0.5]), box([0.0, 6.6, -0.6], [L, 7.6, 0.6])] +
-                     [box([u - 0.4, 0.79, -0.4], [u + 0.4, 6.61, 0.4]) for u in np.arange(1.8, L - 0.9, 1.8)])
+        rail = union([box([0.0, 0.0, -0.5], [L, 0.8, 0.5]), box([0.0, RAIL_H - 1.0, -0.6], [L, RAIL_H, 0.6])] +
+                     [box([u - 0.4, 0.79, -0.4], [u + 0.4, RAIL_H - 0.99, 0.4]) for u in np.arange(1.8, L - 0.9, 1.8)])
         Ae = np.array([[0.0, 0, 1.0, x], [1.0, 0, 0, yl], [0, 1.0, 0, Z_DECK]])      # (u, v, w) -> (x = x + w, y = yl + u, z)
         kit.add(f"GALLERY-rail-{k}", "Cream", rail.transform(Ae), P=R_up @ inv34(Ae), key="GALLERY-rail", group="gallery")
     # corrugated shed roof over the gallery: from the outer beam up to the wall
@@ -209,11 +216,11 @@ def build(kit=None):
         A_[:, 3] = f.world(u0, v0, w0)
         return A_
 
-    sign = SF.sign_band(W - 4.0, SIGN_H, "GENERAL STORE", cap=2.9, font="grotesque", board=1.0, frame=0.8, relief=0.4)
-    As = frame_at(2.0, SIGN_V)
+    sign = SF.sign_band(W - 6.0, SIGN_H, "GENERAL STORE", cap=5.6, font="grotesque", board=1.0, frame=1.0, relief=0.4)
+    As = frame_at(3.0, SIGN_V)
     kit.add("SIGN", "Sign", sign.transform(As), P=inv34(As), group="front", render=_upper(sign, As, 1.0, "Green", "Cream"))
-    teeth = union([M.hull_points([(u - 0.8, 0.6, 0.79), (u + 0.8, 0.6, 0.79), (u - 0.8, 2.2, 0.79), (u + 0.8, 2.2, 0.79),
-                                  (u, 1.4, 1.4)]) for u in np.arange(1.2, W - 0.8, 2.0)])
+    teeth = union([M.hull_points([(u - 1.0, 0.8, 0.79), (u + 1.0, 0.8, 0.79), (u - 1.0, 2.8, 0.79), (u + 1.0, 2.8, 0.79),
+                                  (u, 1.8, 1.6)]) for u in np.arange(1.5, W - 1.0, 2.6)])
     fr = box([0, 0, 0], [W, FR_H, 0.8]) + teeth
     Af = frame_at(0.0, FR_V)
     kit.add("FRIEZE", "Green", fr.transform(Af), P=inv34(Af), group="front")
@@ -224,7 +231,7 @@ def build(kit=None):
     board = ext(seg, 0.0, 0.8)
     rim = (seg - seg.offset(-1.2)) - rect(-1e3, -1e3, 1e3, FF_V + 0.6)
     rim = ext(rim + (seg ^ rect(-1e3, FF_V - 1, 1e3, FF_V + 0.6)), 0.79, 1.6)
-    date = ext(SF.text_cs("1879", 2.4, "serif", grow=0.1).translate(((a0 + a1) / 2, FF_V + 1.2)), 0.79, 1.2)
+    date = ext(SF.text_cs("1879", 3.6, "serif", grow=0.1).translate(((a0 + a1) / 2, FF_V + 1.8)), 0.79, 1.2)
     arch = (board + rim + date).translate([0, -FF_V, 0])
     Aa = frame_at(0.0, FF_V)
     kit.add("ARCH", "Arch", arch.transform(Aa), P=inv34(Aa), group="front", render=_upper(arch, Aa, 0.8, "Cream", "Green"))
@@ -238,7 +245,7 @@ def build(kit=None):
     Vr = (y1 - (T + 0.15)) * n2
     main = SF.corrugated_panel(Lr, Vr, t=1.2, pitch=2.0, h=0.4, chord=1.4)
     Am = np.array([[-1.0, 0.0, 0.0, W + 1.2], [0.0, -1 / n2, S_ROOF / n2, y1], [0.0, S_ROOF / n2, 1 / n2, z1]])
-    fx, fy, fw = 34.0, D - 14.0, 5.0
+    fx, fy, fw = 70.0, D - 30.0, 7.0
     hole = box([fx - fw / 2 - 0.3, fy - fw / 2 - 0.3, ZF + 40], [fx + fw / 2 + 0.3, fy + fw / 2 + 0.3, ZF + 120])
     kit.add("ROOF", "Roof", main.transform(Am) - hole, P=inv34(Am), group="roof")
     zb = ZF + HB - (fy + fw / 2 - T) * S_ROOF - 3.0

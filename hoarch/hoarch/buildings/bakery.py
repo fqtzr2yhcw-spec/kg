@@ -32,23 +32,25 @@ COLORS = {"Brick": "#B5553A", "Stone": "#CFC6B0", "Tile": "#9E4A2E", "Green": "#
 RENDER_MAT = {"Brick": "brick", "Stone": "stone", "Tile": "tile", "Green": "green", "Sign": "green", "Blade": "iron",
               "Gilt": "gilt", "Base": "base", "Windows_Doors": "trim", "Sash": "sash", "Door": "door", "Glass": "glass"}
 
-ZF = 4.0
-H = 30.0                   # eaves (outer face of the side walls)
+ZF = 5.0
+H = 40.0                   # eaves (outer face of the side walls)
 S = 1.0                    # 45 degree roof
 T = 3.0
-W, D = 36.0, 48.0
+W, D = 76.0, 104.0
 HB = H + T * S
 MAIN = Block("main", [(0, 0), (W, 0), (W, D), (0, D)], ZF, ZF + HB)
 ZE = ZF + H
-DE = 1.4
+DE = 2.4
 Y0R = T + 0.15
-STEP = 3.2
-N_STEPS = 5
+STEP = 5.0
+N_STEPS = 7
 TOPS = [H + STEP * (k + 1) + 1.6 for k in range(N_STEPS)]
-CROWN = (W / 2 - 2.0, W / 2 + 2.0, H + W / 2 + 3.2)
-WIN = (12.0, 4.0, 14.0, 20.0, 7.0)       # shop window: u, v0, w, h, rise
-SIGN_V, SIGN_H = 28.0, 5.6
-BLADE_X = 2.4
+CROWN = (W / 2 - 3.0, W / 2 + 3.0, H + W / 2 + 5.0)
+WIN = (26.0, 5.0, 26.0, 32.0, 13.0)      # shop window: u, v0, w, h, rise
+SIGN_V, SIGN_H = H + 1.0, 8.0
+SIGN_U = 6.0                             # clear of the lowest crow step
+BLADE_X, BLADE_V = 4.0, 28.0
+DATE_W, DATE_H = 9.0, 4.2
 
 
 def _front_gable():
@@ -73,25 +75,26 @@ def _openings():
         L.append(Opening(MAIN, e, u, v0, sp, name, kind))
 
     u, v0, w, h, rise = WIN
-    add(u, 0, v0, SF.window_commercial(w, h, rise=rise, lites=(4, 4), rows=(3, 2), sill=1.4), "shop-window")
-    add(28.5, 0, 0.0, SF.door_commercial(6.4, 22.0, transom=4.0, leaf="dutch", tstyle="heart", head=None), "shop-door",
+    add(u, 0, v0, SF.window_commercial(w, h, rise=rise, lites=(5, 5), rows=(4, 3), sill=1.6), "shop-window")
+    add(58.0, 0, 0.0, SF.door_commercial(10.0, 30.0, transom=5.0, leaf="dutch", tstyle="heart", head=None), "shop-door",
         "door")
-    gw = SF.window_commercial(4.8, 7.0, rise=1.2, lites=(1, 1), rows=(2, 2), sill=0.8)
-    for x in (13.5, 22.5):
-        add(x, 0, SIGN_V + SIGN_H + 2.0, gw, f"G{x:.0f}")
-    side = SF.window_commercial(6.0, 14.0, rise=1.4, lites=(2, 2), rows=(2, 2), sill=1.0)
-    for y in (16.0, 34.0):
-        add(W, y, 8.0, side, f"E{y:.0f}")
-        add(0, y, 8.0, side, f"W{y:.0f}")
-    add(W - 10.0, D, 0.0, SF.door_commercial(6.4, 21.0, transom=3.0, leaf="dutch", tstyle="heart", head=None),
+    gw = SF.window_commercial(7.0, 10.0, rise=1.6, lites=(1, 1), rows=(2, 2), sill=1.0)
+    for x in (W / 2 - 10.0, W / 2 + 10.0):
+        add(x, 0, SIGN_V + SIGN_H + 2.4, gw, f"G{x:.0f}")
+    side = SF.window_commercial(8.4, 21.0, rise=1.8, lites=(2, 2), rows=(2, 2), sill=1.0)
+    for y in (26.0, 52.0, 78.0):
+        add(W, y, 10.0, side, f"E{y:.0f}")
+        add(0, y, 10.0, side, f"W{y:.0f}")
+    add(W - 16.0, D, 0.0, SF.door_commercial(10.0, 30.0, transom=4.0, leaf="dutch", tstyle="heart", head=None),
         "back-door", "door")
-    add(W - 26.0, D, 8.0, side, "N26")
+    add(W - 44.0, D, 10.0, side, "N44")
     return L
 
 
 OPENINGS = _openings()
-APPLIED = [("SIGN", 3.0, SIGN_V, W - 6.0, SIGN_H), ("DATE", W / 2 - 3.2, TOPS[-1] - 3.6, 6.4, 3.0),
-           ("BLADE", BLADE_X - 1.9, 16.2, 2.0, 4.4)]
+APPLIED = [("SIGN", SIGN_U, SIGN_V, W - 2 * SIGN_U, SIGN_H),
+           ("DATE", W / 2 - DATE_W / 2, TOPS[-1] - DATE_H - 0.8, DATE_W, DATE_H),
+           ("BLADE", BLADE_X - 1.9, BLADE_V - 3.0, 2.0, 4.4)]
 
 
 def _applied_openings():
@@ -148,14 +151,15 @@ def build(kit=None):
         A_[:, 3] = f.world(u0, v0, w0)
         return A_
 
-    date = box([0, 0, 0], [6.4, 3.0, 0.8]) + ext(SF.text_cs("1895", 1.8, "roman", grow=0.1).translate((3.2, 0.6)), 0.79, 1.2)
-    Ad = frame_at(W / 2 - 3.2, TOPS[-1] - 3.6)
+    date = box([0, 0, 0], [DATE_W, DATE_H, 0.8]) + \
+        ext(SF.text_cs("1895", 2.6, "roman", grow=0.1).translate((DATE_W / 2, 0.8)), 0.79, 1.2)
+    Ad = frame_at(W / 2 - DATE_W / 2, TOPS[-1] - DATE_H - 0.8)
     kit.add("DATE", "Stone", date.transform(Ad), P=inv34(Ad), group="front")
-    sign = SF.sign_band(W - 6.0, SIGN_H, "BAKERY", cap=3.4, font="roman", board=1.0, frame=0.8, relief=0.4)
-    As = frame_at(3.0, SIGN_V)
+    sign = SF.sign_band(W - 2 * SIGN_U, SIGN_H, "BAKERY", cap=5.6, font="roman", board=1.0, frame=1.0, relief=0.4)
+    As = frame_at(SIGN_U, SIGN_V)
     kit.add("SIGN", "Sign", sign.transform(As), P=inv34(As), group="front", render=_gilt(sign, As, 1.0, "Sign"))
     bs = SF.blade_sign(SF.pretzel_cs(7.0, 6.0), None, t=1.2, arm=8.0, drop=2.2)
-    Ab = np.array([[0.0, 0.0, -1.0, BLADE_X], [-1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, ZF + 19.2]])
+    Ab = np.array([[0.0, 0.0, -1.0, BLADE_X], [-1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, ZF + BLADE_V]])
     kit.add("BLADE", "Blade", bs.transform(Ab), P=inv34(Ab), group="front", render=_gilt(bs, Ab, 0.8, "Blade"))
     print("front", round(time.time() - t0, 1))
 
@@ -167,7 +171,7 @@ def build(kit=None):
     pan = SF.pantile_panel(Lp, Vp, t=1.2, pitch=2.4, course=4.0)
     AL = np.array([[0.0, 1 / n, -S / n, -DE], [-1.0, 0.0, 0.0, y1], [0.0, S / n, 1 / n, ZE - DE * S]])
     AR = np.array([[0.0, -1 / n, S / n, W + DE], [1.0, 0.0, 0.0, Y0R], [0.0, S / n, 1 / n, ZE - DE * S]])
-    cx, cy, cw = 26.0, 38.0, 7.0
+    cx, cy, cw = 56.0, 80.0, 9.0
     hole = box([cx - cw / 2 - 0.3, cy - cw / 2 - 0.3, ZE - 10], [cx + cw / 2 + 0.3, cy + cw / 2 + 0.3, ZE + 80])
     kit.add("ROOF-L", "Tile", pan.transform(AL).trim_by_plane([-1.0, 0, 0], -W / 2), P=inv34(AL), group="roof")
     kit.add("ROOF-R", "Tile", pan.transform(AR).trim_by_plane([1.0, 0, 0], W / 2) - hole, P=inv34(AR), group="roof")

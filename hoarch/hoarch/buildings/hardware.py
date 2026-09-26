@@ -33,28 +33,36 @@ COLORS = {"Stone": "#B8A98A", "Trim": "#DDD3BC", "Iron": "#2A2A2A", "Sign": "#2E
 RENDER_MAT = {"Stone": "stone", "Trim": "trim", "Iron": "iron", "Sign": "sign", "Gilt": "letters", "Roof": "roof",
               "Base": "base", "Windows_Doors": "oxblood", "Sash": "sash", "Door": "door", "Glass": "glass"}
 
-ZF = 3.6
-H1 = 32.0
+ZF = 5.0
+H1 = 42.0
 S1 = ZF + H1
 RH = 4.4
 V2 = H1 + RH                   # upper floor (block-relative)
-VF, FR_H = V2 + 26.0, 5.2      # frieze
+VF, FR_H = V2 + 38.0, 6.4      # frieze over a 38 mm upper storey
 VK = VF + FR_H                 # cornice cap
-CAP_PROF = [(0.0, 0.0), (1.4, 0.0), (1.4, 0.8), (2.0, 1.4), (2.6, 2.2), (2.8, 2.8), (3.0, 3.6), (0.0, 3.6)]
-VTOP = VK + 3.6
-PANEL = (16.0, 32.0, 5.0)      # raised date panel on the parapet: u0, u1, height
+CAP_K = 1.3
+CAP_PROF = [(CAP_K * a, CAP_K * b) for a, b in
+            [(0.0, 0.0), (1.4, 0.0), (1.4, 0.8), (2.0, 1.4), (2.6, 2.2), (2.8, 2.8), (3.0, 3.6), (0.0, 3.6)]]
+CAP_H = CAP_K * 3.6
+VTOP = VK + CAP_H
 T = 3.0
-W, D = 48.0, 60.0
+W, D = 96.0, 124.0
+PANEL = (W / 2 - 12.0, W / 2 + 12.0, 7.0)      # raised date panel on the parapet: u0, u1, height
 Y0R = T + 0.15
-V_FRONT_ROOF = V2 + 21.6       # the roof's underside at its front end (behind the frieze)
-V_REAR = V2 + 13.6             # ... and on the rear wall
+V_FRONT_ROOF = V2 + 33.6       # the roof's underside at its front end (behind the frieze)
+V_REAR = V2 + 17.6             # ... and on the rear wall
 S = (V_FRONT_ROOF - V_REAR) / (D - T - Y0R)
 HB = V_REAR + T * S
 MAIN = Block("main", [(0, 0), (W, 0), (W, D), (0, D)], ZF, ZF + HB)
-SIDE_STEPS = [(0.0, 14.0, V2 + 25.6), (14.0, 28.0, V2 + 23.6), (28.0, 42.0, V2 + 21.2), (42.0, D, V2 + 18.4)]
-BAYS = [(8.5, 8.8), (39.5, 8.8)]          # 8.8 wide: the round heads spring on the layer grid
-DOOR_X = 24.0
-UP_X = (8.5, 39.5)
+SIDE_STEPS = [(0.0, 30.0, V2 + 39.0), (30.0, 60.0, V2 + 35.0), (60.0, 90.0, V2 + 31.0), (90.0, D, V2 + 27.0)]
+BAYS = [(18.0, 13.2), (78.0, 13.2)]       # 13.2 wide: the round heads spring on the layer grid
+BAY_V, BAY_H = 6.0, 30.0
+DOOR_X, DOOR_W, DOOR_H = W / 2, 13.2, 26.0
+FAN_V = DOOR_H + 1.2
+UP_X = (13.0, 32.0, 64.0, 83.0)
+UP_W, UP_H = 8.4, 21.0
+LOAD_W, LOAD_H = 11.0, 28.0
+HOIST_V = V2 + 1.0 + LOAD_H + 2.2
 
 
 def _siding(f, b, reg):
@@ -63,14 +71,14 @@ def _siding(f, b, reg):
     if f.n[1] < -0.3:                      # the street front: voussoir arches and jack arches
         keep = []
         for u, w in BAYS:
-            o, r = SK.stone_arch(u, 5.0, w, 22.0, w / 2, ring=2.0)
+            o, r = SK.stone_arch(u, BAY_V, w, BAY_H, w / 2, ring=2.6)
             keep.append(o)
             parts.append(r)
-        o, r = SK.stone_arch(DOOR_X, 19.2, 9.0, 4.5, 4.5, ring=2.0)
+        o, r = SK.stone_arch(DOOR_X, FAN_V, DOOR_W, DOOR_W / 2, DOOR_W / 2, ring=2.6)
         keep.append(o)
         parts.append(r)
         for u in UP_X:
-            o, r = SK.jack_arch(u, V2 + 4.0 + 16.0 + 0.8, 6.0)          # its top and key on the layer grid
+            o, r = SK.jack_arch(u, V2 + 5.0 + UP_H + 0.8, UP_W)          # its top and key on the layer grid
             keep.append(o)
             parts.append(r)
         tex_reg = reg - cs_union(keep)
@@ -87,34 +95,35 @@ def _openings():
         L.append(Opening(MAIN, e, u, v0, sp, name, kind))
 
     for u, w in BAYS:
-        add(u, 0, 5.0, SF.window_commercial(w, 22.0, rise=w / 2, lites=(3, 3), rows=(2, 2), sill=1.2), f"bay-{u:.0f}")
-    add(DOOR_X, 0, 0.0, SF.door_commercial(9.0, 18.0, transom=0.0, leaf="boards_glass", tstyle="plain", head=None,
+        add(u, 0, BAY_V, SF.window_commercial(w, BAY_H, rise=w / 2, lites=(3, 3), rows=(3, 3), sill=1.4), f"bay-{u:.0f}")
+    add(DOOR_X, 0, 0.0, SF.door_commercial(DOOR_W, DOOR_H, transom=0.0, leaf="boards_glass", tstyle="plain", head=None,
                                            leaves=2), "front-door", "door")
-    add(DOOR_X, 0, 19.2, SF.window_commercial(9.0, 4.5, rise=4.5, lites=(3, 3), rows=(1, 1), sill=None), "fanlight")
-    up = SF.window_commercial(6.0, 16.0, rise=0, lites=(1, 1), rows=(2, 2), sill=1.0)
+    add(DOOR_X, 0, FAN_V, SF.window_commercial(DOOR_W, DOOR_W / 2, rise=DOOR_W / 2, lites=(3, 3), rows=(1, 1), sill=None),
+        "fanlight")
+    up = SF.window_commercial(UP_W, UP_H, rise=0, lites=(1, 1), rows=(2, 2), sill=1.0)
     for u in UP_X:
-        add(u, 0, V2 + 4.0, up, f"F{u:.0f}-2")
-    add(DOOR_X, 0, V2 + 1.0, SF.door_commercial(9.0, 20.0, transom=0.0, leaf="ledged", tstyle="plain", head=None,
+        add(u, 0, V2 + 5.0, up, f"F{u:.0f}-2")
+    add(DOOR_X, 0, V2 + 1.0, SF.door_commercial(LOAD_W, LOAD_H, transom=0.0, leaf="ledged", tstyle="plain", head=None,
                                                leaves=2), "loading-door", "door")
-    side = SF.window_commercial(6.0, 14.0, rise=0, lites=(1, 1), rows=(2, 2), sill=1.0)
-    low = SF.window_commercial(6.0, 9.0, rise=0, lites=(1, 1), rows=(2, 2), sill=1.0)       # under the shed roof
-    for y in (18.0, 42.0):
-        add(W, y, 8.0, side, f"E{y:.0f}-1")
-        add(W, y, V2 + 2.0, low, f"E{y:.0f}-2")
-    add(W - 14.0, D, 0.0, SF.door_commercial(11.0, 20.0, transom=0.0, leaf="ledged", tstyle="plain", head=None, leaves=2),
+    side = SF.window_commercial(8.4, 21.0, rise=0, lites=(1, 1), rows=(2, 2), sill=1.0)
+    low = SF.window_commercial(8.4, 12.0, rise=0, lites=(1, 1), rows=(2, 2), sill=1.0)      # under the shed roof
+    for y in (30.0, 62.0, 94.0):
+        add(W, y, 10.0, side, f"E{y:.0f}-1")
+        add(W, y, V2 + 3.0, low, f"E{y:.0f}-2")
+    add(W - 22.0, D, 0.0, SF.door_commercial(15.0, 28.0, transom=0.0, leaf="ledged", tstyle="plain", head=None, leaves=2),
         "freight-door", "door")
-    for x in (14.0, 34.0):
-        add(W - x, D, V2 + 2.0, low, f"N{x:.0f}-2")
-    add(W - 34.0, D, 8.0, side, "N34-1")
+    for x in (50.0, 76.0):
+        add(W - x, D, V2 + 3.0, low, f"N{x:.0f}-2")
+    add(W - 60.0, D, 10.0, side, "N60-1")
     return L
 
 
 OPENINGS = _openings()
-SHUTTER_W = 3.0
-APPLIED = [("FRIEZE", 0.0, VF, W, FR_H), ("CAP", 0.0, VK, W, 3.6),
+SHUTTER_W = 3.2
+APPLIED = [("FRIEZE", 0.0, VF, W, FR_H), ("CAP", 0.0, VK, W, CAP_H),
            ("PANEL", PANEL[0], VTOP, PANEL[1] - PANEL[0], PANEL[2]),
-           ("HOIST", DOOR_X - 0.8, V2 + 22.2, 1.6, 3.2)] + \
-          [(f"SH{k}", u + sg * (3.0 + 0.6 + 1.1) + (0.0 if sg > 0 else -SHUTTER_W), V2 + 4.0, SHUTTER_W, 16.0)
+           ("HOIST", DOOR_X - 0.8, HOIST_V - 0.8, 1.6, 3.2)] + \
+          [(f"SH{k}", u + sg * (UP_W / 2 + 0.6 + 1.1) + (0.0 if sg > 0 else -SHUTTER_W), V2 + 5.0, SHUTTER_W, UP_H)
            for k, (u, sg) in enumerate([(u, s) for u in UP_X for s in (-1, 1)])]
 
 
@@ -172,8 +181,8 @@ def build(kit=None):
         A_[:, 3] = f.world(u0, v0, w0)
         return A_
 
-    fr = box([0, 0, 0], [W, FR_H, 1.0]) + ext(rect(0, 0, W, FR_H) - rect(0.7, 0.7, W - 0.7, FR_H - 0.7), 0.99, 1.4) + \
-        ext(SF.text_cs("BASSETT HARDWARE", 2.4, "roman", grow=0.1).translate((W / 2, (FR_H - 2.4) / 2)), 0.99, 1.4)
+    fr = box([0, 0, 0], [W, FR_H, 1.0]) + ext(rect(0, 0, W, FR_H) - rect(0.9, 0.9, W - 0.9, FR_H - 0.9), 0.99, 1.4) + \
+        ext(SF.text_cs("BASSETT HARDWARE", 3.6, "roman", grow=0.1).translate((W / 2, (FR_H - 3.6) / 2)), 0.99, 1.4)
     Af = frame_at(0.0, VF)
     kit.add("FRIEZE", "Sign", fr.transform(Af), P=inv34(Af), group="front", render=_gilt(fr, Af, 1.0, "Sign"))
     cap = SF.cornice_cap(W, CAP_PROF)
@@ -181,21 +190,21 @@ def build(kit=None):
     kit.add("CAP", "Trim", cap.transform(Ac), P=inv34(Ac), group="front")
     pw = PANEL[1] - PANEL[0]
     panel = box([0, 0, 0], [pw, PANEL[2], 0.8]) + box([-0.3, PANEL[2] - 0.8, 0.0], [pw + 0.3, PANEL[2], 1.2]) + \
-        ext(SF.text_cs("1872", 2.6, "roman", grow=0.1).translate((pw / 2, 0.8)), 0.79, 1.2)
+        ext(SF.text_cs("1872", 3.6, "roman", grow=0.1).translate((pw / 2, 1.0)), 0.79, 1.2)
     Ap = frame_at(PANEL[0], VTOP)
     kit.add("PANEL", "Trim", panel.transform(Ap), P=inv34(Ap), group="front")
-    sh = SF.iron_shutter(SHUTTER_W, 16.0)
+    sh = SF.iron_shutter(SHUTTER_W, UP_H)
     for k, (name, u0, v0, L_, h_) in enumerate([a for a in APPLIED if a[0].startswith("SH")]):
         A_ = frame_at(u0, v0)
         kit.add(f"SHUTTER-{k}", "Iron", sh.transform(A_), P=inv34(A_), key="SHUTTER", group="front")
-    hoist = ext(SF.hoist_cs(8.0, 7.0), 0.0, 1.2)
-    Ah = np.array([[0.0, 0.0, -1.0, DOOR_X + 0.6], [-1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, ZF + V2 + 23.0]])
+    hoist = ext(SF.hoist_cs(11.0, 10.0), 0.0, 1.2)
+    Ah = np.array([[0.0, 0.0, -1.0, DOOR_X + 0.6], [-1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, ZF + HOIST_V]])
     kit.add("HOIST", "Iron", hoist.transform(Ah), P=inv34(Ah), group="front")
     print("front", round(time.time() - t0, 1))
 
     # --- the shingled shed roof between the side parapets
     n = math.sqrt(1 + S * S)
-    y1 = D + 1.6
+    y1 = D + 2.4
     z1 = ZF + V_FRONT_ROOF - (y1 - Y0R) * S
     Lr = W - 2 * T - 0.3
     Vr = (y1 - Y0R) * n
