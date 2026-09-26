@@ -1312,9 +1312,8 @@ def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2):
     L = gap + depth
     sweep = union([pt.solid.translate(list(d * t)) for t in np.arange(step, L + 1e-9, step)] + [pt.solid.translate(list(d * L))])
     strip = union([tgt.translate(list(-d * t)) for t in np.arange(0.0, gap + 0.25, 0.1)])
-    tongue = (sweep - pt.solid) ^ strip
-    n0 = len(pt.solid.decompose())
-    keep = [c for c in tongue.decompose() if c.volume() > 1e-3 and len((pt.solid + c).decompose()) <= n0]
+    tongue = (sweep + pt.solid) ^ strip                   # overlaps the part, so the union fuses
+    keep = [c for c in tongue.decompose() if c.volume() > 1e-3 and (c ^ pt.solid).volume() > 1e-4]
     tongue = union(keep) if keep else M()                  # only what joins the part
     if conform:
         pt.solid = (pt.solid + tongue) - tgt
