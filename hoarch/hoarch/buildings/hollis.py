@@ -5,7 +5,7 @@ An L-plan gable-front-and-wing farmhouse: Dutch lap siding with chevron boarding
 gables, and in every gable peak gingerbread (a rafter board edged with sawn drops, a spindle
 screen hung from a king post with a turned drop). A spindlework porch (spindle posts and
 railings, a spindle frieze with fan brackets, a horizontal-slat skirt) fills the corner of
-the L. Pedimented window crowns with fans and dentils over two-over-two sash, board-and-
+the L, and a second one runs along the back of the wing with its steps at the back door. Pedimented window crowns with fans and dentils over two-over-two sash, board-and-
 batten shutters, a half-glass door under a diamond-paned transom, a rock-faced block
 foundation, a roof of small red pressed-metal shingles and two plain brick chimneys.
 
@@ -244,44 +244,49 @@ def build(kit=None):
         kit.add(f"GABLE-{k}", "White", tr.transform(A), P=inv34(A), key=f"GABLE-{wl['L']:.0f}", group="roof")
     print("roof", round(time.time() - t0, 1))
 
-    # --- spindlework porch in the corner of the L
-    PY0 = 28.0
-    ppoly = [(MW, PY0), (WX1 - 4.0, PY0), (WX1 - 4.0, WY0), (MW, WY0)]
-    Lf = WX1 - 4.0 - MW
-    runs = [dict(a=(MW, PY0), b=(WX1 - 4.0, PY0), posts=[3.2, 36.0, 56.0, 76.0, Lf - 1.6]),
-            dict(a=(WX1 - 4.0, PY0), b=(WX1 - 4.0, WY0), posts=[1.6, WY0 - PY0 - 3.2])]
-    H_floor = ZF - 1.4
-    post_h = S1 - 2.0 - 5.6 - H_floor              # the roof tucks under the joint's ledge
-    P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=[(0, 24.0, 16.0)],
-                        planks=dict(pitch=2.4, border=0.0),
-                        joined=True, ledger_off=1.5, arcade="spindle", post="spindle", rail="spindle", skirt="hslats",
-                        pier_tex="block", roof_edge="button")
+    # --- spindlework porches: one in the corner of the L, one across the back of the wing
     fkeep = slab(offset(base, 0.8 + 0.55 + 0.15), -1, ZF + 1.3)
     ins_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                       for p in inserts if p is not None])
-    deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
-    kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch",
-            render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
-    tabs = union([arc for arc, _ in P["arcades"]])
     fnd = foundation(BLOCKS, 0.0, ZF, style="block")
-    for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
-        kit.add(f"PORCH-frame-{k}", "White", fr - tabs - fnd, group="porch")
-    for k, (arc, A) in enumerate(P["arcades"]):
-        kit.add(f"PORCH-arcade-{k}", "White", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
     bld_keep = MAIN.solid(grow=2.0, dz0=-20, dz1=0) + WING.solid(grow=2.0, dz0=-20, dz1=0)
     shut_keep = union([box(np.array(p.solid.bounding_box()[:3]) - 0.2, np.array(p.solid.bounding_box()[3:]) + 0.2)
                        for p in kit.parts if p.name.startswith("SHUTTER")])
-    proof = P["roof"] - bld_keep - ins_keep - shut_keep
-    ptop = proof.bounding_box()[5]
-    kit.add("PORCH-roof", "White", proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), P=print_flip(), group="porch")
-    kit.add("PORCH-roof-tin", "TinRed", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
-    for k, (sm, A) in enumerate(P["steps"]):
-        kit.add(f"PORCH-steps-{k}", "Fieldstone", sm.transform(A) - fkeep, group="porch")
-    e, u = WING.locate(124.0, MD_)
-    f = WING.facades()[e]
-    A = f.A.copy()
-    A[:, 3] = f.world(u, -ZF, 1.4)
-    kit.add("STOOP-back", "Fieldstone", FT.steps(15.0, ZF - 0.6, 5).transform(A), group="porch")
+    H_floor = ZF - 1.4
+    post_h = S1 - 2.0 - 5.6 - H_floor              # the roofs tuck under the joint's ledge
+
+    def porch(tag, ppoly, runs, steps_at):
+        P = FT.porch_turned(ppoly, runs, H_floor, post_h, steps_at=steps_at, planks=dict(pitch=2.4, border=0.0),
+                            joined=True, ledger_off=1.5, arcade="spindle", post="spindle", rail="spindle",
+                            skirt="hslats", pier_tex="block", roof_edge="button")
+        deck = P["deck"] - fkeep           # planks and frame in one part: wood planks, one filament change
+        kit.add(f"{tag}-deck", "PorchDeck", deck, P=print_flip(), group="porch",
+                render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
+        tabs = union([arc for arc, _ in P["arcades"]])
+        for k, fr in enumerate(sorted(P["frames"], key=lambda m: -m.volume())):
+            kit.add(f"{tag}-frame-{k}", "White", fr - tabs - fnd, group="porch")
+        for k, (arc, A) in enumerate(P["arcades"]):
+            kit.add(f"{tag}-arcade-{k}", "White", arc, P=compose(FT.ARCADE_PRINT, inv34(A)), group="porch")
+        proof = P["roof"] - bld_keep - ins_keep - shut_keep
+        ptop = proof.bounding_box()[5]
+        kit.add(f"{tag}-roof", "White", proof.trim_by_plane([0, 0, -1.0], -(ptop - 0.8)), P=print_flip(), group="porch")
+        kit.add(f"{tag}-roof-tin", "TinRed", proof.trim_by_plane([0, 0, 1.0], ptop - 0.8), group="porch")
+        for k, (sm, A) in enumerate(P["steps"]):
+            kit.add(f"{tag}-steps-{k}", "Fieldstone", sm.transform(A) - fkeep, group="porch")
+
+    PY0 = 28.0
+    Lf = WX1 - 4.0 - MW
+    porch("PORCH", [(MW, PY0), (WX1 - 4.0, PY0), (WX1 - 4.0, WY0), (MW, WY0)],
+          [dict(a=(MW, PY0), b=(WX1 - 4.0, PY0), posts=[3.2, 36.0, 56.0, 76.0, Lf - 1.6]),
+           dict(a=(WX1 - 4.0, PY0), b=(WX1 - 4.0, WY0), posts=[1.6, WY0 - PY0 - 3.2])], [(0, 24.0, 16.0)])
+    # the back porch along the wing, its steps at the back door
+    XB0, XB1, BD = 92.0, WX1 - 4.0, 24.0
+    Lb = XB1 - XB0
+    ub = XB1 - 124.0
+    porch("BPORCH", [(XB0, MD_), (XB1, MD_), (XB1, MD_ + BD), (XB0, MD_ + BD)],
+          [dict(a=(XB1, MD_), b=(XB1, MD_ + BD), posts=[3.2, BD - 1.6]),
+           dict(a=(XB1, MD_ + BD), b=(XB0, MD_ + BD), posts=[1.6, 18.0, ub - 11.0, ub + 11.0, Lb - 1.6]),
+           dict(a=(XB0, MD_ + BD), b=(XB0, MD_), posts=[1.6, BD - 3.2])], [(1, ub, 16.0)])
     print("porch", round(time.time() - t0, 1))
     print("specks dropped:", kit.drop_specks())
     return kit

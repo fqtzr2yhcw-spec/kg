@@ -24,12 +24,13 @@ BATCHES = {
     "houses1": ("Houses 1-10", ["harcourt", "ardmore", "carrow", "beaumont", "merritt"],
                 ["villa", "fowler", "whitby", "hollis", "delancey"], 45.0, 290.0),
     "shops": ("Main Street, shops 11-20", ["hotel", "bank", "pemberton", "drugstore", "hardware"],
-              ["barber", "general", "bakery", "millinery", "jeweler"], 30.0, 250.0),
+              ["barber", "general", "bakery", "millinery", "jeweler"], 55.0, 230.0),
     "houses2": ("Houses 21-30", ["rosecroft", "larkspur", "camellia", "juniper", "hawthorn"],
                 ["marigold", "wisteria", "twins", "primrose", "magnolia"], 45.0, 290.0),
     "colonial": ("The Colonial batch, houses 31-40", ["ellsworth", "oakhurst", "fairhaven", "westbrook", "winthrop"],
                  ["chatham", "vantassel", "whitmore", "pennock", "hathaway"], 45.0, 310.0),
 }
+VIEW = {"shops": [-10, 27, 50, 0.98, [0, 0, -14]]}       # the shops are small: frame them wider
 FILE = {"houses1": "Houses_01-10", "shops": "Shops_11-20", "houses2": "Houses_21-30", "colonial": "Colonial_31-40"}
 
 
@@ -82,7 +83,7 @@ def scene(batch):
         merged[key + "__v"] = np.concatenate(vs).astype(np.float32)
         merged[key + "__f"] = np.concatenate(fs).astype(np.int32)
     np.savez_compressed(os.path.join(d_out, "scene.npz"), **merged)
-    json.dump({"materials": pal, "views": {"group": [-12, 31, 50, 0.72, [0, 0, -20]]}},
+    json.dump({"materials": pal, "views": {"group": VIEW.get(batch, [-12, 31, 50, 0.72, [0, 0, -20]])}},
               open(os.path.join(d_out, "palette.json"), "w"), indent=1)
     json.dump(labels, open(os.path.join(d_out, "labels.json"), "w"), indent=1)
     return d_out
@@ -101,16 +102,28 @@ def label(batch, d_out):
     tfont = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", int(fs * 1.5))
     over = Image.new("RGBA", img.size, (0, 0, 0, 0))
     dr = ImageDraw.Draw(over)
-    for k, (x, y, _) in pix.items():
+    placed = []
+    front = set(BATCHES[batch][2])
+    for k, (x, y, _) in sorted(pix.items(), key=lambda it: it[1][0]):
         text = nm.get(k, k)
-        b = dr.textbbox((0, 0), text, font=font)
+        if len(text) > 20:          # a long name on two lines, broken at the space nearest its middle
+            sp = [i for i, ch in enumerate(text) if ch == " "]
+            i = min(sp, key=lambda j: abs(j - len(text) / 2))
+            text = text[:i] + "\n" + text[i + 1:]
+        b = dr.multiline_textbbox((0, 0), text, font=font, align="center")
         w, h = b[2] - b[0], b[3] - b[1]
         x0, y0 = int(x - w / 2), int(y - h / 2)
         x0 = max(8, min(W - w - 8, x0))
         pad = fs // 3
+        # a tag that would cover one already placed moves away (down in front, up behind) till it is clear
+        step = (h + 3 * pad) * (1 if k in front else -1)
+        while any(not (x0 + w + pad < a - 4 or x0 - pad > c + 4 or y0 + h + pad * 1.4 < b_ - 4 or y0 - pad > d_ + 4)
+                  for a, b_, c, d_ in placed):
+            y0 += step
+        placed.append((x0 - pad, y0 - pad, x0 + w + pad, y0 + h + pad * 1.4))
         dr.rounded_rectangle([x0 - pad, y0 - pad, x0 + w + pad, y0 + h + pad * 1.4], radius=pad,
                              fill=(255, 255, 255, 215), outline=(60, 60, 60, 255), width=2)
-        dr.text((x0 - b[0], y0 - b[1]), text, font=font, fill=(30, 30, 30, 255))
+        dr.multiline_text((x0 - b[0], y0 - b[1]), text, font=font, fill=(30, 30, 30, 255), align="center")
     b = dr.textbbox((0, 0), title, font=tfont)
     dr.text(((W - (b[2] - b[0])) // 2, fs // 2), title, font=tfont, fill=(40, 40, 40, 255))
     out = Image.alpha_composite(img, over).convert("RGB")

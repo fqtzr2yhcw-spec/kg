@@ -392,8 +392,9 @@ NOTES = {
   6. The CORNICE-E parts round the eave band, along the eave walls and across the gable ends.
   7. ROOF onto the lip along the eave walls; the two CHIMNEYs in their pockets; a GABLE
      (the gingerbread) on each gable's rake end.
-  8. Porch (in the corner of the L): """ + TURNED_PORCH.replace("its tin top", "PORCH-roof-tin") + """;
-     STOOP-back at the back door.
+  8. Porch (in the corner of the L): """ + TURNED_PORCH.replace("its tin top", "PORCH-roof-tin") + """.
+  9. Back porch (along the back of the wing, its steps at the back door): the same with the BPORCH
+     parts.
 """),
     "carrow": ("THE CARROW - QUEEN ANNE CASTLE", "  1. FOUNDATION (coursed stone).\n" + jointed(
         " (the Roman brick storey with the turret's first storey)",
