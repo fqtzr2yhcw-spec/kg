@@ -6,7 +6,7 @@ Pink banded lap siding below (bevel courses tied by a flat band every sixth cour
 key-cut shingles above, lozenge corner boards, a base of red-brown diamond-point rustication.
 Between the storeys a three-part cornice: a raspberry frieze hung with swags between rosettes,
 a white course of pellets and a white cyma crown. At the eave a four-part cornice: a raspberry
-frieze with ovals between the brackets, a white dentil course, a white soffit on pierced ring
+frieze with ovals between the brackets, a white dentil course, a white soffit on ring
 brackets, and a raspberry cavetto crown. A round tower stands on the west front corner, its
 upper storeys in bands of key-cut and diamond shingles, a ring of framed lights at the top under
 its own fluted frieze, bracketed soffit and crown, then a tall black bell roof (flaring at the
@@ -56,15 +56,15 @@ JOINT = dict(pitch=12.0, margin=4.0, layers=[
 EAVE = dict(pitch=12.0, margin=4.0, layers=[
     dict(kind="frieze", h=6.0, b=1.2, orn="ovals", role="Raspberry"),
     dict(kind="course", h=1.6, b=1.4, orn="dentil", role="White", tooth=0.9, gap=0.6),
-    dict(kind="bed", h=2.0, b=1.4, P=6.2, role="White", brackets=dict(style="ring", t=0.9, reach=0.55)),
+    dict(kind="bed", h=2.0, b=1.4, P=6.2, role="White", brackets=dict(style="ring", t=1.6, reach=0.55)),
     dict(kind="crown", h=3.0, b=1.4, P=7.2, orn="cavetto", role="Raspberry")])
 TOWER_C = dict(pitch=7.0, margin=2.2, layers=[
     dict(kind="frieze", h=4.0, b=1.2, orn="flutes", role="Raspberry"),
-    dict(kind="bed", h=1.8, b=1.4, P=5.0, role="White", brackets=dict(style="ring", t=0.8, reach=0.7)),
+    dict(kind="bed", h=1.8, b=1.4, P=5.0, role="White", brackets=dict(style="ring", t=1.6, reach=0.7)),
     dict(kind="crown", h=2.2, b=1.4, P=5.8, orn="ovolo", role="White")])
 BAY_C = dict(pitch=8.0, margin=2.4, layers=[
     dict(kind="frieze", h=3.4, b=1.2, orn="studs", role="Raspberry"),
-    dict(kind="bed", h=1.6, b=1.4, P=4.4, role="White", brackets=dict(style="ring", t=0.8, reach=0.7)),
+    dict(kind="bed", h=1.6, b=1.4, P=4.4, role="White", brackets=dict(style="ring", t=1.6, reach=0.7)),
     dict(kind="crown", h=1.8, b=1.4, P=5.0, orn="bevel", role="White")])
 RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2      # the joint (belt ring) height
 HE = CO.band_height(EAVE)                                          # the eave band over the ledge

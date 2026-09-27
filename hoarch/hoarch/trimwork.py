@@ -980,7 +980,7 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
     console whose sloping front is a string of three beads), fret, ladder, acanthus (an S
     console with a lobed front and an open eye), twin (two slim consoles on one head) and cove
     (a square head over a concave sweep), tongue (a long slim taper with a round end), ring
-    (a sawn bracket pierced with a round eye), comma (a round head curling down to a point) and
+    (a sawn bracket with a sunk round eye), comma (a round head curling down to a point) and
     stepped (a corbel of three steps)."""
     from .ornament import console, side_profile
     if style == "scroll":
@@ -1083,11 +1083,16 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
         tail = [(0.0, 0.0), (d, 0.0)] + [(cx_ + R_ * math.cos(a), cy_ + R_ * math.sin(a)) for a in np.linspace(0.0, -math.pi * 0.9, 10)]
         tail += [(0.55, -h + 0.3), (0.0, -h + 0.3)]
         prof = cs_union([poly(tail), circle((0.3, -h + 0.35), 0.35, 12)])
-    elif style == "ring":               # a sawn bracket pierced with a round eye, a ball at its foot (the Camellia)
+    elif style == "ring":               # a sawn bracket with a round eye, a ball at its foot (the Camellia)
+        # the eye is sunk 0.3 into each face, not pierced: pierced, the slivers round it printed
+        # as loose strings
         body = poly([(0.0, 0.0), (d, 0.0), (d, -0.8), (0.7, -h + 0.5), (0.0, -h + 0.5)])
         rr = max(0.5, min(d, h) * 0.17)
         eye = circle((0.2 + d * 0.38, -h * 0.34), rr, 20)
-        prof = cs_union([body - eye, circle((0.35, -h + 0.45), 0.45, 16)])
+        m = side_profile(cs_union([body, circle((0.35, -h + 0.45), 0.45, 16)]), -t / 2, t / 2)
+        if t >= 1.4:
+            m = m - side_profile(eye, -t / 2 - 1.0, -t / 2 + 0.3) - side_profile(eye, t / 2 - 0.3, t / 2 + 1.0)
+        return m.translate([u, v_top, w0])
     elif style == "brace":
         prof = cs_union([rect(0.0, -h, 0.6, 0.0), rect(0.0, -0.6, d, 0.0),
                          poly([(0.0, -h * 0.85), (0.6, -h * 0.85), (d, -0.4), (d - 0.8, -0.2)])])
