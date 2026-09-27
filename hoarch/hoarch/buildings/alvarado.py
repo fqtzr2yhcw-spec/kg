@@ -158,7 +158,11 @@ def build(kit=None):
     pockets, stacks = [], []
     for cx in (64.0, W - 64.0):
         z0 = round((zr - 6.0) / 0.2) * 0.2
-        roof = roof + G.chimney_seat(solid_env, cx, YC, CW / 2, zr + 1.0)
+        # a block under the stack from the pocket's floor to the ridge, over a 45-degree
+        # pyramid of fill in the hollow: the stack stands on its whole foot
+        hs = CW / 2 + 1.2
+        roof = roof + ((M.hull_points([(cx + sx * hs, YC + sy * hs, z0) for sx in (-1, 1) for sy in (-1, 1)] + [(cx, YC, z0 - hs - 0.5)])
+                        + box([cx - hs, YC - hs, z0], [cx + hs, YC + hs, zr + 1.0])) ^ solid_env)
         pockets.append(box([cx - CW / 2 - 0.4, YC - CW / 2 - 0.4, z0], [cx + CW / 2 + 0.4, YC + CW / 2 + 0.4, zr + 40]))
         stacks.append(C4.chimney_tilesaddle(CW, CW, zr + 16.0 - z0).translate([cx, YC, z0]))
     roof = roof - union(pockets)
@@ -211,8 +215,8 @@ def build(kit=None):
     Ag = np.array([[1.0, 0, 0, W - 1.5], [0, 1.0, 0, 40.0], [0, 0, 1.0, 0.0]])
     kit.add("GARDENWALL", "Whitewash", wall.transform(Ag) - fnd - bld_keep, group="garden")
     kit.add("GARDENWALL-coping", "Tile", cop.transform(Ag) - bld_keep, group="garden")
-    leaf = C4.ext(arch.offset(-0.35, C4.JoinType.Round), -0.5, 0.5)
-    grooves = C4.ext(C4.cs_union([rect(x - 0.18, -1, x + 0.18, 30) for x in np.arange(17.0 - 5.0 + 1.25, 17.0 + 5.0, 1.25)]), 0.3, 1.0)
+    leaf = C4.ext(arch.offset(-0.12, C4.JoinType.Round), -0.8, 0.8)                  # a snug fit, glued round its edge
+    grooves = C4.ext(C4.cs_union([rect(x - 0.18, -1, x + 0.18, 30) for x in np.arange(17.0 - 5.0 + 1.25, 17.0 + 5.0, 1.25)]), 0.5, 1.0)
     gate = (leaf - grooves).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])).transform(Ag)
     kit.add("GATE", "Wood", gate, group="garden")
     # --- steps at the portal and the back door
