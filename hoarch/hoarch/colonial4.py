@@ -1039,3 +1039,372 @@ PW.BALUSTERS.update(doublevase=(baluster_doublevase, 1.7))
 PW.FRIEZES.update(doricfrieze=frieze_doric)
 PW.SKIRTS.update(lozenges=skirt_lozenges)
 _FT.EDGE_EXTRA.update(mutules=edge_mutules)
+
+
+# ================================================================== the Stauffer (house 45, Pennsylvania German)
+# ------------------------------------------------------------------ skins and foundation
+def limestone_random(region, datum=0.0, seed=3):
+    """Whitewashed limestone in random ashlar: squared stones of three heights in broken
+    courses, a tall 'jumper' now and then running through two, the joints struck back."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed)
+    joint = 0.45
+    stones = []
+    v = v0 - 1.0
+    while v < v1:
+        ch = float(rng.choice([1.8, 2.4, 3.0]))                     # each course its own height (broken courses)
+        u = u0 - rng.uniform(0.0, 4.0)
+        while u < u1:
+            L = rng.uniform(2.6, 6.5)
+            stones.append(rect(u + joint / 2, v + joint / 2, u + L - joint / 2, v + ch - joint / 2))
+            u += L
+        v += ch
+    cs = cs_union(stones) ^ region
+    return M.extrude(region, 0.08) + ext(cs, 0.0, 0.4)
+
+
+def logs_dovetail(region, L, datum=0.0, course=2.6, chink=0.6, end=2.8):
+    """Hewn logs with lime chinking: squared logs 2.6 mm high, their faces broad-axed flat and
+    their edges rounded, the chinking set back between them; at both corners the log ends
+    show in turn, each cut to a dovetail."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = [M.extrude(region, 0.1)]
+    logs, ends = [], []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1:
+        v = datum + k * course
+        a, b = v + chink / 2, v + course - chink / 2
+        logs.append(rect(u0 - 1, a, u1 + 1, b))
+        if k % 2 == 0:
+            for x0, sg in ((0.0, 1.0), (L, -1.0)):
+                tail = poly([(x0, a - 0.1), (x0 + sg * end, a + 0.25), (x0 + sg * end, b - 0.25), (x0, b + 0.1)])
+                ends.append(tail)
+        k += 1
+    lc = cs_union(logs) ^ region
+    out.append(stepped(lc, [(0.0, 0.0, 0.35), (0.25, 0.35, 0.55)]))
+    if ends:
+        out.append(ext(cs_union(ends) ^ region, 0.0, 0.7))
+    return union(out)
+
+
+def boards_pointed(region, datum=0.0, w=2.0):
+    """Gable boarding: upright boards with a V-joint between them, their feet cut to points
+    along the gable's foot (a sawtooth hem)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    bd = []
+    for x in np.arange(u0 - w, u1 + w, w):
+        bd.append(poly([(x + 0.2, v0 + 1.2), (x + w / 2, v0 + 0.1), (x + w - 0.2, v0 + 1.2), (x + w - 0.2, v1 + 1), (x + 0.2, v1 + 1)]))
+    return M.extrude(region, 0.1) + ext(cs_union(bd) ^ region, 0.0, 0.45)
+
+
+def foundation_stoneplinth(reg, seed=0):
+    """A plinth of big squared sandstones with a chamfered top course (the Stauffer)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 11)
+    st_ = []
+    u = b[0] - rng.uniform(0, 3)
+    while u < b[2]:
+        L = rng.uniform(5.0, 9.0)
+        st_.append(rect(u + 0.25, b[1] - 1, u + L - 0.25, b[3] - 1.4))
+        u += L
+    body = ext(cs_union(st_) ^ reg, 0.0, 0.45) + M.extrude(reg, 0.1)
+    return body + chamfer_box(b[0], b[3] - 1.4, b[2], b[3], 0.0, 0.8, c=0.45, square=("u0", "u1"), bottom=0.3)
+
+
+# ------------------------------------------------------------------ cornice ornament
+def _tulip(c, s):
+    """A fraktur tulip ``s`` tall: a cup of three pointed petals (the middle one tallest) on a
+    stem, two long leaves rising from its foot in a V."""
+    x, y = c
+    y0, top = y - s * 0.5, y + s * 0.5
+    cb, cw = y + s * 0.02, s * 0.3
+    cup = poly([(x - cw * 0.55, cb), (x + cw * 0.55, cb), (x + cw, cb + s * 0.22), (x + cw * 0.85, top - s * 0.06),
+                (x + cw * 0.35, top - s * 0.2), (x, top), (x - cw * 0.35, top - s * 0.2), (x - cw * 0.85, top - s * 0.06),
+                (x - cw, cb + s * 0.22)])
+    stem = rect(x - 0.2, y0, x + 0.2, cb + 0.1)
+    lv = [_lens((x + sg * s * 0.14, y0 + s * 0.26), s * 0.5, s * 0.13, math.radians(68 if sg > 0 else 112)) for sg in (-1, 1)]
+    return cs_union([cup, stem] + lv)
+
+
+def frieze_tulippots(L, h, b, pitch, margin, pair, half):
+    """Pennsylvania German tulip pots: at every station a pot sprouting three tulips, and in
+    each bay a small heart."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        pot = poly([(u - 0.9, v0), (u + 0.9, v0), (u + 1.2, v0 + hh * 0.3), (u - 1.2, v0 + hh * 0.3)])
+        fl = [_tulip((u, v0 + hh * 0.62), hh * 0.62)]
+        fl += [_tulip((u + sg * 1.5, v0 + hh * 0.52), hh * 0.46) for sg in (-1, 1)]
+        out.append(_st(pot, b, 0.55))
+        out.append(_st(cs_union(fl) ^ rect(u - 2.6, v0 + hh * 0.3 - 0.1, u + 2.6, v1 + 0.2), b, 0.45))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 2.8):
+        r = min(0.55, hh * 0.18)
+        heart = cs_union([circle((uc - r * 0.72, vm + r * 0.45), r, 16), circle((uc + r * 0.72, vm + r * 0.45), r, 16),
+                          poly([(uc - r * 1.62, vm + 0.2), (uc + r * 1.62, vm + 0.2), (uc, vm - r * 1.9)])])
+        out.append(_st(heart, b, 0.45))
+    return out, []
+
+
+def _bird(c, s, sg):
+    """A distelfink (goldfinch) ``s`` long, facing +u (sg = 1) or -u: body, head, tail, wing."""
+    x, y = c
+    body = oval((x, y), s * 0.32, s * 0.2, 20)
+    head = circle((x + sg * s * 0.34, y + s * 0.13), s * 0.13, 14)
+    beak = poly([(x + sg * s * 0.44, y + s * 0.16), (x + sg * s * 0.58, y + s * 0.1), (x + sg * s * 0.44, y + s * 0.07)])
+    tail = poly([(x - sg * s * 0.22, y), (x - sg * s * 0.55, y + s * 0.22), (x - sg * s * 0.5, y - s * 0.02)])
+    return cs_union([body, head, beak, tail])
+
+
+def frieze_distelfinks(L, h, b, pitch, margin, pair, half):
+    """Distelfinks: at every station a pair of goldfinches facing each other over a heart, and
+    a running vine of little leaves between the pairs."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    s = min(3.2, hh * 1.0)
+    for u in CO._us(L, pitch, margin, 0.0):
+        birds = cs_union([_bird((u - s * 0.7, vm + 0.1), s, 1), _bird((u + s * 0.7, vm + 0.1), s, -1)])
+        out.append(_st(birds ^ rect(u - 2.4 * s, v0 - 0.2, u + 2.4 * s, v1 + 0.2), b, 0.5))
+        r = 0.42
+        heart = cs_union([circle((u - r * 0.72, vm + r * 0.45 - 0.3), r, 14), circle((u + r * 0.72, vm + r * 0.45 - 0.3), r, 14),
+                          poly([(u - r * 1.62, vm - 0.1), (u + r * 1.62, vm - 0.1), (u, vm - r * 1.9 - 0.3)])])
+        out.append(_st(heart, b, 0.6))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 1.5 * s):
+        a, e = uc - wd / 2 + 0.3, uc + wd / 2 - 0.3
+        if e - a < 2.0:
+            continue
+        out.append(_st(rect(a, vm - 0.2, e, vm + 0.2), b, 0.3))
+        for j, x in enumerate(np.arange(a + 0.8, e - 0.4, 1.4)):
+            out.append(_st(_lens((x, vm + (0.45 if j % 2 else -0.45)), 1.1, 0.55, math.radians(35 if j % 2 else -35)), b, 0.4))
+    return out, []
+
+
+def course_saltires(L, h, b, pitch, margin, p):
+    """A course of small saltire crosses, one after another."""
+    step = 1.6
+    n = int((L - 1.0) / step)
+    u0 = (L - (n - 1) * step) / 2
+    out = []
+    hr = h / 2 - 0.1
+    for k in range(n):
+        u = u0 + k * step
+        x = stroke([(u - 0.55, h / 2 - hr), (u + 0.55, h / 2 + hr)], 0.4) + stroke([(u - 0.55, h / 2 + hr), (u + 0.55, h / 2 - hr)], 0.4)
+        out.append(ext(x ^ rect(u - 0.8, 0.05, u + 0.8, h - 0.05), b - 0.05, b + 0.45))
+    return out
+
+
+def bracket_heart(h, d, t):
+    """A sawn bracket whose nose ends in a heart-shaped drop (side profile, top at v = 0)."""
+    hb = min(h, max(1.8, 0.34 * d))
+    r = min(0.55, hb * 0.28)
+    x = d - r * 1.4
+    body = poly([(0.0, 0.0), (d, 0.0), (d, -0.5), (x + r * 1.2, -hb + r * 1.4), (0.0, -hb)])
+    heart = cs_union([circle((x - r * 0.7, -hb + r * 1.25), r, 14), circle((x + r * 0.7, -hb + r * 1.25), r, 14),
+                      poly([(x - r * 1.6, -hb + r * 1.1), (x + r * 1.6, -hb + r * 1.1), (x, -hb - r * 0.6)])])
+    return cs_union([body, heart])
+
+
+CO.FRIEZE_EXTRA.update(tulippots=frieze_tulippots, distelfinks=frieze_distelfinks)
+CO.COURSE_EXTRA.update(saltires=course_saltires)
+TW.BRACKET_EXTRA.update(heart=bracket_heart)
+TW.FOUNDATION_EXTRA.update(stoneplinth=foundation_stoneplinth)
+
+
+# ------------------------------------------------------------------ windows, doors, shutters
+def window_pegframe(w, h, A=1.4):
+    """A window in the stone storey: a six-over-six sash in a heavy plank frame whose corners
+    are pinned with square pegs, under a dressed sandstone lintel with a raised keystone
+    carved with a heart, over a stone sill."""
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(2, 2))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    frame_ = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext(frame_, 0.0, 0.8))
+    for x in (-w / 2 - A / 2, w / 2 + A / 2):
+        for v in (0.8, h + A / 2):
+            parts.append(ext(rect(x - 0.3, v - 0.3, x + 0.3, v + 0.3), 0.79, 1.1))
+    lt0 = h + A
+    hw = w / 2 + A + 1.2
+    parts.append(chamfer_box(-hw, lt0 - 0.01, hw, lt0 + 2.6, 0.0, 1.0, c=0.3))
+    r = 0.42
+    heart = cs_union([circle((-r * 0.72, lt0 + 1.45 + r * 0.45), r, 14), circle((r * 0.72, lt0 + 1.45 + r * 0.45), r, 14),
+                      poly([(-r * 1.62, lt0 + 1.65), (r * 1.62, lt0 + 1.65), (0.0, lt0 + 1.45 - r * 1.9)])])
+    parts.append(chamfer_box(-1.2, lt0 - 0.01, 1.2, lt0 + 3.0, 0.0, 1.35, c=0.3))
+    parts.append(ext(heart, 1.34, 1.6))
+    top = lt0 + 3.0
+    parts.append(chamfer_box(-hw, -1.2, hw, 0.2, 0.0, 1.1, c=0.35, bottom=0.6))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, top, -1.2)
+
+
+def window_casement_tulip(w, h, A=1.2):
+    """A window in the log storey: a pair of casements of three lights each in a hewn frame,
+    under a head board sawn along its lower edge in a wave and carved with a tulip."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, JoinType.Miter, 4.0)
+    u0_, v0_, u1_, v1_ = inner.bounds()
+    leaves = [rect(u0_, v0_, -0.3, v1_), rect(0.3, v0_, u1_, v1_)]
+    g = cs_union(leaves)
+    bars = cs_union([_muntins(l_, 1, 3) for l_ in leaves])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, bars, plug_cs)
+    sash.append(ext(rect(-0.31, v0_ - 0.01, 0.31, v1_ + 0.01), -pl, -0.3))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    parts.append(ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.8))
+    hw = w / 2 + A + 0.8
+    vb = h + A - 0.01
+    wave = [(-hw, vb + 0.6)] + [(x, vb + 0.6 + 0.35 * math.cos(2 * math.pi * x / 2.4)) for x in np.linspace(-hw, hw, 25)] + [(hw, vb + 0.6)]
+    board = poly(wave + [(hw, vb + 3.4), (-hw, vb + 3.4)]) + rect(-hw, vb, hw, vb + 0.7)
+    parts.append(ext(board, 0.0, 0.7))
+    parts.append(ext(_tulip((0.0, vb + 2.0), 2.2), 0.69, 1.0))
+    top = vb + 3.4
+    parts.append(chamfer_box(-w / 2 - A - 0.4, -1.0, w / 2 + A + 0.4, 0.2, 0.0, 1.0, c=0.3, bottom=0.6))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top, -1.0)
+
+
+def _board_leaf(u0, u1, v0, v1, hinges=True, battens=True):
+    """A leaf of upright V-jointed boards with strap hinges ending in tulip-shaped spears."""
+    from .colonial import _strap
+    face = rect(u0, v0, u1, v1)
+    body = ext(face, -1.0, -0.8)
+    grooves = cs_union([rect(x - 0.18, v0, x + 0.18, v1) for x in np.arange(u0 + 1.4, u1 - 0.4, 1.4)])
+    body = body - ext(grooves ^ face, -0.9, -0.7)
+    out = [body]
+    if hinges:
+        for v in (v0 + (v1 - v0) * 0.18, v1 - (v1 - v0) * 0.18):
+            out.append(ext(_strap(u0 + 0.3, u0 + (u1 - u0) * 0.8, v) ^ face, -0.81, -0.55))
+    return out
+
+
+def door_forebay(w, h, transom=3.0, A=1.3):
+    """The front door under the forebay: a Dutch door (split at the middle) of upright boards
+    on tulip-ended strap hinges, a carved transom board with a heart between two tulips, in a
+    heavy pegged frame."""
+    H = h + transom
+    op = rect(-w / 2, 0.0, w / 2, H)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    u0, u1 = -w / 2 + O.CLR + 0.3, w / 2 - O.CLR - 0.3
+    vm = round(h * 0.52 / 0.2) * 0.2
+    body = [ext(plug_cs, -pl, -1.0)]
+    body += _board_leaf(u0, u1, 0.5, vm - 0.2)
+    body += _board_leaf(u0, u1, vm + 0.2, h - 0.3)
+    body.append(ext(rect(u0, vm - 0.5, u1 + 0.3, vm + 0.5), -0.8, -0.4))                  # the lower leaf's shelf
+    tb = rect(u0, h + 0.2, u1, H - O.CLR - 0.3)
+    body.append(ext(tb, -1.0, -0.8))
+    orn = cs_union([_tulip((sg * (w * 0.3), h + transom / 2 - 0.1), transom * 0.8) for sg in (-1, 1)])
+    r = 0.42
+    heart = cs_union([circle((-r * 0.72, h + transom / 2 + r * 0.45), r, 14), circle((r * 0.72, h + transom / 2 + r * 0.45), r, 14),
+                      poly([(-r * 1.62, h + transom / 2 + 0.2), (r * 1.62, h + transom / 2 + 0.2), (0.0, h + transom / 2 - r * 1.9)])])
+    body.append(ext((orn + heart) ^ tb, -0.81, -0.55))
+    body.append(ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, H + A), 0.0, 0.9)]
+    for x in (-w / 2 - A / 2, w / 2 + A / 2):
+        for v in (h * 0.3, h * 0.7, H + A / 2):
+            parts.append(ext(rect(x - 0.3, v - 0.3, x + 0.3, v + 0.3), 0.89, 1.2))
+    return O._one_piece(body, parts, op, plug_cs, pl, H + A, 0.0)
+
+
+def door_bonnet(w, h, A=1.1):
+    """The side door: a board door on strap hinges under a bonnet hood: a little barrel roof of
+    boards, its front a segmental arch, carried on two sawn brackets."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    u0, u1 = -w / 2 + O.CLR + 0.3, w / 2 - O.CLR - 0.3
+    body = [ext(plug_cs, -pl, -1.0)] + _board_leaf(u0, u1, 0.5, h - 0.3)
+    body.append(ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.8)]
+    hw = w / 2 + A + 1.6
+    vb = h + A
+    dep = 5.0
+    rise = 2.6
+    R = (hw * hw + rise * rise) / (2 * rise)
+    cy = vb + rise - R
+    seg = circle((0.0, cy), R, 96) ^ rect(-hw, vb, hw, vb + rise + 1)
+    shell = seg - (circle((0.0, cy), R - 1.0, 96) ^ rect(-hw + 1.0, vb - 1, hw - 1.0, vb + rise + 1))
+    parts.append(ext(shell, 0.0, dep))
+    parts.append(ext(seg, 0.0, 0.8))
+    parts.append(ext(rect(-hw - 0.2, vb - 0.6, hw + 0.2, vb + 0.2), 0.0, dep + 0.2))                # the hood's sill board
+    for sg in (-1, 1):
+        x = sg * (hw - 0.5)
+        br = poly([(-0.5, vb - 0.6), (0.5, vb - 0.6), (0.5, vb - 4.2)])
+        pr = poly([(0.0, 0.0), (dep, 0.0), (dep - 0.6, -0.8)] + [(dep * (1 - s_) , -0.8 - 3.0 * math.sin(math.pi / 2 * s_)) for s_ in np.linspace(0.1, 1.0, 8)])
+        side = M.extrude(pr, 1.0).translate([0, 0, -0.5])
+        side = side.transform(np.array([[0, 0, 1.0, x], [0, 1.0, 0, vb - 0.6], [1.0, 0, 0, 0]]))
+        parts.append(side)
+    return O._one_piece(body, parts, op, plug_cs, pl, vb + rise, 0.0)
+
+
+def shutter_tulip(w, h, t=0.8):
+    """A board shutter with two battens, a tulip sawn through its upper half. Local frame as
+    features.shutter (u 0..w, v 0..h, back at w = 0; face-up)."""
+    body = ext(rect(0, 0, w, h), 0.0, 0.5)
+    grooves = [rect(x - 0.18, -1, x + 0.18, h + 1) for x in np.arange(1.25, w - 0.4, 1.25)]
+    if grooves:
+        body = body - ext(cs_union(grooves), 0.32, 1.0)
+    cut = _tulip((w / 2, h * 0.68), min(w * 0.8, h * 0.22)).offset(-0.1, JoinType.Round)
+    body = body - ext(cut, -1.0, 2.0)
+    v1, v2 = round(h * 0.14 / 0.2) * 0.2, round(h * 0.86 / 0.2) * 0.2
+    bat = cs_union([rect(0.3, v1 - 0.5, w - 0.3, v1 + 0.5), rect(0.3, v2 - 0.5, w - 0.3, v2 + 0.5)])
+    return body + ext(bat, 0.49, t)
+
+
+# ------------------------------------------------------------------ chimney, hex sign, bake oven
+def chimney_dogtooth(w=11.0, d=9.0, h=30.0):
+    """A central stack of brick with a band of dogtooth bricks (set diagonally, points out)
+    below a sandstone cap slab, three flues."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 2.4
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh]) + TW._skin(w, d, 0.0, sh - 3.2, TW._brick("flemish"))
+    zb = sh - 3.0
+    teeth = []
+    for axis, L_, D_ in ((0, w, d), (1, d, w)):
+        for sg in (-1, 1):
+            for x in np.arange(-L_ / 2 + 0.6, L_ / 2 - 0.4, 1.0):
+                pts = [(x - 0.45, sg * D_ / 2 - sg * 0.01), (x, sg * (D_ / 2 + 0.55)), (x + 0.45, sg * D_ / 2 - sg * 0.01)]
+                pr = poly(pts if sg > 0 else pts[::-1])
+                m = M.extrude(pr, 1.0).translate([0, 0, zb])
+                if axis == 1:
+                    m = m.transform(np.array([[0, 1.0, 0, 0], [1.0, 0, 0, 0], [0, 0, 1.0, 0]]))
+                teeth.append(m)
+    body = body + union(teeth) + box([-w / 2 - 0.2, -d / 2 - 0.2, zb + 0.99], [w / 2 + 0.2, d / 2 + 0.2, zb + 1.6])
+    body = body + box([-w / 2 - 1.0, -d / 2 - 1.0, sh - 0.01], [w / 2 + 1.0, d / 2 + 1.0, sh + 1.0])
+    flues = union([box([x - 1.1, -1.1, sh - 4.0], [x + 1.1, 1.1, h + 5]) for x in (-w / 3.2, 0.0, w / 3.2)])
+    return body - flues
+
+
+def hex_sign(r=5.0, t=1.0):
+    """A hex sign: a round plaque with a double rim and a six-petalled rosette (compass-drawn
+    petals) inside, printed on its flat back."""
+    disc = circle((0, 0), r, 64)
+    body = ext(disc, 0.0, t * 0.6)
+    rim = (disc - circle((0, 0), r - 0.6, 64)) + (circle((0, 0), r - 1.1, 64) - circle((0, 0), r - 1.6, 64))
+    petals = cs_union([_lens((0.5 * (r - 1.9) * math.cos(a), 0.5 * (r - 1.9) * math.sin(a)), r - 1.9, (r - 1.9) * 0.36, a)
+                       for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)])
+    return body + ext(rim, t * 0.59, t) + ext(petals, t * 0.59, t * 0.95)
+
+
+def bakeoven(L=30.0, d=16.0, h=13.0, rise=8.0):
+    """A bake oven built against a gable: a block of whitewashed stone with an arched oven
+    mouth in its outer face under a sandstone lintel, a plinth, and its own little gabled roof
+    (ridge running out from the wall, returned separately) with a stub flue at the wall.
+    Local: x along the wall (centred), y out from the wall (0..d), z up. Returns (body, roof, flue)."""
+    body = box([-L / 2, 0.0, 0.0], [L / 2, d, h])
+    mouth = cs_union([rect(-3.0, 2.0, 3.0, 6.0), circle((0.0, 6.0), 3.0, 32) ^ rect(-4, 6.0, 4, 10)])
+    body = body - M.extrude(mouth, 3.0).transform(np.array([[1.0, 0, 0, 0], [0, 0, -1.0, d + 1.0], [0, 1.0, 0, 0]]))
+    body = body + box([-4.4, d - 0.01, 9.2], [4.4, d + 0.6, 10.4]) + box([-L / 2 - 0.4, -0.2, 0.0], [L / 2 + 0.4, d + 0.4, 1.2])
+    tri = poly([(-L / 2 - 1.2, h), (L / 2 + 1.2, h), (L / 2 + 1.2, h + 0.6), (0.0, h + rise + 0.6), (-L / 2 - 1.2, h + 0.6)])
+    roof = M.extrude(tri, d + 1.4).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+    flue = box([-1.8, 1.0, h], [1.8, 4.6, h + rise + 4.0])
+    return body, roof - flue, flue

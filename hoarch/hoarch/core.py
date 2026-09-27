@@ -460,6 +460,19 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 a_, b_ = u + gap / 2, u + wtab - gap / 2
                 tabs.append(poly([(a_ + q, vk), (b_ - q, vk), (b_ - q, vk + 0.4), (b_, vk + 0.4), (b_, top), (a_, top),
                                   (a_, vk + 0.4), (a_ + q, vk + 0.4)]))
+            elif shp == "gothic":         # beaver-tail tiles cut to a pointed arch (Spitzschnitt; the Stauffer)
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                m_, hw_ = (a_ + b_) / 2, (b_ - a_) / 2
+                rr = 0.9
+                arc = []
+                for s_ in np.linspace(0.0, 1.0, 7):                 # left flank up from the point
+                    x_ = m_ - hw_ * s_
+                    arc.append((x_, vk + rr * (1.0 - (1.0 - s_) ** 2)))
+                arc = arc[::-1]
+                for s_ in np.linspace(0.0, 1.0, 7)[1:]:
+                    x_ = m_ + hw_ * s_
+                    arc.append((x_, vk + rr * (1.0 - (1.0 - s_) ** 2)))
+                tabs.append(poly(arc + [(b_, top), (a_, top)]))
             elif shp == "lobed":          # square shakes whose butts are cut in two shallow lobes (the Randolph)
                 a_, b_ = u + gap / 2, u + wtab - gap / 2
                 m_ = (a_ + b_) / 2

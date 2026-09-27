@@ -809,9 +809,75 @@ upright; the balustrade runs on their feet.
 GALLERY-top prints upside down on its flat, the colonnettes standing up; the walls, the roofs,
 the stair, the dormers and the chimneys print upright; the shutters on their backs.
 """),
+    "pinckney": ("THE PINCKNEY - CHARLESTON SINGLE HOUSE", """  1. FOUNDATION (brick with iron-grilled vents).
+  2. WALLS-1 onto the foundation's lip: the tuckpointed brick ground storey in one part.
+  3. JOINT onto WALLS-1, then WALLS-2 onto its lip: the weatherboard upper storey and both
+     gables in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (crossette windows below, Gibbs windows above, the jib doors onto the upper piazza, the
+     house door halfway down the piazza, the back door, a louvred demilune in each gable). A
+     pair of SHUTTERs beside each window on the street front, the east side and the back.
+  5. The CORNICE-J parts round the storey joint, the CORNICE-E parts round the eave (across both
+     gables' feet, so each gable reads as a pediment).
+  6. ROOF onto the lip at the wall tops; the two CHIMNEYs into their pockets on the ridge.
+  7. The lower piazza: PIAZZA-deck (planks, piers and skirt) against the west wall; PIAZZA-top-1
+     (the Tuscan columns, the railings, the crescent frieze and the planked floor of the upper
+     piazza, all one piece) lowered onto it, the peg under each column into its socket; the
+     PIAZZA-steps-0 against the deck's street end.
+  8. PIAZZA-screen (the street screen wall) on the deck across the piazza's street end, between
+     the corner column and the house, and the DOOR-piazza into it.
+  9. The upper piazza: PIAZZA-2-top (the palmetto colonnettes, the cracked-ice railings and the
+     frieze in one piece) onto the planked floor, each peg into its socket; PIAZZA-roof (the
+     shed roof) on its flat top, up against the wall under the eave cornice.
+ 10. STOOP-back at the back door.
+""", """The cornices' upper parts print upside down; so do the PIAZZA-deck and both piazza tops (on
+their flat tops, the columns standing up). PIAZZA-top-1's first 1.2 mm are the upper piazza's
+floor planks: load a wood brown and change to White on the first layer above 1.2 mm. The
+walls, the roofs, the screen and the chimneys print upright; the shutters on their backs.
+"""),
+    "randolph": ("THE RANDOLPH - TIDEWATER VIRGINIA", """  1. FOUNDATION (English bond under a rubbed-brick water table).
+  2. WALLS-1 onto the foundation's lip: the whole ground storey in one part.
+  3. JOINT onto WALLS-1, then WALLS-2 onto its lip: the upper storey and both clipped gables
+     in one part (the gables' tops slope back to take the roof's clipped ends).
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (segmental-pediment windows below, rosette-capped windows above, two small lights in each
+     gable, the Doric frontispiece and the back door).
+  5. The CORNICE-J parts round the storey joint, the CORNICE-E parts round the eave (across the
+     gable feet).
+  6. ROOF onto the lip at the wall tops: its clipped ends settle on the sloping tops of the
+     gables. The two CHIMNEYs (Stratford clusters) into their pockets on the ridge; each
+     DORMER-core into its DORMER, the six DORMERs into their pockets, a DORMER-roof on each.
+  7. The portico: PORTICO-deck against the front under the door; PORTICO-top (the Roman Doric
+     columns, the railings and the triglyph entablature in one piece) onto it, each peg into
+     its socket; PORTICO-roof on its flat top against the wall; PORTICO-steps-0 at the front.
+  8. STOOP-back at the back door.
+""", """The cornices' upper parts, the PORTICO-deck and the PORTICO-top print upside down (the top on
+its flat roof, the columns standing up); the walls, the roofs, the chimney clusters and the
+dormers print upright.
+"""),
+    "stauffer": ("THE STAUFFER - PENNSYLVANIA GERMAN", """  1. FOUNDATION (a sandstone plinth).
+  2. WALLS-1 onto the foundation's lip: the whitewashed limestone storey in one part.
+  3. FOREBAY (the forebay's floor, the joists' ends showing under it) against the front of
+     WALLS-1, its top level with the lip.
+  4. JOINT (the girt) onto WALLS-1's lip: at the front it runs out over the FOREBAY floor.
+  5. WALLS-2 onto the joint's lip: the log storey and both boarded gables in one part; a
+     HEXSIGN into the round pocket in each gable.
+  6. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (pegged windows in the stone storey, pairs of casements in the log storey, the Dutch door
+     under the forebay, the hooded side door, the back door). A pair of SHUTTERs beside each
+     window of the stone storey.
+  7. The CORNICE-J parts round the girt, the CORNICE-E parts round the eave (across the gable
+     feet).
+  8. ROOF onto the lip at the wall tops; CHIMNEY into its pocket.
+  9. BAKEOVEN against the east gable between the two lower windows, BAKEOVEN-roof on it (the
+     flue comes up through its hole).
+ 10. STOOP-0 under the front door, STOOP-2 at the back door, STOOP-3 at the side door.
+""", """The cornices' upper parts and the FOREBAY print upside down; the hex signs and shutters on
+their backs; the walls, the roofs, the chimney and the bake oven upright.
+"""),
 }
 
-ZIPNAME ={"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
+ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
 
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}
 SHOPS = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in SHOPS.items()}
