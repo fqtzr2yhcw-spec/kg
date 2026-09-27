@@ -1121,6 +1121,23 @@ print flat; the walls, the roof, the chimney and the balcony railing print uprig
 """, """The cornices' upper parts, the PORCH-deck, both porch tops and the PERGOLA print upside down;
 the walls, the roofs, the terrace and the chimney print upright.
 """),
+    "sandoval": ("THE SANDOVAL - PUEBLO REVIVAL", """  1. FOUNDATION (a plastered plinth).
+  2. WALLS-1 onto the foundation's lip: the whole lower storey, with the inner walls that carry
+     the upper storey, in one part.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (they print turquoise, then wood for the lintels from the wall face out).
+  4. The CORNICE-1 parts (the viga ends) round the lower storey's top.
+  5. ROOF-1 (the lower roof: deck, parapet and canales in one) onto the lip; the upper storey's
+     walls pass up through its opening. CHIMNEY (the kiva stack) into its socket on the deck.
+  6. WALLS-2 onto the lip on the inner walls, up through the lower roof; the CORNICE-2 parts
+     round its top; ROOF-2 on its lip.
+  7. The portal: PORCH-deck against the foundation; PORCH-top (log posts, zapatas, bancos and
+     beams, one piece) onto it, each peg into its socket; PORCH-roof on its flat top against the
+     front wall; PORCH-steps-0 at the door.
+  8. STOOP-back at the back door. The HORNO stands on its own in the yard.
+""", """The cornices' upper parts, the PORCH-deck and the PORCH-top print upside down; the walls, the
+roof trays, the chimney and the horno print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

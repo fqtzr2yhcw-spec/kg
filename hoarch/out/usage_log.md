@@ -13,3 +13,4 @@ here, so treat these as a relative measure of how much work each step took.
 | 08:30 | 13,857,000 | Wrightwood (53) repackaged clean; Ashcombe (54, Tudor Revival) built, rendered, committed, packaging |
 | 08:55 | 13,822,000 | Capistrano (55, Mission Revival) built and rendered |
 | 09:15 | 13,713,000 | Capistrano (55) and Ashcombe (54) repackaged clean; Kittredge (56, airplane bungalow) and Pullman (57, Chicago bungalow) built and rendered |
+| 10:05 | 13,566,000 | Lindenwald (58), Stickley (59) and Sandoval (60) built and rendered; all ten Craftsman houses done, packaging in progress |

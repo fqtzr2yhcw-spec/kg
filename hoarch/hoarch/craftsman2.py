@@ -8,7 +8,7 @@ import math
 import numpy as np
 from manifold3d import JoinType, Manifold as M
 
-from .core import RIB, box, circle, cs_union, poly, rect, union
+from .core import RIB, box, circle, cs_union, poly, rect, slab, union
 from .ornament import chamfer_box, ext, oval, stroke
 from . import cornice as CO, openings as O, trimwork as TW
 from .colonial import _st
@@ -2225,3 +2225,259 @@ def pergola(x0, x1, y_wall, y_front, zp, posts_x, post_h, z_foot, peg=1.6):
                      (x0 + 0.6, zp + 0.8), (x0, zp + 0.8)])
         out.append(ext(prof, y - 0.55, y + 0.55).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])))
     return union(out)
+
+
+# ================================================================== the Sandoval (Pueblo Revival)
+def adobe_plaster(region, seed=0, parts=False):
+    """Mud plaster over adobe: a soft smooth coat, and here and there a patch where it has
+    fallen away to show the big adobe bricks beneath (the Sandoval). ``parts``: also return
+    the bared bricks (for the render's colour zone)."""
+    if region.is_empty():
+        return (M(), M()) if parts else M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed + 83)
+    out = M.extrude(region, 0.35)
+    patches = []
+    n = max(1, int((u1 - u0) * (v1 - v0) / 700.0))
+    for _ in range(n):
+        c = (rng.uniform(u0 + 6, max(u0 + 6.1, u1 - 6)), rng.uniform(v0 + 5, max(v0 + 5.1, v1 - 5)))
+        blob = cs_union([oval((c[0] + rng.uniform(-2, 2), c[1] + rng.uniform(-1, 1)), rng.uniform(2.5, 4.5), rng.uniform(1.6, 2.6), 18) for _ in range(3)])
+        patches.append(blob)
+    bricks = M()
+    if patches:
+        pz = cs_union(patches) ^ region.offset(-1.0, JoinType.Miter, 4.0)
+        if not pz.is_empty():
+            pb = pz.bounds()
+            br = []
+            for k, v in enumerate(np.arange(pb[1] - 1.3, pb[3] + 1.3, 1.3)):
+                for u in np.arange(pb[0] - 3.6 + (k % 2) * 1.8, pb[2] + 3.6, 3.6):
+                    br.append(rect(u + 0.15, v + 0.15, u + 3.45, v + 1.15))
+            bcs = cs_union(br) ^ pz
+            out = out - ext(pz, 0.12, 1.0)
+            bricks = ext(bcs, 0.05, 0.22)
+            out = out + bricks
+    return (out, bricks) if parts else out
+
+
+def foundation_adobeplinth(reg, seed=0):
+    """A low plinth of hard plaster over stone, its top edge rounded and its face scored
+    where the mud was troweled (the Sandoval)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 5)
+    body = M.extrude(reg, 0.5) + ext(reg ^ rect(b[0] - 1, b[3] - 0.6, b[2] + 1, b[3]), 0.0, 0.8)
+    swipes = cs_union([stroke([(u, v), (u + rng.uniform(2.0, 4.0), v + rng.uniform(-0.4, 0.4))], 0.2, caps=True)
+                       for u in np.arange(b[0], b[2], 3.5) for v in np.arange(b[1] + 0.8, b[3] - 1.0, 1.6) if rng.random() < 0.5])
+    return body - ext(swipes ^ reg, 0.35, 1.0)
+
+
+def frieze_vigas(L, h, b, pitch, margin, pair, half):
+    """Vigas: the round ends of the roof beams standing out of the wall in a row, each end
+    ringed with its bark line; between them the ends of the smaller latillas (the Sandoval)."""
+    v0, v1 = 0.4, h - 0.4
+    hh = v1 - v0
+    vc = v0 + hh * 0.55
+    out = []
+    r = min(1.5, hh * 0.38)
+    for u in np.arange(margin, L - margin + 0.1, max(pitch * 0.5, 5.0)):
+        out.append(_st(circle((u, vc), r, 24), b, 1.5))
+        out.append(_st(circle((u, vc), r - 0.35, 20), b, 1.8))
+    return out, []
+
+
+def frieze_cloudterrace(L, h, b, pitch, margin, pair, half):
+    """Pueblo cloud terraces: at every station a stepped pyramid of three steps (the rain
+    cloud), and between them a row of little rain lines hanging from a bar (the Sandoval)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        steps_ = cs_union([rect(u - 2.4 + k * 0.8, v0 + k * hh / 3, u + 2.4 - k * 0.8, v0 + (k + 1) * hh / 3) for k in range(3)])
+        out.append(_st(steps_ - rect(u - 0.3, v0 - 1, u + 0.3, v0 + hh * 0.5), b, 0.45))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 2.8):
+        if wd < 2.4:
+            continue
+        rain = [rect(uc - wd / 2, v1 - 0.5, uc + wd / 2, v1)] + [rect(x - 0.15, v0 + hh * 0.3, x + 0.15, v1 - 0.49) for x in np.arange(uc - wd / 2 + 0.5, uc + wd / 2 - 0.3, 0.9)]
+        out.append(_st(cs_union(rain), b, 0.3))
+    return out, []
+
+
+def course_latillas(L, h, b, pitch, margin, p):
+    """Latillas: the ends of peeled saplings laid close over the vigas, a row of little
+    round butts."""
+    r = min(0.45, h * 0.3)
+    return [ext(cs_union([circle((u, h / 2), r, 12) for u in np.arange(0.6, L - 0.4, 2 * r + 0.18)]), b - 0.05, b + 0.45)]
+
+
+CO.FRIEZE_EXTRA.update(vigas=frieze_vigas, cloudterrace=frieze_cloudterrace)
+CO.COURSE_EXTRA.update(latillas=course_latillas)
+TW.FOUNDATION_EXTRA.update(adobeplinth=foundation_adobeplinth)
+
+
+def _adzed_lintel(hw, v, t=1.6, over=2.4, hh=2.6):
+    """A heavy timber lintel running past the opening, its face adzed in shallow scallops."""
+    lin = box([-hw - over, v, 0.0], [hw + over, v + hh, t])
+    adz = cs_union([circle((x, v + hh / 2), 0.9, 14) for x in np.arange(-hw - over + 1.0, hw + over - 0.5, 1.7)])
+    return lin - ext(adz ^ rect(-hw - over, v + 0.3, hw + over, v + hh - 0.3), t - 0.18, t + 1.0)
+
+
+def window_pueblo(w, h, upper=False, A=1.0):
+    """The Sandoval's windows, turquoise, deep in soft reveals: a casement pair of three panes
+    a leaf. Downstairs under an adzed timber lintel on a rounded plaster sill; upstairs the
+    lintel rides on two carved corbels (zapatas) and a little nicho of a sill-board below
+    (the storeys differ). Two colours: turquoise, then wood from the wall face out."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    u0, v0, u1, v1 = plug_cs.offset(-0.6, JoinType.Miter, 4.0).bounds()
+    bars = cs_union([rect(-0.4, v0 - 1, 0.4, v1 + 1)] + [rect(u0 - 1, v0 + (v1 - v0) * k / 3 - 0.2, u1 + 1, v0 + (v1 - v0) * k / 3 + 0.2) for k in (1, 2)])
+    sash = _glazed([ext(plug_cs, -pl, -1.0)], rect(u0, v0, u1, v1), pl, bars, plug_cs)
+    reveal = (op.offset(A, JoinType.Round) - op) ^ rect(-w, -0.5, w, h)
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), -0.6, 0.0), ext(reveal, 0.0, 0.5)]
+    hw = w / 2
+    parts.append(_adzed_lintel(hw, h - 0.01))
+    if upper:
+        for sg in (-1, 1):
+            x = sg * (hw + 1.2)
+            z = poly([(x - 1.2, h), (x + 1.2, h), (x + 1.2, h - 0.6), (x + 0.6, h - 0.6), (x + 0.4, h - 1.2), (x - 0.4, h - 1.2), (x - 0.6, h - 0.6), (x - 1.2, h - 0.6)])
+            parts.append(ext(z, 0.0, 1.5))
+        parts.append(chamfer_box(-hw - 1.4, -1.2, hw + 1.4, 0.2, 0.0, 1.4, c=0.3, bottom=0.8))
+        bot = -1.2
+    else:
+        sill = M.hull_points([(x, -1.4, 0.0) for x in (-hw - 1.2, hw + 1.2)] + [(x, 0.2, 0.0) for x in (-hw - 1.2, hw + 1.2)] +
+                             [(x, -0.4, 1.3) for x in (-hw - 1.2, hw + 1.2)] + [(x, 0.2, 1.3) for x in (-hw - 1.2, hw + 1.2)])
+        parts.append(sill)
+        bot = -1.4
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.6, bot)
+
+
+def door_pueblo(w=11.0, h=23.0, glazed=False):
+    """The Sandoval's doors, turquoise: a carved Spanish door of four panels, each chip-carved
+    with a rosette, under an adzed lintel on zapatas. ``glazed``: the roof-terrace door, its
+    upper half six small panes."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    leaf = plug_cs.offset(-0.3, JoinType.Miter, 4.0)
+    u0, v0, u1, v1 = leaf.bounds()
+    body = [ext(plug_cs, -pl, -1.0)]
+    pw = (u1 - u0 - 1.8) / 2
+    rows = (0.12, 0.5) if glazed else (0.08, 0.36, 0.64)
+    ph = (v1 - v0) * (0.34 if glazed else 0.24)
+    win = rect(u0 + 0.8, v0 + (v1 - v0) * 0.52, u1 - 0.8, v1 - 0.8) if glazed else None
+    body.append(ext(leaf - (win if glazed else rect(0, 0, 0, 0)), -1.0, -0.6))
+    for fr in rows[:1] if glazed else rows:
+        for k in range(2):
+            a = u0 + 0.6 + k * (pw + 0.6)
+            vb = v0 + (v1 - v0) * fr
+            body.append(chamfer_box(a, vb, a + pw, vb + ph, -0.6, 0.35, c=0.15))
+            c = (a + pw / 2, vb + ph / 2)
+            ros = cs_union([oval((c[0] + 0.55 * math.cos(t), c[1] + 0.55 * math.sin(t)), 0.45, 0.2, 10) for t in np.linspace(0, math.pi, 4, endpoint=False)] +
+                           [stroke([(c[0] - 0.9 * math.cos(t), c[1] - 0.9 * math.sin(t)), (c[0] + 0.9 * math.cos(t), c[1] + 0.9 * math.sin(t))], 0.3, caps=True)
+                            for t in np.linspace(0, math.pi, 4, endpoint=False)])
+            body.append(ext(ros ^ rect(a + 0.3, vb + 0.3, a + pw - 0.3, vb + ph - 0.3), -0.3, -0.05))
+    if glazed:
+        wb = win.bounds()
+        bars = cs_union([rect((wb[0] + wb[2]) / 2 - 0.2, wb[1] - 1, (wb[0] + wb[2]) / 2 + 0.2, wb[3] + 1)] +
+                        [rect(wb[0] - 1, y - 0.2, wb[2] + 1, y + 0.2) for y in np.linspace(wb[1], wb[3], 4)[1:-1]])
+        sash = _glazed(body, win, pl, bars, plug_cs)
+    else:
+        sash = body
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), -0.6, 0.0), ext((op.offset(1.0, JoinType.Round) - op) ^ rect(-w, 0.0, w, h), 0.0, 0.5)]
+    parts.append(_adzed_lintel(w / 2, h - 0.01, over=3.0))
+    for sg in (-1, 1):
+        x = sg * (w / 2 + 1.6)
+        parts.append(ext(poly([(x - 1.4, h), (x + 1.4, h), (x + 1.4, h - 0.7), (x + 0.7, h - 0.7), (x + 0.4, h - 1.4), (x - 0.4, h - 1.4), (x - 0.7, h - 0.7), (x - 1.4, h - 0.7)]), 0.0, 1.5))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.6, 0.0)
+
+
+def post_sandoval(h, collar=None, abacus=3.4, slot=None):
+    """A portal post: a peeled log (round, a little irregular, a slight taper) on a flat stone,
+    carrying a zapata, a long corbel block whose ends are carved in steps and a scroll."""
+    zt = h - 2.4
+    body = box([-1.8, -1.8, 0.0], [1.8, 1.8, 1.0])
+    body = body + PW._revolve([(0.0, 0.99), (1.35, 0.99), (1.25, zt * 0.5), (1.3, zt * 0.55), (1.15, zt), (0.0, zt)], 28)
+    zap = poly([(-4.2, 0.0), (4.2, 0.0), (4.2, -0.8), (3.6, -0.8), (3.3, -1.4), (2.4, -1.4), (1.6, -2.4), (-1.6, -2.4), (-2.4, -1.4),
+                (-3.3, -1.4), (-3.6, -0.8), (-4.2, -0.8)])
+    body = body + ext(zap, -1.1, 1.1).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, h]]))
+    return body + box([-1.3, -1.3, zt - 0.2], [1.3, 1.3, h - 2.3])
+
+
+def fill_banco(L, vb, vt):
+    """A low adobe wall (a banco) between the posts, its top rounded over."""
+    return [rect(0.0, vb, L, vt - 0.6), rect(0.3, vt - 0.61, L - 0.3, vt)]
+
+
+def frieze_zapatabeam(u0, u1, v_bot, v_top):
+    """A portal beam (a squared viga) laid over the zapatas, its underside plain."""
+    return rect(u0, v_top - 2.6, u1, v_top + 0.05)
+
+
+def edge_canales(L, z0, zc):
+    """The portal roof's edge: a flat fascia of latilla ends (little round butts)."""
+    return rect(0.3, zc - 0.5, L - 0.3, zc) + cs_union([circle((x, zc - 0.9), 0.45, 12) for x in np.arange(0.8, L - 0.5, 1.1)]), 0.7
+
+
+def skirt_adobe(reg, d=1.2):
+    """A plain plastered porch skirt with a rounded top."""
+    if reg.is_empty():
+        return M()
+    b = reg.bounds()
+    return M.extrude(reg, d * 0.55) + ext(reg ^ rect(b[0] - 1, b[3] - 0.6, b[2] + 1, b[3]), 0.0, d * 0.75)
+
+
+PW.POSTS.update(sandoval=post_sandoval)
+PW.FILLS.update(banco=fill_banco)
+PW.FRIEZES.update(zapatabeam=frieze_zapatabeam)
+PW.SKIRTS.update(adobe=skirt_adobe)
+FT.EDGE_EXTRA.update(canales=edge_canales)
+
+
+def roof_tray(outer_cs, z0, deck=1.6, parapet=7.0, band=2.4, hole=None, gap=None):
+    """A flat Pueblo roof in one piece: a deck with a parapet round its edge whose top is
+    rounded over, seated on the walls' lip like any roof; ``hole`` is cut through it (a
+    storey rising through the roof), ``gap`` from the parapet only."""
+    d = slab(outer_cs, z0, z0 + deck)
+    ring = outer_cs - outer_cs.offset(-band, JoinType.Miter, 4.0)
+    par = slab(ring, z0 + deck - 0.01, z0 + parapet - 0.7) + slab(ring.offset(-0.35, JoinType.Round) ^ outer_cs.offset(-0.35, JoinType.Round), z0 + parapet - 0.71, z0 + parapet)
+    t = d + par
+    if gap is not None:
+        t = t - gap
+    if hole is not None:
+        t = t - hole
+    return t
+
+
+def canale(z, L=4.2, w=1.8):
+    """A canale (a roof spout): a wooden trough running out through the parapet at deck
+    level, its underside sloped back to the wall so it prints on the parapet. Local: x across,
+    y out from the wall face (y = 0), z up; the deck's top at z."""
+    body = M.hull_points([(x, 0.0, z) for x in (-w / 2, w / 2)] + [(x, L, z) for x in (-w / 2, w / 2)] +
+                         [(x, 0.0, z + 1.4) for x in (-w / 2, w / 2)] + [(x, L, z + 1.4) for x in (-w / 2, w / 2)] +
+                         [(x, 0.0, z - L * 0.9) for x in (-w / 2, w / 2)])
+    body = body + box([-w / 2, -2.6, z], [w / 2, 0.01, z + 1.4])
+    return body - box([-w / 2 + 0.45, -3.0, z + 0.6], [w / 2 - 0.45, L + 1.0, z + 2.0])
+
+
+def chimney_kiva(h=22.0, r0=5.0, r1=3.4):
+    """The kiva chimney: a round plastered stack swelling at the foot and tapering up, a
+    rounded collar and a domed cap pierced by two flues; a square peg under it."""
+    h = round(h / 0.2) * 0.2
+    zt = h - 3.4
+    body = PW._revolve([(0.0, 0.0), (r0 + 0.8, 0.0), (r0, 1.6), (r1 + 0.3, zt * 0.7), (r1, zt), (0.0, zt)], 40)
+    body = body + PW._revolve([(0.0, zt - 0.01), (r1 + 0.6, zt - 0.01), (r1 + 0.6, zt + 0.8), (r1 - 0.2, zt + 1.4), (r1 - 0.8, h - 0.6), (0.0, h)], 40)
+    for sg in (-1, 1):
+        body = body - box([sg * r1 * 0.45 - 0.7, -r1 - 1, zt + 1.4], [sg * r1 * 0.45 + 0.7, r1 + 1, zt + 2.6])
+    return body + box([-0.8, -0.8, -1.2], [0.8, 0.8, 0.01])
+
+
+def horno(r=6.5, h=8.5):
+    """An horno, the beehive oven of the Pueblo yard: a plastered dome on a low square base,
+    an arched mouth in front and a small smoke hole high on the side (a separate piece for
+    the yard)."""
+    base = box([-r - 1.4, -r - 1.4, 0.0], [r + 1.4, r + 1.4, 1.2])
+    prof = [(0.0, 1.19)] + [(r * math.cos(a) ** 0.8, 1.19 + h * math.sin(a)) for a in np.linspace(0.0, math.pi / 2, 14)]
+    dome = PW._revolve(prof, 40)
+    mouth = cs_union([rect(-1.8, 1.2, 1.8, 3.4), circle((0.0, 3.4), 1.8, 20)])
+    cut = M.extrude(mouth, r + 2).rotate([90, 0, 0]).translate([0, -0.5, 0])
+    smoke = M.cylinder(r + 2, 0.5, 0.5, 12).rotate([0, 90, 0]).translate([0, 0, 1.2 + h * 0.7])
+    return base + dome - cut - smoke
