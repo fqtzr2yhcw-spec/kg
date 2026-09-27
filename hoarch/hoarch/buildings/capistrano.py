@@ -146,7 +146,7 @@ def _belfry():
         imp = rect(uc - BEL_R - 1.6, vs - 1.0, uc - BEL_R, vs + 0.01) + rect(uc + BEL_R, vs - 1.0, uc + BEL_R + 1.6, vs + 0.01)
         sill = rect(uc - BEL_R - 1.8, v0 - 1.0, uc + BEL_R + 1.8, v0 + 0.01)
         trim.append(f.place(M.extrude(band, 0.9) + M.extrude(imp, 1.1) + M.extrude(sill, 1.3)))
-    slot = box([TXC - 7.0, TY0 + 0.65, BAR_TOP - 1.7], [TXC + 7.0, TY0 + 3.1, BAR_TOP + 0.1])
+    slot = box([TXC - 8.05, TY0 + 1.5, BAR_TOP - 1.6], [TXC + 8.05, TY0 + 3.2, BAR_TOP + 0.1])       # snug: the bar sits on its floor
     return union(cuts), union(trim), slot
 
 
@@ -253,7 +253,7 @@ def build(kit=None):
     fin = CR2.PW._revolve([(0.0, 0.0), (1.6, 0.0), (1.6, 0.8), (0.9, 1.4), (0.8, 2.4), (1.4, 3.4), (1.5, 4.4), (1.1, 5.4),
                            (0.5, 5.8), (0.35, 8.4), (0.0, 9.4)], 32)
     kit.add("TOWER-finial", "Iron", fin.translate([TXC, TYC, zs]), group="tower")
-    bell = CR2.bell_hung(13.8).translate([TXC, TY0 + 1.6 + 0.8 - 0.05, BAR_TOP])
+    bell = CR2.bell_hung(16.0).translate([TXC, TY0 + 2.35, BAR_TOP])
     kit.add("BELL", "Iron", bell, P=print_flip(), group="tower")
     print("tower", round(time.time() - t0, 1))
 

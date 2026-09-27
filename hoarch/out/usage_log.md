@@ -12,3 +12,4 @@ here, so treat these as a relative measure of how much work each step took.
 | 08:10 | 14,091,000 | Hollister's step glue fixed and repackaged (0 small joints); Wrightwood (53) clean, windows and stucco reworked |
 | 08:30 | 13,857,000 | Wrightwood (53) repackaged clean; Ashcombe (54, Tudor Revival) built, rendered, committed, packaging |
 | 08:55 | 13,822,000 | Capistrano (55, Mission Revival) built and rendered |
+| 09:15 | 13,713,000 | Capistrano (55) and Ashcombe (54) repackaged clean; Kittredge (56, airplane bungalow) and Pullman (57, Chicago bungalow) built and rendered |

@@ -1057,6 +1057,36 @@ print upright.
 """, """The cornices' upper parts, the PORCH-deck, the PORCH-top and the BELL print upside down; the
 PARAPET-cap prints flat; the walls, the roofs and the chimney print upright.
 """),
+    "kittredge": ("THE KITTREDGE - AIRPLANE BUNGALOW", """  1. FOUNDATION (tapestry brick).
+  2. WALLS onto the foundation's lip: the whole storey, both gables and the four inner walls that
+     carry the cockpit, in one part.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside.
+  4. The CORNICE-E parts round the eave.
+  5. ROOF onto the lip at the wall tops (the cockpit's walls rise through its opening); CHIMNEY
+     into its pocket on the ridge.
+  6. COCKPIT-foot down through the roof onto the lip on the inner walls; COCKPIT-joint on it; the
+     CORNICE-B parts round it (the belt over the ridge).
+  7. COCKPIT onto the joint's lip: the upper room with its gables; the CORNICE-C parts round its
+     eave; COCKPIT-roof on top.
+  8. The porch: PORCH-deck against the foundation; PORCH-top (twin columns, railings and beams,
+     one piece) onto it, each peg into its socket; PORCH-roof on its flat top against the front
+     wall; PORCH-steps-0 at the door.
+  9. STOOP-back at the back door.
+""", """The cornices' upper parts, the PORCH-deck and the PORCH-top print upside down; the walls, the
+cockpit, the roofs and the chimney print upright.
+"""),
+    "pullman": ("THE PULLMAN - CHICAGO BUNGALOW", """  1. FOUNDATION (a raised brick basement; it prints brick, then limestone for the water table).
+  2. WALLS onto the foundation's lip: the whole storey and the canted bay in one part.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (they print green, then limestone from the wall face out).
+  4. The CORNICE-E parts round the eave, the bay included.
+  5. CHIMNEY on the ground against the east wall, into its notch through the cornice.
+  6. ROOF onto the lip at the wall tops; each DORMER-core into its DORMER, the DORMER into its
+     pocket (standing on its seat), its DORMER-roof on top.
+  7. STOOP at the front door (paint its cheek walls brick), STOOP-back at the back door.
+""", """The cornice's upper parts print upside down; the walls, the roof, the dormers and the chimney
+print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

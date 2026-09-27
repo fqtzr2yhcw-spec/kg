@@ -320,6 +320,31 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
             pan = cs_union(pans[0::1]) ^ clip
             tex = (M.extrude(pan, d * 0.45) + M.extrude(cs_union(covers) ^ clip, d) + M.extrude(cs_union(crowns) ^ clip, d + 0.15)
                    + M.extrude(cs_union(noses) ^ clip, d + 0.25))
+        elif shape == "dutchlap":         # Dutch-lap shingles: each laid slanting so its corner laps the next,
+            b = loc.bounds()              # the courses reading as diagonal zigzags, a thick butt on each (the Kittredge)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh, butts = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                off = (j % 2) * wtab / 2
+                for k in range(int(np.floor((b[0] - off) / wtab)) - 2, int(np.ceil((b[2] - off) / wtab)) + 2):
+                    u = off + k * wtab
+                    sl = pitch * 0.35
+                    sh.append(poly([(u + 0.12, v), (u + wtab - 0.12, v), (u + wtab - 0.12 + sl, v + pitch - 0.14), (u + 0.12 + sl, v + pitch - 0.14)]))
+                    butts.append(poly([(u + 0.12, v), (u + wtab - 0.12, v), (u + wtab - 0.12 + 0.2, v + 0.55), (u + 0.12 + 0.2, v + 0.55)]))
+            tex = M.extrude(cs_union(sh) ^ clip, d) + M.extrude(cs_union(butts) ^ clip, d + 0.15)
+        elif shape == "tlock":            # T-lock asphalt shingles: each a T, its stem hanging between the bars of
+            b = loc.bounds()              # the course below, so the courses lock together (the Pullman)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            ts = []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                off = (j % 2) * wtab / 2
+                for k in range(int(np.floor((b[0] - off) / wtab)) - 2, int(np.ceil((b[2] - off) / wtab)) + 2):
+                    u = off + k * wtab
+                    ts.append(rect(u + 0.12, v + pitch * 0.5, u + wtab - 0.12, v + pitch - 0.12))
+                    ts.append(rect(u + wtab * 0.3, v, u + wtab * 0.7, v + pitch * 0.5 + 0.01))
+            tex = M.extrude(cs_union(ts) ^ clip, d)
         else:
             tex = scallop_rows(loc, pitch, wtab, d=d, shape=shape, datum=loc.bounds()[1])
         vdir = np.array([t[0] * cth, t[1] * cth, s * cth])
