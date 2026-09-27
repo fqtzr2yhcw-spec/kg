@@ -346,7 +346,9 @@ def fill_flat(style, L, vb, vt):
     H = vt - vb
     parts = []
     bar = 0.55
-    if style == "chippendale":
+    if style in FILLS:                   # styles registered by other modules: FILLS[style](L, vb, vt) -> [cs]
+        parts = list(FILLS[style](L, vb, vt))
+    elif style == "chippendale":
         n = max(1, int(round(L / (H * 1.1))))
         for i in range(n):
             a, b = L * i / n, L * (i + 1) / n
@@ -703,6 +705,7 @@ FRIEZES = {"scroll": frieze_scroll, "entablature": frieze_entablature, "valance"
 # pitch) for the turned railings; SKIRTS[style](reg, d) -> solid, as skirt_fill
 BALUSTERS = {}
 SKIRTS = {}
+FILLS = {}
 
 
 # ------------------------------------------------------------------ skirts (under the deck)

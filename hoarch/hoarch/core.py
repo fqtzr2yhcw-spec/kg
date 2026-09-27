@@ -455,6 +455,20 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 nw = max(0.6, (wtab - gap) * 0.3)
                 tabs.append(poly([(u + gap / 2, vk), (c - nw / 2, vk), (c - nw / 2, vk + 0.4), (c + nw / 2, vk + 0.4),
                                   (c + nw / 2, vk), (u + wtab - gap / 2, vk), (u + wtab - gap / 2, top), (u + gap / 2, top)]))
+            elif shp == "clipped":        # square slates with both butt corners cut off square (the Pinckney)
+                q = min(0.6, (wtab - gap) * 0.22)
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                tabs.append(poly([(a_ + q, vk), (b_ - q, vk), (b_ - q, vk + 0.4), (b_, vk + 0.4), (b_, top), (a_, top),
+                                  (a_, vk + 0.4), (a_ + q, vk + 0.4)]))
+            elif shp == "lobed":          # square shakes whose butts are cut in two shallow lobes (the Randolph)
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                m_ = (a_ + b_) / 2
+                lob = []
+                for s_ in np.linspace(0.0, 1.0, 7):
+                    lob.append((a_ + (m_ - a_) * s_, vk + 0.4 * abs(2 * s_ - 1.0) ** 1.6))
+                for s_ in np.linspace(0.0, 1.0, 7)[1:]:
+                    lob.append((m_ + (b_ - m_) * s_, vk + 0.4 * abs(2 * s_ - 1.0) ** 1.6))
+                tabs.append(poly(lob + [(b_, top), (a_, top)]))
             elif shp == "stagger":        # square butts of random width, some shorter than their neighbours
                 h_ = (int(u * 7.3 + k * 3.1) % 5)
                 low = 0.4 if h_ % 2 else 0.0

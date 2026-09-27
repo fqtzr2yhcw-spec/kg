@@ -778,7 +778,7 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
     for u in ((0.0, L - 0.7) if stiles else ()):                                     # end stiles
         parts.append(box([u, -0.5, foot], [u + 0.7, 0.5, vt + 0.01]))
     from . import porchwork as PW
-    if style in ("chippendale", "x", "pierced", "sawn", "lace", "ladder", "hearts", "paddle"):
+    if style in ("chippendale", "x", "pierced", "sawn", "lace", "ladder", "hearts", "paddle") or style in PW.FILLS:
         parts.append(PW.fill_flat(style, L, vb - 0.01, vt + 0.01))
     else:
         mk, pt = {"turned": (baluster, pitch), "vase": (PW.baluster_vase, 2.4), "urn": (PW.baluster_urn, 2.4),
