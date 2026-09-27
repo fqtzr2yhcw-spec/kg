@@ -501,6 +501,14 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 wv = wtab * (0.75 + 0.12 * h_)
                 tabs.append(rect(u + gap / 2, vk + low, u + wv - gap / 2, top))       # short butts show the row below
                 u += wv - wtab
+            elif shp == "doubled":        # random-width square butts, every fourth course doubled: a groove just over its butt (the Arroyo)
+                h_ = (int(u * 6.1 + k * 4.3) % 6)
+                wv = wtab * (0.72 + 0.11 * h_)
+                tab = rect(u + gap / 2, vk, u + wv - gap / 2, top)
+                if k % 4 == 0 and top - vk > 1.2:
+                    tab = tab - rect(u - 1, vk + 0.5, u + wv + 1, vk + 0.8)
+                tabs.append(tab)
+                u += wv - wtab
             elif shp == "riven":          # hand-split shakes: random widths, each butt cut off at a slight slant
                 h_ = (int(u * 5.7 + k * 7.9) % 7)
                 wv = wtab * (0.7 + 0.1 * h_)

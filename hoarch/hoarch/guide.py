@@ -43,7 +43,7 @@ BUILDINGS = [
     ("larkspur", "The Larkspur"), ("juniper", "The Juniper"), ("camellia", "The Camellia"), ("wisteria", "The Wisteria"),
     ("hawthorn", "The Hawthorn"), ("magnolia", "The Magnolia"),
     ("whitmore", "The Whitmore"), ("pennock", "The Pennock"), ("oakhurst", "The Oakhurst"), ("vantassel", "The Van Tassel"), ("hathaway", "The Hathaway"), ("chatham", "The Chatham"), ("winthrop", "The Winthrop"), ("westbrook", "The Westbrook"), ("ellsworth", "The Ellsworth"), ("fairhaven", "The Fairhaven"),
-    ("prescott", "The Prescott"), ("bellerive", "The Bellerive"), ("pinckney", "The Pinckney"), ("randolph", "The Randolph"), ("stauffer", "The Stauffer"), ("porter", "The Porter"), ("pingree", "The Pingree"), ("alvarado", "The Alvarado"), ("brenton", "The Brenton"), ("ridgely", "The Ridgely"),
+    ("prescott", "The Prescott"), ("bellerive", "The Bellerive"), ("pinckney", "The Pinckney"), ("randolph", "The Randolph"), ("stauffer", "The Stauffer"), ("porter", "The Porter"), ("pingree", "The Pingree"), ("alvarado", "The Alvarado"), ("brenton", "The Brenton"), ("ridgely", "The Ridgely"), ("arroyo", "The Arroyo"),
 ]
 NAMES = dict(BUILDINGS)
 HO = 87.1

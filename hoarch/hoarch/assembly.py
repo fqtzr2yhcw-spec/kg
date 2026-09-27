@@ -973,6 +973,21 @@ its walk), the dormers and the chimneys print upright.
 """, """The cornices' upper parts print upside down; the passage vault prints standing on end, its
 arches face-up; the walls, the roof, the dormers, the chimneys and the stoops print upright.
 """),
+    "arroyo": ("THE ARROYO - CALIFORNIA CRAFTSMAN BUNGALOW", """  1. FOUNDATION (clinker brick).
+  2. WALLS onto the foundation's lip: the whole storey and both gables in one part, the knee
+     braces under the rakes printed with it.
+  3. Windows, doors and the two gable vents: clip off the supports and push each plug into its
+     opening from outside.
+  4. The CORNICE-E parts round the eave (they stop at the porch roof and at the chimney).
+  5. ROOF between the gable walls onto the lip on the eave walls.
+  6. CHIMNEY against the bare patch of the east wall, up through the notch in the eave.
+  7. The porch: PORCH-deck against the foundation; PORCH-top (the columns on their pedestals,
+     the porch walls and the beams, one piece) onto it, each peg into its socket; PORCH-roof on
+     its flat top against the front wall; PORCH-steps-0 at the front.
+  8. STOOP-back at the kitchen door.
+""", """The cornice's upper parts, the PORCH-deck and the PORCH-top print upside down; the walls, the
+roofs and the chimney print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
