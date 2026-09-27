@@ -936,6 +936,23 @@ the balustrade print upright.
 flat roof, the posts standing up); the walls, the roofs, the garden wall and the chimneys print
 upright.
 """),
+    "brenton": ("THE BRENTON - NEWPORT GEORGIAN", """  1. FOUNDATION (pillow-dressed granite).
+  2. WALLS-1 onto the foundation's lip: the whole ground storey in one part.
+  3. JOINT onto WALLS-1, WALLS-2 onto its lip: the whole upper storey in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (bolection windows below, arch-headed windows above, the shell-hood doorway with its
+     pineapple at the front, the flat-hooded door at the back).
+  5. The CORNICE-J parts round the joint, then the CORNICE-E parts round the eave.
+  6. ROOF-lower (the steep slopes of the gambrel) onto the lip at the wall tops.
+  7. The dormers: each DORMER-core into its DORMER, the DORMER into its pocket in the lower
+     slope (standing on its seat), its DORMER-roof on top.
+  8. ROOF-upper (the walk, its ring railing and the tin roof, one piece) onto the lower roof's
+     top, the groove under the walk over the lip round the break.
+  9. The two CHIMNEY stacks into their pockets in the upper roof, the crosses to the street.
+ 10. STOOP-0 under the front door, STOOP-2 at the back door.
+""", """The cornices' upper parts print upside down; the walls, both roofs (the upper one standing on
+its walk), the dormers and the chimneys print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

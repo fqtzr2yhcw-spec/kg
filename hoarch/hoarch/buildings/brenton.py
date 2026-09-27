@@ -160,7 +160,7 @@ def build(kit=None):
     roof = roof + slab(offset(brk, -1.4) - offset(brk, -2.4), Z_BRK - 0.01, Z_BRK + 1.0)
     solid_env, _ = R.hip_roof(pieces, Z_EAVE, S_LO, D_EAVE, texture=None, zlo=ZW)
     # hipped dormers flanked by consoles: three front and back, one in each end
-    DW, DDEP, DHW = 14.0, 14.0, 11.4
+    DW, DDEP, DHW = 16.0, 14.0, 12.6
     zdf = round((Z_EAVE + S_LO * (D_EAVE - DF) - 0.8) / 0.2) * 0.2
     dbody, dcore, dface = C4.dormer_volute(DW, DDEP, DHW)
     droof = C4.dormer_volute_roof(DW, DDEP, DHW)

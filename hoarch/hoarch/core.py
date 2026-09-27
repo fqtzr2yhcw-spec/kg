@@ -462,7 +462,7 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                                   (a_, vk + 0.4), (a_ + q, vk + 0.4)]))
             elif shp == "scoop":          # square shingles with a quarter-round scoop cut from each butt corner (the Brenton)
                 a_, b_ = u + gap / 2, u + wtab - gap / 2
-                q = min(0.55, (b_ - a_) * 0.3)
+                q = min(0.32, (b_ - a_) * 0.15)
                 tabs.append(rect(a_, vk, b_, top) - circle((a_, vk), q, 12) - circle((b_, vk), q, 12))
             elif shp == "tab":            # square slates with a short tongue at the middle of each butt (the Pingree)
                 a_, b_ = u + gap / 2, u + wtab - gap / 2
