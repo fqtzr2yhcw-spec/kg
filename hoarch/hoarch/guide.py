@@ -547,7 +547,8 @@ def into_zip(key):
     """Put the model's guide into its print-file zip (next to PRINT_NOTES.txt), replacing an old one."""
     import zipfile
     p = _guide_pdf(key)
-    zp = os.path.join(OUT, AS.ZIPNAME.get(key, key.capitalize()) + "_Print_Files.zip")
+    from .versions import zip_path
+    zp = zip_path(key)
     if not p or not os.path.exists(zp):
         return None
     tmp = zp + ".tmp"

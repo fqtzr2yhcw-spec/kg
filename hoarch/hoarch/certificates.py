@@ -23,7 +23,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import (PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table,
                                 TableStyle)
 
-from . import assembly as AS
+from . import versions as V
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -80,7 +80,8 @@ def details(b):
     last = _git("log", "-1", "--format=%H %aI", "--", path)
     b["first_sha"], b["first_date"] = first[-1].split() if first else ("", "")
     b["last_sha"], b["last_date"] = last.split() if last else ("", "")
-    zp = os.path.join(OUT, AS.ZIPNAME.get(b["mod"], b["mod"].capitalize()) + "_Print_Files.zip")
+    zp = V.zip_path(b["mod"])
+    b["version"] = V.version(b["mod"])
     b["zip"] = os.path.basename(zp)
     h = hashlib.sha256()
     with open(zp, "rb") as f:
@@ -155,6 +156,7 @@ def page(b, st):
         rows.append(["Parts", f"{b['parts']} printable parts"])
     rows += [["Design begun", f"{_date(b['first_date'])}  (commit {b['first_sha'][:12]})"],
              ["This release", f"{_date(b['last_date'])}  (commit {b['last_sha'][:12]})"],
+             ["Version", f"v{b['version']}"],
              ["Print files", f"{b['zip']}  ({b['zip_mb']:.1f} MB)"],
              ["SHA-256", Paragraph(b["sha256"], st["mono"])]]
     rows = [[Paragraph(f"<b>{k}</b>", st["cell"]), v if not isinstance(v, str)
