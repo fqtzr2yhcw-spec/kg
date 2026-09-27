@@ -538,19 +538,19 @@ from . import porchwork as PW, features as FT                       # noqa: E402
 
 
 def stucco_mission(region, datum=0.0, seed=3):
-    """Hand-troweled mission plaster: a smooth coat whose surface swells in broad, soft,
-    irregular patches (each a low plateau 0.15 proud with rounded edges), so paint and a wash
-    catch it like old adobe (the Capistrano)."""
+    """Hand-troweled mission plaster: a smooth coat whose surface swells in small, soft,
+    irregular patches (each a low plateau barely 0.1 proud with rounded edges), so a wash
+    catches it like old adobe (the Capistrano)."""
     if region.is_empty():
         return M()
     u0, v0, u1, v1 = region.bounds()
     rng = np.random.default_rng(seed + int(abs(u0) * 3 + abs(v0)) % 97)
     out = M.extrude(region, 0.3)
-    blobs = [oval((rng.uniform(u0, u1), rng.uniform(v0, v1)), rng.uniform(2.0, 5.0), rng.uniform(1.2, 2.8), 20)
-             for _ in range(int((u1 - u0) * (v1 - v0) / 45.0) + 1)]
+    blobs = [oval((rng.uniform(u0, u1), rng.uniform(v0, v1)), rng.uniform(1.4, 3.2), rng.uniform(0.7, 1.6), 16)
+             for _ in range(int((u1 - u0) * (v1 - v0) / 22.0) + 1)]
     if blobs:
-        b = cs_union(blobs).offset(-0.4, JoinType.Round).offset(0.4, JoinType.Round) ^ region.offset(-0.4, JoinType.Miter, 4.0)
-        out = out + ext(b, 0.25, 0.45)
+        b = cs_union(blobs).offset(-0.3, JoinType.Round).offset(0.3, JoinType.Round) ^ region.offset(-0.4, JoinType.Miter, 4.0)
+        out = out + ext(b, 0.25, 0.37)
     return out
 
 

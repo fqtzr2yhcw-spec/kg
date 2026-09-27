@@ -302,6 +302,24 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 v += p_
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
             tex = union([M.extrude(cs_union(cs_) ^ clip, d + 0.07 * k) for k, cs_ in layers.items()])
+        elif shape == "pancover":         # mission pan-and-cover tile: flat pans between round covers, each cover
+            b = loc.bounds()              # course lapped with a thick nose, laid by hand a little out of line (the Capistrano)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(int(abs(b[0]) * 5 + abs(b[2]) * 11 + i * 7) % 997)
+            pans, covers, crowns, noses = [], [], [], []
+            for k in range(int(np.floor(b[0] / seam_pitch)) - 1, int(np.ceil(b[2] / seam_pitch)) + 2):
+                u = k * seam_pitch
+                jit = rng.uniform(-0.12, 0.12)
+                pans.append(rect(u + 0.75, b[1] - 1, u + seam_pitch - 0.75, b[3] + 1))
+                covers.append(rect(u - 0.6 + jit, b[1] - 1, u + 0.6 + jit, b[3] + 1))
+                crowns.append(rect(u - 0.3 + jit, b[1] - 1, u + 0.3 + jit, b[3] + 1))
+                for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                    v = j * pitch + rng.uniform(-0.25, 0.25)
+                    noses.append(rect(u - 0.75 + jit, v, u + 0.75 + jit, v + 0.7))
+                    pans.append(rect(u + 0.75, v - 0.12, u + seam_pitch - 0.75, v + 0.12))
+            pan = cs_union(pans[0::1]) ^ clip
+            tex = (M.extrude(pan, d * 0.45) + M.extrude(cs_union(covers) ^ clip, d) + M.extrude(cs_union(crowns) ^ clip, d + 0.15)
+                   + M.extrude(cs_union(noses) ^ clip, d + 0.25))
         else:
             tex = scallop_rows(loc, pitch, wtab, d=d, shape=shape, datum=loc.bounds()[1])
         vdir = np.array([t[0] * cth, t[1] * cth, s * cth])

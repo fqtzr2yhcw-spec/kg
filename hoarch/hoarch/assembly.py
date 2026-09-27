@@ -1036,6 +1036,27 @@ print upright.
 """, """The cornices' upper parts print upside down; the walls, the roof and the chimney print upright
 (the chimney stone to the plinth, then brick); the bargeboards print flat, face up.
 """),
+    "capistrano": ("THE CAPISTRANO - MISSION REVIVAL", """  1. FOUNDATION (plaster plinth with grilled vents) under the house and the tower.
+  2. WALLS-1 onto the foundation's lip: the whole ground storey and the tower's foot in one part.
+  3. JOINT onto WALLS-1, WALLS-2 onto its lip: the upper storey, the mission parapet and the
+     bell tower up to its belfry, in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the arched ground windows print timber, then iron for the rejas; the front door prints
+     timber, then clay for its portal).
+  5. The CORNICE-J parts round the joint, the CORNICE-E parts round the eave, the CORNICE-T
+     parts round the tower top.
+  6. BELFRY-floor down the tower onto its ledge; the BELL's bar into the slots in the front
+     arch's jambs from inside.
+  7. ROOF onto the lip at the wall tops (it notches round the parapet and the tower); CHIMNEY
+     into its pocket; PARAPET-cap on the parapet's shaped top.
+  8. TOWER-roof (with its finial) on the tower top.
+  9. The porch: PORCH-deck against the foundation; PORCH-top (columns, arches, low walls and
+     beams, one piece) onto it, each peg into its socket; PORCH-roof on its flat top against
+     the front wall; PORCH-steps-0 at the door.
+ 10. STOOP-back at the back door.
+""", """The cornices' upper parts, the PORCH-deck, the PORCH-top and the BELL print upside down; the
+PARAPET-cap prints flat; the walls, the roofs and the chimney print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
