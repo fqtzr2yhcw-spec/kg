@@ -953,6 +953,26 @@ upright.
 """, """The cornices' upper parts print upside down; the walls, both roofs (the upper one standing on
 its walk), the dormers and the chimneys print upright.
 """),
+    "ridgely": ("THE RIDGELY - BALTIMORE FEDERAL ROW", """  1. FOUNDATION (boasted brownstone), open under the middle house for the carriage passage.
+  2. PASSAGE-vault (the barrel vault and its two side walls, one piece) into the gap in the
+     foundation, from front to back.
+  3. WALLS-1 onto the foundation's lip, over the vault: the whole ground storey of the row in
+     one part.
+  4. JOINT onto WALLS-1, WALLS-2 onto its lip: the whole upper storey and both gable ends.
+  5. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the parlour windows under marble flat arches, the chamber windows under beaded lintels,
+     the six fanlight doorways).
+  6. PASSAGE-arch-S and PASSAGE-arch-N round the passage's mouths, on the bare patch of wall
+     left for them.
+  7. The CORNICE-J parts round the joint, then the CORNICE-E parts round the eave.
+  8. ROOF between the gable walls onto the lip at the eave walls; the four CHIMNEY stacks into
+     their pockets on the ridge.
+  9. The dormers: each DORMER-core into its DORMER, the DORMER into its pocket in the roof
+     (standing on its seat), its DORMER-roof on top.
+ 10. A white marble STOOP at every door.
+""", """The cornices' upper parts print upside down; the passage vault prints standing on end, its
+arches face-up; the walls, the roof, the dormers, the chimneys and the stoops print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

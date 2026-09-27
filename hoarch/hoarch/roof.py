@@ -240,6 +240,13 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                     u = k * seam_pitch + off
                     seams.append(rect(u - seam_w / 2, v, u + seam_w / 2, v + pitch))
             tex = M.extrude(cs_union(seams) ^ loc.offset(-0.3, JoinType.Miter, 4.0), d)
+        elif shape == "batten":           # batten-seam tin: square battens under wider capped strips (the Ridgely)
+            b = loc.bounds()
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            ks = range(int(np.floor(b[0] / seam_pitch)), int(np.ceil(b[2] / seam_pitch)) + 1)
+            base_ = cs_union([rect(k * seam_pitch - 0.45, b[1] - 1, k * seam_pitch + 0.45, b[3] + 1) for k in ks])
+            cap_ = cs_union([rect(k * seam_pitch - 0.25, b[1] - 1, k * seam_pitch + 0.25, b[3] + 1) for k in ks])
+            tex = M.extrude(base_ ^ clip, d * 0.6) + M.extrude(cap_ ^ clip, d)
         elif shape == "crimp":            # 5V crimp: a pair of narrow ribs per panel
             b = loc.bounds()
             ribs = []

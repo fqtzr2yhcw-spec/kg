@@ -2964,3 +2964,368 @@ def walk_rings(L, h=8.0, t=0.8, post=1.4, pitch=13.0):
         for cx in np.linspace(a_, e_, m + 1):
             cells.append(circle((cx, vm), R, 40) - circle((cx, vm), R - 0.6, 40))
     return M.extrude(cs_union(cells), t)
+
+
+# ================================================================== the Ridgely (house 50, a Baltimore Federal row of three)
+# ------------------------------------------------------------------ skin and foundation
+def brick_flemishstretcher(region, datum=0.0, bl=2.4, bh=0.8, mortar=0.5, bed=0.2, d=0.25):
+    """Flemish stretcher bond: two courses of stretchers broken half a brick, then a course of
+    stretchers and headers in turn, over and over, so every third course reads as a dotted
+    band (the Ridgely)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    hl = bl / 2
+    cells = []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        top = v + bh - bed
+        if k % 3 == 2:
+            unit = bl + hl
+            u = u0 - 2 * unit
+            while u < u1 + unit:
+                cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, top))
+                cells.append(rect(u + bl + mortar / 2, v, u + unit - mortar / 2, top))
+                u += unit
+        else:
+            u = u0 - 2 * bl - (k % 3) * hl
+            while u < u1 + bl:
+                cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, top))
+                u += bl
+        k += 1
+    return M.extrude(region, 0.05) + ext(cs_union(cells) ^ region, 0.0, d)
+
+
+def foundation_boasted(reg, seed=0):
+    """Brownstone ashlar, every block's face boasted: dressed with the chisel in close
+    parallel strokes, the strokes leaning one way on a block and the other way on the next,
+    under a smooth moulded water table (the Ridgely)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 67)
+    top = b[3] - 1.6
+    blocks, strokes = [], []
+    v, k = top, 0
+    while v > b[1] - 3.2:
+        ch = 3.2
+        u = b[0] - rng.uniform(0, 5)
+        j = 0
+        while u < b[2]:
+            L = rng.uniform(6.5, 10.0)
+            blk = rect(u + 0.25, v - ch + 0.25, u + L - 0.25, v - 0.25)
+            blocks.append(blk)
+            sg = 1 if (j + k) % 2 == 0 else -1
+            for x in np.arange(u - ch, u + L + ch, 0.9):
+                strokes.append(stroke([(x, v - ch), (x + sg * ch * 0.8, v)], 0.3))
+            u += L
+            j += 1
+        v -= ch
+        k += 1
+    cs = cs_union(blocks) ^ reg
+    body = M.extrude(reg, 0.1) + ext(cs, 0.0, 0.5) - ext((cs_union(strokes) ^ cs.offset(-0.5, JoinType.Miter, 4.0)), 0.32, 1.0)
+    cap = chamfer_box(b[0], top, b[2], top + 0.9, 0.0, 0.8, c=0.3, square=("u0", "u1"), bottom=0.8)
+    return body + cap + chamfer_box(b[0], top + 0.89, b[2], b[3], 0.0, 0.55, c=0.25, square=("u0", "u1"), bottom=0.3)
+
+
+# ------------------------------------------------------------------ cornice ornament
+def _shield(c, s):
+    """A Federal shield ``s`` tall centred on c: a flat top, sides curving in to a point, a
+    chief across its head and pales (stripes) below it. Returns (shield, stripe grooves)."""
+    x, y = c
+    hw = s * 0.4
+    top, bot = y + s / 2, y - s / 2
+    side = [(x + hw * (1 - (1 - t) ** 3 * 0.0) * math.cos(t * math.pi / 2) ** 0.6, top - s * 0.45 - s * 0.55 * t ** 1.6)
+            for t in np.linspace(0, 1, 9)]
+    pts = [(x - hw, top), (x + hw, top)] + side + [(2 * x - p[0], p[1]) for p in side[::-1]]
+    sh = poly(pts)
+    chief = rect(x - hw - 1, top - s * 0.28, x + hw + 1, top - s * 0.22)
+    pales = cs_union([rect(x + dx - 0.18, bot - 1, x + dx + 0.18, top - s * 0.3) for dx in (-hw * 0.5, 0.0, hw * 0.5)])
+    return sh, (chief + pales) ^ sh.offset(-0.3, JoinType.Miter, 4.0)
+
+
+def frieze_shields(L, h, b, pitch, margin, pair, half):
+    """Federal shields with a chief and pales at the stations, and in each bay two olive sprigs
+    crossed at their stems."""
+    from .colonial import _lens
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        sh, grooves = _shield((u, vm), hh)
+        out.append(_st(sh, b, 0.55) - ext(grooves, b + 0.3, b + 1.0))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + hh * 0.5 + 0.8):
+        if wd < 5.0:
+            continue
+        sl = min(wd * 0.42, 4.2)
+        parts = []
+        for sg in (-1, 1):
+            base = (uc - sg * 0.3, v0 + 0.3)
+            tip = (uc + sg * sl, v1 - 0.4)
+            parts.append(stroke([base, ((base[0] + tip[0]) / 2 + sg * 0.1, (base[1] + tip[1]) / 2 + 0.3), tip], 0.4))
+            for t in (0.35, 0.6, 0.85):
+                px, py = base[0] + (tip[0] - base[0]) * t, base[1] + (tip[1] - base[1]) * t
+                ang = math.atan2(tip[1] - base[1], tip[0] - base[0])
+                parts.append(_lens((px + 0.45 * math.cos(ang + 1.2), py + 0.45 * math.sin(ang + 1.2)), 1.1, 0.45, ang + 0.7))
+                parts.append(_lens((px + 0.45 * math.cos(ang - 1.2), py + 0.45 * math.sin(ang - 1.2)), 1.1, 0.45, ang - 0.7))
+        out.append(_st(cs_union(parts) ^ rect(uc - wd / 2, v0 - 0.2, uc + wd / 2, v1 + 0.2), b, 0.45))
+    return out, []
+
+
+def _tassel(x, y, s):
+    """A tassel hanging from (x, y), ``s`` long: a knob, a bell-shaped head and a fringed skirt."""
+    knob = circle((x, y - 0.35), 0.35, 12)
+    head = poly([(x - 0.3, y - 0.6), (x + 0.3, y - 0.6), (x + 0.55, y - s * 0.55), (x - 0.55, y - s * 0.55)])
+    skirt = cs_union([rect(x + dx - 0.16, y - s, x + dx + 0.16, y - s * 0.5) for dx in (-0.42, 0.0, 0.42)])
+    return knob + head + skirt
+
+
+def frieze_tassels(L, h, b, pitch, margin, pair, half):
+    """A cord looped in shallow festoons from rosettes at the stations, a tassel hanging from
+    the middle of every loop."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    out = []
+    us = CO._us(L, pitch, margin, 0.0)
+    for u in us:
+        ros = cs_union([circle((u + 0.62 * math.cos(a), v1 - 1.0 + 0.62 * math.sin(a)), 0.45, 12)
+                        for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)])
+        out.append(_st(ros + circle((u, v1 - 1.0), 0.45, 12), b, 0.55))
+    for a, e in zip(us[:-1], us[1:]):
+        a_, e_ = a + 1.2, e - 1.2
+        if e_ - a_ < 3.0:
+            continue
+        sag = lambda t: v1 - 1.0 - (hh * 0.42) * math.sin(math.pi * t)
+        cord = stroke([(a_ + (e_ - a_) * t, sag(t)) for t in np.linspace(0, 1, 17)], 0.42)
+        xm, ym = (a_ + e_) / 2, sag(0.5)
+        out.append(_st((cord + _tassel(xm, ym + 0.1, min(2.6, ym - v0 + 0.2))) ^ rect(a_ - 0.4, v0 - 0.2, e_ + 0.4, v1 + 0.2), b, 0.45))
+    return out, []
+
+
+def course_hitmiss(L, h, b, pitch, margin, p):
+    """A hit-and-miss course: long and short blocks in turn, the short ones standing prouder."""
+    out_l, out_s = [], []
+    u = 0.6
+    k = 0
+    while u < L - 0.6:
+        wd = 2.0 if k % 2 == 0 else 0.8
+        (out_l if k % 2 == 0 else out_s).append(rect(u, 0.2, min(u + wd, L - 0.6), h - 0.2))
+        u += wd + 0.5
+        k += 1
+    return [ext(cs_union(out_l), b - 0.05, b + 0.35), ext(cs_union(out_s), b - 0.05, b + 0.6)]
+
+
+def bracket_corbelstep(h, d, t):
+    """A corbelled modillion: three blocks stepped out one over another like corbelled brick
+    (side profile, top at v = 0)."""
+    hb = min(h, max(1.6, 0.3 * d))
+    s = hb / 3
+    return poly([(0.0, 0.0), (d, 0.0), (d, -s), (d * 0.66, -s), (d * 0.66, -2 * s), (d * 0.33, -2 * s), (d * 0.33, -hb),
+                 (0.0, -hb)])
+
+
+CO.FRIEZE_EXTRA.update(shields=frieze_shields, tassels=frieze_tassels)
+CO.COURSE_EXTRA.update(hitmiss=course_hitmiss)
+TW.BRACKET_EXTRA.update(corbelstep=bracket_corbelstep)
+TW.FOUNDATION_EXTRA.update(boasted=foundation_boasted)
+
+
+# ------------------------------------------------------------------ windows, the doorway, dormers
+def window_jackkey(w, h, A=0.8):
+    """A Baltimore parlour window: a tall six-over-nine sash under a flat arch of seven marble
+    voussoirs splayed to a common centre, the middle one a keystone standing proud and dropping
+    below the others; a marble sill (the Ridgely)."""
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(2, 3))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.55)]
+    v = h + A
+    hb, ht, H = w / 2 + A + 0.6, w / 2 + A + 1.9, 3.2
+    arch = poly([(-hb, v - 0.01), (hb, v - 0.01), (ht, v + H), (-ht, v + H)])
+    cy = v - H * hb / (ht - hb)                                  # where the splayed ends meet
+    joints = []
+    for f in np.linspace(-1, 1, 8)[1:-1]:
+        x0 = f * hb
+        dx, dy = x0, v - cy
+        n_ = math.hypot(dx, dy)
+        joints.append(stroke([(x0, v - 0.2), (x0 + dx / n_ * (H + 0.6), v + dy / n_ * (H + 0.6))], 0.4))
+    parts.append(ext(arch, 0.0, 0.7) - ext(cs_union(joints), 0.45, 1.0))
+    kw = hb / 7 * 1.1
+    parts.append(ext(poly([(-kw, v - 0.8), (kw, v - 0.8), (kw * 1.25, v + H + 0.4), (-kw * 1.25, v + H + 0.4)]), 0.0, 1.1))
+    sw = w / 2 + A + 0.6
+    parts.append(chamfer_box(-sw, -1.1, sw, 0.2, 0.0, 1.1, c=0.35, bottom=0.6))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, v + H + 0.4, -1.1)
+
+
+def window_beadlintel(w, h, A=0.8):
+    """A Baltimore chamber window: a six-over-six sash under a plain marble lintel with a bead
+    along its foot and a raised end block at each end carved with a bull's-eye; a marble sill
+    (the Ridgely)."""
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(2, 2))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.55)]
+    v = h + A
+    hl = w / 2 + A + 2.2
+    parts.append(ext(rect(-hl, v - 0.01, hl, v + 2.6), 0.0, 0.7))
+    parts.append(ext(rect(-hl + 2.0, v - 0.01, hl - 2.0, v + 0.5), 0.69, 0.95))
+    for sg in (-1, 1):
+        x = sg * (hl - 1.0)
+        parts.append(chamfer_box(x - 1.0, v - 0.01, x + 1.0, v + 2.6, 0.0, 1.05, c=0.25))
+        parts.append(ext(circle((x, v + 1.3), 0.65, 20) - circle((x, v + 1.3), 0.3, 12), 1.04, 1.3))
+    sw = w / 2 + A + 0.6
+    parts.append(chamfer_box(-sw, -1.0, sw, 0.2, 0.0, 1.0, c=0.35, bottom=0.6))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, v + 2.6, -1.0)
+
+
+def door_swagfan(w, h, A=1.4):
+    """The Baltimore doorway: a six-panel door under a half-round fanlight leaded in rays hung
+    with swags and tassels, in a round arch of marble voussoirs with a keystone, springing
+    from moulded imposts on panelled pilasters (the Ridgely)."""
+    R_ = w / 2
+    op = cs_union([rect(-w / 2, 0.0, w / 2, h), circle((0.0, h), R_, 64) ^ rect(-w, h, w, h + R_ + 1)])
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    body = [ext(plug_cs, -pl, -1.0)]
+    u0, u1 = -w / 2 + O.CLR + 0.2, w / 2 - O.CLR - 0.2
+    body.append(ext(rect(u0, 0.5, u1, h - 0.3), -1.0, -0.8))
+    cw = (u1 - u0 - 1.8) / 2
+    for c in range(2):
+        pa = u0 + 0.6 + c * (cw + 0.6)
+        for vb, vt in ((1.0, h * 0.28), (h * 0.28 + 0.7, h * 0.56), (h * 0.56 + 0.7, h - 1.0)):
+            body.append(_panel(rect(pa, vb, pa + cw, vt)))
+    fan_g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, h + 0.3, w, h + R_ + 2)
+    r_in = R_ - O.CLR - 0.5
+    bars = [stroke([(0.0, h + 0.3), (r_in * 1.2 * math.cos(a), h + 0.3 + r_in * 1.2 * math.sin(a))], RIB)
+            for a in np.linspace(math.pi / 6, 5 * math.pi / 6, 5)]
+    tips = [(0.78 * r_in * math.cos(a), h + 0.3 + 0.78 * r_in * math.sin(a)) for a in np.linspace(0.0, math.pi, 7)]
+    for (xa, ya), (xb, yb) in zip(tips[:-1], tips[1:]):
+        mid = ((xa + xb) / 2 * 0.72, (ya - h) * 0.0 + h + 0.3 + ((ya + yb) / 2 - h - 0.3) * 0.72)
+        bars.append(stroke([(xa, ya), mid, (xb, yb)], RIB))
+    bars.append(circle((0.0, h + 0.3), 1.2, 24) ^ rect(-2, h + 0.3, 2, h + 2))
+    sash = _glazed(body, fan_g, pl, cs_union(bars) ^ fan_g, plug_cs)
+    sash.append(ext(rect(-w, h - 0.3, w, h + 0.4) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    ring = (circle((0.0, h), R_ + A + 1.2, 64) - circle((0.0, h), R_, 64)) ^ rect(-w, h, w, h + R_ + A + 2)
+    joints = cs_union([stroke([(R_ * math.cos(a), h + R_ * math.sin(a)), ((R_ + A + 1.4) * math.cos(a), h + (R_ + A + 1.4) * math.sin(a))], 0.4)
+                       for a in np.linspace(math.pi / 9, 8 * math.pi / 9, 8) if abs(a - math.pi / 2) > 0.1])
+    parts.append(ext(ring, 0.0, 0.8) - ext(joints, 0.55, 1.0))
+    kt = h + R_ + A + 1.8
+    parts.append(ext(poly([(-0.9, h + R_ - 0.4), (0.9, h + R_ - 0.4), (1.25, kt), (-1.25, kt)]), 0.0, 1.2))
+    pw = 2.0
+    for sg in (-1, 1):
+        uc = sg * (R_ + (A + 1.2) / 2)
+        a_, e_ = uc - pw / 2, uc + pw / 2
+        parts.append(ext(rect(a_, 0.0, e_, h - 0.01), 0.0, 0.8) - ext(rect(a_ + 0.5, 1.6, e_ - 0.5, h - 1.6), 0.55, 1.0))
+        parts.append(chamfer_box(a_ - 0.4, h - 0.8, e_ + 0.4, h + 0.4, 0.0, 1.2, c=0.35))
+        parts.append(chamfer_box(a_ - 0.3, 0.0, e_ + 0.3, 1.4, 0.0, 1.0, c=0.3, bottom=0.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, kt, 0.0)
+
+
+def dormer_twinarch(w=15.0, dep=16.0, hwall=12.0, pitch=0.8):
+    """A Baltimore dormer: a gabled front with two round-headed lights side by side (each a
+    two-light sash under a fan of three rays) either side of a pilastered mullion, a level
+    cornice, and in the pediment an oval louvred vent. Local as colonial.dormer_pedimented;
+    returns (body, core, face)."""
+    rise = w / 2 * pitch
+    face = poly([(-w / 2, 0.0), (w / 2, 0.0), (w / 2, hwall), (0.0, hwall + rise), (-w / 2, hwall)])
+    body = ext(face, -dep, 0.0) - ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, 99), -dep - 1, -1.2)
+    lw = (w - 2 * 1.9 - 1.4) / 2
+    spring = hwall - 1.6 - lw / 2
+    lights = []
+    for sg in (-1, 1):
+        cx = sg * (0.7 + lw / 2)
+        lights.append(cs_union([rect(cx - lw / 2, 2.2, cx + lw / 2, spring), circle((cx, spring), lw / 2, 32) ^ rect(cx - lw, spring, cx + lw, spring + lw)]))
+    light = cs_union(lights)
+    body = body - ext(light, -1.3, 1.0)
+    bars = []
+    for sg, l_ in zip((-1, 1), lights):
+        cx = sg * (0.7 + lw / 2)
+        bars += [rect(cx - lw, (2.2 + spring) / 2 - 0.25, cx + lw, (2.2 + spring) / 2 + 0.25), rect(cx - 0.25, 2.2, cx + 0.25, spring),
+                 rect(cx - lw, spring - 0.25, cx + lw, spring + 0.25)]
+        bars += [stroke([(cx, spring), (cx + lw / 2 * math.cos(a), spring + lw / 2 * math.sin(a))], 0.45) for a in (math.pi / 4, 3 * math.pi / 4)]
+    inner = light.offset(-0.4, JoinType.Round)
+    body = body + ext(((light - inner) + (cs_union(bars) ^ inner)), -1.2, -0.5)
+    body = body + ext((light.offset(0.7, JoinType.Round) - light) ^ rect(-w, 2.2, w, hwall), -0.01, 0.6)
+    body = body + chamfer_box(-0.7, 2.2, 0.7, spring + 0.3, -0.01, 0.8, c=0.25)
+    body = body + chamfer_box(-w / 2 + 1.0, 1.4, w / 2 - 1.0, 2.2, -0.01, 0.9, c=0.3, bottom=0.9)
+    for sg in (-1, 1):
+        body = body + ext(rect(sg * (w / 2) - (1.2 if sg > 0 else 0.0), 1.2, sg * (w / 2) + (0.0 if sg > 0 else 1.2), hwall - 0.8), -0.01, 0.5)
+    body = body + ext(rect(-w / 2 - 0.4, hwall - 0.8, w / 2 + 0.4, hwall + 0.2), -0.01, 0.8)
+    rake = face - face.offset(-0.9, JoinType.Miter, 4.0)
+    body = body + ext(rake ^ rect(-50, hwall, 50, 99), -0.01, 0.8)
+    vc = hwall + rise * 0.42
+    ov = oval((0.0, vc), 1.9, 1.15, 28)
+    slats = cs_union([rect(-2.0, vc + dy - 0.2, 2.0, vc + dy + 0.2) for dy in (-0.45, 0.0, 0.45)]) ^ ov
+    body = body + ext(ov.offset(0.45, JoinType.Round) - ov, -0.01, 0.6) - ext(ov, -0.6, 1.0) + ext(slats, -0.6, 0.2)
+    core = ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, hwall), -dep + 1.2, -1.2)
+    return body, core, face
+
+
+def dormer_twinarch_roof(w, dep, hwall, pitch=0.8, over=1.2):
+    """The dormer's gabled roof, in the dormer frame: a plain shell over the gable, its eaves
+    ``over`` past the cheeks, run long at the back to be cut off by the main roof."""
+    rise = w / 2 * pitch
+    ez = hwall - over * pitch
+    outer = poly([(-w / 2 - over, ez), (0.0, hwall + rise + 1.2), (w / 2 + over, ez)])
+    inner = poly([(-w / 2, ez - 1.0), (w / 2, ez - 1.0), (w / 2, hwall), (0.0, hwall + rise), (-w / 2, hwall)])
+    return ext(outer, -dep - 8.0, over) - ext(inner, -dep - 10.0, over + 1.0)
+
+
+def chimney_partywall(w=8.0, d=16.0, h=30.0):
+    """A party-wall stack (the Ridgely): Flemish brick, a band of headers set out in a dentil
+    course, a cap corbelled out in two courses under a stone slab, and a row of four round
+    clay pots, one for each flue."""
+    h = round(h / 0.2) * 0.2
+    zt = round((h - 5.0) / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zt]) + TW._skin(w, d, 0.0, zt - 2.2, TW._brick("flemish"))
+    zb = zt - 1.8
+    dents = []
+    for sx in (-1, 1):
+        for y in np.arange(-d / 2 + 0.6, d / 2 - 0.5, 1.4):
+            dents.append(box([sx * w / 2 - (0.4 if sx > 0 else 0.0) - (0.0 if sx > 0 else 0.4), y, zb],
+                             [sx * w / 2 + (0.4 if sx > 0 else 0.0), y + 0.8, zb + 0.8]))
+    for sy in (-1, 1):
+        for x in np.arange(-w / 2 + 0.6, w / 2 - 0.5, 1.4):
+            dents.append(box([x, sy * d / 2 - (0.4 if sy > 0 else 0.0) - (0.0 if sy > 0 else 0.4), zb],
+                             [x + 0.8, sy * d / 2 + (0.4 if sy > 0 else 0.0), zb + 0.8]))
+    body = body + union(dents)
+    z = zt
+    for k in range(2):
+        g = 0.25 * (k + 1)
+        body = body + box([-w / 2 - g, -d / 2 - g, z - 0.01], [w / 2 + g, d / 2 + g, z + 0.6])
+        z += 0.6
+    body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, z - 0.01], [w / 2 + 0.8, d / 2 + 0.8, z + 0.8])
+    z += 0.8
+    pots, holes = [], []
+    for y in np.linspace(-d / 2 + 2.2, d / 2 - 2.2, 4):
+        pots.append(M.cylinder(h - z, 1.05, 0.85, 24).translate([0, y, z - 0.01]))
+        pots.append(M.cylinder(0.5, 1.2, 1.2, 24).translate([0, y, h - 0.5]))
+        holes.append(M.cylinder(h + 2, 0.5, 0.5, 16).translate([0, y, z - 0.5]))
+    return (body + union(pots)) - union(holes)
+
+
+def passage_vault(w=13.0, spring=24.0, L=96.0, t=2.0):
+    """The carriage passage through the row (the Ridgely): two side walls and a half-round
+    barrel vault, one piece, printed standing on end. Local: x across (centred), z up from
+    the ground, run along y from 0 to L. Returns (vault, outer profile cs in (x, z))."""
+    r = w / 2
+    outer = cs_union([rect(-r - t, 0.0, r + t, spring), circle((0.0, spring), r + t, 64) ^ rect(-r - t - 1, spring, r + t + 1, spring + r + t + 1)])
+    inner = cs_union([rect(-r, -1.0, r, spring), circle((0.0, spring), r, 64) ^ rect(-r - 1, spring, r + 1, spring + r + 1)])
+    vault = M.extrude(outer - inner, L).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+    return vault, outer
+
+
+def passage_arch(w=13.0, spring=24.0, t=2.0, band=2.6):
+    """The passage's face on the street (and the yard): a ring of marble voussoirs round the
+    arch with a keystone, on impost blocks at the springing. Local: u across, v up from the
+    ground, w out from the wall; printed face-up."""
+    r0 = w / 2 + t + 0.15
+    ring = (circle((0.0, spring), r0 + band, 64) - circle((0.0, spring), r0, 64)) ^ rect(-r0 - band - 1, spring, r0 + band + 1, spring + r0 + band + 1)
+    joints = cs_union([stroke([(r0 * math.cos(a), spring + r0 * math.sin(a)), ((r0 + band + 0.3) * math.cos(a), spring + (r0 + band + 0.3) * math.sin(a))], 0.4)
+                       for a in np.linspace(math.pi / 11, 10 * math.pi / 11, 10) if abs(a - math.pi / 2) > 0.1])
+    out = ext(ring, 0.0, 0.9) - ext(joints, 0.6, 1.2)
+    kt = spring + r0 + band + 0.6
+    out = out + ext(poly([(-1.1, spring + r0 - 0.3), (1.1, spring + r0 - 0.3), (1.5, kt), (-1.5, kt)]), 0.0, 1.3)
+    for sg in (-1, 1):
+        a_, e_ = sorted((sg * r0, sg * (r0 + band)))
+        out = out + chamfer_box(a_ - 0.3, spring - 1.6, e_ + 0.3, spring + 0.01, 0.0, 1.2, c=0.35, bottom=1.2)
+    return out, kt
