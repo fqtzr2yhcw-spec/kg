@@ -4,7 +4,8 @@ with its name.
     python3 -m hoarch.lineup <batch>... [--samples 40] [--res 2600x1500]
     python3 -m hoarch.lineup --all
 
-Batches: houses1 (1-10), shops (11-20), houses2 (21-30), colonial (31-40), colonial2 (41-50). Uses each
+Batches: houses1 (1-10), shops (11-20), houses2 (21-30), colonial (31-40), colonial2 (41-50),
+craftsman (51-60). Uses each
 building's out/<b>/<b>.npz and palette (the last check/export), so run those first. Writes
 out/lineups/<Batch>.png (and the scene files beside it).
 """
@@ -31,10 +32,12 @@ BATCHES = {
                  ["chatham", "vantassel", "whitmore", "pennock", "hathaway"], 45.0, 310.0),
     "colonial2": ("The second Colonial batch, houses 41-50", ["randolph", "pingree", "brenton", "ridgely", "prescott"],
                   ["bellerive", "pinckney", "stauffer", "porter", "alvarado"], 45.0, 330.0),
+    "craftsman": ("The Craftsman-era batch, houses 51-60", ["ashcombe", "capistrano", "stickley", "hollister", "lindenwald"],
+                  ["arroyo", "kittredge", "pullman", "sandoval", "wrightwood"], 45.0, 340.0),
 }
 VIEW = {"shops": [-12, 31, 50, 0.84, [0, -18, -18]]}    # per-batch camera: the shop rows are shallower
 FILE = {"houses1": "Houses_01-10", "shops": "Shops_11-20", "houses2": "Houses_21-30", "colonial": "Colonial_31-40",
-        "colonial2": "Colonial_41-50"}
+        "colonial2": "Colonial_41-50", "craftsman": "Craftsman_51-60"}
 
 
 def names():
