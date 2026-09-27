@@ -894,6 +894,28 @@ their backs; the walls, the roofs, the chimney and the bake oven upright.
 """, """The cornices' upper parts, the PORCH-deck and the PORCH-top print upside down (the top on its
 flat roof, the posts standing up); the walls, the roofs and the chimneys print upright.
 """),
+    "pingree": ("THE PINGREE - SALEM FEDERAL", """  1. FOUNDATION (bush-hammered granite).
+  2. WALLS-1 onto the foundation's lip: the whole ground storey in one part.
+  3. JOINT-1 onto WALLS-1, WALLS-2 onto its lip; JOINT-2 onto WALLS-2, WALLS-3 onto its lip:
+     one part for each storey.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (splayed-lintel windows below, fluted-apron windows on the first floor, kneeled windows in
+     the top storey, the elliptical-fanlight entrance, the balcony doors over it, the back door).
+  5. The CORNICE-J1 parts round the first joint, the CORNICE-J2 parts round the second, the
+     CORNICE-E parts round the eave.
+  6. ROOF onto the lip at the wall tops; the two CHIMNEY pairs into their pockets at the ends.
+  7. The belvedere: CUPOLA-walls on the roof's flat deck, a window in each face, the CORNICE-CUP
+     parts round its top, CUPOLA-roof on them (the gilded eagle is printed with it: its one
+     filament change).
+  8. The portico: PORTICO-floor (the paving and the half-round steps) against the foundation
+     under the door; PORTICO-top (the four columns, the curved entablature, the cornice and the
+     roof, all one piece) lowered onto it, the peg under each column into its socket;
+     PORTICO-balustrade on the roof, under the balcony doors.
+  9. STOOP-back at the back door.
+""", """The cornices' upper parts and the PORTICO-top print upside down (the top on its flat roof, the
+columns standing up); the walls, the roofs, the belvedere, the chimneys, the portico floor and
+the balustrade print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

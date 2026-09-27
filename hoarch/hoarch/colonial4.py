@@ -1768,3 +1768,493 @@ PW.POSTS.update(ringed=post_ringed)
 PW.FILLS.update(rays=fill_rays)
 PW.FRIEZES.update(blockdrops=frieze_blockdrops)
 _FT.EDGE_EXTRA.update(beadroll=edge_beadroll)
+
+
+# ================================================================== the Pingree (house 47, Salem Federal, after McIntire)
+# ------------------------------------------------------------------ skin and foundation
+def brick_struck(region, datum=0.0, bl=2.6, bh=0.8, head=0.35, bed=0.22):
+    """Salem brick: stretcher bond laid in fine joints struck back, each brick's face eased at
+    its edges so the courses read soft and even."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    br = []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        u = u0 - bl - (k % 2) * (bl + head) / 2
+        while u < u1 + bl:
+            br.append(rect(u, v, u + bl, v + bh - bed))
+            u += bl + head
+        k += 1
+    cs = cs_union(br) ^ region
+    return M.extrude(region, 0.05) + stepped(cs, [(0.0, 0.0, 0.2), (0.12, 0.2, 0.32)])
+
+
+def foundation_bushgranite(reg, seed=0):
+    """Salem granite: long blocks with a drafted margin round a bush-hammered face (pitted all
+    over), under a smooth chamfered top course (the Pingree)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 31)
+    top = b[3] - 1.4
+    blocks, pits = [], []
+    u = b[0] - rng.uniform(0, 4)
+    while u < b[2]:
+        L = rng.uniform(8.0, 13.0)
+        blk = rect(u + 0.25, b[1] - 1, u + L - 0.25, top - 0.25)
+        blocks.append(blk)
+        face = rect(u + 1.0, b[1] + 0.6, u + L - 1.0, top - 1.0)
+        fb = face.bounds()
+        if fb[2] > fb[0] and fb[3] > fb[1]:
+            for _ in range(int((fb[2] - fb[0]) * (fb[3] - fb[1]) * 0.9)):
+                pits.append(circle((rng.uniform(fb[0], fb[2]), rng.uniform(fb[1], fb[3])), 0.22, 8))
+        u += L
+    body = ext(cs_union(blocks) ^ reg, 0.0, 0.45) + M.extrude(reg, 0.1)
+    if pits:
+        body = body - ext(cs_union(pits) ^ reg, 0.25, 1.0)
+    return body + chamfer_box(b[0], top, b[2], b[3], 0.0, 0.8, c=0.35, square=("u0", "u1"), bottom=0.3)
+
+
+# ------------------------------------------------------------------ cornice ornament
+def frieze_baskets(L, h, b, pitch, margin, pair, half):
+    """McIntire's baskets of fruit: at every station a woven basket heaped with fruit, and a
+    patera with a ring of beads in each bay."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        bw = hh * 0.8
+        basket = poly([(u - bw, v0 + hh * 0.45), (u + bw, v0 + hh * 0.45), (u + bw * 0.62, v0), (u - bw * 0.62, v0)])
+        weave = cs_union([rect(u - bw, v0 + hh * f - 0.12, u + bw, v0 + hh * f + 0.12) for f in (0.15, 0.3)])
+        fruit = cs_union([circle((u + dx * hh, v0 + hh * (0.5 + dy)), r * hh, 14)
+                          for dx, dy, r in ((-0.42, 0.02, 0.2), (0.0, 0.1, 0.24), (0.42, 0.02, 0.2), (-0.2, 0.3, 0.17), (0.2, 0.3, 0.17))])
+        out.append(_st((basket - weave) ^ rect(u - 3, v0 - 0.2, u + 3, v1 + 0.2), b, 0.5))
+        out.append(_st(fruit ^ rect(u - 3, v0 - 0.2, u + 3, v1 + 0.2), b, 0.65))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 2.4):
+        r = min(1.1, hh / 2 - 0.05)
+        pat = (circle((uc, vm), r, 24) - circle((uc, vm), r - 0.35, 24)) + circle((uc, vm), r * 0.42, 16)
+        out.append(_st(pat, b, 0.45))
+    return out, []
+
+
+def frieze_dolphins(L, h, b, pitch, margin, pair, half):
+    """Salem dolphins: at every station two dolphins, tails up, arched head to head over a
+    scallop shell; a little wave between the pairs."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        parts = []
+        for sg in (-1, 1):
+            pts = []
+            for t in np.linspace(0.0, 1.0, 12):
+                x = u + sg * (0.4 + 3.4 * t)
+                y = v0 + hh * (0.35 + 0.45 * math.sin(math.pi * t * 0.9))
+                pts.append((x, y))
+            wd_ = [0.9 - 0.55 * t for t in np.linspace(0.0, 1.0, 12)]
+            body = cs_union([circle(p, w_ / 2 + 0.12, 12) for p, w_ in zip(pts, wd_)])
+            tail = poly([(pts[-1][0], pts[-1][1]), (pts[-1][0] + sg * 0.7, pts[-1][1] + 0.7), (pts[-1][0] + sg * 0.9, pts[-1][1] - 0.2)])
+            parts += [body, tail, circle((u + sg * 0.5, v0 + hh * 0.36), 0.5, 12)]
+        sh, ribs = _shell((u, v0 + hh * 0.3), min(1.8, hh * 0.7))
+        out.append(_st(cs_union(parts) ^ rect(max(0.3, u - 4.4), v0 - 0.2, min(L - 0.3, u + 4.4), v1 + 0.2), b, 0.5))
+        out.append(_st(sh ^ rect(u - 2, v0 - 0.2, u + 2, v1 + 0.2), b, 0.35))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 4.4):
+        if wd < 2.0:
+            continue
+        pts = [(uc - wd / 2 + 0.3 + (wd - 0.6) * t, vm - 0.2 + 0.45 * math.sin(4 * math.pi * t)) for t in np.linspace(0, 1, 17)]
+        out.append(_st(stroke(pts, 0.45), b, 0.35))
+    return out, []
+
+
+def _eagle(c, s):
+    """A Federal eagle ``s`` wide: spread wings, a shield on its breast, the head turned."""
+    x, y = c
+    wings = []
+    for sg in (-1, 1):
+        wing = poly([(x + sg * 0.3, y + s * 0.05), (x + sg * s * 0.5, y + s * 0.28), (x + sg * s * 0.46, y + s * 0.12),
+                     (x + sg * s * 0.4, y + s * 0.15), (x + sg * s * 0.36, y - s * 0.02), (x + sg * s * 0.28, y + s * 0.02),
+                     (x + sg * s * 0.24, y - s * 0.12), (x + sg * 0.3, y - s * 0.1)])
+        wings.append(wing)
+    body = oval((x, y - s * 0.06), s * 0.09, s * 0.2, 16)
+    head = circle((x + s * 0.03, y + s * 0.2), s * 0.075, 12)
+    beak = poly([(x + s * 0.08, y + s * 0.21), (x + s * 0.16, y + s * 0.18), (x + s * 0.08, y + s * 0.16)])
+    tail = poly([(x - s * 0.07, y - s * 0.22), (x + s * 0.07, y - s * 0.22), (x + s * 0.1, y - s * 0.34), (x - s * 0.1, y - s * 0.34)])
+    shield = poly([(x - s * 0.08, y + s * 0.04), (x + s * 0.08, y + s * 0.04), (x + s * 0.08, y - s * 0.08), (x, y - s * 0.14),
+                   (x - s * 0.08, y - s * 0.08)])
+    return cs_union(wings + [body, head, beak, tail]), shield
+
+
+def frieze_eagles(L, h, b, pitch, margin, pair, half):
+    """Federal eagles, wings spread, a shield on the breast, at every station; between them a
+    ribbon looped through three stars."""
+    from .federal import _star
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    s = min(8.0, hh * 2.2)
+    for u in CO._us(L, pitch, margin, 0.0):
+        body, shield = _eagle((u, vm + 0.2), s)
+        out.append(_st(body ^ rect(u - s * 0.55, v0 - 0.2, u + s * 0.55, v1 + 0.2), b, 0.45))
+        out.append(_st(shield, b, 0.65))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + s * 0.55):
+        if wd < 3.0:
+            continue
+        pts = [(uc - wd / 2 + 0.3 + (wd - 0.6) * t, vm + 0.5 * math.sin(3 * math.pi * t)) for t in np.linspace(0, 1, 19)]
+        out.append(_st(stroke(pts, 0.4), b, 0.3))
+        for x in (uc - wd / 3, uc, uc + wd / 3):
+            out.append(_st(_star((x, vm), min(0.9, hh / 2 - 0.1), ri=0.4), b, 0.5))
+    return out, []
+
+
+def course_reeds(L, h, b, pitch, margin, p):
+    """A reeded course: short upright reeds side by side."""
+    step = 0.9
+    n = int((L - 1.0) / step)
+    u0 = (L - (n - 1) * step) / 2
+    return [ext(cs_union([rect(u0 + k * step - 0.25, 0.1, u0 + k * step + 0.25, h - 0.1) for k in range(n)]), b - 0.05, b + 0.45)]
+
+
+def course_twist(L, h, b, pitch, margin, p):
+    """A twist: two waving bands crossing each other the length of the course."""
+    per = 2.8
+    us = np.arange(0.5, L - 0.5, 0.2)
+    a = [(u, h / 2 + (h / 2 - 0.3) * math.sin(2 * math.pi * u / per)) for u in us]
+    c = [(u, h / 2 - (h / 2 - 0.3) * math.sin(2 * math.pi * u / per)) for u in us]
+    return [ext(stroke(a, 0.42) ^ rect(0, 0, L, h), b - 0.05, b + 0.5), ext(stroke(c, 0.42) ^ rect(0, 0, L, h), b - 0.05, b + 0.35)]
+
+
+def bracket_ovolomod(h, d, t):
+    """A modillion whose underside is an ovolo: a full quarter-round bulging from the wall down
+    to a flat nose (side profile, top at v = 0)."""
+    hb = min(h, max(1.6, 0.3 * d))
+    pts = [(0.0, 0.0), (d, 0.0), (d, -0.45)]
+    for s in np.linspace(0.0, 1.0, 12)[1:]:
+        t_ = s * math.pi / 2
+        pts.append((d * math.cos(t_), -0.45 - (hb - 0.45) * math.sin(t_)))
+    return poly(pts)
+
+
+CO.FRIEZE_EXTRA.update(baskets=frieze_baskets, dolphins=frieze_dolphins, eagles=frieze_eagles)
+CO.COURSE_EXTRA.update(reeds=course_reeds, twist=course_twist)
+TW.BRACKET_EXTRA.update(ovolomod=bracket_ovolomod)
+TW.FOUNDATION_EXTRA.update(bushgranite=foundation_bushgranite)
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_splaylintel(w, h, A=0.8):
+    """A Salem ground-floor window: a six-over-six sash in a thin architrave under a marble
+    lintel with splayed ends and a raised tablet at its centre carved with a patera; a
+    marble sill."""
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(2, 2))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.55)]
+    v = h + A
+    hb, ht = w / 2 + A + 0.9, w / 2 + A + 2.2
+    lint = poly([(-hb, v - 0.01), (hb, v - 0.01), (ht, v + 3.0), (-ht, v + 3.0)])
+    parts.append(ext(lint, 0.0, 0.8))
+    tab = rect(-1.8, v + 0.4, 1.8, v + 2.6)
+    parts.append(ext(tab, 0.79, 1.1))
+    parts.append(ext(circle((0.0, v + 1.5), 0.75, 20) - circle((0.0, v + 1.5), 0.35, 12), 1.09, 1.35))
+    sw = w / 2 + A + 0.8
+    parts.append(chamfer_box(-sw, -1.2, sw, 0.2, 0.0, 1.1, c=0.35, bottom=0.6))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, v + 3.0, -1.2)
+
+
+def window_fluteapron(w, h, A=0.9):
+    """A Salem first-floor window: a six-over-six sash in a moulded architrave under a thin
+    cornice, its sill over a panelled apron carved with flutes."""
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(2, 2))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.7)]
+    outer = op.offset(A, JoinType.Miter, 4.0) ^ rect(-w, 0.0, w, h + A)
+    parts.append(ext((outer - outer.offset(-0.4, JoinType.Miter, 4.0)) ^ rect(-w, 0.4, w, h + A + 1), 0.69, 1.0))
+    hw = w / 2 + A
+    top = h + A + 1.0                                                         # the cornice laps the architrave
+    parts.append(MD.run(-hw - 0.5, hw + 0.5, top, MD.CROWN, 1.2, up=False))
+    sw = w / 2 + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    apron = rect(-w / 2, -3.4, w / 2, -0.7)                                # laps into the sill
+    flutes = cs_union([rect(x - 0.2, -3.0, x + 0.2, -1.3) for x in np.arange(-w / 2 + 0.9, w / 2 - 0.6, 0.9)])
+    parts.append(ext(apron, 0.0, 0.55) - ext(flutes, 0.3, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, top, -3.4)
+
+
+def window_kneeled(w, h, A=0.8):
+    """A Salem attic-storey window: a short six-over-three sash in a plain architrave, its sill
+    carried on two small drops (a kneeled sill)."""
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(2, 1))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.7),
+             chamfer_box(-w / 2 - A - 0.4, h + A - 0.01, w / 2 + A + 0.4, h + A + 1.0, 0.0, 1.0, c=0.35)]
+    sw = w / 2 + A + 0.6
+    parts.append(chamfer_box(-sw, -1.0, sw, 0.2, 0.0, 1.1, c=0.35, bottom=0.6))
+    for sg in (-1, 1):
+        x = sg * (sw - 0.7)
+        parts.append(ext(poly([(x - 0.5, -0.99), (x + 0.5, -0.99), (x, -2.4)]), 0.0, 0.9))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, h + A + 1.0, -2.4)
+
+
+def _elliptic_bars(w, v, ry):
+    """Leading for an elliptical fanlight spanning w from centre (0, v): radiating bars, two
+    elliptical rings and a hub."""
+    rx = w / 2
+    bars = [stroke([(0.0, v), (rx * 1.3 * math.cos(a), v + ry * 1.3 * math.sin(a))], RIB) for a in np.linspace(math.pi / 8, 7 * math.pi / 8, 7)]
+    for f in (0.45, 0.8):
+        bars.append(stroke([(rx * f * math.cos(a), v + ry * f * math.sin(a)) for a in np.linspace(0, math.pi, 25)], RIB))
+    bars.append(circle((0.0, v), 0.8, 16) ^ rect(-1, v, 1, v + 1))
+    return cs_union(bars)
+
+
+def door_elliptic(w, h, side=3.0, fan=4.2, A=1.0):
+    """The Salem entrance: a six-panel door between sidelights leaded in ovals, the whole width
+    under one elliptical fanlight leaded in rays and rings, between reeded pilasters under a
+    moulded cornice that steps up over the fan."""
+    W_ = w + 2 * side
+    ry = fan
+    op = cs_union([rect(-W_ / 2, 0.0, W_ / 2, h), oval((0.0, h), W_ / 2, ry, 64) ^ rect(-W_, h, W_, h + ry + 1)])
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    body = [ext(plug_cs, -pl, -1.0)]
+    u0, u1 = -w / 2 + 0.2, w / 2 - 0.2
+    body.append(ext(rect(u0, 0.5, u1, h - 0.3), -1.0, -0.8))
+    cw = (u1 - u0 - 1.8) / 2
+    for c in range(2):
+        pa = u0 + 0.6 + c * (cw + 0.6)
+        for vb, vt in ((1.0, h * 0.3), (h * 0.3 + 0.7, h * 0.52), (h * 0.52 + 0.7, h - 1.0)):
+            body.append(_panel(rect(pa, vb, pa + cw, vt)))
+    glass, cames = [], []
+    for sg in (-1, 1):
+        a, e = sorted((sg * (w / 2 + 0.3), sg * (W_ / 2 - O.CLR - 0.4)))
+        glass.append(rect(a, h * 0.2, e, h - 0.4))
+        body.append(chamfer_box(a, 0.8, e, h * 0.2 - 0.4, -1.0, 0.4, c=0.2))
+        um, hw = (a + e) / 2, (e - a) / 2
+        for vc in np.linspace(h * 0.32, h * 0.86, 3):
+            ov = oval((um, vc), hw * 0.95, 2.4, 20)
+            cames.append(ov - ov.offset(-RIB, JoinType.Round))
+    fan_g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-W_, h + 0.3, W_, h + ry + 2)
+    glass.append(fan_g)
+    g = cs_union(glass)
+    bars = cs_union(cames) + (_elliptic_bars(W_ - 1.0, h + 0.3, ry - 0.8) ^ fan_g)
+    sash = _glazed(body, g, pl, bars, plug_cs)
+    sash.append(ext(rect(-W_, h - 0.3, W_, h + 0.3) ^ plug_cs, -pl, -0.4))
+    sash.append(ext(cs_union([rect(-w / 2 - 0.3, 0.3, -w / 2 + 0.2, h), rect(w / 2 - 0.2, 0.3, w / 2 + 0.3, h)]) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    ring = (op.offset(A, JoinType.Round) - op) ^ rect(-W_ - 5, 0.0, W_ + 5, h + ry + A + 2)
+    parts.append(ext(ring, 0.0, 0.8))
+    pw = 1.6
+    vt = h + ry + A
+    for sg in (-1, 1):
+        uc = sg * (W_ / 2 + A - 0.2 + pw / 2)
+        parts.append(chamfer_box(uc - pw / 2 - 0.3, 0.0, uc + pw / 2 + 0.3, 1.6, 0.0, 1.3, c=0.3, bottom=0.0))
+        shaft = ext(rect(uc - pw / 2, 1.59, uc + pw / 2, h + 0.6), 0.0, 1.0)
+        reeds = cs_union([rect(uc + dx - 0.18, 2.2, uc + dx + 0.18, h) for dx in (-0.45, 0.0, 0.45)])
+        parts.append(shaft + ext(reeds, 0.99, 1.25))
+        parts.append(chamfer_box(uc - pw / 2 - 0.3, h + 0.59, uc + pw / 2 + 0.3, h + 1.6, 0.0, 1.25, c=0.35))
+    half = W_ / 2 + A - 0.2 + pw + 0.3
+    parts.append(ext(rect(-half, h + 1.59, half, h + 2.4), 0.0, 0.8))
+    parts.append(MD.run(-half - 0.4, half + 0.4, h + 3.4, MD.CROWN, 1.0, up=False))
+    kt = vt + 0.6
+    parts.append(ext(poly([(-0.7, vt - 1.4), (0.7, vt - 1.4), (1.0, kt), (-1.0, kt)]), 0.0, 1.3))
+    return O._one_piece(sash, parts, op, plug_cs, pl, kt, 0.0)
+
+
+def door_balcony(w, h, fan=3.2, A=0.9):
+    """The door onto the portico's roof: a pair of glazed leaves, three lights each over a
+    panel, under an elliptical fanlight, in a moulded architrave with a keystone."""
+    ry = fan
+    op = cs_union([rect(-w / 2, 0.0, w / 2, h), oval((0.0, h), w / 2, ry, 48) ^ rect(-w, h, w, h + ry + 1)])
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    u0, u1 = -w / 2 + O.CLR + 0.3, w / 2 - O.CLR - 0.3
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, h - 0.3), -1.0, -0.8)]
+    lights = []
+    for a, e in ((u0 + 0.5, -0.4), (0.4, u1 - 0.5)):
+        body.append(_panel(rect(a, 1.0, e, h * 0.3)))
+        lights.append(rect(a, h * 0.3 + 0.7, e, h - 0.9))
+    fan_g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, h + 0.3, w, h + ry + 2)
+    g = cs_union(lights + [fan_g])
+    bars = cs_union([_muntins(l_, 1, 3) ^ l_ for l_ in lights]) + (_elliptic_bars(w - 1.0, h + 0.3, ry - 0.7) ^ fan_g)
+    sash = _glazed(body, g, pl, bars, plug_cs)
+    sash.append(ext(rect(-w, h - 0.3, w, h + 0.3) ^ plug_cs, -pl, -0.4))
+    sash.append(ext(rect(-0.3, 0.5, 0.3, h - 0.3), -0.8, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Round) - op) ^ rect(-w - 5, 0.0, w + 5, h + ry + A + 2), 0.0, 0.8)]
+    kt = h + ry + A + 0.6
+    parts.append(ext(poly([(-0.6, h + ry - 0.6), (0.6, h + ry - 0.6), (0.9, kt), (-0.9, kt)]), 0.0, 1.3))
+    parts.append(chamfer_box(-w / 2 - A - 0.4, -0.8, w / 2 + A + 0.4, 0.2, 0.0, 1.0, c=0.3, bottom=0.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, kt, -0.8)
+
+
+def window_cupola_arch(w, h, A=0.8):
+    """A belvedere window: a round-headed sash of four lights over two, in an archivolt."""
+    op = O.opening_cs(w, h, w / 2)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, JoinType.Round)
+    b_ = inner.bounds()
+    bars = _muntins(inner, 2, 3) ^ inner
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, JoinType.Round), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Round) - op) ^ rect(-w - 5, 0.0, w + 5, h + A + 2), 0.0, 0.7),
+             chamfer_box(-w / 2 - A - 0.3, -0.8, w / 2 + A + 0.3, 0.2, 0.0, 0.9, c=0.3, bottom=0.0)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A, -0.8)
+
+
+# ------------------------------------------------------------------ chimneys
+def chimney_curtain(w=7.0, d=9.0, gap=16.0, h=30.0, zc=0.0):
+    """A Salem end-chimney pair: two stacks joined by a curtain wall of brick under a stone
+    coping, each stack with a corbelled cap; the pair centred on the origin, along x. The
+    curtain wall stops ``zc`` below the stacks' caps."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 2.4
+    parts = []
+    xs = (-(gap / 2 + w / 2), gap / 2 + w / 2)
+    for x in xs:
+        parts.append(box([x - w / 2, -d / 2, 0.0], [x + w / 2, d / 2, sh]))
+        parts.append(TW._skin(w, d, 0.0, sh - 0.2, TW._brick("flemish")).translate([x, 0, 0]))
+        for k in range(2):
+            g = 0.3 * (k + 1)
+            parts.append(box([x - w / 2 - g, -d / 2 - g, sh + 0.6 * k - 0.01], [x + w / 2 + g, d / 2 + g, sh + 0.6 * (k + 1)]))
+        parts.append(box([x - w / 2 - 0.9, -d / 2 - 0.9, sh + 1.19], [x + w / 2 + 0.9, d / 2 + 0.9, h]))
+    wz = sh - 4.0 - zc
+    parts.append(box([xs[0], -d / 2 + 1.0, 0.0], [xs[1], d / 2 - 1.0, wz]))
+    parts.append(box([xs[0], -d / 2 + 0.6, wz - 0.01], [xs[1], d / 2 - 0.6, wz + 1.0]))              # the coping
+    body = union(parts)
+    flues = union([box([x - 1.2, -1.2, sh - 4.0], [x + 1.2, 1.2, h + 5]) for x in xs])
+    return body - flues
+
+
+# ------------------------------------------------------------------ the semicircular portico
+def post_mcintire(h, collar=None, abacus=3.0, slot=None):
+    """A McIntire column: a slender fluted shaft (the flutes as a ring of shallow grooves) on an
+    Attic base, a bell capital ringed by two tiers of leaves and a square abacus with its
+    corners cut."""
+    z1 = round((h - 3.6) / 0.2) * 0.2
+    r = 1.1
+    prof = [(0.0, 0.0), (1.55, 0.0), (1.55, 0.3), (1.4, 0.5), (1.25, 0.6), (1.25, 0.8), (1.4, 1.0), (1.4, 1.2),
+            (r, 1.5), (r * 0.9, z1), (1.05, z1 + 0.2), (1.05, z1 + 0.4), (r * 0.9, z1 + 0.5), (1.3, z1 + 2.2),
+            (1.45, z1 + 2.6)]
+    body = PW._revolve(prof, 32)
+    flutes = []
+    for a in np.linspace(0, 2 * math.pi, 12, endpoint=False):
+        flutes.append(box([r * 0.9 - 0.2, -0.16, 2.0], [r * 0.9 + 0.3, 0.16, z1 - 0.6]).rotate([0, 0, math.degrees(a)]))
+    body = body - union(flutes)
+    leaves = []
+    for tier, (z_a, z_b, n) in enumerate(((z1 + 0.5, z1 + 1.5, 8), (z1 + 1.1, z1 + 2.3, 8))):
+        for a in np.linspace(0, 2 * math.pi, n, endpoint=False) + tier * math.pi / n:
+            ca, sa = math.cos(a), math.sin(a)
+            tx, ty = -sa * 0.25, ca * 0.25
+            pts = []
+            for rr, zz in ((r * 0.88, z_a), (1.5, z_b - 0.2), (1.35, z_b)):
+                pts += [(rr * ca + tx, rr * sa + ty, zz), (rr * ca - tx, rr * sa - ty, zz)]
+            leaves.append(M.hull_points(pts))
+    body = body + union(leaves)
+    s_ = abacus / 2
+    ab = box([-s_, -s_, z1 + 2.59], [s_, s_, h])
+    corners = union([box([sx * s_ - 0.5, sy * s_ - 0.5, z1 + 2.5], [sx * s_ + 0.5, sy * s_ + 0.5, h + 1]).rotate([0, 0, 0])
+                     for sx in (-1, 1) for sy in (-1, 1)])
+    return body + (ab - corners) + box([-s_ + 0.6, -s_ + 0.6, z1 + 2.5], [s_ - 0.6, s_ - 0.6, h])
+
+
+def baluster_spindlevase(h):
+    """A slender urn baluster with a long spindle neck (the Pingree)."""
+    top = h - 0.5
+    L_ = top - 0.5
+    prof = [(0.0, 0.5), (0.35, 0.5), (0.5, 0.5 + L_ * 0.18), (0.4, 0.5 + L_ * 0.34), (0.2, 0.5 + L_ * 0.45), (0.2, 0.5 + L_ * 0.85),
+            (0.34, 0.5 + L_ * 0.92), (0.3, top)]
+    return PW._revolve(prof, 16) + box([-0.5, -0.5, 0.0], [0.5, 0.5, 0.51]) + box([-0.5, -0.5, top - 0.01], [0.5, 0.5, h])
+
+
+def _sector(c, r0, r1, a0, a1, seg=48):
+    """An annular sector (plan) between radii r0 < r1 and angles a0..a1."""
+    pts = [(c[0] + r1 * math.cos(a), c[1] + r1 * math.sin(a)) for a in np.linspace(a0, a1, seg)]
+    if r0 > 0:
+        pts += [(c[0] + r0 * math.cos(a), c[1] + r0 * math.sin(a)) for a in np.linspace(a1, a0, seg)]
+    else:
+        pts.append(c)
+    return poly(pts)
+
+
+def semicircle_portico(c, R, H_floor, col_h, n_cols=4, steps=3, rail_h=7.0):
+    """A McIntire semicircular portico against a wall along y = c[1] (the portico to -y): a
+    paved stone floor with half-round steps down to the ground (one part), and one top in the
+    pink-house way: the flat roof, a cornice and a fluted entablature on its curve, and the
+    columns, all one piece printed upside down, a peg under each column into a socket in the
+    floor. A balustrade (turned balusters between pedestals, a curved hand rail) stands on the
+    roof. Returns dict(floor, top, balustrade, sockets=[(x, y)], ptop)."""
+    a0, a1 = math.pi, 2 * math.pi
+    Rc = R - 2.4                                         # the columns' circle
+    # floor and steps
+    floor = M.extrude(_sector(c, 0, R, a0, a1), H_floor)
+    joints = []
+    for rr in np.arange(4.0, R - 0.5, 3.2):
+        joints.append(_sector(c, rr - 0.15, rr + 0.15, a0, a1))
+    for a in np.linspace(a0, a1, 9)[1:-1]:
+        joints.append(stroke([(c[0] + 2.0 * math.cos(a), c[1] + 2.0 * math.sin(a)), (c[0] + R * math.cos(a), c[1] + R * math.sin(a))], 0.3))
+    floor = floor - M.extrude(cs_union(joints), 1.0).translate([0, 0, H_floor - 0.3])
+    rise = H_floor / (steps + 1)
+    for k in range(1, steps + 1):
+        zt = round((H_floor - k * rise) / 0.2) * 0.2
+        floor = floor + M.extrude(_sector(c, R - 0.5, R + 1.9 * k, a0, a1), zt)
+    floor = floor + M.extrude(_sector(c, R - 0.4, R, a0, a1), H_floor)             # a nosing ring
+    where = [(c[0] + Rc * math.cos(a), c[1] + Rc * math.sin(a)) for a in np.linspace(a0, a1, n_cols + 2)[1:-1]]
+    sockets = union([M.cylinder(3.0, 1.0, 1.0, 20).translate([p[0], p[1], H_floor - 2.0]) for p in where])
+    floor = floor - sockets
+    # the top: columns, entablature, cornice, roof
+    z0 = H_floor
+    ze = z0 + col_h
+    col = PW.POSTS["mcintire"](col_h, abacus=3.0)
+    parts = [col.translate([p[0], p[1], z0]) for p in where]
+    parts += [M.cylinder(2.2, 0.8, 0.8, 20).translate([p[0], p[1], z0 - 1.8]) for p in where]      # pegs
+    ent_h, cor_h, roof_t = 4.0, 1.6, 1.4
+    ent = M.extrude(_sector(c, Rc - 1.7, Rc + 1.7, a0, a1, 64), ent_h).translate([0, 0, ze - 0.01])
+    flutes = []
+    for a in np.linspace(a0, a1, 64)[1:-1]:
+        ca, sa = math.cos(a), math.sin(a)
+        flutes.append(box([Rc + 1.4, -0.2, ze + 1.4], [Rc + 2.0, 0.2, ze + ent_h - 0.5]).rotate([0, 0, math.degrees(a)]).translate([c[0], c[1], 0]))
+    ent = ent - union(flutes)
+    fillet = M.extrude(_sector(c, Rc - 1.8, Rc + 1.95, a0, a1, 64), 0.6).translate([0, 0, ze + 1.0])
+    cor = M.extrude(_sector(c, 0, Rc + 2.8, a0, a1, 64), cor_h).translate([0, 0, ze + ent_h - 0.01])
+    cor = cor + M.extrude(_sector(c, 0, Rc + 2.3, a0, a1, 64), 0.61).translate([0, 0, ze + ent_h - 0.6])
+    roof = M.extrude(_sector(c, 0, Rc + 3.2, a0, a1, 64), roof_t).translate([0, 0, ze + ent_h + cor_h - 0.01])
+    top = union(parts + [ent, fillet, cor, roof])
+    top = top.trim_by_plane([0, -1.0, 0], -c[1])                                       # nothing behind the wall line
+    ptop = ze + ent_h + cor_h + roof_t - 0.01
+    # the balustrade on the roof: pedestals over the columns, balusters between, a curved rail
+    Rb = Rc + 1.8
+    bparts = [M.extrude(_sector(c, Rb - 0.6, Rb + 0.6, a0, a1, 64), 0.8)]
+    ped = [(c[0] + Rb * math.cos(a), c[1] + Rb * math.sin(a), a) for a in np.linspace(a0, a1, n_cols + 2)]
+    for x, y, a in ped:
+        bparts.append(box([-1.2, -1.2, 0.0], [1.2, 1.2, rail_h + 0.6]).rotate([0, 0, math.degrees(a)]).translate([x, y, 0]))
+    bal = baluster_spindlevase(rail_h - 1.8)
+    arc_len = Rb * math.pi
+    nb = int(arc_len / 1.7)
+    for j in range(nb):
+        a = a0 + (a1 - a0) * (j + 0.5) / nb
+        if any(abs(a - pa) < 1.8 / Rb for _, _, pa in ped):
+            continue
+        bparts.append(bal.translate([c[0] + Rb * math.cos(a), c[1] + Rb * math.sin(a), 0.79]))
+    bparts.append(M.extrude(_sector(c, Rb - 0.7, Rb + 0.7, a0, a1, 64), 1.0).translate([0, 0, rail_h - 1.0]))
+    balustrade = union(bparts).trim_by_plane([0, -1.0, 0], -c[1]).translate([0, 0, ptop])
+    return dict(floor=floor.trim_by_plane([0, -1.0, 0], -c[1]), top=top, balustrade=balustrade,
+                sockets=where, ptop=ptop)
+
+
+PW.POSTS.update(mcintire=post_mcintire)
+PW.BALUSTERS.update(spindlevase=(baluster_spindlevase, 1.7))
+
+
+def finial_eagle(s=6.0):
+    """A cupola finial: a gilded eagle with spread wings standing on a ball on a turned stem
+    (the Pingree). Base at z = 0, printed with its roof."""
+    prof = [(0.0, 0.0), (1.0, 0.0), (1.0, 0.4), (0.55, 0.9), (0.45, 1.8), (0.7, 2.1), (0.45, 2.4)]
+    stem = PW._revolve(prof, 20)
+    ball = M.sphere(1.3, 24).translate([0, 0, 3.4]) + M.cylinder(1.2, 0.5, 0.5, 16).translate([0, 0, 2.3])
+    body, shield = _eagle((0.0, 0.0), s)
+    b_ = body.bounds()
+    plate = M.extrude(body + shield, 1.2).translate([0, 0, -0.6])
+    plate = plate.transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 4.5 - b_[1]]]))
+    return stem + ball + plate

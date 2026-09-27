@@ -460,6 +460,11 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 a_, b_ = u + gap / 2, u + wtab - gap / 2
                 tabs.append(poly([(a_ + q, vk), (b_ - q, vk), (b_ - q, vk + 0.4), (b_, vk + 0.4), (b_, top), (a_, top),
                                   (a_, vk + 0.4), (a_ + q, vk + 0.4)]))
+            elif shp == "tab":            # square slates with a short tongue at the middle of each butt (the Pingree)
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                m_, tw_ = (a_ + b_) / 2, max(0.5, (b_ - a_) * 0.28)
+                tabs.append(poly([(a_, vk + 0.4), (m_ - tw_ / 2, vk + 0.4), (m_ - tw_ / 2, vk), (m_ + tw_ / 2, vk),
+                                  (m_ + tw_ / 2, vk + 0.4), (b_, vk + 0.4), (b_, top), (a_, top)]))
             elif shp == "slant":          # shakes whose butts are cut on a slant, leaning left and right in turn (the Porter)
                 a_, b_ = u + gap / 2, u + wtab - gap / 2
                 lean = 0.45 if int(round(u / wtab)) % 2 == 0 else -0.45
