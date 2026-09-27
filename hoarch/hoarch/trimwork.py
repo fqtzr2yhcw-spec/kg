@@ -1100,4 +1100,20 @@ def bracket(style, h, d, t, u=0.0, v_top=0.0, w0=0.0):
         prof = BRACKET_EXTRA[style](h, d, t)
     else:
         raise ValueError(style)
+    if style in PIERCED and t >= 1.4:
+        # sink the piercings 0.3 into each face rather than cutting them through: pierced, the
+        # slivers round them printed as loose strings (the Camellia's tower ring)
+        solid = cs_union([poly(p) for p in prof.to_polygons() if _signed_area(p) > 0])
+        holes = solid - prof
+        m = side_profile(solid, -t / 2, t / 2) - side_profile(holes, -t / 2 - 1.0, -t / 2 + 0.3) \
+            - side_profile(holes, t / 2 - 0.3, t / 2 + 1.0)
+        return m.translate([u, v_top, w0])
     return side_profile(prof, -t / 2, t / 2).translate([u, v_top, w0])
+
+
+PIERCED = ("fan", "sawn", "knee", "volute", "fret", "ladder")
+
+
+def _signed_area(p):
+    p = np.asarray(p, float)
+    return 0.5 * float(np.sum(p[:, 0] * np.roll(p[:, 1], -1) - np.roll(p[:, 0], -1) * p[:, 1]))

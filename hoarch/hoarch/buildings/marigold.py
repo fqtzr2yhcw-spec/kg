@@ -49,7 +49,7 @@ LEDGE = 1.4
 EAVE = dict(pitch=11.0, margin=3.6, layers=[
     dict(kind="frieze", h=5.0, b=1.2, orn="circles", role="Gold"),
     dict(kind="course", h=1.6, b=1.4, orn="beadreel", role="Orange"),
-    dict(kind="bed", h=1.8, b=1.4, P=5.6, role="Gold", brackets=dict(style="sawn", t=0.8, reach=0.55)),
+    dict(kind="bed", h=1.8, b=1.4, P=5.6, role="Gold", brackets=dict(style="sawn", t=1.6, reach=0.55)),
     dict(kind="crown", h=2.4, b=1.4, P=6.4, orn="ogee_fillet", role="Orange")])
 HE = CO.band_height(EAVE)
 

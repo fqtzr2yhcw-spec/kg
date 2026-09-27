@@ -46,7 +46,7 @@ JOINT = dict(pitch=11.0, margin=3.6, layers=[
 EAVE = dict(pitch=11.0, margin=3.6, layers=[
     dict(kind="frieze", h=5.4, b=1.2, orn="teeth", role="Forest"),
     dict(kind="course", h=1.6, b=1.4, orn="reeds", role="White"),
-    dict(kind="bed", h=2.0, b=1.4, P=6.0, role="White", brackets=dict(style="knee", t=0.9, reach=0.6)),
+    dict(kind="bed", h=2.0, b=1.4, P=6.0, role="White", brackets=dict(style="knee", t=1.6, reach=0.6)),
     dict(kind="crown", h=2.4, b=1.4, P=6.6, orn="cavetto", role="Forest")])
 RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2
 HE = CO.band_height(EAVE)

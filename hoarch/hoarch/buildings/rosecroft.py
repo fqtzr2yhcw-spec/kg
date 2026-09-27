@@ -57,11 +57,11 @@ JOINT = dict(pitch=12.0, margin=4.0, layers=[
 EAVE = dict(pitch=12.0, margin=4.0, layers=[
     dict(kind="frieze", h=5.6, b=1.2, orn="triglyphs", role="Teal"),
     dict(kind="course", h=1.6, b=1.4, orn="dentil", role="Cream", tooth=1.2, gap=0.7),
-    dict(kind="bed", h=2.0, b=1.4, P=6.2, role="Teal", brackets=dict(style="fret", t=0.9, reach=0.5)),
+    dict(kind="bed", h=2.0, b=1.4, P=6.2, role="Teal", brackets=dict(style="fret", t=1.6, reach=0.5)),
     dict(kind="crown", h=2.8, b=1.4, P=7.0, orn="cyma", role="Teal")])
 TOWER_C = dict(pitch=9.0, margin=3.0, layers=[
     dict(kind="frieze", h=4.4, b=1.2, orn="diaper", role="Teal"),
-    dict(kind="bed", h=1.8, b=1.4, P=5.2, role="Cream", brackets=dict(style="fret", t=0.8, reach=0.7)),
+    dict(kind="bed", h=1.8, b=1.4, P=5.2, role="Cream", brackets=dict(style="fret", t=1.6, reach=0.7)),
     dict(kind="crown", h=2.2, b=1.4, P=6.0, orn="ogee_fillet", role="Teal")])
 RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2
 HE = CO.band_height(EAVE)

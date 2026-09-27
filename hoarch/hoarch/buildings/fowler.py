@@ -52,11 +52,11 @@ JOINT = dict(pitch=12.0, margin=4.0, layers=[
 EAVE = dict(pitch=12.0, margin=4.2, pair=1.9, layers=[
     dict(kind="frieze", h=5.6, b=1.2, orn="paterae", role="Forest"),
     dict(kind="course", h=1.6, b=1.4, orn="dentil", role="White", tooth=0.9, gap=0.6),
-    dict(kind="bed", h=2.2, b=1.4, P=6.6, role="White", brackets=dict(style="fan", t=0.8, reach=0.6)),
+    dict(kind="bed", h=2.2, b=1.4, P=6.6, role="White", brackets=dict(style="fan", t=1.6, reach=0.6)),
     dict(kind="crown", h=2.8, b=1.4, P=7.2, orn="torus", role="White")])
 CUPOLA_C = dict(pitch=8.0, margin=2.6, pair=1.4, layers=[
     dict(kind="frieze", h=4.2, b=1.2, orn="lunettes", role="White"),
-    dict(kind="bed", h=1.8, b=1.4, P=4.8, role="Forest", brackets=dict(style="fan", t=0.7, reach=0.7)),
+    dict(kind="bed", h=1.8, b=1.4, P=4.8, role="Forest", brackets=dict(style="fan", t=1.6, reach=0.7)),
     dict(kind="crown", h=2.0, b=1.4, P=5.4, orn="bevel", role="White")])
 RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2
 HE = CO.band_height(EAVE)

@@ -54,7 +54,7 @@ EAVE = dict(pitch=12.0, margin=4.0, layers=[
     dict(kind="crown", h=2.8, b=1.4, P=7.0, orn="cyma", role="Plum")])
 TURRET_C = dict(pitch=8.0, margin=2.4, layers=[
     dict(kind="frieze", h=4.6, b=1.2, orn="crenels", role="Cream"),
-    dict(kind="bed", h=1.8, b=1.4, P=5.0, role="Plum", brackets=dict(style="volute", t=0.8, reach=0.7)),
+    dict(kind="bed", h=1.8, b=1.4, P=5.0, role="Plum", brackets=dict(style="volute", t=1.6, reach=0.7)),
     dict(kind="crown", h=2.2, b=1.4, P=5.8, orn="ovolo", role="Cream")])
 RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2
 HE = CO.band_height(EAVE)
