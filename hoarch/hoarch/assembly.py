@@ -1015,10 +1015,26 @@ roofs, the dormers and the chimney print upright.
   6. WING-roof-W and WING-roof-E onto the wing lips against the centre block.
   7. ROOF onto the lip at the wall tops; CHIMNEY into its pocket on the ridge.
   8. The terrace: TERRACE (floor, parapet walls and piers) against the front wall;
-     TERRACE-coping (copings and planter urns) on top; TERRACE-steps into the gap.
+     TERRACE-coping-W and -E (copings, pier caps and planter urns) on top; TERRACE-steps
+     into the gap.
   9. STOOP-back at the back door.
 """, """The cornices' upper parts print upside down; the walls, the roofs, the terrace and the chimney
 print upright.
+"""),
+    "ashcombe": ("THE ASHCOMBE - TUDOR REVIVAL", """  1. FOUNDATION (squared rubble stone) under the house and the front gable.
+  2. WALLS-1 onto the foundation's lip: the whole brick ground storey, the front gable included.
+     Paint the raised diaper bricks a darker, over-burnt red.
+  3. JOINT onto WALLS-1, WALLS-2 onto its lip: the whole half-timbered upper storey with its three
+     gables in one part. Paint the raised timbers oak, the render between them cream.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the stone-framed ones print oak, then stone from the wall face out).
+  5. The CORNICE-J parts round the jetty, the CORNICE-E parts round the eave.
+  6. CHIMNEY on the ground against the front wall beside the door, into its notch through both
+     cornices.
+  7. ROOF onto the lip at the wall tops; the three BARGE boards on the gable ends.
+  8. STOOP-front at the door, STOOP-back at the back door.
+""", """The cornices' upper parts print upside down; the walls, the roof and the chimney print upright
+(the chimney stone to the plinth, then brick); the bargeboards print flat, face up.
 """),
 }
 

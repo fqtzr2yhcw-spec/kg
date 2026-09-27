@@ -283,6 +283,25 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                     bands.append(scallop_rows(band, p_, wtab * (1.0 - 0.25 * f_), d=d, shape="square", datum=v))
                 v += 3 * p_
             tex = union(bands) if bands else M()
+        elif shape == "stoneslate":       # Cotswold stone slates: random widths, courses diminishing up the roof,
+            b = loc.bounds()              # rough butts, each slate one of three thicknesses (the Ashcombe)
+            span = max(1e-6, b[3] - b[1])
+            rng = np.random.default_rng(int(abs(b[0]) * 7 + abs(b[2]) * 3 + i * 13) % 997)
+            layers = {}
+            v = b[1]
+            while v < b[3]:
+                f_ = min(1.0, (v - b[1]) / span)
+                p_ = round(pitch * (1.0 - 0.4 * f_) / 0.05) * 0.05
+                u = b[0] - rng.uniform(0.0, 3.0)
+                while u < b[2]:
+                    wd = rng.uniform(1.8, 3.6) * (1.0 - 0.3 * f_)
+                    tl = rng.uniform(-0.16, 0.16)
+                    layers.setdefault(int(rng.integers(0, 3)), []).append(
+                        poly([(u + 0.12, v + 0.2 + tl), (u + wd - 0.12, v + 0.2 - tl), (u + wd - 0.12, v + p_), (u + 0.12, v + p_)]))
+                    u += wd
+                v += p_
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            tex = union([M.extrude(cs_union(cs_) ^ clip, d + 0.07 * k) for k, cs_ in layers.items()])
         else:
             tex = scallop_rows(loc, pitch, wtab, d=d, shape=shape, datum=loc.bounds()[1])
         vdir = np.array([t[0] * cth, t[1] * cth, s * cth])

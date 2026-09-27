@@ -219,10 +219,13 @@ def build(kit=None):
            box([XC + gap / 2, -TD - 0.8, hp - 0.01], [TX1 + 0.8, -TD + t + 0.8, hp + 1.0]),
            box([TX0 - 0.8, -TD - 0.8, hp - 0.01], [TX0 + t + 0.8, -3.0, hp + 1.0]),
            box([TX1 - t - 0.8, -TD - 0.8, hp - 0.01], [TX1 + 0.8, -3.0, hp + 1.0])]
-    pcaps = [box([x - 4.2, -TD - 1.6, hp + 1.59], [x + 4.2, -TD + 6.6, hp + 2.6]) for x in (TX0 + 2.6, TX1 - 2.6)]
+    # each pier cap is a sleeve over its pier's top, down to the copings (one piece with them)
+    pcaps = [box([x - 4.2, -TD - 1.6, hp - 0.01], [x + 4.2, -TD + 6.6, hp + 2.6]) for x in (TX0 + 2.6, TX1 - 2.6)]
     urns = [CR.planter_urn(3.2, 3.6, 3.8).translate([x, -TD + 2.5, hp + 2.59]) for x in (TX0 + 2.6, TX1 - 2.6)]
     coping = union(cop) + union(pcaps) + union(urns) - union(piers)
-    kit.add("TERRACE-coping", "Limestone", coping - fkeep - terr - union(ins_keep) - w1, group="terrace")
+    coping = coping - fkeep - terr - union(ins_keep) - w1
+    for tag, xa, xb in (("W", -50.0, XC), ("E", XC, W + 50.0)):
+        kit.add(f"TERRACE-coping-{tag}", "Limestone", coping ^ box([xa, -60.0, -1.0], [xb, 60.0, 200.0]), group="terrace")
     fr = MAIN.facades()[0]
     A = fr.A.copy()
     A[:, 3] = fr.world(XC - MX0, -ZF, TD)
