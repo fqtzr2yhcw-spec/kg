@@ -240,6 +240,17 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                     u = k * seam_pitch + off
                     seams.append(rect(u - seam_w / 2, v, u + seam_w / 2, v + pitch))
             tex = M.extrude(cs_union(seams) ^ loc.offset(-0.3, JoinType.Miter, 4.0), d)
+        elif shape == "ribtile":          # flat interlocking clay tiles, each with a raised rib along one edge (the Wrightwood)
+            b = loc.bounds()
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            tiles, ribs = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                off = (j % 2) * seam_pitch / 2
+                for k in range(int(np.floor(b[0] / seam_pitch)) - 1, int(np.ceil(b[2] / seam_pitch)) + 2):
+                    u = k * seam_pitch + off
+                    tiles.append(rect(u + 0.25, j * pitch, u + seam_pitch - 0.25, (j + 1) * pitch - 0.25))
+                    ribs.append(rect(u + 0.25, j * pitch, u + 0.85, (j + 1) * pitch - 0.25))
+            tex = M.extrude(cs_union(tiles) ^ clip, d) + M.extrude(cs_union(ribs) ^ clip, d + 0.25)
         elif shape == "batten":           # batten-seam tin: square battens under wider capped strips (the Ridgely)
             b = loc.bounds()
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)

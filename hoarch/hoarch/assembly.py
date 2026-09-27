@@ -1005,6 +1005,21 @@ roofs and the chimney print upright.
 """, """The cornices' upper parts, the PORCH-deck and the PORCH-top print upside down; the walls, the
 roofs, the dormers and the chimney print upright.
 """),
+    "wrightwood": ("THE WRIGHTWOOD - PRAIRIE SCHOOL", """  1. FOUNDATION (long limestone plinth blocks) under the centre block and both wings.
+  2. WALLS-1 onto the foundation's lip: the whole ground storey and both wings in one part (Roman
+     brick to the sill line, then stucco: one filament change).
+  3. JOINT onto WALLS-1, WALLS-2 onto its lip: the centre block's upper storey in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside.
+  5. The CORNICE-WINGW and CORNICE-WINGE parts round the wings, the CORNICE-J parts round the
+     joint, the CORNICE-E parts round the main eave.
+  6. WING-roof-W and WING-roof-E onto the wing lips against the centre block.
+  7. ROOF onto the lip at the wall tops; CHIMNEY into its pocket on the ridge.
+  8. The terrace: TERRACE (floor, parapet walls and piers) against the front wall;
+     TERRACE-coping (copings and planter urns) on top; TERRACE-steps into the gap.
+  9. STOOP-back at the back door.
+""", """The cornices' upper parts print upside down; the walls, the roofs, the terrace and the chimney
+print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

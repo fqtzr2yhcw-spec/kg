@@ -697,3 +697,204 @@ PW.FILLS.update(triplets=fill_triplets)
 PW.FRIEZES.update(banded=frieze_banded)
 PW.SKIRTS.update(blockvent=skirt_blockvent)
 FT.EDGE_EXTRA.update(keys=edge_keys)
+
+
+# ================================================================== the Wrightwood (house 53, Prairie School)
+# ------------------------------------------------------------------ skins and foundation
+def brick_prairie(region, datum=0.0, bl=3.8, bh=0.8):
+    """Prairie Roman brick: long thin bricks whose bed joints are raked deep and whose head
+    joints are struck flush, so the wall reads in horizontal lines (the Wrightwood)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    beds, heads = [], []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        beds.append(rect(u0 - 1, v - 0.14, u1 + 1, v + 0.14))
+        for u in np.arange(u0 - bl + (k % 2) * bl / 2, u1 + bl, bl):
+            heads.append(rect(u - 0.14, v, u + 0.14, v + bh))
+        k += 1
+    out = M.extrude(region, 0.35)
+    return out - ext(cs_union(beds) ^ region, 0.12, 1.0) - ext(cs_union(heads) ^ region, 0.26, 1.0)
+
+
+def stucco_banded(region, datum=0.0, bands=(), seed=5):
+    """Smooth-float stucco crossed by flat wood bands at the given heights, each band a board
+    with a bevelled top (the Wrightwood)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = M.extrude(region, 0.3)
+    for vb in bands:
+        band = region ^ rect(u0 - 1, vb, u1 + 1, vb + 1.3)
+        if not band.is_empty():
+            out = out + ext(band, 0.0, 0.8) + ext(region ^ rect(u0 - 1, vb + 1.29, u1 + 1, vb + 1.6), 0.0, 0.5)
+    return out
+
+
+def foundation_prairieplinth(reg, seed=0):
+    """A plinth of long smooth limestone blocks with hairline joints under a bevelled top
+    course (the Wrightwood)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 97)
+    top = b[3] - 1.4
+    joints = []
+    u = b[0] - rng.uniform(0, 6)
+    while u < b[2]:
+        u += rng.uniform(11.0, 18.0)
+        joints.append(rect(u - 0.15, b[1] - 1, u + 0.15, top))
+    body = M.extrude(reg, 0.1) + ext(rect(b[0], b[1] - 1, b[2], top) ^ reg, 0.0, 0.45)
+    if joints:
+        body = body - ext(cs_union(joints) ^ reg, 0.25, 1.0)
+    return body + chamfer_box(b[0], top - 0.01, b[2], b[3], 0.0, 0.9, c=0.6, square=("u0", "u1"), bottom=0.9)
+
+
+# ------------------------------------------------------------------ cornice ornament
+def frieze_artglass(L, h, b, pitch, margin, pair, half):
+    """Art-glass geometry in relief: at every station a tall bar crowned by three stacked
+    squares with a small square either side; in the bays long bars at two heights with a
+    cluster of four squares at the middle."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    out = []
+    q = min(0.8, hh * 0.22)
+    for u in CO._us(L, pitch, margin, 0.0):
+        f = cs_union([rect(u - 0.25, v0, u + 0.25, v1)] + [rect(u - q / 2, v1 - (j + 1) * (q + 0.25), u + q / 2, v1 - j * (q + 0.25) - 0.25)
+                                                             for j in range(3)] +
+                     [rect(u + sg * (q + 0.3) - q / 2, v1 - 2 * (q + 0.25), u + sg * (q + 0.3) + q / 2, v1 - (q + 0.25) - 0.25) for sg in (-1, 1)])
+        out.append(_st(f, b, 0.45))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + q + 0.6):
+        if wd < 3.0:
+            continue
+        a_, e_ = uc - wd / 2, uc + wd / 2
+        f = cs_union([rect(a_, v0 + hh * 0.3, e_, v0 + hh * 0.3 + 0.45), rect(a_ + 0.8, v0 + hh * 0.62, e_ - 0.8, v0 + hh * 0.62 + 0.45)] +
+                     [rect(uc + dx - 0.35, v0 + hh * 0.45 + dy - 0.35, uc + dx + 0.35, v0 + hh * 0.45 + dy + 0.35)
+                      for dx in (-0.55, 0.55) for dy in (-0.55, 0.55)])
+        out.append(_st(f, b, 0.4))
+    return out, []
+
+
+def frieze_treeoflife(L, h, b, pitch, margin, pair, half):
+    """Prairie 'trees of life': at every station a stem rising through three pairs of
+    chevron branches to a small square, and long level lines between the trees."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        parts = [rect(u - 0.25, v0, u + 0.25, v1 - 0.9), rect(u - 0.45, v1 - 0.9, u + 0.45, v1)]
+        for j, f in enumerate((0.2, 0.45, 0.7)):
+            s = 1.8 - j * 0.45
+            y = v0 + hh * f
+            parts += [stroke([(u, y + s * 0.6), (u - s, y)], 0.38, caps=False), stroke([(u, y + s * 0.6), (u + s, y)], 0.38, caps=False)]
+        out.append(_st(cs_union(parts) ^ rect(u - 2.4, v0 - 0.2, u + 2.4, v1 + 0.2), b, 0.45))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 2.6):
+        if wd < 2.0:
+            continue
+        out.append(_st(cs_union([rect(uc - wd / 2, v0 + hh * 0.35, uc + wd / 2, v0 + hh * 0.35 + 0.4),
+                                 rect(uc - wd / 2, v0 + hh * 0.55, uc + wd / 2, v0 + hh * 0.55 + 0.4)]), b, 0.35))
+    return out, []
+
+
+def course_doubleline(L, h, b, pitch, margin, p):
+    """Two thin raised lines the length of the course."""
+    return [ext(cs_union([rect(0.3, h * 0.2, L - 0.3, h * 0.2 + 0.45), rect(0.3, h * 0.8 - 0.45, L - 0.3, h * 0.8)]), b - 0.05, b + 0.45)]
+
+
+CO.FRIEZE_EXTRA.update(artglass=frieze_artglass, treeoflife=frieze_treeoflife)
+CO.COURSE_EXTRA.update(doubleline=course_doubleline)
+TW.FOUNDATION_EXTRA.update(prairieplinth=foundation_prairieplinth)
+
+
+# ------------------------------------------------------------------ windows, the door, the chimney, the terrace
+def _leading_prairie(cs):
+    """Geometric art-glass leading for one casement, the ornament kept to the margins so the
+    field stays clear: a margin line up both sides and along the foot, a transom line high up,
+    and above it two short verticals flanking a small open square."""
+    u0, v0, u1, v1 = cs.bounds()
+    wd = u1 - u0
+    m = min(1.1, wd * 0.14)
+    vt = v1 - min(3.4, (v1 - v0) * 0.24)
+    bars = [rect(u0 + m - 0.2, v0 + m - 0.2, u0 + m + 0.2, vt), rect(u1 - m - 0.2, v0 + m - 0.2, u1 - m + 0.2, vt),
+            rect(u0 + m - 0.2, v0 + m - 0.2, u1 - m + 0.2, v0 + m + 0.2), rect(u0 - 1, vt - 0.2, u1 + 1, vt + 0.2)]
+    for x in (u0 + wd / 4, u1 - wd / 4):
+        bars.append(rect(x - 0.2, vt, x + 0.2, v1 + 1))
+    xc, vc, r = (u0 + u1) / 2, (vt + v1) / 2, min(0.8, (v1 - vt) * 0.3)
+    sq = rect(xc - r, vc - r, xc + r, vc + r)
+    bars.append(sq - sq.offset(-RIB, JoinType.Miter, 4.0))
+    return cs_union(bars)
+
+
+def window_artglass(w, h, n=3, A=0.8):
+    """A Prairie ribbon: ``n`` casements of geometric art glass between slim mullions, in a
+    narrow frame over one long projecting sill, under a flat head band (the Wrightwood)."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, JoinType.Miter, 4.0)
+    u0, v0, u1, v1 = inner.bounds()
+    mull = 1.0
+    cw = (u1 - u0 - (n - 1) * mull) / n
+    lights = [rect(u0 + j * (cw + mull), v0, u0 + j * (cw + mull) + cw, v1) for j in range(n)]
+    bars = cs_union([_leading_prairie(l_) ^ l_ for l_ in lights])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], cs_union(lights), pl, bars, plug_cs)
+    for j in range(1, n):
+        a = u0 + j * (cw + mull) - mull
+        sash.append(ext(rect(a - 0.01, v0, a + mull + 0.01, v1), -pl, -0.2))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.5)]
+    hw = w / 2 + A
+    parts.append(ext(rect(-hw - 1.6, h + A - 0.01, hw + 1.6, h + A + 1.3), 0.0, 0.8))
+    parts.append(chamfer_box(-hw - 2.4, -1.2, hw + 2.4, 0.2, 0.0, 1.6, c=0.4, bottom=1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.3, -1.2)
+
+
+def door_prairie(w, h, side=3.4, A=0.8):
+    """The Wrightwood's door: a tall art-glass leaf and art-glass sidelights over low panels,
+    set back in a square opening under a broad slab lintel that runs past both jambs."""
+    W_ = w + 2 * side
+    op = rect(-W_ / 2, 0.0, W_ / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    body = [ext(plug_cs, -pl, -1.0)]
+    u0, u1 = -w / 2 + 0.2, w / 2 - 0.2
+    body.append(ext(rect(u0, 0.5, u1, h - 0.3), -1.0, -0.8))
+    body.append(_panel(rect(u0 + 0.6, 1.0, u1 - 0.6, h * 0.22)))
+    glass = [rect(u0 + 0.8, h * 0.22 + 0.8, u1 - 0.8, h - 1.0)]
+    for sg in (-1, 1):
+        a, e = sorted((sg * (w / 2 + 0.3), sg * (W_ / 2 - O.CLR - 0.4)))
+        glass.append(rect(a, h * 0.22 + 0.4, e, h - 0.8))
+        body.append(chamfer_box(a, 0.8, e, h * 0.22, -1.0, 0.4, c=0.2))
+    bars = cs_union([_leading_prairie(g) ^ g for g in glass])
+    sash = _glazed(body, cs_union(glass), pl, bars, plug_cs)
+    sash.append(ext(cs_union([rect(-w / 2 - 0.3, 0.3, -w / 2 + 0.2, h), rect(w / 2 - 0.2, 0.3, w / 2 + 0.3, h)]) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-W_, 0.0, W_, h + A), 0.0, 0.5)]
+    hw = W_ / 2 + A
+    parts.append(chamfer_box(-hw - 3.0, h + A - 0.01, hw + 3.0, h + A + 2.4, 0.0, 1.8, c=0.4, bottom=1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.4, 0.0)
+
+
+def chimney_prairie(w=24.0, d=8.0, h=20.0):
+    """A broad low Prairie stack of raked Roman brick, a thin band near the top and a wide
+    overhanging stone slab for a cap, two flues."""
+    h = round(h / 0.2) * 0.2
+    zt = h - 1.6
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zt]) + TW._skin(w, d, 0.0, zt - 2.4, lambda reg, i: brick_prairie(reg))
+    body = body + box([-w / 2 - 0.4, -d / 2 - 0.4, zt - 2.4], [w / 2 + 0.4, d / 2 + 0.4, zt - 1.6])
+    body = body + M.hull_points([(x * (w / 2 + 0.4), y * (d / 2 + 0.4), zt - 0.01) for x in (-1, 1) for y in (-1, 1)] +
+                                [(x * (w / 2 + 1.8), y * (d / 2 + 1.8), zt + 1.2) for x in (-1, 1) for y in (-1, 1)])
+    body = body + box([-w / 2 - 1.8, -d / 2 - 1.8, zt + 1.19], [w / 2 + 1.8, d / 2 + 1.8, h])
+    flues = union([box([sg * w / 4 - 2.0, -d / 2 + 1.6, zt - 5.0], [sg * w / 4 + 2.0, d / 2 - 1.6, h + 5]) for sg in (-1, 1)])
+    return body - flues
+
+
+def planter_urn(r=3.2, h=3.6, ped=3.6):
+    """A shallow Prairie planter: a wide bowl flaring at 45 degrees from a square foot, its rim
+    a flat band, a mound of foliage in it. Stands on z = 0."""
+    foot = box([-ped / 2, -ped / 2, 0.0], [ped / 2, ped / 2, 1.0])
+    rb = 1.0
+    bowl = PW._revolve([(0.0, 0.99), (rb, 0.99), (r, 0.99 + (r - rb)), (r, 0.99 + (r - rb) + 0.8), (0.0, 0.99 + (r - rb) + 0.8)], 36)
+    zt = 0.99 + (r - rb) + 0.8
+    mound = PW._revolve([(0.0, zt - 0.01), (r - 0.4, zt - 0.01), (r * 0.7, zt + 1.0), (0.0, zt + 1.6)], 24)
+    return foot + bowl + mound
