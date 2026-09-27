@@ -988,6 +988,23 @@ arches face-up; the walls, the roof, the dormers, the chimneys and the stoops pr
 """, """The cornice's upper parts, the PORCH-deck and the PORCH-top print upside down; the walls, the
 roofs and the chimney print upright.
 """),
+    "hollister": ("THE HOLLISTER - AMERICAN FOURSQUARE", """  1. FOUNDATION (rock-faced concrete block), with the box bay's footing on the east side.
+  2. WALLS-1 onto the foundation's lip: the whole ground storey and the box bay in one part.
+  3. JOINT onto WALLS-1, WALLS-2 onto its lip: the whole upper storey in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside.
+  5. The CORNICE-J parts round the joint, the CORNICE-BAY parts round the bay, the CORNICE-E
+     parts round the eave.
+  6. BAY-roof onto the bay's lip against the east wall.
+  7. ROOF onto the lip at the wall tops; CHIMNEY into its pocket in the back slope.
+  8. The dormers: each DORMER-core into its DORMER, the DORMER into its pocket (standing on its
+     seat), its DORMER-roof on top.
+  9. The porch: PORCH-deck against the foundation; PORCH-top (columns, railings and beams, one
+     piece) onto it, each peg into its socket; PORCH-roof on its flat top against the front
+     wall; PORCH-steps-0 at the door.
+ 10. STOOP-back at the back door.
+""", """The cornices' upper parts, the PORCH-deck and the PORCH-top print upside down; the walls, the
+roofs, the dormers and the chimney print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

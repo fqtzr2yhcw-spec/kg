@@ -501,6 +501,11 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 wv = wtab * (0.75 + 0.12 * h_)
                 tabs.append(rect(u + gap / 2, vk + low, u + wv - gap / 2, top))       # short butts show the row below
                 u += wv - wtab
+            elif shp == "keyslot":        # three-tab asphalt strips: a slot up between the tabs, round at its head (the Hollister)
+                c = u + wtab
+                q = min(0.9, (top - vk) * 0.45)
+                tabs.append(rect(u + 0.05, vk, u + wtab + 0.05, top) - rect(c - 0.25, vk - 0.1, c + 0.25, vk + q)
+                            - circle((c, vk + q), 0.36, 12))
             elif shp == "doubled":        # random-width square butts, every fourth course doubled: a groove just over its butt (the Arroyo)
                 h_ = (int(u * 6.1 + k * 4.3) % 6)
                 wv = wtab * (0.72 + 0.11 * h_)
