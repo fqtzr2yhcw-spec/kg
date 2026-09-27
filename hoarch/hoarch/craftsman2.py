@@ -1540,3 +1540,393 @@ def chimney_chicago(h, zb, w=14.0, d=8.0):
                               [(x * (w / 2 - 0.8), y, zt + 2.2) for x in (-1, 1) for y in (0.4, d - 0.4)])
     pot = M.cylinder(h - zt - 1.8, 1.3, 1.05, 24).translate([0.0, d / 2, zt + 1.8]) - M.cylinder(5.0, 0.65, 0.65, 16).translate([0.0, d / 2, h - 3.0])
     return out + pot
+
+
+# ================================================================== the Lindenwald (Swiss chalet bungalow)
+def _heart(c, s):
+    """A heart ``s`` wide, centred on c."""
+    r = s * 0.28
+    return cs_union([circle((c[0] - r * 0.85, c[1] + r * 0.5), r, 16), circle((c[0] + r * 0.85, c[1] + r * 0.5), r, 16),
+                     poly([(c[0] - s * 0.49, c[1] + r * 0.35), (c[0] + s * 0.49, c[1] + r * 0.35), (c[0], c[1] - s * 0.55)])])
+
+
+def _voronoi(region, pts, joint=0.25, k=10):
+    """The Voronoi cells of ``pts`` inside ``region``, each shrunk by half the ``joint`` so a
+    mortar joint of that width runs round every stone."""
+    pts = np.asarray(pts, float)
+    u0, v0, u1, v1 = region.bounds()
+    big = max(u1 - u0, v1 - v0) + 20.0
+    cells = []
+    for i, p in enumerate(pts):
+        if not (u0 - 4 < p[0] < u1 + 4 and v0 - 4 < p[1] < v1 + 4):
+            continue
+        cell = rect(p[0] - 6.0, p[1] - 6.0, p[0] + 6.0, p[1] + 6.0)
+        d = np.linalg.norm(pts - p, axis=1)
+        for j in np.argsort(d)[1:k + 1]:
+            q = pts[j]
+            m = (p + q) / 2
+            n = (q - p) / (np.linalg.norm(q - p) + 1e-9)
+            t = np.array([-n[1], n[0]])
+            half = poly([tuple(m - t * big), tuple(m + t * big), tuple(m + t * big - n * big), tuple(m - t * big - n * big)])
+            cell = cell ^ half
+        cells.append(cell.offset(-joint / 2, JoinType.Round))
+    return cs_union(cells) ^ region
+
+
+def rubble_chalet(region, seed=0):
+    """Random rubble for the chalet's ground storey: stones of all shapes fitted together
+    (Voronoi cells of a jittered grid) with a mortar joint round each, every stone raised and
+    its edges eased (the Lindenwald)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed + 29)
+    pts = []
+    for j, v in enumerate(np.arange(v0 - 3.0, v1 + 3.0, 2.2)):
+        for u in np.arange(u0 - 3.0 + (j % 2) * 1.4, u1 + 3.0, 2.8):
+            pts.append((u + rng.uniform(-0.9, 0.9), v + rng.uniform(-0.6, 0.6)))
+    st = _voronoi(region, pts, joint=0.45)
+    return M.extrude(region, 0.2) + ext(st, 0.15, 0.4) + ext(st.offset(-0.35, JoinType.Round), 0.35, 0.55)
+
+
+def siding_logs(region, datum=0.0, lh=1.7):
+    """Squared logs laid up Swiss-fashion (Blockbau): each course eased top and bottom so it
+    reads round, a dark chink between (the Lindenwald)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    k0 = math.floor((v0 - datum) / lh) - 1
+    full, crown = [], []
+    for k in range(k0, k0 + int((v1 - v0) / lh) + 4):
+        v = datum + k * lh
+        full.append(rect(u0 - 1, v + 0.12, u1 + 1, v + lh - 0.12))
+        crown.append(rect(u0 - 1, v + 0.4, u1 + 1, v + lh - 0.4))
+    return M.extrude(region, 0.2) + ext(cs_union(full) ^ region, 0.15, 0.55) + ext(cs_union(crown) ^ region, 0.5, 0.8)
+
+
+def log_ends(L, v0, v1, odd, datum=0.0, lh=1.7, reach=1.4, t=3.0):
+    """The crossing log ends at a Blockbau corner, for the facade's two ends: every other
+    course (``odd`` picks which) runs ``reach`` past the corner, its underside cut back at
+    about 50 degrees so it prints on the wall. Local: u along the facade, v up, w out."""
+    out = []
+    k0 = math.ceil((v0 - datum) / lh)
+    for k in range(k0, int((v1 - datum) / lh)):
+        if k % 2 != odd:
+            continue
+        v = datum + k * lh
+        for sg, uc in ((-1, 0.0), (1, L)):
+            pts = [(uc - sg * 0.6, v + 0.12), (uc, v + 0.12), (uc + sg * reach, v + 0.12 + reach * 0.85),
+                   (uc + sg * reach, v + lh - 0.12), (uc - sg * 0.6, v + lh - 0.12)]
+            out.append(ext(poly(pts), -t, 0.8))
+    return union(out) if out else M()
+
+
+def foundation_cyclopean(reg, seed=0):
+    """Polygonal (cyclopean) masonry: big many-sided stones fitted tight, each a flat face
+    with a narrow sunk joint round it (the Lindenwald)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 53)
+    pts = []
+    for u in np.arange(b[0] - 3.0, b[2] + 3.0, 4.2):
+        for v in np.arange(b[1] - 3.0, b[3] + 3.0, 3.4):
+            pts.append((u + rng.uniform(-1.3, 1.3), v + rng.uniform(-1.0, 1.0)))
+    pts = np.array(pts)
+    joints = []
+    for i, p in enumerate(pts):
+        d = np.linalg.norm(pts - p, axis=1)
+        for j in np.argsort(d)[1:5]:
+            if j > i:
+                m = (p + pts[j]) / 2
+                n = pts[j] - p
+                n = n / (np.linalg.norm(n) + 1e-9)
+                t_ = np.array([-n[1], n[0]])
+                joints.append(poly([tuple(m - t_ * 2.4 - n * 0.12), tuple(m + t_ * 2.4 - n * 0.12), tuple(m + t_ * 2.4 + n * 0.12), tuple(m - t_ * 2.4 + n * 0.12)]))
+    body = M.extrude(reg, 0.55)
+    return body - ext(cs_union(joints) ^ reg, 0.3, 1.0)
+
+
+def frieze_edelweiss(L, h, b, pitch, margin, pair, half):
+    """Edelweiss: at every station a star of six woolly petals round a knot of florets, two
+    leaves beneath; a wavy stem between the flowers (the Lindenwald)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    vc = v0 + hh * 0.58
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        r = min(1.4, hh * 0.36)
+        pet = [stroke([(u, vc), (u + r * math.cos(a), vc + r * math.sin(a))], r * 0.42, caps=True) for a in np.linspace(math.pi / 2, math.pi / 2 + 2 * math.pi, 6, endpoint=False)]
+        parts = pet + [stroke([(u, vc - r * 0.6), (u - 1.1, v0 + 0.2)], 0.38, caps=True), stroke([(u, vc - r * 0.6), (u + 1.1, v0 + 0.2)], 0.38, caps=True)]
+        out.append(_st(cs_union(parts) - circle((u, vc), r * 0.3, 12), b, 0.4))
+        out.append(_st(circle((u, vc), r * 0.3, 12), b, 0.55))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 2.4):
+        if wd < 2.5:
+            continue
+        xs = np.linspace(uc - wd / 2, uc + wd / 2, max(6, int(wd * 2.5)))
+        out.append(_st(stroke([(x, v0 + hh * 0.5 + hh * 0.18 * math.sin((x - xs[0]) / wd * 4 * math.pi)) for x in xs], 0.38, caps=False), b, 0.3))
+    return out, []
+
+
+def frieze_keyholes(L, h, b, pitch, margin, pair, half):
+    """A sawn board: a row of keyhole cut-outs (a round head over a flared slot) with a small
+    drop between each pair, as fretwork on a chalet fascia (the Lindenwald)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    out = []
+    n = max(1, int((L - 2 * margin) / (hh * 1.1)))
+    board = rect(0.0, v0, L, v1)
+    holes = []
+    for k in range(n):
+        u = margin + (L - 2 * margin) * (k + 0.5) / n
+        r = min(0.75, hh * 0.2)
+        holes.append(cs_union([circle((u, v1 - hh * 0.35), r, 16), poly([(u - 0.3, v1 - hh * 0.35), (u + 0.3, v1 - hh * 0.35), (u + 0.6, v0 + 0.5), (u - 0.6, v0 + 0.5)])]))
+    out.append(_st(board - cs_union(holes), b, 0.4))
+    return out, []
+
+
+def course_heartrow(L, h, b, pitch, margin, p):
+    """A row of little hearts between two fillets."""
+    s = min(1.2, h * 0.7)
+    hearts = [_heart((u, h / 2), s) for u in np.arange(1.2, L - 0.8, s * 1.7)]
+    return [ext(cs_union([rect(0.3, 0.0, L - 0.3, 0.22), rect(0.3, h - 0.22, L - 0.3, h)]), b - 0.05, b + 0.25),
+            ext(cs_union(hearts) ^ rect(0.0, 0.0, L, h), b - 0.05, b + 0.45)]
+
+
+def bracket_chaletscroll(h, d, t):
+    """A chalet bracket: a board sawn to a big S-scroll with a round eye cut through it."""
+    hb = max(2.0, min(h, 4.0))
+    pts = [(0.0, 0.0), (d, 0.0)]
+    pts += [(d - 0.4 - (d - 0.9) * (1 - math.cos(a)) * 0.5, -hb * 0.45 * math.sin(a)) for a in np.linspace(0.2, math.pi, 10)]
+    pts += [(0.9 + 0.5 * math.sin(a), -hb * 0.45 - hb * 0.55 * (1 - math.cos(a)) / 2) for a in np.linspace(0.0, math.pi, 8)]
+    pts += [(0.0, -hb)]
+    cs = poly(pts)
+    eye = circle((d * 0.55, -hb * 0.25), min(0.45, hb * 0.12), 12)
+    return cs - eye if (cs - eye).area() > 0.5 else cs
+
+
+CO.FRIEZE_EXTRA.update(edelweiss=frieze_edelweiss, keyholes=frieze_keyholes)
+CO.COURSE_EXTRA.update(heartrow=course_heartrow)
+TW.BRACKET_EXTRA.update(chaletscroll=bracket_chaletscroll)
+TW.FOUNDATION_EXTRA.update(cyclopean=foundation_cyclopean)
+
+
+def _flowerbox(hw, v, depth=3.2, seed=0):
+    """A window box under a sill: a board front pierced with hearts, and a mound of blooms."""
+    rng = np.random.default_rng(seed + 7)
+    front = rect(-hw, v - 3.0, hw, v)
+    hearts = cs_union([_heart((x, v - 1.5), 1.1) for x in np.arange(-hw + 1.6, hw - 1.0, 2.6)])
+    box_ = box([-hw, v - 3.0, 0.0], [hw, v, depth]) - ext(hearts, depth - 0.35, depth + 1.0)
+    blooms = union([M.sphere(rng.uniform(0.55, 0.8), 12).translate([x, v + 0.1, rng.uniform(0.8, depth - 0.6)])
+                    for x in np.arange(-hw + 0.8, hw - 0.5, 1.0)]) ^ box([-hw, v - 0.01, 0.0], [hw, v + 1.2, depth])
+    return box_ + blooms
+
+
+def window_chalet(w, h, upper=False, A=1.2):
+    """The Lindenwald's window: a pair of casements of three panes each, a cream casing, a
+    pair of shutters pierced with hearts, and a window box of blooms below. Downstairs the head
+    is a sawn board with a scalloped edge; upstairs a little pent roof on two brackets (the
+    frames differ by storey). Two colours: cream, then red from 0.8 proud."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    u0, v0, u1, v1 = plug_cs.offset(-0.5, JoinType.Miter, 4.0).bounds()
+    bars = cs_union([rect(-0.4, v0 - 1, 0.4, v1 + 1)] + [rect(u0 - 1, v0 + (v1 - v0) * k / 3 - 0.2, u1 + 1, v0 + (v1 - v0) * k / 3 + 0.2) for k in (1, 2)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], rect(u0, v0, u1, v1), pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, 0.7),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.7)]
+    hw = w / 2 + A
+    for sg in (-1, 1):                                  # the shutters, each a heart cut through
+        a, e = sorted((sg * hw, sg * (hw + w / 2)))
+        sh = rect(a, 0.0, e, h + A) - _heart(((a + e) / 2, (h + A) * 0.66), min(2.4, (e - a) * 0.4))
+        parts.append(ext(sh, 0.0, 1.4) - ext(cs_union([rect(a + 0.4, v, e - 0.4, v + 0.25) for v in np.arange(1.4, (h + A) * 0.45, 1.3)]), 1.15, 2.0))
+    if upper:
+        zb = h + A
+        parts.append(M.hull_points([(x, zb, 0.0) for x in (-hw - 1.0, hw + 1.0)] + [(x, zb, 3.0) for x in (-hw - 1.0, hw + 1.0)] +
+                                   [(x, zb + 2.2, 0.0) for x in (-hw - 1.0, hw + 1.0)] + [(x, zb + 1.2, 3.0) for x in (-hw - 1.0, hw + 1.0)]))
+        for sg in (-1, 1):
+            x = sg * (hw - 0.8)
+            for k in range(5):
+                parts.append(box([x - 0.45, zb - (k + 1) * 0.5, 0.0], [x + 0.45, zb - k * 0.5 + 0.01, 2.6 * math.cos(math.asin(min(1.0, (k + 0.5) / 5)))]))
+        top = zb + 2.2
+    else:
+        head = rect(-hw - 0.6, h + A - 0.01, hw + 0.6, h + A + 2.2)
+        head = head - cs_union([circle((x, h + A - 0.01), 0.7, 14) for x in np.arange(-hw + 0.6, hw, 1.8)])
+        parts.append(ext(head, 0.0, 1.0))
+        parts.append(chamfer_box(-hw - 1.0, h + A + 2.19, hw + 1.0, h + A + 2.9, 0.0, 1.4, c=0.3, bottom=0.8))
+        top = h + A + 2.9
+    parts.append(chamfer_box(-hw - 0.6, -1.0, hw + 0.6, 0.2, 0.0, 1.3, c=0.35, bottom=0.7))
+    parts.append(_flowerbox(hw - 0.4, -0.99, seed=int(w * 10)))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top, -4.0)
+
+
+def door_chalet(w=11.0, h=24.0, A=1.4, french=False):
+    """The Lindenwald's doors. The front door: boards laid in a chevron, a heart-shaped light
+    high up, strap hinges, under a sawn head with a tiny pent roof. ``french``: the balcony's
+    pair of glazed doors, eight panes a leaf over a panel, a heart in the transom."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    leaf = plug_cs.offset(-0.3, JoinType.Miter, 4.0)
+    u0, v0, u1, v1 = leaf.bounds()
+    if french:
+        vt = v1 - 3.2
+        glass = cs_union([rect(u0 + 0.8, v0 + (vt - v0) * 0.3, -0.5, vt - 0.8), rect(0.5, v0 + (vt - v0) * 0.3, u1 - 0.8, vt - 0.8),
+                          rect(u0 + 0.8, vt + 0.4, u1 - 0.8, v1 - 0.6)])
+        body = [ext(plug_cs, -pl, -1.0), ext(leaf, -1.0, -0.6)]
+        gb = glass.bounds()
+        bars = [rect(x - 0.2, gb[1] - 1, x + 0.2, vt) for x in ((u0 + 0.8 - 0.5) / 2, (u1 - 0.8 + 0.5) / 2)]
+        bars += [rect(u0, v, u1, v + 0.4) for v in np.linspace(v0 + (vt - v0) * 0.3, vt - 0.8, 5)[1:-1]]
+        bars.append(_heart((0.0, (vt + v1) / 2 + 0.1), 1.8) - _heart((0.0, (vt + v1) / 2 + 0.1), 1.8).offset(-0.4, JoinType.Miter, 4.0))
+        for (a, e) in ((u0 + 0.9, -0.6), (0.6, u1 - 0.9)):
+            body.append(chamfer_box(a, v0 + 0.9, e, v0 + (vt - v0) * 0.3 - 0.8, -0.6, 0.3, c=0.15))
+        sash = _glazed(body, glass, pl, cs_union(bars), plug_cs)
+    else:
+        win = _heart((0.0, v1 - 4.0), 3.0)
+        chev = cs_union([_stripes(leaf ^ rect(u0, v0, 0.0, v1), math.radians(60), 1.5, 0.24),
+                         _stripes(leaf ^ rect(0.0, v0, u1, v1), math.radians(120), 1.5, 0.24), rect(-0.14, v0, 0.14, v1)])
+        body = [ext(plug_cs, -pl, -1.0), ext(leaf - chev - win, -1.0, -0.6), ext(leaf - win, -1.0, -0.8)]
+        sash = _glazed(body, win, pl, None, plug_cs)
+        for v in (h * 0.2, h * 0.55):
+            sash.append(ext(cs_union([rect(u0 + 0.2, v - 0.35, u0 + (u1 - u0) * 0.6, v + 0.35), _heart((u0 + (u1 - u0) * 0.6 + 0.4, v), 1.2)]) ^ leaf, -0.7, -0.35))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, 0.7),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.7)]
+    hw = w / 2 + A
+    head = rect(-hw - 0.6, h + A - 0.01, hw + 0.6, h + A + 2.2) - cs_union([circle((x, h + A - 0.01), 0.7, 14) for x in np.arange(-hw + 0.6, hw, 1.8)])
+    parts.append(ext(head, 0.0, 1.0))
+    zb = h + A + 2.2
+    parts.append(M.hull_points([(x, zb - 0.01, 0.0) for x in (-hw - 1.4, hw + 1.4)] + [(x, zb - 0.01, 3.2) for x in (-hw - 1.4, hw + 1.4)] +
+                               [(x, zb + 2.0, 0.0) for x in (-hw - 1.4, hw + 1.4)] + [(x, zb + 1.0, 3.2) for x in (-hw - 1.4, hw + 1.4)]))
+    for sg in (-1, 1):
+        x = sg * (hw + 0.2)
+        for k in range(4):
+            parts.append(box([x - 0.45, zb - (k + 1) * 0.5, 0.0], [x + 0.45, zb - k * 0.5 + 0.01, 2.8 * math.cos(math.asin(min(1.0, (k + 0.5) / 4)))]))
+    return O._one_piece(sash, parts, op, plug_cs, pl, zb + 2.0, 0.0)
+
+
+def purlin_chalet(L=12.0, s=1.8):
+    """A chalet purlin end under a rake: a heavy square beam running out ``L``, its end carved
+    to a scroll (a notch and a round), carried on a curved strut sweeping back to the wall so
+    it prints on its wall. Local: u across (centred), v up (top at v = 0), w out."""
+    pts = [(0.0, 0.0), (L, 0.0), (L, -s * 0.45), (L - 0.7, -s * 0.45)]
+    pts += [(L - 0.7 - 0.6 * math.sin(a), -s * 0.45 - 0.6 * (1 - math.cos(a))) for a in np.linspace(0.2, math.pi / 2, 5)]
+    pts += [(L - 1.3, -s)]
+    R_ = L - 1.3
+    pts += [(R_ - R_ * math.sin(a), -s - R_ * (1 - math.cos(a)) * 0.9) for a in np.linspace(0.05, math.pi / 2, 12)]
+    pts += [(0.0, -s - R_ * 0.9)]
+    prof = poly(pts)
+    return M.extrude(prof, s).transform(np.array([[0, 0, 1.0, -s / 2], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
+
+
+def barge_chalet(L, slope, d_eave, skin=1.8, width=4.2, d=2.2):
+    """The Lindenwald's bargeboards: a broad board whose lower edge is sawn in steps and drops,
+    pierced with a line of tulips, tied at the apex by a king post that carries a carved
+    pendant with a heart, and a short spire over it (facade frame; place at w = rake)."""
+    from .gables import _text
+    s = slope
+    c = math.hypot(1.0, s)
+    a_l, a_r = np.array([-d_eave, 0.0]), np.array([L + d_eave, 0.0])
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    depth = skin + width
+    band, cuts, holes = [], [], []
+    run = float(np.linalg.norm(tip - a_l))
+    n_s = max(4, int(run / 3.4))
+    for a in (a_l, a_r):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+        dirv = (tip - a) / np.linalg.norm(tip - a)
+        for k in range(1, n_s):
+            p = a + dirv * (run * k / n_s)
+            q = p + n * depth
+            cuts.append(poly([tuple(q - dirv * 1.1), tuple(q + dirv * 1.1), tuple(q + dirv * 0.5 - n * 1.3), tuple(q - dirv * 0.5 - n * 1.3)]))
+            if k % 2 == 0 and k < n_s - 1:
+                cc = p + n * (skin + width * 0.45)
+                holes.append(cs_union([circle(tuple(cc + dirv * 0.0 - n * 0.3), 0.45, 12), circle(tuple(cc - dirv * 0.5 + n * 0.1), 0.35, 10),
+                                       circle(tuple(cc + dirv * 0.5 + n * 0.1), 0.35, 10)]))
+    board = cs_union(band) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    board = board - cs_union(cuts) - cs_union(holes)
+    board = board + rect(L / 2 - 1.3, tip[1] - depth * c - 1.0, L / 2 + 1.3, tip[1])
+    board = cs_union([pc for pc in board.decompose() if pc.area() > 2.0])
+    parts = [_text(board, 0.0, d)]
+    ay = tip[1] - depth * c - 0.8
+    pend = cs_union([rect(L / 2 - 0.8, ay - 3.4, L / 2 + 0.8, ay + 0.4), _heart((L / 2, ay - 4.4), 2.4)])
+    parts.append(_text(pend, 0.0, d + 0.3))
+    spire = cs_union([rect(L / 2 - 0.7, tip[1] - 0.6, L / 2 + 0.7, tip[1] + 2.4), poly([(L / 2 - 0.9, tip[1] + 2.39), (L / 2 + 0.9, tip[1] + 2.39), (L / 2, tip[1] + 5.2)])])
+    parts.append(_text(spire, 0.0, d + 0.3))
+    return union(parts)
+
+
+def post_chalet(h, collar=None, abacus=3.6, slot=None):
+    """A chalet porch post: a round shaft on a square base block, with a carved band of three
+    rings a third of the way up and a flared head under a square cap."""
+    zt = h - 2.4
+    body = PW._plinth(3.6, 1.4) + box([-1.5, -1.5, 1.39], [1.5, 1.5, 2.8])
+    body = body + PW._revolve([(0.0, 2.79), (1.3, 2.79), (1.2, zt), (0.0, zt)], 32)
+    zb = h * 0.34
+    for k in range(3):
+        body = body + PW._revolve([(0.0, zb + k * 0.8), (1.5, zb + k * 0.8 + 0.2), (1.5, zb + k * 0.8 + 0.5), (0.0, zb + k * 0.8 + 0.7)], 32)
+    return body + PW._top(h, abacus / 2, zt - 0.01, 1.2, slot, shape="round")
+
+
+def fill_sawnhearts(L, vb, vt):
+    """A railing of sawn balusters: flat boards waisted in the middle, a heart cut through
+    each, between a top and a bottom rail."""
+    parts = [rect(0.0, vb, L, vb + 1.0), rect(0.0, vt - 1.2, L, vt)]
+    n = max(1, int(L / 2.8))
+    H = vt - vb - 2.2
+    for k in range(n):
+        c = L * (k + 0.5) / n
+        bd = poly([(c - 1.0, vb + 1.0), (c + 1.0, vb + 1.0), (c + 0.6, vb + 1.0 + H * 0.5), (c + 1.0, vt - 1.2), (c - 1.0, vt - 1.2), (c - 0.6, vb + 1.0 + H * 0.5)])
+        parts.append(bd - _heart((c, vb + 1.0 + H * 0.62), 1.1))
+    return parts
+
+
+def frieze_chaletbeam(u0, u1, v_bot, v_top):
+    """A porch beam with a sawn valance of little arches and drops hanging under it."""
+    v0 = v_top - 2.2
+    beam = rect(u0, v0, u1, v_top + 0.05)
+    L = u1 - u0
+    n = max(1, int(L / 3.0))
+    val = rect(u0, v0 - 1.4, u1, v0 + 0.01)
+    val = val - cs_union([circle((u0 + L * (k + 0.5) / n, v0 - 1.4), min(1.2, L / n * 0.4), 16) for k in range(n)])
+    return beam + val
+
+
+def edge_scallopboard(L, z0, zc):
+    """Porch fascia: a board sawn to shallow scallops along its foot."""
+    band = rect(0.3, zc - 1.3, L - 0.3, zc)
+    return band - cs_union([circle((x, zc - 1.3), 0.7, 14) for x in np.arange(1.2, L - 0.6, 1.8)]), 0.8
+
+
+def skirt_crosslog(reg, d=1.2):
+    """A porch skirt of horizontal logs with the ends of cross logs showing at intervals."""
+    if reg.is_empty():
+        return M()
+    u0, v0, u1, v1 = reg.bounds()
+    body = M.extrude(reg, d * 0.5)
+    logs = cs_union([rect(u0 - 1, v + 0.12, u1 + 1, v + 1.58) for v in np.arange(v0, v1, 1.7)]) ^ reg
+    ends = cs_union([circle((u, (v0 + v1) / 2), 0.9, 16) for u in np.arange(u0 + 8.0, u1 - 3.0, 12.0)]) ^ reg
+    return body + ext(logs, d * 0.45, d * 0.8) + ext(ends, d * 0.45, d)
+
+
+PW.POSTS.update(chalet=post_chalet)
+PW.FILLS.update(sawnhearts=fill_sawnhearts)
+PW.FRIEZES.update(chaletbeam=frieze_chaletbeam)
+PW.SKIRTS.update(crosslog=skirt_crosslog)
+FT.EDGE_EXTRA.update(scallopboard=edge_scallopboard)
+
+
+def chimney_chalet(w=10.0, d=10.0, h=26.0):
+    """The Lindenwald's stack: rubble stone to a slab, and over it a little hat: four corner
+    posts carrying a tiny gabled roof of shingles, the smoke going out under its eaves."""
+    h = round(h / 0.2) * 0.2
+    zt = h - 6.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zt]) + TW._skin(w, d, 0.0, zt - 0.2, lambda reg, i: rubble_chalet(reg, seed=i))
+    body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, zt - 0.01], [w / 2 + 0.8, d / 2 + 0.8, zt + 0.8])
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            body = body + box([sx * (w / 2 - 0.2) - 0.8, sy * (d / 2 - 0.2) - 0.8, zt + 0.79], [sx * (w / 2 - 0.2) + 0.8, sy * (d / 2 - 0.2) + 0.8, zt + 3.2])
+    z = zt + 3.19
+    body = body + box([-w / 2 - 0.6, -d / 2 - 0.6, z], [w / 2 + 0.6, d / 2 + 0.6, z + 0.6])
+    ridge = h
+    body = body + M.hull_points([(x, y, z + 0.59) for x in (-w / 2 - 1.2, w / 2 + 1.2) for y in (-d / 2 - 1.2, d / 2 + 1.2)] +
+                                [(x, 0.0, ridge) for x in (-w / 2 - 1.2, w / 2 + 1.2)])
+    return body - box([-w / 2 + 1.6, -d / 2 + 1.6, zt - 4.0], [w / 2 - 1.6, d / 2 - 1.6, zt + 0.81])

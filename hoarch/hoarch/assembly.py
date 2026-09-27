@@ -1087,6 +1087,22 @@ cockpit, the roofs and the chimney print upright.
 """, """The cornice's upper parts print upside down; the walls, the roof, the dormers and the chimney
 print upright.
 """),
+    "lindenwald": ("THE LINDENWALD - SWISS CHALET BUNGALOW", """  1. FOUNDATION (cyclopean stonework).
+  2. WALLS-1 onto the foundation's lip: the whole rubble-stone ground storey in one part.
+  3. JOINT onto WALLS-1, WALLS-2 onto its lip: the whole log upper storey with both gables, the
+     crossing log ends at the corners and the purlins under the rakes, in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (they print cream, then red for the shutters, heads and window boxes).
+  5. The CORNICE-J parts round the joint, the CORNICE-E parts round the eave.
+  6. ROOF onto the lip at the wall tops; CHIMNEY into its pocket on the ridge; BARGE-0 and
+     BARGE-1 on the two gable ends.
+  7. The porch: PORCH-deck against the foundation; PORCH-top (posts, railings, beams and the
+     balcony floor, one piece) onto it, each peg into its socket; BALCONY-rail on the
+     balcony's floor; PORCH-steps-0 at the door.
+  8. STOOP-back at the back door.
+""", """The cornices' upper parts, the PORCH-deck and the PORCH-top print upside down; the bargeboards
+print flat; the walls, the roof, the chimney and the balcony railing print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

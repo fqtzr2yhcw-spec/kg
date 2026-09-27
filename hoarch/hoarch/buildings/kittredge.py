@@ -264,6 +264,7 @@ def build(kit=None):
     A[:, 3] = fb.world(u, -ZF, 1.4)
     kit.add("STOOP-back", "Brick", FT.steps(14.0, ZF - 0.6, 3).transform(A) - fnd, group="porch")
     FT.key_into(kit, "PORCH-steps-0", ["PORCH-deck"], (0, 1, 0), depth=0.8, conform=True)
+    FT.key_into(kit, "STOOP-back", ["FOUNDATION"], (0, -1, 0), depth=0.8, conform=True)
     print("specks dropped:", kit.drop_specks())
     return kit
 

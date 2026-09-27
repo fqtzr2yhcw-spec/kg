@@ -345,6 +345,20 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                     ts.append(rect(u + 0.12, v + pitch * 0.5, u + wtab - 0.12, v + pitch - 0.12))
                     ts.append(rect(u + wtab * 0.3, v, u + wtab * 0.7, v + pitch * 0.5 + 0.01))
             tex = M.extrude(cs_union(ts) ^ clip, d)
+        elif shape == "schindel":         # Swiss split shingles (Schindeln): narrow riven shingles of random width in
+            b = loc.bounds()              # many close courses, each butt thickened (the Lindenwald)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(int(abs(b[0]) * 3 + abs(b[2]) * 7 + i * 11) % 997)
+            sh, butts = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch + rng.uniform(-0.06, 0.06)
+                u = b[0] - rng.uniform(0.0, 1.8)
+                while u < b[2] + 1.0:
+                    wd = rng.uniform(0.9, 1.8)
+                    sh.append(rect(u + 0.08, v, u + wd - 0.08, v + pitch - 0.1))
+                    butts.append(rect(u + 0.08, v, u + wd - 0.08, v + 0.4))
+                    u += wd
+            tex = M.extrude(cs_union(sh) ^ clip, d) + M.extrude(cs_union(butts) ^ clip, d + 0.12)
         else:
             tex = scallop_rows(loc, pitch, wtab, d=d, shape=shape, datum=loc.bounds()[1])
         vdir = np.array([t[0] * cth, t[1] * cth, s * cth])
