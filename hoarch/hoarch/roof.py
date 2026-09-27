@@ -229,6 +229,17 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
             laps = [M.cube([b[2] - b[0] + 20, 0.3, 2 * r + 2]).translate([b[0] - 10, j * pitch, 0.35 * r])
                     for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 2)]
             tex = (union(rows) - union(laps)) ^ M.extrude(clip, r + 1.0)
+        elif shape == "flatseam":         # flat-seam tin: small plates in staggered courses, their folded seams raised (the Brenton)
+            b = loc.bounds()
+            seams = []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                seams.append(rect(b[0] - 1, v - seam_w / 2, b[2] + 1, v + seam_w / 2))
+                off = (j % 2) * seam_pitch / 2
+                for k in range(int(np.floor(b[0] / seam_pitch)) - 1, int(np.ceil(b[2] / seam_pitch)) + 2):
+                    u = k * seam_pitch + off
+                    seams.append(rect(u - seam_w / 2, v, u + seam_w / 2, v + pitch))
+            tex = M.extrude(cs_union(seams) ^ loc.offset(-0.3, JoinType.Miter, 4.0), d)
         elif shape == "crimp":            # 5V crimp: a pair of narrow ribs per panel
             b = loc.bounds()
             ribs = []

@@ -2599,3 +2599,368 @@ PW.POSTS.update(zapata=post_zapata)
 PW.BALUSTERS.update(rejaspindle=(baluster_rejaspindle, 1.5))
 PW.FRIEZES.update(mixtilinear=frieze_mixtilinear)
 _FT.EDGE_EXTRA.update(tejas=edge_tejas)
+
+
+# ================================================================== the Brenton (house 49, Newport Georgian)
+# ------------------------------------------------------------------ skin and foundation
+def ashlar_boards(region, datum=0.0, course=3.2, lens=(7.8, 5.6, 9.2, 6.6, 8.4, 5.0), joint=0.5):
+    """Newport rusticated boarding: wide pine boards cut and bevelled to pass for dressed
+    stone, in courses of one height with the joints broken; every block's edges are chamfered
+    so the joints read as sharp V-grooves (the Brenton)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    blocks = []
+    n = len(lens)
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1:
+        v = datum + k * course
+        j = (3 * k) % n
+        u = -40.0 - (k % 2) * 2.7
+        while u < u1 + 10.0:
+            L = lens[j % n]
+            if u + L > u0 - 10.0:
+                blocks.append(rect(u + joint / 2, v + joint / 2, u + L - joint / 2, v + course - joint / 2))
+            u += L
+            j += 1
+        k += 1
+    cs = cs_union(blocks) ^ region
+    return M.extrude(region, 0.05) + stepped(cs, [(0.0, 0.0, 0.22), (0.2, 0.22, 0.44)])
+
+
+def foundation_pillowed(reg, seed=0):
+    """Granite in tall and short courses in turn (pseudo-isodomic), long blocks each dressed
+    to a soft pillow (the edges eased back in three steps), under a smooth top course with a
+    bevelled foot (the Brenton)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 53)
+    top = b[3] - 1.2
+    blocks = []
+    v, k = top, 0
+    while v > b[1] - 3.0:
+        ch = 3.0 if k % 2 == 0 else 1.8
+        u = b[0] - rng.uniform(0, 5)
+        while u < b[2]:
+            L = rng.uniform(7.0, 11.0) if k % 2 == 0 else rng.uniform(4.5, 7.0)
+            blocks.append(rect(u + 0.25, v - ch + 0.25, u + L - 0.25, v - 0.25))
+            u += L
+        v -= ch
+        k += 1
+    cs = cs_union(blocks) ^ reg
+    body = M.extrude(reg, 0.1) + stepped(cs, [(0.0, 0.0, 0.2), (0.15, 0.2, 0.4), (0.4, 0.4, 0.55)])
+    return body + chamfer_box(b[0], top, b[2], b[3], 0.0, 0.8, c=0.3, square=("u0", "u1"), bottom=0.8)
+
+
+# ------------------------------------------------------------------ cornice ornament
+def _oakleaf(c, ang, s):
+    """An oak leaf ``s`` long from its stalk at c, pointing at angle ang: a pointed blade with
+    three rounded lobes a side."""
+    from .colonial import _lens
+    ca, sa = math.cos(ang), math.sin(ang)
+    x, y = c
+    wd = s * 0.34
+    parts = [_lens((x + ca * s / 2, y + sa * s / 2), s, wd * 0.9, ang)]
+    for t, f in ((0.3, 0.95), (0.55, 1.0), (0.8, 0.75)):
+        px, py = x + ca * s * t, y + sa * s * t
+        for sg in (-1, 1):
+            parts.append(circle((px - sa * sg * wd * 0.5, py + ca * sg * wd * 0.5), wd * 0.36 * f, 12))
+    return cs_union(parts)
+
+
+def frieze_oakgarland(L, h, b, pitch, margin, pair, half):
+    """Garlands of oak leaves with an acorn at the lowest point of each, hung in loops between
+    oval cartouches (a raised oval in a ring with four little scrolls, a boss at its heart)."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    us = CO._us(L, pitch, margin, 0.0)
+    for u in us:
+        ring = oval((u, vm), 1.5, hh / 2, 24) - oval((u, vm), 0.95, hh / 2 - 0.5, 24)
+        scrolls = cs_union([circle((u + sx * 1.45, vm + sy * (hh / 2 - 0.45)), 0.45, 12) for sx in (-1, 1) for sy in (-1, 1)])
+        out.append(_st((ring + scrolls) ^ rect(u - 2.2, v0 - 0.2, u + 2.2, v1 + 0.2), b, 0.45))
+        out.append(_st(oval((u, vm), 0.6, max(0.5, hh / 2 - 0.95), 16), b, 0.6))
+    ls = min(2.0, hh * 0.55)
+    for a, e in zip(us[:-1], us[1:]):
+        a_, e_ = a + 1.9, e - 1.9
+        if e_ - a_ < 4.0:
+            continue
+        sag = lambda t: v1 - 0.5 - (hh - 1.5) * math.sin(math.pi * t)
+        stem = stroke([(a_ + (e_ - a_) * t, sag(t)) for t in np.linspace(0, 1, 17)], 0.4)
+        n = max(3, int((e_ - a_) / 1.7))
+        leaves = []
+        for j, t in enumerate(np.linspace(0.1, 0.9, n)):
+            if abs(t - 0.5) < 0.08:
+                continue
+            ang = math.pi / 2 + (0.95 if j % 2 else -0.95)
+            leaves.append(_oakleaf((a_ + (e_ - a_) * t, sag(t)), ang, ls))
+        xm, ym = (a_ + e_) / 2, sag(0.5)
+        acorn = oval((xm, ym - 0.35), 0.42, 0.55, 14) + rect(xm - 0.55, ym - 0.05, xm + 0.55, ym + 0.35)
+        orn = (stem + cs_union(leaves) + acorn) ^ rect(a_ - 0.5, v0 - 0.2, e_ + 0.5, v1 + 0.2)
+        out.append(_st(orn, b, 0.45))
+    return out, []
+
+
+def course_pyramids(L, h, b, pitch, margin, p):
+    """A course of small square pyramids, points outward, set close in a row."""
+    step = h + 0.3
+    s = h - 0.3
+    n = int((L - 1.0) / step)
+    u0 = (L - (n - 1) * step) / 2
+    pyr = M.extrude(rect(-s / 2, -s / 2, s / 2, s / 2), 0.5, 0, 0.0, (0.06, 0.06))
+    return [union([pyr.translate([u0 + k * step, h / 2, b - 0.05]) for k in range(n)])]
+
+
+def _sloop(x, y, s, sense=1):
+    """A Newport sloop under sail, ``s`` long, bow toward +u (sense 1) or -u, its waterline at
+    y: a hull with a sheer and a bowsprit, one mast, a gaff mainsail and a jib. Returns
+    (hull + sails, mast)."""
+    k = sense
+    X = lambda f: x + k * f * s
+    hull = poly([(X(-0.46), y + 0.95), (X(-0.3), y + 0.8), (X(0.3), y + 0.8), (X(0.5), y + 1.05), (X(0.36), y), (X(-0.36), y)])
+    sprit = stroke([(X(0.4), y + 0.9), (X(0.62), y + 1.15)], 0.35)
+    hm = s * 0.62
+    xm = X(0.1)
+    mast = stroke([(xm, y + 0.7), (xm, y + 0.8 + hm)], 0.45)
+    main = poly([(X(0.06), y + 1.25), (X(-0.42), y + 1.2), (X(-0.3), y + 0.7 + hm * 0.82), (X(0.06), y + 0.8 + hm * 0.95)])
+    jib = poly([(X(0.14), y + 0.8 + hm * 0.9), (X(0.58), y + 1.3), (X(0.16), y + 1.25)])
+    return hull + sprit + main + jib, mast
+
+
+def frieze_sloops(L, h, b, pitch, margin, pair, half):
+    """Newport sloops under sail, heading left and right in turn, over a rolling wave that runs
+    the length of the frieze."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    out = []
+    us = [margin * 0.4 + t for t in np.arange(0.0, L - margin * 0.8, 0.25)]
+    wave = stroke([(u, v0 + 0.35 + 0.22 * math.sin(2 * math.pi * u / 2.4)) for u in us], 0.45)
+    out.append(_st(wave ^ rect(0.3, v0 - 0.3, L - 0.3, v1), b, 0.45))
+    s = min(7.4, (hh - 1.0) / 0.7)
+    for j, u in enumerate(CO._us(L, pitch, margin, 0.0)):
+        body, mast = _sloop(u, v0 + 0.55, s, 1 if j % 2 == 0 else -1)
+        clip = rect(u - s * 0.7, v0 - 0.2, u + s * 0.7, v1 + 0.2)
+        out.append(_st(body ^ clip, b, 0.4))
+        out.append(_st(mast ^ clip, b, 0.6))
+    return out, []
+
+
+def bracket_beak(h, d, t):
+    """A beaked modillion: a flat block stepped down once toward the wall, ending at its nose in
+    a pointed drip (side profile, top at v = 0)."""
+    hb = min(h, max(1.6, 0.3 * d))
+    return poly([(0.0, 0.0), (d, 0.0), (d, -hb * 0.4), (d - 0.2, -hb), (d - 0.75, -hb * 0.55), (d * 0.5, -hb * 0.55),
+                 (d * 0.5, -hb * 0.8), (0.0, -hb * 0.8)])
+
+
+CO.FRIEZE_EXTRA.update(oakgarland=frieze_oakgarland, sloops=frieze_sloops)
+CO.COURSE_EXTRA.update(pyramids=course_pyramids)
+TW.BRACKET_EXTRA.update(beak=bracket_beak)
+TW.FOUNDATION_EXTRA.update(pillowed=foundation_pillowed)
+
+
+# ------------------------------------------------------------------ windows, the doorway, dormers
+def _pineapple(x, y, s):
+    """A pineapple ``s`` tall standing on (x, y) (Newport's sign of welcome): an oval fruit
+    crossed by grooves in a diamond lattice, a crown of five pointed leaves. Returns (fruit
+    and crown, lattice grooves)."""
+    from .colonial import _lens
+    rx, ry = s * 0.25, s * 0.3
+    fy = y + ry
+    fruit = oval((x, fy), rx, ry, 24)
+    crown = cs_union([_lens((x + 0.5 * s * 0.3 * math.cos(a), fy + ry + 0.5 * s * 0.3 * math.sin(a)), s * 0.34, 0.5, a)
+                      for a in np.linspace(math.radians(55), math.radians(125), 5)])
+    grooves = cs_union([stroke([(x - rx * 1.5 + dx, fy - ry * 1.2), (x + rx * 1.5 + dx, fy + ry * 1.2)], 0.3) for dx in (-0.7, 0.7)] +
+                       [stroke([(x + rx * 1.5 + dx, fy - ry * 1.2), (x - rx * 1.5 + dx, fy + ry * 1.2)], 0.3) for dx in (-0.7, 0.7)]) ^ fruit
+    return fruit + crown + rect(x - s * 0.2, y - 0.2, x + s * 0.2, y + 0.3), grooves
+
+
+def window_bolection(w, h, A=1.0):
+    """A Newport ground-floor window: a twelve-over-twelve sash in a bold bolection moulding (a
+    rounded roll round the head and sides, its outer corners rounded), a keyblock at the head
+    carved with a pineapple, and a moulded sill (the Brenton)."""
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(4, 4))
+    ring = (op.offset(A + 0.6, JoinType.Round) - op) ^ rect(-w, 0.0, w, h + A + 2.0)
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             stepped(ring, [(0.0, 0.0, 0.35), (0.3, 0.35, 0.7), (0.55, 0.7, 0.95)])]
+    kt = h + A + 2.2
+    parts.append(chamfer_box(-1.7, h + 0.2, 1.7, kt, 0.0, 1.15, c=0.3))
+    fruit, grooves = _pineapple(0.0, h + 0.55, kt - h - 0.9)
+    parts.append(ext(fruit, 1.14, 1.5) - ext(grooves, 1.3, 2.0))
+    sw = w / 2 + A + 1.0
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, kt, -1.0)
+
+
+def window_archtop(w, h, rise=1.6, A=0.9):
+    """A Newport first-floor window: a nine-over-nine sash whose upper sash follows a segmental
+    head, in a flat architrave with a bead at its edge that arches with it, a tapered keystone
+    at the crown, and a thin sill on two small blocks (the Brenton)."""
+    op = O.opening_cs(w, h, rise=rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, JoinType.Miter, 4.0)
+    u0, v0, u1, v1 = inner.bounds()
+    vm = (v0 + v1) / 2 - 0.6
+    lo = rect(u0, v0, u1, vm - 0.3)
+    hi = inner ^ rect(u0 - 1, vm + 0.3, u1 + 1, v1 + 1)
+    bars = (_muntins(lo, 3, 3) ^ lo) + (_muntins(rect(u0, vm + 0.3, u1, v1 - rise * 0.5), 3, 3) ^ hi)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], lo + hi, pl, bars, plug_cs)
+    sash.append(ext(rect(u0, vm - 0.31, u1, vm + 0.31), -pl, -0.3))
+    band = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A + 2.0)
+    bead = (op.offset(A, JoinType.Miter, 4.0) - op.offset(A - 0.4, JoinType.Miter, 4.0)) ^ rect(-w, 0.3, w, h + A + 2.0)
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS), ext(band, 0.0, 0.6), ext(bead, 0.59, 0.85)]
+    kt = h + A + 0.8
+    parts.append(ext(poly([(-0.8, h - 1.2), (0.8, h - 1.2), (1.15, kt), (-1.15, kt)]), 0.0, 1.1))
+    sw = w / 2 + A + 0.6
+    parts.append(chamfer_box(-sw, -1.0, sw, 0.2, 0.0, 1.1, c=0.35, bottom=0.6))
+    for sg in (-1, 1):
+        x = sg * (sw - 0.9)
+        parts.append(chamfer_box(x - 0.6, -2.2, x + 0.6, -0.99, 0.0, 0.8, c=0.25, bottom=0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, kt, -2.2)
+
+
+def _console(x, v0, v1, d0, d1, wd=1.4):
+    """A scrolled console standing on the wall at u = x from v0 to v1: its face swelling from d0
+    out to d1 at the head, a roll across the head and a smaller one at the foot."""
+    ts = np.linspace(0.0, 1.0, 13)
+    prof = poly([(0.0, v0), (d0, v0)] + [(d0 + (d1 - d0) * t * t, v0 + (v1 - v0) * t) for t in ts[1:]] + [(0.0, v1)])
+    body = M.extrude(prof, wd).transform(np.array([[0, 0, 1.0, x - wd / 2], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
+    head = M.cylinder(wd + 0.2, 0.75, 0.75, 20).rotate([0, 90, 0]).translate([x - wd / 2 - 0.1, v1 - 0.75, d1 - 0.35])
+    foot = M.cylinder(wd + 0.2, 0.5, 0.5, 16).rotate([0, 90, 0]).translate([x - wd / 2 - 0.1, v0 + 0.5, d0 - 0.1])
+    return body + head.trim_by_plane([0, 0, 1.0], 0.0) + foot.trim_by_plane([0, 0, 1.0], 0.0)
+
+
+def door_shellhood(w, h, transom=3.2, A=1.0, R=8.2, back=False):
+    """The Newport doorway: a six-panel door under a five-light transom in a stepped
+    architrave, and beside it two tall scrolled consoles carrying a hood: a half-dome carved
+    as a scallop shell, its ribs fanning out from the wall, with a pineapple standing over its
+    crown (the Brenton). back=True: a moulded flat hood on the consoles instead."""
+    ht = h + transom
+    op = rect(-w / 2, 0.0, w / 2, ht)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    body = [ext(plug_cs, -pl, -1.0)]
+    u0, u1 = -w / 2 + O.CLR + 0.2, w / 2 - O.CLR - 0.2
+    body.append(ext(rect(u0, 0.5, u1, h - 0.3), -1.0, -0.8))
+    cw = (u1 - u0 - 1.8) / 2
+    for c in range(2):
+        pa = u0 + 0.6 + c * (cw + 0.6)
+        for vb, vt in ((1.0, h * 0.3), (h * 0.3 + 0.7, h * 0.6), (h * 0.6 + 0.7, h - 1.0)):
+            body.append(_panel(rect(pa, vb, pa + cw, vt)))
+    tr = rect(u0 + 0.3, h + 0.4, u1 - 0.3, ht - 0.5)
+    bars = cs_union([rect(u0 + (u1 - u0) * j / 5 - RIB / 2, h, u0 + (u1 - u0) * j / 5 + RIB / 2, ht) for j in range(1, 5)])
+    sash = _glazed(body, tr, pl, bars ^ tr, plug_cs)
+    sash.append(ext(rect(-w, h - 0.3, w, h + 0.4) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
+    arc = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, ht + A)
+    parts.append(stepped(arc, [(0.0, 0.0, 0.5), (0.3, 0.5, 0.8)]))
+    va = ht + A
+    cu = w / 2 + A + 0.9
+    for sg in (-1, 1):
+        x = sg * cu
+        parts.append(chamfer_box(x - 0.9, 0.0, x + 0.9, 1.6, 0.0, 1.2, c=0.3, bottom=0.0))
+        parts.append(_console(x, 1.59, va + 0.01, 0.8, 2.4 if not back else 1.8))
+    if back:
+        parts.append(MD.run(-cu - 1.2, cu + 1.2, va, MD.CROWN, 1.6, up=True))
+        return O._one_piece(sash, parts, op, plug_cs, pl, va + 1.6, 0.0)
+    vh = va - 0.01
+    dome = M.sphere(R, 72).translate([0, vh, 0]) ^ box([-R - 1, vh, 0.0], [R + 1, vh + R + 1, R + 1])
+    skin = M.sphere(R + 1, 72).translate([0, vh, 0]) - M.sphere(R - 0.4, 72).translate([0, vh, 0])
+    ribs = []
+    for a in np.linspace(math.pi / 12, math.pi - math.pi / 12, 11):
+        ribs.append(box([-0.2, 1.2, -1.0], [0.2, R + 2.0, R + 2.0]).rotate([0, 0, math.degrees(a) - 90]).translate([0, vh, 0]))
+    hood = dome - (union(ribs) ^ skin)
+    hood = hood + (M.cylinder(1.2, 1.6, 1.6, 24).translate([0, vh, 0]).rotate([0, 0, 0]) ^ box([-2, vh, 0], [2, vh + 2, 1.3]))
+    parts.append(hood)
+    s = 4.6
+    fruit, grooves = _pineapple(0.0, vh + R - 0.4, s)
+    parts.append(ext(fruit, 0.0, 1.3) - ext(grooves, 1.05, 2.0))
+    top = vh + R - 0.4 + s * 0.6 + s * 0.34 + 0.4
+    return O._one_piece(sash, parts, op, plug_cs, pl, top, 0.0)
+
+
+def dormer_volute(w=14.0, dep=14.0, hwall=11.4):
+    """A Newport dormer: a flat front under a little hipped roof, a six-over-six sash in a
+    moulded architrave on a sill, two tall consoles beside it (a large roll at the head, a
+    small one at the foot) carrying a frieze and cornice across the top. Local as
+    colonial.dormer_pedimented; returns (body, core, face)."""
+    face = rect(-w / 2, 0.0, w / 2, hwall)
+    body = ext(face, -dep, 0.0) - ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, hwall - 1.2), -dep - 1, -1.2)
+    lw = w * 0.5
+    light = rect(-lw / 2, 2.2, lw / 2, hwall - 2.4)
+    body = body - ext(light, -1.3, 1.0)
+    inner = light.offset(-0.4, JoinType.Miter, 4.0)
+    a0, b0, a1, b1 = inner.bounds()
+    bm = (b0 + b1) / 2
+    bars = _muntins(rect(a0, b0, a1, bm), 3, 2) + _muntins(rect(a0, bm, a1, b1), 3, 2) + rect(a0, bm - 0.3, a1, bm + 0.3)
+    body = body + ext((light - inner) + (bars ^ inner), -1.2, -0.5)
+    body = body + ext((light.offset(0.8, JoinType.Miter, 4.0) - light) ^ rect(-w, 2.2, w, hwall), -0.01, 0.6)
+    body = body + chamfer_box(-lw / 2 - 1.0, 1.4, lw / 2 + 1.0, 2.2, -0.01, 0.9, c=0.3, bottom=0.9)
+    vt = hwall - 1.6
+    for sg in (-1, 1):
+        body = body + _console(sg * (w / 2 - 1.1), 1.0, vt, 0.4, 1.0, wd=1.3)
+    body = body + ext(rect(-w / 2, vt - 0.01, w / 2, hwall - 0.8), -0.01, 0.5)
+    body = body + chamfer_box(-w / 2 - 0.4, hwall - 0.81, w / 2 + 0.4, hwall, -0.01, 1.1, c=0.4, bottom=0.6)
+    core = ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, hwall - 1.2), -dep + 1.2, -1.2)
+    return body, core, face
+
+
+def dormer_volute_roof(w, dep, hwall, over=1.6, s=0.62, fascia=0.6):
+    """The dormer's hipped roof, in the dormer frame: a front hip and two side slopes rising
+    from eaves ``over`` past the face and the cheeks, solid, standing on the dormer's flat top;
+    run long at the back to be cut off by the main roof."""
+    a = w / 2 + over
+    z = hwall + fascia
+    blk = box([-a, hwall, -dep - 14.0], [a, z + a * s + 1.0, over])
+    blk = blk.trim_by_plane([s, -1.0, 0.0], -(z + s * a))
+    blk = blk.trim_by_plane([-s, -1.0, 0.0], -(z + s * a))
+    return blk.trim_by_plane([0.0, -1.0, -s], -(z + s * over))
+
+
+def chimney_crossed(w=10.0, d=14.0, h=30.0):
+    """A Newport stack in header bond: a sunk cross in each broad face, a bevelled stone band
+    two thirds up, and a cap corbelled out in three courses under a stone slab, two flues
+    (the Brenton)."""
+    h = round(h / 0.2) * 0.2
+    zt = round((h - 3.4) / 0.2) * 0.2
+    zb = round(h * 0.6 / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zt]) + TW._skin(w, d, 0.0, zt - 0.2, TW._brick("header"))
+    zc = zb - 5.0
+    crosses = []
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * (w / 2 - 0.4), sg * (w / 2 + 1.0)))
+        crosses += [box([x0, -0.55, zc - 3.0], [x1, 0.55, zc + 3.0]), box([x0, -2.0, zc + 0.3], [x1, 2.0, zc + 1.4])]
+    body = body - union(crosses)
+    band = M.hull_points([(sx * w / 2, sy * d / 2, zb - 0.5) for sx in (-1, 1) for sy in (-1, 1)] +
+                         [(sx * (w / 2 + 0.5), sy * (d / 2 + 0.5), zb) for sx in (-1, 1) for sy in (-1, 1)])
+    body = body + band + box([-w / 2 - 0.5, -d / 2 - 0.5, zb - 0.01], [w / 2 + 0.5, d / 2 + 0.5, zb + 1.0])
+    z = zt
+    for k in range(3):
+        g = 0.25 * (k + 1)
+        body = body + box([-w / 2 - g, -d / 2 - g, z - 0.01], [w / 2 + g, d / 2 + g, z + 0.6])
+        z += 0.6
+    body = body + box([-w / 2 - 1.0, -d / 2 - 1.0, z - 0.01], [w / 2 + 1.0, d / 2 + 1.0, z + 0.8])
+    flues = union([box([-w / 2 + 1.5, sg * 1.0 - (d / 2 - 2.5) * (sg < 0), zt - 4.0], [w / 2 - 1.5, sg * 1.0 + (d / 2 - 2.5) * (sg > 0), h + 5])
+                   for sg in (-1, 1)])
+    return body - flues
+
+
+def walk_rings(L, h=8.0, t=0.8, post=1.4, pitch=13.0):
+    """The Brenton's roof-walk railing, ``L`` long: a bottom rail and a hand rail, square posts
+    with ball tops, and between each pair of posts a chain of interlaced rings touching both
+    rails. Local: u along, v up, extruded 0..t in w; it stands on its v = 0 edge."""
+    cells = [rect(0.0, 0.0, L, 0.8), rect(0.0, h - 1.0, L, h)]
+    n = max(1, int(round((L - post) / pitch)))
+    xs = [post / 2 + (L - post) * k / n for k in range(n + 1)]
+    for x in xs:
+        cells.append(rect(x - post / 2, 0.0, x + post / 2, h + 0.7))
+        cells.append(circle((x, h + 1.3), 0.75, 16))
+    vm = (0.8 + h - 1.0) / 2
+    R = (h - 1.8) / 2 + 0.05
+    for a, e in zip(xs[:-1], xs[1:]):
+        a_, e_ = a + post / 2 + R - 0.05, e - post / 2 - R + 0.05
+        m = max(1, int(round((e_ - a_) / R)))
+        for cx in np.linspace(a_, e_, m + 1):
+            cells.append(circle((cx, vm), R, 40) - circle((cx, vm), R - 0.6, 40))
+    return M.extrude(cs_union(cells), t)
