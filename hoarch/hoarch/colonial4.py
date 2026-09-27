@@ -1408,3 +1408,363 @@ def bakeoven(L=30.0, d=16.0, h=13.0, rise=8.0):
     roof = M.extrude(tri, d + 1.4).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
     flue = box([-1.8, 1.0, h], [1.8, 4.6, h + rise + 4.0])
     return body, roof - flue, flue
+
+
+# ================================================================== the Porter (house 46, Connecticut River Valley)
+# ------------------------------------------------------------------ skin and foundation
+def clapboard_short(region, L, datum=0.0, course=1.8, seed=17, qtop=None):
+    """Riven clapboards: short lengths of bevelled board, each course's joints lapped and
+    staggered, between beaded corner boards (up to ``qtop``)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    qtop = v1 if qtop is None else qtop
+    cb = 1.9
+    strips = cs_union([rect(-1, v0 - 1, cb, qtop), rect(L - cb, v0 - 1, L + 1, qtop)])
+    field = region - strips
+    out = _lap(field, course, [(0.0, 0.42), (0.25, 0.42), (course, 0.08)], datum)
+    rng = np.random.default_rng(seed)
+    joints = []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1:
+        v = datum + k * course
+        u = u0 - rng.uniform(0.0, 20.0)
+        while u < u1:
+            u += rng.uniform(16.0, 30.0)
+            joints.append(poly([(u - 0.2, v), (u + 0.2, v), (u + 0.5, v + course), (u + 0.1, v + course)]))
+        k += 1
+    if joints:
+        out = out - ext(cs_union(joints) ^ field, 0.12, 1.0)
+    sreg = region ^ strips
+    if not sreg.is_empty():
+        out = out + ext(sreg, 0.0, 0.7)
+        beads = cs_union([rect(cb - 0.5, v0 - 1, cb - 0.2, qtop), rect(L - cb + 0.2, v0 - 1, L - cb + 0.5, qtop)]) ^ sreg
+        out = out - ext(beads, 0.45, 1.0)
+    return out
+
+
+def foundation_ribbon(reg, seed=0):
+    """Random rubble laid up with ribbon pointing: irregular stones set back behind raised
+    bands of mortar (the Porter)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 23)
+    gx, gy = 3.4, 2.6
+    nx, ny = int((b[2] - b[0]) / gx) + 3, int((b[3] - b[1]) / gy) + 3
+    P = [[(b[0] - gx + i * gx + rng.uniform(-0.9, 0.9) + (j % 2) * gx / 2, b[1] - gy + j * gy + rng.uniform(-0.6, 0.6))
+          for i in range(nx)] for j in range(ny)]
+    stones = []
+    for j in range(ny - 1):
+        for i in range(nx - 1):
+            q = poly([P[j][i], P[j][i + 1], P[j + 1][i + 1], P[j + 1][i]])
+            q = q.offset(-0.3, JoinType.Round)
+            if not q.is_empty():
+                stones.append(q)
+    st_ = cs_union(stones) ^ reg
+    mortar = reg - st_
+    return M.extrude(reg, 0.1) + ext(st_, 0.0, 0.35) + ext(mortar, 0.0, 0.5)
+
+
+# ------------------------------------------------------------------ cornice ornament
+def _shell(c, s):
+    """A scallop shell ``s`` wide, hinge down: a fan of ribs in a scalloped outline and two
+    small ears at the hinge."""
+    x, y = c
+    R = s / 2
+    fan = circle((x, y - R * 0.35), R, 40) ^ rect(x - R - 1, y - R * 0.35, x + R + 1, y + R)
+    scal = cs_union([circle((x + R * 0.92 * math.cos(a), y - R * 0.35 + R * 0.92 * math.sin(a)), R * 0.2, 12)
+                     for a in np.linspace(math.pi * 0.08, math.pi * 0.92, 6)])
+    ribs = cs_union([stroke([(x, y - R * 0.35), (x + R * 0.95 * math.cos(a), y - R * 0.35 + R * 0.95 * math.sin(a))], 0.3)
+                     for a in np.linspace(math.pi * 0.14, math.pi * 0.86, 5)])
+    ears = cs_union([rect(x - R * 0.45, y - R * 0.55, x - R * 0.05, y - R * 0.3), rect(x + R * 0.05, y - R * 0.55, x + R * 0.45, y - R * 0.3)])
+    return fan + scal + ears, ribs
+
+
+def frieze_shells(L, h, b, pitch, margin, pair, half):
+    """Scallop shells at the stations, each between two C-scrolls, and a sprig of three leaves
+    in every bay."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        body, ribs = _shell((u, vm), min(3.4, hh * 1.25))
+        out.append(_st(body ^ rect(u - 2.6, v0 - 0.2, u + 2.6, v1 + 0.2), b, 0.4))
+        out.append(_st(ribs ^ rect(u - 2.6, v0 - 0.2, u + 2.6, v1 + 0.2), b, 0.6))
+        for sg in (-1, 1):
+            cc = (u + sg * 2.6, vm)
+            arc = [(cc[0] - sg * 0.8 * math.cos(a), cc[1] + 0.8 * math.sin(a)) for a in np.linspace(-math.pi / 2, math.pi / 2, 9)]
+            out.append(_st(stroke(arc, 0.4) + circle((arc[0][0], arc[0][1] + 0.15), 0.35, 10), b, 0.45))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 3.6):
+        lv = cs_union([_lens((uc + 0.55 * math.cos(a), vm + 0.55 * math.sin(a)), 1.1, 0.5, a) for a in (math.pi / 2, math.pi / 6, 5 * math.pi / 6)])
+        out.append(_st(lv, b, 0.4))
+    return out, []
+
+
+def frieze_pinecones(L, h, b, pitch, margin, pair, half):
+    """New England pine: a pine cone hanging at every station between two sprays of needles,
+    and a small cone in each bay."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+
+    def cone(c, s):
+        x, y = c
+        body = oval((x, y), s * 0.26, s * 0.46, 24)
+        scales = cs_union([rect(x - s, y + dy - 0.14, x + s, y + dy + 0.14) for dy in np.arange(-s * 0.3, s * 0.35, s * 0.2)])
+        return body - scales, rect(x - 0.18, y + s * 0.4, x + 0.18, v1)
+
+    for u in CO._us(L, pitch, margin, 0.0):
+        body, stem = cone((u, vm - 0.2), hh * 0.95)
+        out.append(_st(body ^ rect(u - 2, v0 - 0.2, u + 2, v1 + 0.2), b, 0.55))
+        out.append(_st(stem, b, 0.35))
+        for sg in (-1, 1):
+            base = (u + sg * 0.6, v1 - 0.4)
+            needles = cs_union([stroke([base, (base[0] + sg * 2.6 * math.cos(a), base[1] - 2.6 * math.sin(a))], 0.3)
+                                for a in np.linspace(0.15, 0.9, 5)])
+            out.append(_st(needles ^ rect(u - 3.6, v0 - 0.2, u + 3.6, v1 + 0.2), b, 0.35))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 3.6):
+        body, stem = cone((uc, vm), hh * 0.6)
+        out.append(_st(body, b, 0.45))
+    return out, []
+
+
+def course_coins(L, h, b, pitch, margin, p):
+    """A coin (money) moulding: a row of discs, each overlapping the next."""
+    r = min(0.62, h / 2 - 0.05)
+    step = r * 1.55
+    n = int((L - 1.0) / step)
+    u0 = (L - (n - 1) * step) / 2
+    out = []
+    for k in range(n):
+        u = u0 + k * step
+        out.append(ext(circle((u, h / 2), r, 18), b - 0.05, b + (0.5 if k % 2 == 0 else 0.35)))
+    return out
+
+
+def bracket_doublescroll(h, d, t):
+    """A modillion scrolled at both ends: a large volute at the wall rolling into a small one at
+    the nose, like the Corinthian's (side profile, top at v = 0)."""
+    hb = min(h, max(1.8, 0.34 * d))
+    pts = [(0.0, 0.0), (d, 0.0), (d, -0.45)]
+    for s in np.linspace(0.0, 1.0, 12):
+        x = (d - 0.6) * (1.0 - s)
+        pts.append((x, -0.45 - (hb - 0.45) * (s ** 1.5)))
+    body = poly(pts)
+    big = circle((hb * 0.45, -hb + hb * 0.45), hb * 0.45, 20)
+    small = circle((d - 0.45, -0.75), 0.4, 14)
+    return cs_union([body, big, small])
+
+
+CO.FRIEZE_EXTRA.update(shells=frieze_shells, pinecones=frieze_pinecones)
+CO.COURSE_EXTRA.update(coins=course_coins)
+TW.BRACKET_EXTRA.update(doublescroll=bracket_doublescroll)
+TW.FOUNDATION_EXTRA.update(ribbon=foundation_ribbon)
+
+
+# ------------------------------------------------------------------ windows and door
+def window_aedicule(w, h, A=0.8):
+    """A Connecticut Valley lower window: a twelve-over-twelve sash in a thin architrave between
+    two slim pilasters that carry a small entablature and a triangular pediment."""
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(4, 4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.6)]
+    pw = 1.1
+    for sg in (-1, 1):
+        uc = sg * (w / 2 + A - 0.1 + pw / 2)
+        parts.append(ext(rect(uc - pw / 2, 0.0, uc + pw / 2, h + A), 0.0, 0.9))
+        parts.append(chamfer_box(uc - pw / 2 - 0.25, h + A - 0.8, uc + pw / 2 + 0.25, h + A + 0.01, 0.0, 1.1, c=0.3))
+    half = w / 2 + A - 0.1 + pw + 0.25
+    ve = h + A
+    parts.append(ext(rect(-half, ve - 0.01, half, ve + 1.6), 0.0, 0.7))
+    vc = ve + 1.4 + 0.9
+    parts.append(MD.run(-half - 0.4, half + 0.4, vc, MD.CROWN, 0.9, up=False))
+    hp = (half + 0.4) * 0.36
+    tri = poly([(-half - 0.4, vc - 0.3), (half + 0.4, vc - 0.3), (0.0, vc + hp)])
+    parts.append(ext(tri - tri.offset(-0.8, JoinType.Miter, 4.0), 0.0, 1.0))
+    parts.append(ext(tri, 0.0, 0.45))
+    sw = w / 2 + A + pw + 0.3
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, vc + hp, -1.0)
+
+
+def window_bullseyecap(w, h, A=0.9):
+    """A Connecticut Valley upper window: a twelve-over-eight sash in an architrave under a cap
+    whose frieze carries three bull's-eyes (turned roundels) and a moulded cornice."""
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(4, 3))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.7)]
+    hw = w / 2 + A + 0.3
+    vf = h + A
+    parts.append(ext(rect(-hw, vf - 0.01, hw, vf + 2.2), 0.0, 0.55))
+    for x in (-hw * 0.6, 0.0, hw * 0.6):
+        parts.append(ext(circle((x, vf + 1.1), 0.8, 20) - circle((x, vf + 1.1), 0.35, 12), 0.54, 0.95))
+        parts.append(ext(circle((x, vf + 1.1), 0.25, 10), 0.54, 1.05))
+    top = vf + 2.0 + 1.1
+    parts.append(MD.run(-hw - 0.5, hw + 0.5, top, MD.CROWN, 1.1, up=False))
+    sw = w / 2 + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, O.PLUG, top, -1.0)
+
+
+def door_crv(w, h, transom=3.2, A=1.0):
+    """The Connecticut River Valley doorway: a pair of leaves of four raised panels each under
+    a transom of five bull's-eye lights, between rusticated pilasters (blocks and recesses in
+    turn) with scrolled capitals, carrying a pulvinated frieze and a segmental pediment with a
+    carved sunburst rising in its tympanum."""
+    H = h + transom
+    op = rect(-w / 2, 0.0, w / 2, H)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    u0, u1 = -w / 2 + O.CLR + 0.3, w / 2 - O.CLR - 0.3
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, h - 0.3), -1.0, -0.8)]
+    for a, e in ((u0 + 0.5, -0.45), (0.45, u1 - 0.5)):
+        for vb, vt in ((1.0, h * 0.24), (h * 0.24 + 0.7, h * 0.48), (h * 0.48 + 0.7, h * 0.72), (h * 0.72 + 0.7, h - 1.0)):
+            body.append(_panel(rect(a, vb, e, vt)))
+    body.append(ext(rect(-0.25, 0.5, 0.25, h - 0.3), -0.8, -0.5))
+    tr = rect(u0, h + 0.3, u1, H - O.CLR - 0.3)
+    body.append(ext(tr, -1.0, -0.8))
+    n = 5
+    g = []
+    for j in range(n):
+        x = u0 + (u1 - u0) * (j + 0.5) / n
+        g.append(circle((x, h + transom / 2 - 0.1), min(0.8, (u1 - u0) / n / 2 - 0.25), 20))
+    gcs = cs_union(g)
+    sash = _glazed(body, gcs, pl, None, plug_cs)
+    sash.append(ext(rect(-w, h - 0.3, w, h + 0.3) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, H + A), 0.0, 0.8)]
+    pw = 2.0
+    ve = H + A
+    for sg in (-1, 1):
+        uc = sg * (w / 2 + A - 0.2 + pw / 2)
+        parts.append(chamfer_box(uc - pw / 2 - 0.3, 0.0, uc + pw / 2 + 0.3, 2.0, 0.0, 1.4, c=0.3, bottom=0.0))
+        v = 2.0
+        k = 0
+        while v < ve - 2.4:
+            top = min(v + 2.2, ve - 2.2)
+            parts.append(chamfer_box(uc - pw / 2 - (0.25 if k % 2 == 0 else 0.0), v - 0.01, uc + pw / 2 + (0.25 if k % 2 == 0 else 0.0),
+                                     top, 0.0, 1.15 if k % 2 == 0 else 0.9, c=0.25))
+            v = top
+            k += 1
+        parts.append(ext(rect(uc - pw / 2, v - 0.01, uc + pw / 2, ve - 1.4), 0.0, 0.9))
+        cap = chamfer_box(uc - pw / 2 - 0.35, ve - 1.41, uc + pw / 2 + 0.35, ve, 0.0, 1.3, c=0.35)
+        vol = cs_union([circle((uc + s_ * (pw / 2 + 0.1), ve - 0.95), 0.45, 12) for s_ in (-1, 1)])
+        parts += [cap, ext(vol, 1.29, 1.5)]
+    half = w / 2 + A - 0.2 + pw + 0.35
+    parts.append(ext(rect(-half, ve - 0.01, half, ve + 0.9), 0.0, 1.0))
+    parts.append(ext(rect(-half, ve + 0.85, half, ve + 2.7), 0.0, 0.7))                  # the pulvinated frieze
+    parts.append(ext(rect(-half + 0.4, ve + 1.1, half - 0.4, ve + 2.3), 0.69, 1.0))
+    vc = ve + 2.6 + 1.1
+    parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 1.1, up=False))
+    rise = (half + 0.6) * 0.42
+    R = ((half + 0.6) ** 2 + rise ** 2) / (2 * rise)
+    cy = vc + rise - R
+    seg = circle((0.0, cy), R, 120) ^ rect(-half - 0.6, vc - 0.3, half + 0.6, vc + rise + 1)
+    inner = circle((0.0, cy), R - 1.1, 120) ^ rect(-half + 0.5, vc + 0.6, half - 0.5, vc + rise + 1)
+    parts.append(ext(seg - inner, 0.0, 1.2))
+    parts.append(ext(inner, 0.0, 0.5))
+    sun = cs_union([stroke([(0.0, vc + 0.6), ((rise * 1.8) * math.cos(a), vc + 0.6 + (rise * 1.8) * math.sin(a))], 0.45)
+                    for a in np.linspace(math.pi / 9, 8 * math.pi / 9, 9)]) + (circle((0.0, vc + 0.6), 1.1, 20) ^ rect(-2, vc + 0.6, 2, vc + 3))
+    parts.append(ext(sun ^ inner.offset(-0.3, JoinType.Miter, 4.0), 0.49, 0.9))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + rise, 0.0)
+
+
+def door_battenlight(w, h, A=0.9):
+    """The ell's door: a batten door with a small four-light window in its upper half, in a
+    plain casing under a drip board."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    u0, u1 = -w / 2 + O.CLR + 0.3, w / 2 - O.CLR - 0.3
+    body = [ext(plug_cs, -pl, -1.0)] + _board_leaf(u0, u1, 0.5, h - 0.3, hinges=False)
+    g = rect(u0 + 1.0, h * 0.6, u1 - 1.0, h - 1.4)
+    sash = _glazed(body, g, pl, _muntins(g, 2, 2), plug_cs)
+    sash.append(ext(g.offset(0.5, JoinType.Miter, 4.0) - g, -0.9, -0.6))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.7)]
+    parts.append(chamfer_box(-w / 2 - A - 0.6, h + A - 0.01, w / 2 + A + 0.6, h + A + 1.0, 0.0, 1.2, c=0.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.0, 0.0)
+
+
+# ------------------------------------------------------------------ chimney and the ell's porch
+def chimney_ribbed(w=10.0, d=8.0, h=30.0):
+    """A stack with raised pilaster strips at its corners and down the middle of each broad
+    face, a necking band and a projecting cap of two courses."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 2.6
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    ribs = []
+    for x in (-w / 2 + 0.7, 0.0, w / 2 - 0.7):
+        for sg in (-1, 1):
+            ribs.append(box([x - 0.7, sg * d / 2 - 0.35, 0.0], [x + 0.7, sg * d / 2 + 0.35, sh - 2.2]))
+    for y in (-d / 2 + 0.7, d / 2 - 0.7):
+        for sg in (-1, 1):
+            ribs.append(box([sg * w / 2 - 0.35, y - 0.7, 0.0], [sg * w / 2 + 0.35, y + 0.7, sh - 2.2]))
+    body = body + union(ribs) + box([-w / 2 - 0.5, -d / 2 - 0.5, sh - 2.2], [w / 2 + 0.5, d / 2 + 0.5, sh - 1.4])
+    body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, sh - 0.01], [w / 2 + 0.8, d / 2 + 0.8, sh + 0.8]) + \
+        box([-w / 2 - 0.4, -d / 2 - 0.4, sh + 0.79], [w / 2 + 0.4, d / 2 + 0.4, sh + 1.6])
+    flues = union([box([x - 1.2, -1.2, sh - 4.0], [x + 1.2, 1.2, h + 5]) for x in (-w / 4, w / 4)])
+    return body - flues
+
+
+def post_ringed(h, collar=None, abacus=2.8, slot=(1.2, 1.0)):
+    """A round post turned with three rings banding its shaft, on a square plinth, under a
+    square abacus (the Porter's ell porch)."""
+    z1 = h - 2.6
+    r = 1.0
+    prof = [(0.0, 1.19), (1.35, 1.19), (1.35, 1.45), (r, 1.8)]
+    for f in (0.3, 0.55, 0.8):
+        zc = round(z1 * f / 0.2) * 0.2
+        prof += [(r, zc - 0.4), (1.25, zc - 0.15), (1.25, zc + 0.15), (r, zc + 0.4)]
+    prof += [(r, z1), (1.2, z1 + 0.2), (1.2, z1 + 0.45), (r * 0.95, z1 + 0.65)]
+    body = PW._revolve(prof, 28) + PW._plinth(2.9)
+    return body + PW._top(h, abacus / 2, z1 + 0.65, r * 0.95, slot, seg=28)
+
+
+def fill_rays(L, vb, vt):
+    """A sunburst railing: in every bay flat bars rise as rays from a half-disc on the bottom
+    rail to the hand rail (the Porter)."""
+    H = vt - vb
+    n = max(1, int(round(L / (H * 1.3))))
+    parts = []
+    for i in range(n):
+        a, e = L * i / n, L * (i + 1) / n
+        c = ((a + e) / 2, vb)
+        R = min((e - a) / 2 - 0.2, H * 0.3)
+        bay = [circle(c, R, 24) ^ rect(a, vb, e, vb + R + 0.1)]
+        for t in np.linspace(0.2, 0.8, 5):
+            ang = math.pi * t
+            bay.append(stroke([c, (c[0] + 3 * H * math.cos(ang), vb + 3 * H * math.sin(ang))], 0.75, caps=False))
+        parts.append(cs_union(bay) ^ rect(a + 0.3, vb, e - 0.3, vt))          # each bay's rays stay in their bay
+        parts.append(rect(a - 0.3, vb, a + 0.3, vt))
+    parts.append(rect(L - 0.3, vb, L + 0.3, vt))
+    return parts
+
+
+def frieze_blockdrops(u0, u1, v_bot, v_top):
+    """A porch frieze: a board pierced with a row of square lights, a small pointed drop hung
+    under every other one."""
+    v0 = v_top - 2.6
+    board = rect(u0, v0, u1, v_top + 0.05)
+    n = max(2, int((u1 - u0) / 1.8))
+    holes, drops = [], []
+    for j in range(n):
+        x = u0 + (u1 - u0) * (j + 0.5) / n
+        holes.append(rect(x - 0.5, v0 + 0.8, x + 0.5, v0 + 1.8))
+        if j % 2 == 0:
+            drops.append(poly([(x - 0.4, v0 + 0.01), (x + 0.4, v0 + 0.01), (x, v0 - 1.0)]))
+    return (board - cs_union(holes)) + cs_union(drops)
+
+
+def edge_beadroll(L, z0, zc):
+    """Porch fascia (the Porter): a row of round beads under the crown."""
+    xs = np.arange(0.8, L - 0.6, 1.1)
+    beads = [circle((x, zc - 0.85), 0.42, 12) for x in xs]
+    return cs_union(beads) + rect(0.3, zc - 0.45, L - 0.3, zc), 0.45
+
+
+PW.POSTS.update(ringed=post_ringed)
+PW.FILLS.update(rays=fill_rays)
+PW.FRIEZES.update(blockdrops=frieze_blockdrops)
+_FT.EDGE_EXTRA.update(beadroll=edge_beadroll)

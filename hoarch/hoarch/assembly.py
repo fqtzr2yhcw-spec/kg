@@ -875,6 +875,25 @@ dormers print upright.
 """, """The cornices' upper parts and the FOREBAY print upside down; the hex signs and shutters on
 their backs; the walls, the roofs, the chimney and the bake oven upright.
 """),
+    "porter": ("THE PORTER - CONNECTICUT RIVER VALLEY", """  1. FOUNDATION (random rubble with ribbon pointing, under the house and the ell).
+  2. WALLS-1 onto the foundation's lip: the whole ground storey and the one-storey kitchen ell
+     in one part.
+  3. JOINT onto WALLS-1, then WALLS-2 onto its lip: the upper storey and both gables in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (pedimented windows below, bull's-eye-capped windows above, a small light in each gable,
+     the Connecticut Valley doorway, the back door; the ell's windows and its batten door).
+  5. The CORNICE-J parts round the storey joint (they stop against the ell's roof), the
+     CORNICE-E parts round the eave (across the gable feet), the CORNICE-ELL parts round the
+     ell's eave (they stop against the house).
+  6. ROOF onto the lip at the wall tops; the two CHIMNEYs into their pockets. ELL-roof onto the
+     ell's lip, its back against the east gable.
+  7. The ell's porch: PORCH-deck in the angle between the ell and the house; PORCH-top (the
+     ringed posts, the sunburst railings and the frieze in one piece) onto it, each peg into
+     its socket; PORCH-roof on its flat top against the ell's wall; PORCH-steps-0 at the front.
+  8. STOOP-0 under the front door, STOOP-2 at the back door.
+""", """The cornices' upper parts, the PORCH-deck and the PORCH-top print upside down (the top on its
+flat roof, the posts standing up); the walls, the roofs and the chimneys print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
