@@ -146,7 +146,7 @@ def build(kit=None):
     t1 = CR2.roof_tray(mcs, ZW1, hole=hole, gap=gap) - lip_keep(mcs, 3.0, ZW1) - lip_keep(ucs, 3.0, ZW1)
     can = []
     for (x, y, rot) in ((30.0, MY0, 0), (140.0, MY0, 0), (MX0, 60.0, 1), (MX1, 60.0, 2)):
-        c = CR2.canale(ZW1 + 1.6)
+        c = CR2.canale(ZW1 + 3.2)
         if rot == 0:
             c = c.rotate([0, 0, 180]).translate([x, y + 2.6 - 2.6, 0])
         elif rot == 1:
@@ -156,12 +156,11 @@ def build(kit=None):
         can.append(c)
     t1 = t1 + union(can)
     cx, cy = 146.0, 92.0
-    sock = box([cx - 0.95, cy - 0.95, ZW1 + 0.2], [cx + 0.95, cy + 0.95, ZW1 + 1.7])
     c1 = union([p.solid for p in kit.parts if p.name.startswith("CORNICE-1")])
-    kit.add("ROOF-1", "Adobe", t1 - sock - c1, group="roof")
+    kit.add("ROOF-1", "Adobe", t1 - c1, group="roof")
     kit.add("CHIMNEY", "Adobe", CR2.chimney_kiva(24.0).translate([cx, cy, ZW1 + 1.6]), group="roof")
     t2 = CR2.roof_tray(ucs, ZW2) - lip_keep(ucs, 3.0, ZW2)
-    can2 = [CR2.canale(ZW2 + 1.6).rotate([0, 0, 180]).translate([x, UY0, 0]) for x in (70.0, 110.0)]
+    can2 = [CR2.canale(ZW2 + 3.2).rotate([0, 0, 180]).translate([x, UY0, 0]) for x in (70.0, 110.0)]
     c2 = union([p.solid for p in kit.parts if p.name.startswith("CORNICE-2")])
     kit.add("ROOF-2", "Adobe", (t2 + union(can2)) - c2, group="roof")
     print("roofs", round(time.time() - t0, 1))
@@ -188,7 +187,7 @@ def build(kit=None):
     zs = res["ptop"] - 0.8
     outer_cs = rect(PX0 - o, -o, PX1 + o, MY0 + 0.2)
     pt = CR2.roof_tray(outer_cs, zs, deck=1.4, parapet=3.8, band=1.6, gap=box([PX0 - o - 1, MY0 - 2.0, zs - 1], [PX1 + o + 1, MY0 + 1, zs + 10]))
-    pt = pt + union([CR2.canale(zs + 1.4, L=3.2, w=1.4).rotate([0, 0, 180]).translate([x, -o, 0]) for x in (PX0 + 6.0, PX1 - 6.0)])
+    pt = pt + union([CR2.canale(zs + 2.2, L=2.0, w=1.4).rotate([0, 0, 180]).translate([x, -o, 0]) for x in (PX0 + 6.0, PX1 - 6.0)])
     pt = pt - bld_keep - union(ins_keep) - res["top"].solid
     kit.add("PORCH-roof", "Adobe", max(pt.decompose(), key=lambda m_: m_.volume()), group="porch")
     for k, (sm, A) in enumerate(PP["steps"]):
@@ -198,9 +197,10 @@ def build(kit=None):
     A = fb.A.copy()
     A[:, 3] = fb.world(u, -ZF, 1.4)
     kit.add("STOOP-back", "Adobe", FT.steps(14.0, ZF - 0.6, 2).transform(A) - fnd, group="porch")
-    kit.add("HORNO", "Adobe", CR2.horno().translate([-16.0, 70.0, 0.0]), group="yard")
+    kit.add("HORNO", "Adobe", CR2.horno().translate([-11.0, 70.0, 0.0]), group="yard")      # against the west wall
     FT.key_into(kit, "PORCH-steps-0", ["PORCH-deck"], (0, 1, 0), depth=0.8, conform=True)
     FT.key_into(kit, "STOOP-back", ["FOUNDATION"], (0, -1, 0), depth=0.8, conform=True)
+    FT.key_into(kit, "HORNO", ["FOUNDATION"], (1, 0, 0), depth=0.8, conform=True, band=(0.0, 1.2))
     print("specks dropped:", kit.drop_specks())
     return kit
 

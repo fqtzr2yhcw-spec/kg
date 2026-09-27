@@ -2447,15 +2447,16 @@ def roof_tray(outer_cs, z0, deck=1.6, parapet=7.0, band=2.4, hole=None, gap=None
     return t
 
 
-def canale(z, L=4.2, w=1.8):
-    """A canale (a roof spout): a wooden trough running out through the parapet at deck
-    level, its underside sloped back to the wall so it prints on the parapet. Local: x across,
-    y out from the wall face (y = 0), z up; the deck's top at z."""
-    body = M.hull_points([(x, 0.0, z) for x in (-w / 2, w / 2)] + [(x, L, z) for x in (-w / 2, w / 2)] +
-                         [(x, 0.0, z + 1.4) for x in (-w / 2, w / 2)] + [(x, L, z + 1.4) for x in (-w / 2, w / 2)] +
-                         [(x, 0.0, z - L * 0.9) for x in (-w / 2, w / 2)])
-    body = body + box([-w / 2, -2.6, z], [w / 2, 0.01, z + 1.4])
-    return body - box([-w / 2 + 0.45, -3.0, z + 0.6], [w / 2 - 0.45, L + 1.0, z + 2.0])
+def canale(z, L=3.0, w=1.8):
+    """A canale (a roof spout): a wooden trough running out through the parapet a little
+    above the deck, its underside sloped back to the wall at 45 degrees so it prints on the
+    parapet without ever reaching below the tray's foot. Local: x across, y out from the wall
+    face (y = 0), z up; ``z`` = the trough's floor at the wall."""
+    top = z + 1.4
+    body = M.hull_points([(x, 0.0, z - L + 0.2) for x in (-w / 2, w / 2)] + [(x, L, z) for x in (-w / 2, w / 2)] +
+                         [(x, 0.0, top) for x in (-w / 2, w / 2)] + [(x, L, top) for x in (-w / 2, w / 2)])
+    body = body + box([-w / 2, -2.6, z], [w / 2, 0.01, top])
+    return body - box([-w / 2 + 0.45, -3.0, z + 0.6], [w / 2 - 0.45, L + 1.0, top + 1.0])
 
 
 def chimney_kiva(h=22.0, r0=5.0, r1=3.4):
@@ -2467,7 +2468,7 @@ def chimney_kiva(h=22.0, r0=5.0, r1=3.4):
     body = body + PW._revolve([(0.0, zt - 0.01), (r1 + 0.6, zt - 0.01), (r1 + 0.6, zt + 0.8), (r1 - 0.2, zt + 1.4), (r1 - 0.8, h - 0.6), (0.0, h)], 40)
     for sg in (-1, 1):
         body = body - box([sg * r1 * 0.45 - 0.7, -r1 - 1, zt + 1.4], [sg * r1 * 0.45 + 0.7, r1 + 1, zt + 2.6])
-    return body + box([-0.8, -0.8, -1.2], [0.8, 0.8, 0.01])
+    return body
 
 
 def horno(r=6.5, h=8.5):
