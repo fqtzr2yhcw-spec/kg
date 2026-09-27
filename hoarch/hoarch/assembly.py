@@ -916,6 +916,26 @@ flat roof, the posts standing up); the walls, the roofs and the chimneys print u
 columns standing up); the walls, the roofs, the belvedere, the chimneys, the portico floor and
 the balustrade print upright.
 """),
+    "alvarado": ("THE ALVARADO - SPANISH COLONIAL", """  1. FOUNDATION (coquina blocks).
+  2. WALLS-1 onto the foundation's lip: the whole ground storey in one part.
+  3. JOINT onto WALLS-1, WALLS-2 onto its lip: the whole upper storey in one part.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the ground-floor casements behind their rejas, the upper casements under scalloped
+     lintels, the three glazed plank doors onto the balcony, the studded portal in its alfiz,
+     the back door).
+  5. The CORNICE-J parts round the joint (they stop at the balcony, whose deck takes their
+     place), then the CORNICE-E parts round the eave.
+  6. ROOF onto the lip at the wall tops; the two CHIMNEY stacks into their pockets.
+  7. The balcony: BALCONY-deck against the front wall under the glazed doors (its carved
+     brackets flat on the wall); BALCONY-top (the posts with their zapatas, the spindle
+     railings and the scalloped frieze in one piece) lowered onto it, each peg into its
+     socket; BALCONY-roof on its flat top against the wall.
+  8. The garden: GARDENWALL against the east end, its coping on top, the GATE into the arch.
+  9. STOOP-0 under the portal, STOOP-2 at the back door.
+""", """The cornices' upper parts, the BALCONY-deck and the BALCONY-top print upside down (the top on its
+flat roof, the posts standing up); the walls, the roofs, the garden wall and the chimneys print
+upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}

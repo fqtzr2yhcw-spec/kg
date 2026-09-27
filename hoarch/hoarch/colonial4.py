@@ -2258,3 +2258,344 @@ def finial_eagle(s=6.0):
     plate = M.extrude(body + shield, 1.2).translate([0, 0, -0.6])
     plate = plate.transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 4.5 - b_[1]]]))
     return stem + ball + plate
+
+
+# ================================================================== the Alvarado (house 48, Spanish Colonial)
+# ------------------------------------------------------------------ skin and foundation
+def plaster_trowelled(region, datum=0.0, dado=6.0):
+    """Lime plaster over adobe: a soft coat trowelled in long shallow sweeps, over a painted
+    dado band at the foot of the wall that stands a little proud."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(int(abs(u0) * 7 + abs(v0) * 3) % 991)
+    marks = []
+    for _ in range(int((u1 - u0) * max(0.0, v1 - v0 - dado) / 90.0)):
+        cx, cy = rng.uniform(u0, u1), rng.uniform(datum + dado + 1.0, v1)
+        a = rng.uniform(-0.5, 0.5)
+        L, T = rng.uniform(3.0, 7.0), rng.uniform(1.0, 2.2)
+        marks.append(poly([(cx + L * math.cos(a) * math.cos(t) - T * math.sin(a) * math.sin(t),
+                            cy + L * math.sin(a) * math.cos(t) + T * math.cos(a) * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 12, endpoint=False)]))
+    out = M.extrude(region, 0.3)
+    if marks:
+        out = out + ext(cs_union(marks) ^ region, 0.29, 0.38)             # trowel marks: soft, broad, barely proud
+    band = region ^ rect(u0 - 1, v0 - 1, u1 + 1, datum + dado)
+    if not band.is_empty():
+        out = out + ext(band, 0.29, 0.55) + ext(region ^ rect(u0 - 1, datum + dado - 0.01, u1 + 1, datum + dado + 0.6), 0.29, 0.7)
+    return out
+
+
+def foundation_coquina(reg, seed=0):
+    """Coquina: blocks of shell stone, their faces pocked with shell-shaped hollows (little
+    fans and ovals) (the Alvarado)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 41)
+    blocks, holes = [], []
+    v = b[1] - 0.5
+    k = 0
+    while v < b[3]:
+        ch = 3.2 if k % 2 == 0 else 2.6
+        u = b[0] - rng.uniform(0, 4)
+        while u < b[2]:
+            L = rng.uniform(5.0, 8.0)
+            blocks.append(rect(u + 0.25, v + 0.25, u + L - 0.25, v + ch - 0.25))
+            for _ in range(int(L * ch * 0.35)):
+                x, y = rng.uniform(u + 0.7, u + L - 0.7), rng.uniform(v + 0.6, v + ch - 0.6)
+                if rng.random() < 0.5:
+                    holes.append(oval((x, y), 0.45, 0.28, 12))
+                else:
+                    holes.append(circle((x, y), 0.4, 12) ^ rect(x - 1, y, x + 1, y + 1))
+            u += L
+        v += ch
+        k += 1
+    body = ext(cs_union(blocks) ^ reg, 0.0, 0.45) + M.extrude(reg, 0.1)
+    return body - ext(cs_union(holes) ^ reg, 0.25, 1.0) if holes else body
+
+
+# ------------------------------------------------------------------ cornice ornament
+def frieze_azulejos(L, h, b, pitch, margin, pair, half):
+    """Azulejos: a band of square tiles set edge to edge, each with a raised eight-pointed star
+    in a ring, and every third tile a quatrefoil."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    out = []
+    n = max(1, int((L - 1.0) / hh))
+    s = (L - 1.0) / n
+    tiles, orn = [], []
+    for j in range(n):
+        u = 0.5 + j * s
+        tiles.append(rect(u + 0.15, v0, u + s - 0.15, v1))
+        c = (u + s / 2, (v0 + v1) / 2)
+        r = hh / 2 - 0.35
+        if j % 3 == 2:
+            orn.append(cs_union([circle((c[0] + r * 0.45 * math.cos(a), c[1] + r * 0.45 * math.sin(a)), r * 0.45, 12)
+                                 for a in (0, math.pi / 2, math.pi, 3 * math.pi / 2)]))
+        else:
+            sq = rect(c[0] - r * 0.62, c[1] - r * 0.62, c[0] + r * 0.62, c[1] + r * 0.62)          # two squares crossed: a star
+            orn.append(cs_union([sq, poly([(c[0], c[1] - r * 0.88), (c[0] + r * 0.88, c[1]), (c[0], c[1] + r * 0.88),
+                                           (c[0] - r * 0.88, c[1])])]))
+    out.append(_st(cs_union(tiles), b, 0.25))
+    out.append(_st(cs_union(orn), b, 0.55))
+    return out, []
+
+
+def _pomegranate(c, s):
+    x, y = c
+    fruit = circle((x, y - s * 0.05), s * 0.3, 20)
+    crown = poly([(x - s * 0.14, y + s * 0.18), (x - s * 0.1, y + s * 0.38), (x, y + s * 0.26), (x + s * 0.1, y + s * 0.38),
+                  (x + s * 0.14, y + s * 0.18)])
+    lv = [_lens((x + sg * s * 0.38, y + s * 0.12), s * 0.42, s * 0.16, math.radians(30 if sg > 0 else 150)) for sg in (-1, 1)]
+    return cs_union([fruit, crown] + lv)
+
+
+def frieze_pomegranates(L, h, b, pitch, margin, pair, half):
+    """Pomegranates of Granada, each crowned and between two leaves, alternating with
+    eight-pointed stars."""
+    from .federal import _star
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        out.append(_st(_pomegranate((u, vm), hh * 1.1) ^ rect(u - 3, v0 - 0.2, u + 3, v1 + 0.2), b, 0.55))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 2.2):
+        r = min(1.3, hh / 2 - 0.05)
+        st8 = cs_union([_star((uc, vm), r, ri=r * 0.55, ang=math.pi / 2), _star((uc, vm), r, ri=r * 0.55, ang=math.pi / 2 + math.pi / 5)])
+        out.append(_st(st8 ^ circle((uc, vm), r, 24), b, 0.45))
+    return out, []
+
+
+def course_cordon(L, h, b, pitch, margin, p):
+    """The Franciscan cordon: a twisted cord the length of the course, tied in a knot at
+    intervals."""
+    per = 1.2
+    out = []
+    us = np.arange(0.3, L - 0.3, per)
+    for u in us:
+        out.append(ext(poly([(u, 0.15), (u + 0.55, 0.15), (u + per * 0.95, h - 0.15), (u + per * 0.4, h - 0.15)]), b - 0.05, b + 0.4))
+    for u in np.arange(6.0, L - 3.0, 9.0):
+        out.append(ext(oval((u, h / 2), 0.9, h / 2 - 0.02, 16), b - 0.05, b + 0.6))
+    return out
+
+
+def bracket_zapata(h, d, t):
+    """A viga end: a square beam end whose underside is cut in two scallops toward its nose
+    (side profile, top at v = 0)."""
+    hb = min(h, max(1.8, 0.34 * d))
+    pts = [(0.0, 0.0), (d, 0.0), (d, -hb * 0.45)]
+    for s in np.linspace(0.0, 1.0, 14)[1:]:
+        x = d - d * 0.55 * s
+        pts.append((x, -hb * 0.45 - hb * 0.25 * abs(math.sin(2 * math.pi * s))))
+    pts += [(d * 0.45, -hb), (0.0, -hb)]
+    return poly(pts)
+
+
+CO.FRIEZE_EXTRA.update(azulejos=frieze_azulejos, pomegranates=frieze_pomegranates)
+CO.COURSE_EXTRA.update(cordon=course_cordon)
+TW.BRACKET_EXTRA.update(zapata=bracket_zapata)
+TW.FOUNDATION_EXTRA.update(coquina=foundation_coquina)
+
+
+# ------------------------------------------------------------------ windows and doors
+def _mixtilinear(w, v, rise):
+    """A mixtilinear (scalloped) arch head across w springing at v: a central round lobe
+    between two smaller ones, stepped at the shoulders."""
+    r0, r1 = w * 0.22, w * 0.16
+    parts = [rect(-w / 2, v - 0.01, w / 2, v + r1 * 0.9), circle((0.0, v + rise - r0), r0, 32),
+             circle((-w / 2 + r1 * 1.3, v + r1 * 0.9), r1, 24), circle((w / 2 - r1 * 1.3, v + r1 * 0.9), r1, 24),
+             rect(-r0, v, r0, v + rise - r0)]
+    return cs_union(parts)
+
+
+def window_reja(w, h, A=1.0):
+    """A ground-floor window of the Alvarado: a pair of casements (three lights each) set deep,
+    guarded by a projecting reja of turned wooden spindles between two rails on a sill board,
+    capped by a small moulded head."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, JoinType.Miter, 4.0)
+    u0_, v0_, u1_, v1_ = inner.bounds()
+    leaves = [rect(u0_, v0_, -0.3, v1_), rect(0.3, v0_, u1_, v1_)]
+    sash = _glazed([ext(plug_cs, -pl, -0.8)], cs_union(leaves), pl, cs_union([_muntins(l_, 1, 3) for l_ in leaves]), plug_cs)
+    sash.append(ext(rect(-0.31, v0_ - 0.01, 0.31, v1_ + 0.01), -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, -0.9, w, h + A), 0.0, 0.7)]
+    dep = 2.0
+    hw = w / 2 + A
+    parts.append(chamfer_box(-hw - 0.4, -0.9, hw + 0.4, 0.2, 0.0, dep + 0.6, c=0.3, bottom=0.6))            # the sill board
+    parts.append(chamfer_box(-hw - 0.4, h + A - 0.2, hw + 0.4, h + A + 1.0, 0.0, dep + 0.6, c=0.35))       # the head
+    for x in np.linspace(-hw + 0.9, hw - 0.9, max(3, int((2 * hw - 1.8) / 1.5) + 1)):
+        prof = [(0.0, 0.0), (0.42, 0.0), (0.42, 0.3), (0.3, 0.6)]
+        for f in (0.33, 0.66):
+            zc = h * f
+            prof += [(0.3, zc - 0.5), (0.45, zc - 0.25), (0.45, zc + 0.25), (0.3, zc + 0.5)]
+        prof += [(0.3, h - 0.3), (0.42, h), (0.0, h)]
+        sp = PW._revolve(prof, 12)                                   # a turned spindle, standing in the (u, v) plane at w = dep
+        parts.append(sp.translate([x, dep, 0.1]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])))
+    for v in (h * 0.2, h * 0.8):
+        parts.append(ext(rect(-hw + 0.3, v - 0.35, hw - 0.3, v + 0.35), dep - 0.5, dep + 0.5))
+    for sg in (-1, 1):                                                        # the reja's cheeks tie it back to the wall
+        a_, e_ = sorted((sg * (hw - 0.4), sg * (hw + 0.3)))
+        parts.append(ext(rect(a_, -0.5, e_, h + A + 0.1), 0.0, dep + 0.5))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.0, -0.9)
+
+
+def window_ornatehead(w, h, A=1.0):
+    """An upper window of the Alvarado: a pair of casements under a carved wooden lintel whose
+    lower edge is cut in a mixtilinear arch, in a plain frame."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, JoinType.Miter, 4.0)
+    u0_, v0_, u1_, v1_ = inner.bounds()
+    leaves = [rect(u0_, v0_, -0.3, v1_), rect(0.3, v0_, u1_, v1_)]
+    sash = _glazed([ext(plug_cs, -pl, -0.8)], cs_union(leaves), pl, cs_union([_muntins(l_, 1, 3) for l_ in leaves]), plug_cs)
+    sash.append(ext(rect(-0.31, v0_ - 0.01, 0.31, v1_ + 0.01), -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.7)]
+    hw = w / 2 + A + 1.0
+    lint = rect(-hw, h - 2.4, hw, h + A + 2.6) - _mixtilinear(w - 0.6, h - 2.4, 2.6)
+    parts.append(ext(lint, 0.0, 0.9))
+    parts.append(ext(cs_union([circle((sg * (hw - 1.1), h + A + 1.0), 0.55, 14) for sg in (-1, 1)]), 0.89, 1.2))
+    parts.append(chamfer_box(-hw, -1.0, hw, 0.2, 0.0, 1.1, c=0.3, bottom=0.6))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.6, -1.0)
+
+
+def door_mixtilinear(w, h, A=1.4):
+    """The Alvarado's portal: a pair of plank leaves studded with rows of iron nails, under a
+    mixtilinear arch, in a moulded stone surround with a keystone and a cornice."""
+    rise = w * 0.42
+    op = cs_union([rect(-w / 2, 0.0, w / 2, h), _mixtilinear(w, h, rise)])
+    plug_cs = op.offset(-O.CLR, JoinType.Round)
+    pl = O.PLUG
+    face = plug_cs.offset(-0.4, JoinType.Round)
+    body = [ext(plug_cs, -pl, -0.8)]
+    grooves = cs_union([rect(x - 0.18, 0.0, x + 0.18, h + rise) for x in np.arange(-w / 2 + 1.3, w / 2 - 0.3, 1.3)] +
+                       [rect(-0.3, 0.0, 0.3, h + rise)])
+    body = [b_ - ext(grooves ^ face, -1.0, -0.6) for b_ in body]
+    studs = [circle((x, v), 0.3, 8) for x in np.arange(-w / 2 + 1.95, w / 2 - 0.3, 1.3) for v in np.arange(2.0, h, 3.2)]
+    body.append(ext(cs_union(studs) ^ face, -0.81, -0.5))
+    body.append(ext(plug_cs - plug_cs.offset(-0.5, JoinType.Round), -pl, 0.0))
+    ring = (op.offset(A, JoinType.Round) - op) ^ rect(-w - 5, 0.0, w + 5, h + rise + A + 2)
+    parts = [ext(op - op.offset(-RIB, JoinType.Round), 0.0, O.CAS), ext(ring, 0.0, 1.0)]
+    outer = op.offset(A, JoinType.Round) ^ rect(-w - 5, 0.0, w + 5, h + rise + A + 2)
+    parts.append(ext((outer - outer.offset(-0.45, JoinType.Round)) ^ rect(-w - 5, 0.5, w + 5, h + rise + A + 2), 0.99, 1.35))
+    kt = h + rise + A + 0.6
+    parts.append(ext(poly([(-0.8, h + rise - 0.6), (0.8, h + rise - 0.6), (1.1, kt), (-1.1, kt)]), 0.0, 1.5))
+    hw = w / 2 + A + 0.8
+    alfiz = rect(-hw + 0.2, h - 1.0, hw - 0.2, kt - 0.3)                   # the alfiz: a flat frame round the arch
+    parts.append(ext(alfiz - op.offset(A - 0.1, JoinType.Round), 0.0, 0.7))
+    parts.append(ext(alfiz - alfiz.offset(-0.5, JoinType.Miter, 4.0) - rect(-hw, h - 1.1, hw, h - 0.5), 0.69, 1.1))
+    parts.append(chamfer_box(-hw, kt - 0.4, hw, kt + 0.8, 0.0, 1.6, c=0.4))
+    return O._one_piece(body, parts, op, plug_cs, pl, kt + 0.8, 0.0)
+
+
+def door_plankglazed(w, h, A=1.0):
+    """A balcony door of the Alvarado: a pair of plank leaves, each with a small glazed light of
+    four panes in its upper part, under a plain lintel."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    u0, u1 = -w / 2 + O.CLR + 0.3, w / 2 - O.CLR - 0.3
+    body = [ext(plug_cs, -pl, -1.0)] + _board_leaf(u0, -0.25, 0.5, h - 0.3, hinges=False) + _board_leaf(0.25, u1, 0.5, h - 0.3, hinges=False)
+    lights = [rect(u0 + 0.8, h * 0.58, -1.0, h - 1.4), rect(1.0, h * 0.58, u1 - 0.8, h - 1.4)]
+    sash = _glazed(body, cs_union(lights), pl, cs_union([_muntins(l_, 2, 2) ^ l_ for l_ in lights]), plug_cs)
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.8),
+             chamfer_box(-w / 2 - A - 0.6, h + A - 0.01, w / 2 + A + 0.6, h + A + 1.4, 0.0, 1.2, c=0.35),
+             chamfer_box(-w / 2 - A - 0.3, -0.8, w / 2 + A + 0.3, 0.2, 0.0, 1.0, c=0.3, bottom=0.0)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.4, -0.8)
+
+
+# ------------------------------------------------------------------ the balcony, chimney and garden wall
+def post_zapata(h, collar=None, abacus=2.6, slot=None):
+    """A balcony post: a slim turned post with a ring near each end, crowned by crossed
+    zapatas (bracket capitals with scalloped ends) (the Alvarado)."""
+    z1 = h - 2.4
+    r = 0.85
+    prof = [(0.0, 0.0), (1.25, 0.0), (1.25, 0.9), (r, 1.3), (r, 2.4), (1.1, 2.6), (1.1, 2.9), (r, 3.1), (r, z1 - 1.4),
+            (1.1, z1 - 1.2), (1.1, z1 - 0.9), (r, z1 - 0.7), (r, z1), (0.0, z1)]
+    body = PW._revolve(prof, 24)
+    zap = poly([(-3.2, 0.0), (3.2, 0.0), (3.2, -0.7), (2.6, -0.9), (2.3, -1.5), (1.7, -1.6), (1.4, -2.4), (-1.4, -2.4),
+                (-1.7, -1.6), (-2.3, -1.5), (-2.6, -0.9), (-3.2, -0.7)])
+    zs = []
+    for rot in (0, 90):
+        m = M.extrude(zap, 1.4).translate([0, 0, -0.7]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, h]]))
+        zs.append(m.rotate([0, 0, rot]))
+    return body + union(zs) + box([-0.9, -0.9, z1 - 0.01], [0.9, 0.9, h - 2.3])
+
+
+def baluster_rejaspindle(h):
+    """A slim turned spindle with three small rings (the Alvarado's balcony)."""
+    top = h - 0.5
+    prof = [(0.0, 0.5), (0.3, 0.5)]
+    for f in (0.25, 0.5, 0.75):
+        zc = 0.5 + (top - 0.5) * f
+        prof += [(0.26, zc - 0.35), (0.42, zc - 0.12), (0.42, zc + 0.12), (0.26, zc + 0.35)]
+    prof += [(0.3, top)]
+    return PW._revolve(prof, 14) + box([-0.5, -0.5, 0.0], [0.5, 0.5, 0.51]) + box([-0.5, -0.5, top - 0.01], [0.5, 0.5, h])
+
+
+def frieze_mixtilinear(u0, u1, v_bot, v_top):
+    """A balcony frieze: a board sawn along its lower edge into a row of little mixtilinear
+    arches."""
+    v0 = v_top - 3.0
+    board = rect(u0, v0, u1, v_top + 0.05)
+    n = max(1, int((u1 - u0) / 3.0))
+    s = (u1 - u0) / n
+    cuts = []
+    for j in range(n):
+        uc = u0 + s * (j + 0.5)
+        cuts.append(_mixtilinear(s - 0.9, v0 - 0.01, 1.6).translate((uc, 0.0)))
+    return board - cs_union(cuts)
+
+
+def edge_tejas(L, z0, zc):
+    """Balcony fascia (the Alvarado): a row of round tile ends (tejas) under the crown."""
+    xs = np.arange(0.9, L - 0.6, 1.4)
+    ends = [circle((x, zc - 0.4), 0.6, 14) ^ rect(x - 1, zc - 1.1, x + 1, zc - 0.4) for x in xs]
+    return cs_union(ends) + rect(0.3, zc - 0.45, L - 0.3, zc), 0.5
+
+
+def chimney_tilesaddle(w=9.0, d=9.0, h=30.0):
+    """A plastered stack capped by a little saddle roof of barrel tiles on two arches, the
+    smoke escaping under it."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 6.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh]) + box([-w / 2 - 0.6, -d / 2 - 0.6, sh - 1.0], [w / 2 + 0.6, d / 2 + 0.6, sh])
+    for sg in (-1, 1):
+        arch = rect(-w / 2 - 0.3, 0.0, w / 2 + 0.3, 3.2) - cs_union([rect(-w / 2 + 1.4, -1, w / 2 - 1.4, 1.6), circle((0.0, 1.6), w / 2 - 1.4, 24)])
+        body = body + M.extrude(arch, 1.4).translate([0, 0, -0.7]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, sg * (d / 2 - 0.7)], [0, 1.0, 0, sh]]))
+    tri = poly([(-d / 2 - 1.2, 0.0), (d / 2 + 1.2, 0.0), (0.0, 2.6)])
+    cap = M.extrude(tri, w + 2.4).translate([0, 0, -(w + 2.4) / 2]).transform(np.array([[0, 0, 1.0, 0], [1.0, 0, 0, 0], [0, 1.0, 0, sh + 3.19]]))
+    tiles = union([M.cylinder(w + 2.4, 0.5, 0.5, 12).rotate([0, 90, 0]).translate([-(w + 2.4) / 2, y, sh + 3.2 + 2.6 * (1 - abs(y) / (d / 2 + 1.2))])
+                   for y in np.linspace(-d / 2, d / 2, 7)])
+    flue = box([-w / 2 + 1.4, -d / 2 + 1.4, sh - 5.0], [w / 2 - 1.4, d / 2 - 1.4, sh + 3.0])
+    return (body + cap + (tiles ^ box([-w, -d, sh + 3.2], [w, d, sh + 8.0]))) - flue
+
+
+def garden_wall(L=34.0, h=16.0, t=2.4, gate_w=10.0, gate_h=12.0):
+    """A plastered garden wall with an arched gateway at its middle, under a coping (the wall
+    runs along x from 0 to L, centred on y = 0). Returns (wall, coping, gate opening cs)."""
+    arch = cs_union([rect(L / 2 - gate_w / 2, 0.0, L / 2 + gate_w / 2, gate_h - gate_w / 2),
+                     circle((L / 2, gate_h - gate_w / 2), gate_w / 2, 40)])
+    face = rect(0.0, 0.0, L, h) + (rect(L / 2 - gate_w / 2 - 2.0, 0.0, L / 2 + gate_w / 2 + 2.0, h + 4.0))
+    wall = M.extrude(face - arch, t).translate([0, 0, -t / 2]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+    band = ((arch.offset(1.0, JoinType.Round) - arch) ^ rect(-1, 0.0, L + 1, h + 5))
+    wall = wall + M.extrude(band, t + 0.8).translate([0, 0, -t / 2 - 0.4]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+    cop = box([-0.6, -t / 2 - 0.8, h], [L + 0.6, t / 2 + 0.8, h + 0.8]) + box([L / 2 - gate_w / 2 - 2.6, -t / 2 - 0.9, h + 4.0],
+                                                                              [L / 2 + gate_w / 2 + 2.6, t / 2 + 0.9, h + 4.9])
+    for sg in (-1, 1):                                                          # the coping steps up the gate's shoulders
+        x0 = L / 2 + sg * (gate_w / 2 + 2.0)
+        a_, e_ = sorted((x0, x0 + sg * 0.6))
+        cop = cop + box([a_ - (0.0 if sg > 0 else 0.0), -t / 2 - 0.8, h + 0.79], [e_, t / 2 + 0.8, h + 4.01])
+    tri = poly([(-t / 2 - 1.0, 0.0), (t / 2 + 1.0, 0.0), (0.0, 1.6)])
+    ridge = M.extrude(tri, gate_w + 5.2).translate([0, 0, -(gate_w + 5.2) / 2]).transform(np.array([[0, 0, 1.0, L / 2], [1.0, 0, 0, 0], [0, 1.0, 0, h + 4.6]]))
+    return wall, (cop + ridge) - wall, arch
+
+
+PW.POSTS.update(zapata=post_zapata)
+PW.BALUSTERS.update(rejaspindle=(baluster_rejaspindle, 1.5))
+PW.FRIEZES.update(mixtilinear=frieze_mixtilinear)
+_FT.EDGE_EXTRA.update(tejas=edge_tejas)

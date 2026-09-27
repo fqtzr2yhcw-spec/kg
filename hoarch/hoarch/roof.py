@@ -219,6 +219,16 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                     return P
                 courses.append(M.extrude(cs, d).warp_batch(taper))
             tex = union(courses)
+        elif shape == "barrel":           # Spanish barrel tiles: half-round rows up the slope, a lap at every course (the Alvarado)
+            b = loc.bounds()
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            r = seam_pitch * 0.36
+            L_ = b[3] - b[1] + 4.0
+            rows = [M.cylinder(L_, r, r, 20).rotate([-90, 0, 0]).translate([k * seam_pitch, b[1] - 2.0, 0.0])
+                    for k in range(int(np.floor(b[0] / seam_pitch)) - 1, int(np.ceil(b[2] / seam_pitch)) + 2)]
+            laps = [M.cube([b[2] - b[0] + 20, 0.3, 2 * r + 2]).translate([b[0] - 10, j * pitch, 0.35 * r])
+                    for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 2)]
+            tex = (union(rows) - union(laps)) ^ M.extrude(clip, r + 1.0)
         elif shape == "crimp":            # 5V crimp: a pair of narrow ribs per panel
             b = loc.bounds()
             ribs = []
