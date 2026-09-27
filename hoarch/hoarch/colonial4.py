@@ -3260,13 +3260,16 @@ def dormer_twinarch(w=15.0, dep=16.0, hwall=12.0, pitch=0.8):
     return body, core, face
 
 
-def dormer_twinarch_roof(w, dep, hwall, pitch=0.8, over=1.2):
+def dormer_twinarch_roof(w, dep, hwall, pitch=0.8, over=1.2, t=1.2):
     """The dormer's gabled roof, in the dormer frame: a plain shell over the gable, its eaves
     ``over`` past the cheeks, run long at the back to be cut off by the main roof."""
     rise = w / 2 * pitch
-    ez = hwall - over * pitch
-    outer = poly([(-w / 2 - over, ez), (0.0, hwall + rise + 1.2), (w / 2 + over, ez)])
-    inner = poly([(-w / 2, ez - 1.0), (w / 2, ez - 1.0), (w / 2, hwall), (0.0, hwall + rise), (-w / 2, hwall)])
+    apex = hwall + rise + t * math.sqrt(1 + pitch * pitch)          # the shell is t thick all over the gable
+    xo = w / 2 + over
+    ze = apex - pitch * xo
+    eb = ze - 0.9                                                   # a fascia at the eaves, below the gable's foot
+    outer = poly([(-xo, eb), (-xo, ze), (0.0, apex), (xo, ze), (xo, eb)])
+    inner = poly([(-w / 2, eb - 1.0), (w / 2, eb - 1.0), (w / 2, hwall), (0.0, hwall + rise), (-w / 2, hwall)])
     return ext(outer, -dep - 8.0, over) - ext(inner, -dep - 10.0, over + 1.0)
 
 
