@@ -1930,3 +1930,298 @@ def chimney_chalet(w=10.0, d=10.0, h=26.0):
     body = body + M.hull_points([(x, y, z + 0.59) for x in (-w / 2 - 1.2, w / 2 + 1.2) for y in (-d / 2 - 1.2, d / 2 + 1.2)] +
                                 [(x, 0.0, ridge) for x in (-w / 2 - 1.2, w / 2 + 1.2)])
     return body - box([-w / 2 + 1.6, -d / 2 + 1.6, zt - 4.0], [w / 2 - 1.6, d / 2 - 1.6, zt + 0.81])
+
+
+# ================================================================== the Stickley (two-storey Craftsman)
+def lap_beaded(region, datum=0.0, pitch=2.5):
+    """Wide beaded lap siding: broad bevelled boards, each with a small round bead run along
+    its lower edge (the Stickley)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = M.extrude(region, 0.2)
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    boards, beads = [], []
+    for k in range(k0, k0 + int((v1 - v0) / pitch) + 4):
+        v = datum + k * pitch
+        for j in range(4):
+            boards.append((rect(u0 - 1, v + j * pitch / 4, u1 + 1, v + pitch), 0.2 + 0.12 * (3 - j)))
+        beads.append(rect(u0 - 1, v + 0.1, u1 + 1, v + 0.45))
+    for cs_, d_ in boards:
+        out = out + ext(cs_ ^ region, 0.0, d_ + 0.1)
+    return out + ext(cs_union(beads) ^ region, 0.0, 0.75)
+
+
+def shakes_ragged(region, datum=0.0, pitch=2.0, seed=0):
+    """Ragged shakes: straight-edged shingles of random width whose butts wander up and down
+    a little course by course, so the lines read hand-laid (the Stickley)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed + 3)
+    out = M.extrude(region, 0.25)
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    lay = {0: [], 1: []}
+    for k in range(k0, k0 + int((v1 - v0) / pitch) + 4):
+        v = datum + k * pitch
+        u = u0 - rng.uniform(0.0, 2.0)
+        while u < u1 + 1.0:
+            wd = rng.uniform(1.4, 3.0)
+            dv = rng.uniform(-0.3, 0.3)
+            lay[k % 2].append(rect(u + 0.1, v + dv, u + wd - 0.1, v + pitch + 0.2))
+            u += wd
+    return out + ext(cs_union(lay[0]) ^ region, 0.1, 0.55) + ext(cs_union(lay[1]) ^ region, 0.1, 0.65)
+
+
+def foundation_boardformed(reg, seed=0):
+    """Board-formed concrete: the grain and joints of the formwork boards printed in the
+    face, with a chamfered top edge (the Stickley)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 61)
+    body = M.extrude(reg, 0.5)
+    joints = cs_union([rect(b[0] - 1, v - 0.1, b[2] + 1, v + 0.1) for v in np.arange(b[1] + 1.6, b[3], 1.6)])
+    grain = cs_union([rect(u, v, u + rng.uniform(2.0, 6.0), v + 0.12) for v in np.arange(b[1] + 0.4, b[3], 0.55)
+                      for u in np.arange(b[0], b[2], 7.0) + rng.uniform(0, 3.0)])
+    return body - ext(joints ^ reg, 0.3, 1.0) - ext(grain ^ reg, 0.42, 1.0)
+
+
+def frieze_glasgowrose(L, h, b, pitch, margin, pair, half):
+    """Glasgow roses: at every station a rose of three concentric rings on a long straight stem
+    with two leaves; a pair of level lines between (the Stickley)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        r = min(1.3, hh * 0.32)
+        c = (u, v1 - r - 0.1)
+        rose = cs_union([circle(c, r, 24) - circle(c, r - 0.35, 24), circle(c, r * 0.55, 20) - circle(c, r * 0.55 - 0.3, 16),
+                         circle(c, 0.25, 10)])
+        stem = [rect(u - 0.2, v0, u + 0.2, c[1] - r + 0.1), oval((u - 0.7, v0 + hh * 0.3), 0.6, 0.3, 12), oval((u + 0.7, v0 + hh * 0.3), 0.6, 0.3, 12)]
+        out.append(_st(cs_union([rose] + stem), b, 0.45))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 2.2):
+        if wd < 2.0:
+            continue
+        out.append(_st(cs_union([rect(uc - wd / 2, v0 + hh * 0.3, uc + wd / 2, v0 + hh * 0.3 + 0.35),
+                                 rect(uc - wd / 2, v0 + hh * 0.6, uc + wd / 2, v0 + hh * 0.6 + 0.35)]), b, 0.3))
+    return out, []
+
+
+def frieze_heartleaf(L, h, b, pitch, margin, pair, half):
+    """An Arts and Crafts leaf trail: a stem running in shallow waves the length of the
+    frieze with a heart-shaped leaf in every bend (the Stickley)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    vm = v0 + hh / 2
+    wl = max(4.0, pitch * 0.5)
+    xs = np.linspace(margin * 0.5, L - margin * 0.5, max(8, int(L * 2)))
+    amp = hh * 0.2
+    parts = [stroke([(x, vm + amp * math.sin(2 * math.pi * x / wl)) for x in xs], 0.38, caps=False)]
+    for k in range(int(L / (wl / 2))):
+        x = wl / 4 + k * wl / 2
+        if x > L - margin * 0.5 or x < margin * 0.5:
+            continue
+        sg = 1 if k % 2 == 0 else -1
+        c = (x, vm + sg * (amp + 0.9))
+        leaf = _heart(c, 1.3)
+        if sg < 0:
+            leaf = leaf.mirror((0, 1)).translate((0, 2 * c[1])) if hasattr(leaf, "mirror") else leaf
+        parts.append(leaf)
+    return [_st(cs_union(parts) ^ rect(0, v0, L, v1), b, 0.4)], []
+
+
+def course_keyedtenons(L, h, b, pitch, margin, p):
+    """Through-tenons at intervals, each held by a tapered key, along a plain band."""
+    parts = []
+    for u in np.arange(1.6, L - 1.0, 3.2):
+        parts.append(ext(rect(u - 0.6, 0.15, u + 0.6, h - 0.15), b - 0.05, b + 0.55))
+        parts.append(ext(poly([(u - 0.25, h * 0.5 - 0.5), (u + 0.25, h * 0.5 - 0.5), (u + 0.15, h * 0.5 + 0.5), (u - 0.15, h * 0.5 + 0.5)]), b + 0.5, b + 0.8))
+    return parts
+
+
+def bracket_twintails(h, d, t):
+    """Paired rafter tails read in profile: a long tail whose end is cut in a double step."""
+    hb = max(1.6, min(h, 2.4))
+    return poly([(0.0, 0.0), (d, 0.0), (d, -hb * 0.35), (d - 0.6, -hb * 0.35), (d - 0.6, -hb * 0.7), (d - 1.2, -hb * 0.7),
+                 (d - 1.2, -hb), (0.0, -hb)])
+
+
+CO.FRIEZE_EXTRA.update(glasgowrose=frieze_glasgowrose, heartleaf=frieze_heartleaf)
+CO.COURSE_EXTRA.update(keyedtenons=course_keyedtenons)
+TW.BRACKET_EXTRA.update(twintails=bracket_twintails)
+TW.FOUNDATION_EXTRA.update(boardformed=foundation_boardformed)
+
+
+def _tenon_head(hw, v, t=1.0):
+    """A Craftsman head casing: a thick board running past the side casings, a through-tenon
+    showing at each end held by a pegged key."""
+    parts = [chamfer_box(-hw - 1.8, v, hw + 1.8, v + 2.0, 0.0, t, c=0.25)]
+    for sg in (-1, 1):
+        x = sg * (hw + 1.1)
+        parts.append(chamfer_box(x - 0.55, v + 0.4, x + 0.55, v + 1.6, t - 0.01, 0.6, c=0.15))
+        parts.append(ext(circle((x, v + 1.0), 0.28, 10), t + 0.55, t + 0.85))
+    return parts
+
+
+def window_stickley(w, h, n=2, upper=False, A=1.2):
+    """The Stickley's casements: ``n`` leaves, each with a grid of small panes across its top
+    third over one big pane, between square mullions. Downstairs the head is a thick board with
+    keyed through-tenons over a plain sill; upstairs the head is cut in a shallow arch on its
+    underside and the sill rides on a pair of pegged corbels (the storeys differ)."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    u0, v0, u1, v1 = plug_cs.offset(-0.5, JoinType.Miter, 4.0).bounds()
+    mull = 1.0
+    cw = (u1 - u0 - (n - 1) * mull) / n
+    vt = v1 - (v1 - v0) * 0.33
+    bars = []
+    for j in range(n):
+        a = u0 + j * (cw + mull)
+        bars.append(rect(a - 1, vt - 0.22, a + cw + 1, vt + 0.22))
+        bars.append(rect(a - 1, (vt + v1) / 2 - 0.2, a + cw + 1, (vt + v1) / 2 + 0.2))
+        for k in (1, 2):
+            bars.append(rect(a + cw * k / 3 - 0.2, vt, a + cw * k / 3 + 0.2, v1 + 1))
+    g = cs_union([rect(u0 + j * (cw + mull), v0, u0 + j * (cw + mull) + cw, v1) for j in range(n)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, cs_union(bars), plug_cs)
+    for j in range(1, n):
+        a = u0 + j * (cw + mull) - mull
+        sash.append(ext(rect(a, v0, a + mull, v1), -pl, 0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, 0.7),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.8)]
+    hw = w / 2 + A
+    if upper:
+        head = rect(-hw - 1.0, h + A - 0.01, hw + 1.0, h + A + 2.2) - (circle((0.0, h + A - w * 1.6), w * 1.6 + 0.9, 60) ^ rect(-hw + 0.8, h, hw - 0.8, h + A + 1.0))
+        parts.append(ext(head, 0.0, 1.1))
+        parts.append(chamfer_box(-hw - 1.0, -1.0, hw + 1.0, 0.2, 0.0, 1.4, c=0.35, bottom=0.8))
+        for sg in (-1, 1):
+            x = sg * (hw - 0.8)
+            for k in range(5):
+                parts.append(box([x - 0.5, -1.0 - (k + 1) * 0.5, 0.0], [x + 0.5, -1.0 - k * 0.5 + 0.01, 1.3 * math.cos(math.asin(min(1.0, (k + 0.5) / 5)))]))
+            parts.append(ext(circle((x, -2.0), 0.25, 10), 0.9, 1.3))
+        top, bot = h + A + 2.2, -3.5
+    else:
+        parts += _tenon_head(hw, h + A - 0.01)
+        parts.append(chamfer_box(-hw - 0.8, -1.0, hw + 0.8, 0.2, 0.0, 1.3, c=0.35, bottom=0.8))
+        parts.append(ext(rect(-hw + 0.4, -2.2, hw - 0.4, -0.99), 0.0, 0.7))
+        top, bot = h + A + 2.0, -2.2
+    return O._one_piece(sash, parts, op, plug_cs, pl, top, bot)
+
+
+def door_stickley(w=11.0, h=24.0, A=1.4, glazed=False):
+    """The Stickley's doors: a heavy leaf of vertical boards with three small square lights in
+    a row near the top over a dentil shelf, long wrought strap hinges ending in arrow heads, a
+    ring knocker, under the keyed tenon head. ``glazed``: the sleeping porch's door, glazed in
+    small panes above a single panel."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    leaf = plug_cs.offset(-0.3, JoinType.Miter, 4.0)
+    u0, v0, u1, v1 = leaf.bounds()
+    if glazed:
+        win = rect(u0 + 1.0, v0 + (v1 - v0) * 0.42, u1 - 1.0, v1 - 1.0)
+        wb = win.bounds()
+        bars = cs_union([rect(x - 0.2, wb[1] - 1, x + 0.2, wb[3] + 1) for x in np.linspace(wb[0], wb[2], 4)[1:-1]] +
+                        [rect(wb[0] - 1, y - 0.2, wb[2] + 1, y + 0.2) for y in np.linspace(wb[1], wb[3], 5)[1:-1]])
+        body = [ext(plug_cs, -pl, -1.0), ext(leaf - win, -1.0, -0.6), chamfer_box(u0 + 1.0, v0 + 1.0, u1 - 1.0, v0 + (v1 - v0) * 0.42 - 1.0, -0.6, 0.3, c=0.15)]
+        sash = _glazed(body, win, pl, bars, plug_cs)
+    else:
+        lights = cs_union([rect(u0 + 1.0 + k * (u1 - u0 - 2.0) / 3 + 0.3, v1 - 4.2, u0 + 1.0 + (k + 1) * (u1 - u0 - 2.0) / 3 - 0.3, v1 - 1.6) for k in range(3)])
+        boards = cs_union([rect(u0 + k * (u1 - u0) / 5 - 0.12, v0, u0 + k * (u1 - u0) / 5 + 0.12, v1 - 5.0) for k in range(1, 5)])
+        body = [ext(plug_cs, -pl, -1.0), ext(leaf - lights - boards, -1.0, -0.6), ext(leaf - lights, -1.0, -0.8)]
+        body.append(chamfer_box(u0 + 0.6, v1 - 5.4, u1 - 0.6, v1 - 4.6, -0.6, 0.5, c=0.15))
+        body.append(ext(cs_union([rect(x - 0.22, v1 - 5.9, x + 0.22, v1 - 5.4) for x in np.arange(u0 + 1.0, u1 - 0.6, 0.9)]), -0.6, -0.3))
+        for v in (h * 0.18, h * 0.55):
+            xe = u0 + (u1 - u0) * 0.7
+            body.append(ext(cs_union([rect(u0 + 0.2, v - 0.35, xe, v + 0.35), poly([(xe - 0.1, v - 0.8), (xe + 1.0, v), (xe - 0.1, v + 0.8)])]) ^ leaf, -0.7, -0.35))
+        body.append(ext(circle((u1 - 1.5, h * 0.42), 0.8, 16) - circle((u1 - 1.5, h * 0.42), 0.4, 12), -0.7, -0.35))
+        sash = _glazed(body, lights, pl, None, plug_cs)
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, 0.7),
+             ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.8)]
+    parts += _tenon_head(w / 2 + A, h + A - 0.01)
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.0, 0.0)
+
+
+def post_stickley(h, collar=None, abacus=3.4, slot=None):
+    """A Stickley porch post: a plain round shaft on a square block, carrying a bolster (a
+    short beam across the top, its ends cut in a double step) under a square cap."""
+    zt = h - 3.2
+    body = PW._plinth(3.4, 1.2) + box([-1.6, -1.6, 1.19], [1.6, 1.6, 3.0])
+    body = body + PW._revolve([(0.0, 2.99), (1.25, 2.99), (1.2, zt), (0.0, zt)], 32)
+    bol = poly([(-3.4, 0.0), (3.4, 0.0), (3.4, -0.6), (2.9, -0.6), (2.9, -1.1), (2.4, -1.1), (2.0, -1.6), (-2.0, -1.6), (-2.4, -1.1),
+                (-2.9, -1.1), (-2.9, -0.6), (-3.4, -0.6)])
+    body = body + ext(bol, -1.0, 1.0).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, h - 1.59]]))
+    return body + box([-1.7, -1.7, zt - 0.01], [1.7, 1.7, h])
+
+
+def fill_splats(L, vb, vt):
+    """A railing of broad flat splats alternating with pairs of thin sticks."""
+    parts = [rect(0.0, vb, L, vb + 1.0), rect(0.0, vt - 1.3, L, vt)]
+    n = max(1, int(L / 4.2))
+    for k in range(n):
+        c = L * (k + 0.5) / n
+        parts.append(rect(c - 0.9, vb, c + 0.9, vt))
+        if k < n - 1:
+            c2 = L * (k + 1) / n
+            parts += [rect(c2 - 0.75, vb, c2 - 0.35, vt), rect(c2 + 0.35, vb, c2 + 0.75, vt)]
+    return parts
+
+
+def fill_shakeparapet(L, vb, vt):
+    """A solid parapet for the sleeping porch, faced in shakes (grooved courses), with a flat
+    capping rail."""
+    board = rect(0.0, vb, L, vt)
+    grooves = cs_union([rect(-1, v - 0.2, L + 1, v + 0.2) for v in np.arange(vb + 2.0, vt - 1.5, 2.0)])
+    return [board - grooves, rect(0.0, vt - 1.3, L, vt)]
+
+
+def frieze_bolsterbeam(u0, u1, v_bot, v_top):
+    """A porch beam whose ends step down onto bolsters over the posts."""
+    v0 = v_top - 2.6
+    beam = rect(u0, v0, u1, v_top + 0.05)
+    L = u1 - u0
+    c = min(2.6, L * 0.14)
+    for (a, sg) in ((u0, 1), (u1, -1)):
+        beam = beam + poly([(a, v0 + 0.01), (a + sg * c, v0 + 0.01), (a + sg * c, v0 - 0.5), (a + sg * c * 0.5, v0 - 0.5), (a + sg * c * 0.5, v0 - 1.0), (a, v0 - 1.0)])
+    return beam
+
+
+def edge_twinrafters(L, z0, zc):
+    """Porch fascia (the Stickley): rafter tails in pairs under the roof's edge."""
+    xs = np.arange(1.2, L - 1.0, 3.4)
+    return cs_union([rect(x - 0.35, zc - 1.6, x + 0.35, zc) for x in xs] + [rect(x + 0.9 - 0.35, zc - 1.6, x + 0.9 + 0.35, zc) for x in xs if x + 1.3 < L]) + \
+        rect(0.3, zc - 0.5, L - 0.3, zc), 0.8
+
+
+def skirt_formboard(reg, d=1.2):
+    """A porch skirt of board-formed concrete with a square vent in every bay."""
+    if reg.is_empty():
+        return M()
+    u0, v0, u1, v1 = reg.bounds()
+    body = M.extrude(reg, d * 0.55) - ext(cs_union([rect(u0 - 1, v - 0.1, u1 + 1, v + 0.1) for v in np.arange(v0 + 1.4, v1, 1.4)]) ^ reg, d * 0.4, d)
+    vents = cs_union([rect(u - 1.2, (v0 + v1) / 2 - 1.0, u + 1.2, (v0 + v1) / 2 + 1.0) for u in np.arange(u0 + 6.0, u1 - 3.0, 12.0)]) ^ reg
+    return body - ext(vents, d * 0.2, d)
+
+
+PW.POSTS.update(stickley=post_stickley)
+PW.FILLS.update(splats=fill_splats, shakeparapet=fill_shakeparapet)
+PW.FRIEZES.update(bolsterbeam=frieze_bolsterbeam)
+PW.SKIRTS.update(formboard=skirt_formboard)
+FT.EDGE_EXTRA.update(twinrafters=edge_twinrafters)
+
+
+def pergola(x0, x1, y_wall, y_front, zp, posts_x, post_h, z_foot, peg=1.6):
+    """The Stickley's entrance pergola, one piece: round posts (Stickley bolster tops) at the
+    front corners, a beam from each post back to the wall, and cross rafters over them, every
+    end cut in a double step; square pegs under the posts. Prints upside down on its rafters."""
+    out = []
+    for x in posts_x:
+        out.append(post_stickley(post_h).translate([x, y_front + 1.8, z_foot]))
+        out.append(box([x - peg / 2, y_front + 1.8 - peg / 2, z_foot - 1.6], [x + peg / 2, y_front + 1.8 + peg / 2, z_foot + 0.01]))
+        prof = poly([(y_front - 1.6, zp - 0.9), (y_front - 1.6, zp), (y_wall, zp), (y_wall, zp - 2.6), (y_front + 0.6, zp - 2.6),
+                     (y_front - 0.3, zp - 1.8), (y_front - 0.9, zp - 1.8), (y_front - 0.9, zp - 0.9)])
+        out.append(ext(prof, x - 1.0, x + 1.0).transform(np.array([[0, 0, 1.0, 0], [1.0, 0, 0, 0], [0, 1.0, 0, 0]])))
+    for y in np.arange(y_wall - 1.4, y_front - 0.5, -2.8):
+        prof = poly([(x0, zp + 1.6), (x1, zp + 1.6), (x1, zp + 0.8), (x1 - 0.6, zp + 0.8), (x1 - 1.2, zp - 0.01), (x0 + 1.2, zp - 0.01),
+                     (x0 + 0.6, zp + 0.8), (x0, zp + 0.8)])
+        out.append(ext(prof, y - 0.55, y + 0.55).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])))
+    return union(out)

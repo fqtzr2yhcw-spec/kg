@@ -359,6 +359,22 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                     butts.append(rect(u + 0.08, v, u + wd - 0.08, v + 0.4))
                     u += wd
             tex = M.extrude(cs_union(sh) ^ clip, d) + M.extrude(cs_union(butts) ^ clip, d + 0.12)
+        elif shape == "hexslate":         # hexagonal slates laid point-down, each course's points between those of
+            b = loc.bounds()              # the course below, reading as a honeycomb (the Stickley)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            hx = []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                off = (j % 2) * wtab / 2
+                for k in range(int(np.floor((b[0] - off) / wtab)) - 2, int(np.ceil((b[2] - off) / wtab)) + 2):
+                    u = off + k * wtab
+                    c = u + wtab / 2
+                    hx.append(poly([(c, v), (u + wtab - 0.15, v + pitch * 0.4), (u + wtab - 0.15, v + pitch * 1.1),
+                                    (u + 0.15, v + pitch * 1.1), (u + 0.15, v + pitch * 0.4)]))
+            lay = {0: [], 1: []}
+            for n_, h_ in enumerate(hx):
+                lay[n_ % 2].append(h_)
+            tex = M.extrude(cs_union(hx) ^ clip, d)
         else:
             tex = scallop_rows(loc, pitch, wtab, d=d, shape=shape, datum=loc.bounds()[1])
         vdir = np.array([t[0] * cth, t[1] * cth, s * cth])

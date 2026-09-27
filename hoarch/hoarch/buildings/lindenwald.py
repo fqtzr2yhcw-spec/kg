@@ -220,7 +220,7 @@ def build(kit=None):
     kit.add("PORCH-deck", "PorchDeck", deck, P=print_flip(), group="porch", render=FT.plank_zones(deck, H_floor, "Planks", "PorchDeck"))
     bld_keep = union([p.solid for p in kit.parts if p.name in ("WALLS-1", "JOINT", "WALLS-2") or p.name.startswith("CORNICE")])
     keep = bld_keep + union(ins_keep) + fnd
-    res = FT.add_porch_top(kit, "PORCH", PP, keep, "Wood", "Cream", tin="custom", group="porch")
+    res = FT.add_porch_top(kit, "PORCH", PP, keep, "Wood", "Cream", group="porch")      # the whole slab: it is the balcony floor
     top = {p.name: p for p in kit.parts}["PORCH-top"].solid
     tb = top.bounding_box()
     zt = res["ptop"]

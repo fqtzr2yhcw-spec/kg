@@ -1103,6 +1103,24 @@ print upright.
 """, """The cornices' upper parts, the PORCH-deck and the PORCH-top print upside down; the bargeboards
 print flat; the walls, the roof, the chimney and the balcony railing print upright.
 """),
+    "stickley": ("THE STICKLEY - CRAFTSMAN WITH SLEEPING PORCH", """  1. FOUNDATION (board-formed concrete).
+  2. WALLS-1 onto the foundation's lip: the whole lap-sided ground storey in one part.
+  3. JOINT onto WALLS-1, WALLS-2 onto its lip: the whole shaked upper storey with both gables.
+  4. Windows and doors: clip off the supports and push each plug into its opening from outside.
+  5. The CORNICE-J parts round the joint, the CORNICE-E parts round the eave.
+  6. ROOF onto the lip at the wall tops; CHIMNEY into its pocket on the ridge.
+  7. The two-tier porch on the east gable: PORCH-deck against the foundation; PORCH-top (posts,
+     railings, beams and the sleeping porch's floor, one piece) onto it, each peg into its
+     socket; SLEEP-top (the sleeping porch's posts, shaked parapets and beams, one piece) onto
+     the floor, its pegs into the sockets in PORCH-top; SLEEP-roof on its flat top against the
+     gable; PORCH-steps-0 at the east steps.
+  8. The pergola: TERRACE against the foundation at the front door, TERRACE-steps into its
+     front; PERGOLA (posts, beams and rafters, one piece) onto the terrace, its pegs into the
+     sockets, the beam ends against the wall.
+  9. STOOP-back at the back door.
+""", """The cornices' upper parts, the PORCH-deck, both porch tops and the PERGOLA print upside down;
+the walls, the roofs, the terrace and the chimney print upright.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
