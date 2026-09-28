@@ -1947,3 +1947,121 @@ def wing_brick(Lw=70.0, h0=86.0, T=4.0, side=1, back=6.0):
     field = outline - rect(-back - 1, -1, Lw + 1, 6.0) - cs_union(cops) - cs_union(quo) - capr - (pier ^ rect(Lw - 9.0, 0, Lw, 999))
     parts.append(brick_flemish(S(field), datum=6.0))
     return union(parts)
+
+
+# ================================================================== 79 the Mill Creek Bridge (abutments, pier, girder spans)
+def _panels(face_cs, inset=2.0, pw=12.0, gap=2.4, depth=0.6, c=0.5):
+    """Recessed chamfered panels filling a face outline (u, v): returns the cutter solid (to
+    subtract, in w 0..depth into the face from w = 0 going negative)."""
+    b = face_cs.bounds()
+    inner = face_cs.offset(-inset, MJ, 4.0)
+    if inner.is_empty():
+        return M()
+    ib = inner.bounds()
+    n = max(1, int(round((ib[2] - ib[0] + gap) / (pw + gap))))
+    w_ = (ib[2] - ib[0] - (n - 1) * gap) / n
+    cuts = []
+    for k in range(n):
+        u0 = ib[0] + k * (w_ + gap)
+        r = rect(u0, ib[1], u0 + w_, ib[3]) ^ inner
+        if r.is_empty():
+            continue
+        rs = r.offset(-c, MJ, 4.0)
+        cuts.append(M.hull_points([(p[0], p[1], 0.01) for loop in r.to_polygons() for p in loop] +
+                                  [(p[0], p[1], -depth) for loop in (rs.to_polygons() if not rs.is_empty() else r.to_polygons()) for p in loop]))
+    return union(cuts)
+
+
+def abutment_concrete(W=48.0, z_seat=40.0, z_top=60.0, seat=8.0, back=6.0, wing=45.0, wt=6.0, splay=30.0, z_end=22.0,
+                      pads=(-10.0, 10.0), date="1908"):
+    """A concrete bridge abutment, one piece printed upright: the breast wall to the bridge
+    seat with three recessed chamfered panels, a coping under the seat, bearing pads for the
+    girders, the backwall rising behind the seat with the date cast in a plate, splayed wing
+    walls sloping down to capped ends with panels and a coping, a projecting footing. Local: x
+    across (centred), y back into the bank (the breast's face at y = 0, facing -y), z up."""
+    from .storefront import text_cs
+    hw = W / 2
+    out = [box([-hw, 0.0, 0.0], [hw, seat + back, z_seat]), box([-hw, seat, z_seat - 0.01], [hw, seat + back, z_top])]
+    a = math.radians(splay)
+    for s in (-1, 1):
+        d = np.array([s * math.sin(a), math.cos(a)])
+        n = np.array([d[1] * s, -d[0] * s])                  # outward normal of the wing's outer face
+        p0 = np.array([s * hw, 0.0])
+        q = [p0, p0 + d * wing, p0 + d * wing - n * wt, p0 - n * wt]
+        body = M.hull_points([(p[0], p[1], z) for p in (q[0], q[3]) for z in (0.0, z_top)] +
+                             [(p[0], p[1], z) for p in (q[1], q[2]) for z in (0.0, z_end)])
+        A = np.array([[d[0], 0.0, n[0], p0[0]], [d[1], 0.0, n[1], p0[1]], [0.0, 1.0, 0.0, 0.0]])
+        face = poly([(0.0, 5.0), (wing - 3.0, 5.0), (wing - 3.0, z_end - 3.0), (0.0, z_top - 3.0)])
+        body = body - _panels(face, inset=2.4, pw=11.0, gap=2.4).transform(A)
+        cop = M.hull_points([(p[0] + n[0] * 0.9, p[1] + n[1] * 0.9, z) for (p, zt) in ((q[0], z_top), (q[1], z_end)) for z in (zt - 0.3, zt + 1.6)] +
+                            [(p[0] - n[0] * 0.3, p[1] - n[1] * 0.3, z) for (p, zt) in ((q[3], z_top), (q[2], z_end)) for z in (zt - 1.2, zt + 1.6)] +
+                            [(p[0], p[1], zt - 1.2) for (p, zt) in ((q[0], z_top), (q[1], z_end))])
+        endcap = M.hull_points([(p[0] + e_[0], p[1] + e_[1], z) for p in (q[1], q[2]) for e_ in ((0.0, 0.0), tuple(d * -4.0))
+                                for z in (z_end - 0.01, z_end + 3.2)])
+        out += [body, cop, endcap]
+    m = union(out)
+    # the breast's panels, its coping under the seat, the footing
+    Ab = np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, -1.0, 0.0], [0.0, 1.0, 0.0, 0.0]])
+    m = m - _panels(rect(-hw, 5.0, hw, z_seat - 4.0), inset=2.2, pw=12.0).transform(Ab)
+    cop = M.hull_points([(x, y, z) for x in (-hw - 0.1, hw + 0.1) for (y, z) in ((0.0, z_seat - 3.2), (-1.6, z_seat - 1.6), (-1.6, z_seat), (0.2, z_seat))])
+    foot = M.hull_points([(x, y, z) for x in (-hw - 2.0, hw + 2.0) for (y, z) in ((-2.0, 0.0), (-2.0, 3.0), (0.0, 5.0), (seat + back, 0.0), (seat + back, 5.0))])
+    pads = union([box([x - 3.5, 0.8, z_seat - 0.01], [x + 3.5, seat - 1.0, z_seat + 2.0]) for x in pads])
+    # the date plate on the backwall's face (y = seat, facing -y)
+    plate = box([-8.0, seat - 0.6, z_seat + 7.0], [8.0, seat + 0.01, z_seat + 14.0])
+    letters = text_cs(date, cap=4.0, font="serif", track=0.5)
+    lb = letters.bounds()
+    Aw = np.array([[1.0, 0.0, 0.0, -(lb[0] + lb[2]) / 2], [0.0, 0.0, -1.0, seat - 0.59], [0.0, 1.0, 0.0, z_seat + 10.5 - (lb[1] + lb[3]) / 2]])
+    lt = M.extrude(letters, 0.5).transform(Aw)
+    return m + cop + foot + pads + plate + lt
+
+
+def pier_concrete(L=44.0, t0=18.0, t1=14.0, h=36.0, nose=8.0, cap=4.0, pads=(-10.0, 10.0)):
+    """A concrete bridge pier, one piece printed upright: a battered shaft with a pointed
+    cutwater at each end, recessed panels on its long faces, a projecting coping cap with
+    bearing pads for the spans each side, a footing. Local: centred, the spans running along y,
+    z = 0 at the footing's foot."""
+    def section(t, L_, nose_):
+        return [(-L_ / 2 - nose_, 0.0), (-L_ / 2, -t / 2), (L_ / 2, -t / 2), (L_ / 2 + nose_, 0.0), (L_ / 2, t / 2), (-L_ / 2, t / 2)]
+    body = M.hull_points([(x, y, 0.0) for (x, y) in section(t0, L, nose)] + [(x, y, h) for (x, y) in section(t1, L, nose * 0.8)])
+    for sg in (-1, 1):
+        A = np.array([[sg * 1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0 * sg, sg * (t0 / 2)], [0.0, 1.0, 0.0, 0.0]])
+        # a panel set on each long face (cut a little deeper to allow for the batter)
+        pcs = _panels(rect(-L / 2, 5.0, L / 2, h - 4.0), inset=2.6, pw=10.0, depth=0.6 + (t0 - t1) / 2 * 1.0)
+        body = body - pcs.transform(np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, -sg * 1.0, sg * (t0 / 2) - sg * (t0 - t1) / 2 * 0.5], [0.0, 1.0, 0.0, 0.0]]))
+    capm = M.hull_points([(x, y, h - 0.01) for (x, y) in section(t1, L, nose * 0.8)] +
+                         [(x * 1.0, y * 1.0, h + 1.6) for (x, y) in section(t1 + 3.2, L + 3.2, nose * 0.8)] +
+                         [(x, y, h + cap) for (x, y) in section(t1 + 3.2, L + 3.2, nose * 0.8)])
+    foot = M.hull_points([(x, y, 0.0) for (x, y) in section(t0 + 4.0, L + 4.0, nose + 1.0)] + [(x, y, 3.0) for (x, y) in section(t0 + 4.0, L + 4.0, nose + 1.0)] +
+                         [(x, y, 4.6) for (x, y) in section(t0, L, nose)])
+    pads_ = union([box([x - 3.5, sg * 0.8 - (6.0 if sg < 0 else 0.0), h + cap - 0.01], [x + 3.5, sg * 0.8 + (6.0 if sg > 0 else 0.0), h + cap + 2.0])
+                   for x in pads for sg in (-1, 1)])
+    return body + capm + foot + pads_
+
+
+def span_girder(L=120.0, gx=10.0, depth=16.0, deck_w=36.0, deck_t=2.0, curb=3.0, fl=6.0, tw=1.2, stiff=10.0):
+    """A ballasted deck plate-girder span, one piece printed upright on its bottom flanges: two
+    riveted plate girders under a steel deck plate with ballast curbs, the deck's overhang
+    carried on 45 degree fascia plates, stiffener angles up the webs, solid diaphragms between
+    the girders. Local: centred on its length (along y), x across, z = 0 at the flanges' feet."""
+    out = []
+    for s in (-1, 1):
+        x = s * gx
+        out.append(box([x - fl / 2, -L / 2, 0.0], [x + fl / 2, L / 2, 1.2]))                 # bottom flange
+        out.append(M.hull_points([(x + dx, y, z) for y in (-L / 2, L / 2) for (dx, z) in ((-fl / 2, 1.19), (fl / 2, 1.19), (-tw / 2, 1.19 + fl / 2 - tw / 2), (tw / 2, 1.19 + fl / 2 - tw / 2))]))
+        out.append(box([x - tw / 2, -L / 2, 1.0], [x + tw / 2, L / 2, depth]))              # web
+        out.append(box([x - fl / 2, -L / 2, depth - 1.2], [x + fl / 2, L / 2, depth + 0.01]))  # top flange
+        for y in np.arange(-L / 2 + 2.0, L / 2 - 1.0, stiff):
+            for sx in (-1, 1):
+                out.append(box([x + sx * tw / 2 - (0.9 if sx < 0 else 0.0), y - 0.45, 1.19], [x + sx * tw / 2 + (0.9 if sx > 0 else 0.0), y + 0.45, depth - 1.19]))
+        riv = [M.sphere(0.28, 8).translate([x + sx * (tw / 2 + 0.05), y, z]) for sx in (-1, 1)
+               for y in np.arange(-L / 2 + 1.0, L / 2, 1.6) for z in (2.0, depth - 2.0)]
+        out.append(union(riv))
+    for y in np.arange(-L / 2 + 6.0, L / 2 - 5.0, (L - 12.0) / 4):
+        out.append(box([-gx + tw / 2 - 0.01, y - 0.6, 3.0], [gx - tw / 2 + 0.01, y + 0.6, depth - 0.5]))
+    deck = box([-deck_w / 2, -L / 2, depth], [deck_w / 2, L / 2, depth + deck_t])
+    for s in (-1, 1):
+        out.append(M.hull_points([(s * gx + s * fl / 2, y, depth - 0.01) for y in (-L / 2, L / 2)] + [(s * (gx + fl / 2 - 0.01), y, depth - 1.2) for y in (-L / 2, L / 2)] +
+                                 [(s * deck_w / 2, y, depth + 0.01) for y in (-L / 2, L / 2)] +
+                                 [(s * (deck_w / 2 - 0.01), y, depth - (deck_w / 2 - gx - fl / 2) - 0.01) for y in (-L / 2, L / 2)]))
+        out.append(box([s * deck_w / 2 - (1.4 if s > 0 else 0.0), -L / 2, depth + deck_t - 0.01], [s * deck_w / 2 + (1.4 if s < 0 else 0.0), L / 2, depth + deck_t + curb]))
+    return union(out) + deck
