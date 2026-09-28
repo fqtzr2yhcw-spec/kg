@@ -2065,3 +2065,66 @@ def span_girder(L=120.0, gx=10.0, depth=16.0, deck_w=36.0, deck_t=2.0, curb=3.0,
                                  [(s * (deck_w / 2 - 0.01), y, depth - (deck_w / 2 - gx - fl / 2) - 0.01) for y in (-L / 2, L / 2)]))
         out.append(box([s * deck_w / 2 - (1.4 if s > 0 else 0.0), -L / 2, depth + deck_t - 0.01], [s * deck_w / 2 + (1.4 if s < 0 else 0.0), L / 2, depth + deck_t + curb]))
     return union(out) + deck
+
+
+# ================================================================== 80 the Beaver Run Trestle
+def bent_timber(h=60.0, top=8.0, batter=0.12, post=2.2, cap=2.6, story=30.0, inner=4.5):
+    """A four-post timber trestle bent, one piece printed flat on its face: two plumb posts
+    under the stringers and two battered outer posts, a cap and a sill that run past them with
+    bolt heads, X sway braces in every story, a sash girt between stories, the braces lying on
+    the bed under the posts. Local: x across (centred), z up (the sill's foot at 0), y the
+    member depth (0..post, braces 0..1.2)."""
+    bot = top + h * batter
+    L_sill, L_cap = bot + 3.0, top + 3.5
+    out = [box([-L_cap, 0.0, h - cap], [L_cap, post, h]), box([-L_sill, 0.0, 0.0], [L_sill, post, cap])]
+    for x in (-inner, inner):
+        out.append(box([x - post / 2, 0.0, cap - 0.01], [x + post / 2, post, h - cap + 0.01]))
+    for s in (-1, 1):
+        out.append(M.hull_points([(s * bot + dx, y, cap - 0.01) for dx in (-post / 2, post / 2) for y in (0.0, post)] +
+                                 [(s * top + dx, y, h - cap + 0.01) for dx in (-post / 2, post / 2) for y in (0.0, post)]))
+    n = max(1, int(math.ceil((h - 2 * cap) / story)))
+    zs = [cap + (h - 2 * cap) * k / n for k in range(n + 1)]
+    for k in range(n):
+        za, zb = zs[k], zs[k + 1]
+        xa, xb = bot + (top - bot) * (za / h), bot + (top - bot) * (zb / h)
+        for (p0, p1) in (((-xa, za), (xb, zb)), ((xa, za), (-xb, zb))):
+            out.append(M.hull_points([(p0[0], y, p0[1] + dz) for y in (0.0, 1.2) for dz in (0.0, 1.6)] +
+                                     [(p1[0], y, p1[1] - dz) for y in (0.0, 1.2) for dz in (0.0, 1.6)]))
+        if k > 0:
+            out.append(box([-xa - post / 2, 0.0, za - 0.8], [xa + post / 2, 1.4, za + 0.8]))
+    bolts = [M.cylinder(0.5, 0.35, 0.3, 8).rotate([-90, 0, 0]).translate([x, post, z]) for x in (-L_cap + 0.8, L_cap - 0.8, -inner, inner, -top, top)
+             for z in (h - cap / 2,)] + [M.cylinder(0.5, 0.35, 0.3, 8).rotate([-90, 0, 0]).translate([x, post, cap / 2]) for x in (-L_sill + 0.8, L_sill - 0.8, -bot, bot)]
+    return union(out) + union(bolts)
+
+
+def deck_trestle(L=50.0, tie_w=2.6, tie_t=1.8, tie_l=30.0, pitch=4.0, str_w=1.8, str_h=3.2, guard=1.6):
+    """One span of the trestle's open deck, one piece printed upside down on its guard timbers:
+    four stringers (two under each rail) on spacer blocks, ties across them every 4 mm, guard
+    timbers along the tie ends. Local: centred on its length (along y), x across, z = 0 at the
+    stringers' foot (they rest on the bents' caps)."""
+    out = []
+    for x in (-9.9, -7.1, 7.1, 9.9):
+        out.append(box([x - str_w / 2, -L / 2, 0.0], [x + str_w / 2, L / 2, str_h]))
+    for y in (-L / 2 + 3.0, 0.0, L / 2 - 3.0):
+        for x in (-8.5, 8.5):
+            out.append(box([x - 1.2, y - 1.0, 0.6], [x + 1.2, y + 1.0, str_h]))
+    for y in np.arange(-L / 2 + pitch / 2, L / 2, pitch):
+        out.append(box([-tie_l / 2, y - tie_w / 2, str_h - 0.01], [tie_l / 2, y + tie_w / 2, str_h + tie_t]))
+    for s in (-1, 1):
+        x = s * (tie_l / 2 - 2.2)
+        out.append(box([x - guard / 2, -L / 2, str_h + tie_t - 0.01], [x + guard / 2, L / 2, str_h + tie_t + guard]))
+    return union(out)
+
+
+def bulkhead_timber(W=32.0, h=14.0, t=2.0, plank=1.8, cap=2.6):
+    """The trestle's end bulkhead, one piece printed on its back: horizontal planks retaining
+    the bank between three posts, a cap the stringers rest on, a sill. Local: x across
+    (centred), z up (0 at the foot), y out of the face (back at 0)."""
+    out = [box([-W / 2, 0.0, 0.0], [W / 2, t, h])]
+    grooves = union([box([-W, t - 0.3, z - 0.18], [W, t + 1, z + 0.18]) for z in np.arange(plank, h - cap, plank)])
+    out[0] = out[0] - grooves
+    for x in (-W / 2 + 1.2, 0.0, W / 2 - 1.2):
+        out.append(box([x - 1.1, t - 0.01, 0.0], [x + 1.1, t + 1.4, h - cap]))
+    out.append(box([-W / 2 - 1.0, 0.0, h - cap], [W / 2 + 1.0, t + 2.2, h]))
+    out.append(box([-W / 2 - 1.0, 0.0, 0.0], [W / 2 + 1.0, t + 2.2, 1.6]))
+    return union(out)
