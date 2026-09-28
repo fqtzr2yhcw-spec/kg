@@ -375,6 +375,53 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
             for n_, h_ in enumerate(hx):
                 lay[n_ % 2].append(h_)
             tex = M.extrude(cs_union(hx) ^ clip, d)
+        elif shape == "bevelbutt":        # sawn shingles of random width whose butts are bevelled back, a sharp
+            b = loc.bounds()              # shadow line under each course (Pleasant Valley School)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(int(abs(b[0]) * 5 + abs(b[2]) * 3 + i * 13) % 991)
+            sh, butt = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                u = b[0] - rng.uniform(0.0, wtab)
+                while u < b[2] + 1.0:
+                    wd = rng.uniform(wtab * 0.6, wtab * 1.4)
+                    sh.append(rect(u + 0.08, v + 0.35, u + wd - 0.08, v + pitch - 0.1))
+                    butt.append(rect(u + 0.08, v, u + wd - 0.08, v + 0.36))
+                    u += wd
+            tex = M.extrude(cs_union(sh) ^ clip, d) + M.extrude(cs_union(butt) ^ clip, d * 0.55)
+        elif shape == "rolllap":          # rolled roofing: wide strips lapped up the slope, a row of nail heads along
+            b = loc.bounds()              # each lap (the Lakeshore Freight House)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            laps, nails = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                laps.append(rect(b[0] - 1, v, b[2] + 1, v + pitch - 0.15))
+                nails += [circle((u, v + 0.35), 0.18, 8) for u in np.arange(b[0] + (j % 2) * 0.9, b[2], 1.8)]
+            tex = M.extrude(cs_union(laps) ^ clip, d) + M.extrude(cs_union(nails) ^ clip, d + 0.12)
+        elif shape == "embossed":         # pressed-tin shingles: square plates in broken courses, each with a raised
+            b = loc.bounds()              # boss at its middle (Engine No. 3)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh, boss = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                for u in np.arange(b[0] - wtab + (j % 2) * wtab / 2, b[2] + wtab, wtab):
+                    sh.append(rect(u + 0.1, v, u + wtab - 0.1, v + pitch - 0.12))
+                    boss.append(circle((u + wtab / 2, v + pitch * 0.45), min(0.45, pitch * 0.22), 10))
+            tex = M.extrude(cs_union(sh) ^ clip, d) + M.extrude(cs_union(boss) ^ clip.offset(-0.3, JoinType.Miter, 4.0), d + 0.15)
+        elif shape == "clipcorner":       # slates each with one lower corner clipped, left and right in turn along
+            b = loc.bounds()              # the course, so the butts read as a sawtooth (Harmon Town Hall)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh = []
+            c = min(0.6, pitch * 0.4)
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                for k, u in enumerate(np.arange(b[0] - wtab + (j % 2) * wtab / 2, b[2] + wtab, wtab)):
+                    s0, s1 = u + 0.08, u + wtab - 0.08
+                    if k % 2:
+                        sh.append(poly([(s0, v), (s1 - c, v), (s1, v + c), (s1, v + pitch - 0.1), (s0, v + pitch - 0.1)]))
+                    else:
+                        sh.append(poly([(s0, v + c), (s0 + c, v), (s1, v), (s1, v + pitch - 0.1), (s0, v + pitch - 0.1)]))
+            tex = M.extrude(cs_union(sh) ^ clip, d)
         elif shape == "zigband":          # plain slates in broken-joint courses, every fifth course pointed at its
             b = loc.bounds()              # butt so the band reads as a zigzag (St. Brendan's)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)

@@ -622,8 +622,10 @@ def dormer_depot(w=24.0, dep=16.0, hwall=11.0, sg=0.9):
     (body, core, face)."""
     rise = w / 2 * sg
     face = poly([(-w / 2, 0.0), (w / 2, 0.0), (w / 2, hwall), (0.0, hwall + rise), (-w / 2, hwall)])
-    inner = face.offset(-1.2, MJ, 4.0) ^ rect(-50, 1.2, 50, 999)
-    body = ext(face, -dep, 0.0) - ext(inner, -dep - 1, -1.2)
+    box_ = rect(-w / 2, 0.0, w / 2, hwall)
+    inner = box_.offset(-1.2, MJ, 4.0) ^ rect(-50, 1.2, 50, hwall + 1.0)
+    # an open-topped box with the gable only as a plate on its face: the roof is a solid cap on it
+    body = ext(box_, -dep, 0.0) - ext(inner, -dep - 1, -1.2) + ext(face ^ rect(-50, hwall - 0.01, 50, 999), -1.2, 0.0)
     win = rect(-4.6, 2.4, 4.6, 8.4)
     trim = cs_union([rect(-w / 2, 0.0, -w / 2 + 1.1, hwall), rect(w / 2 - 1.1, 0.0, w / 2, hwall),
                      (face - face.offset(-1.1, MJ, 4.0)) ^ rect(-50, hwall - 0.01, 50, 999), rect(-w / 2, hwall - 0.9, w / 2, hwall + 0.2)])
@@ -647,23 +649,22 @@ def dormer_depot(w=24.0, dep=16.0, hwall=11.0, sg=0.9):
 
 
 def dormer_depot_roof(w, dep, hwall, sg=0.9, over=1.8, t=1.3, back=18.0, pitch=1.7):
-    """The dormer's gable roof: a chevron slab over the face's rakes running back into the main
-    roof, shingle courses grooved along it (local as dormer_depot)."""
+    """The dormer's gable roof: a solid cap with a flat foot on the dormer box's top, running back
+    into the main roof, open under the rakes in front of the gable plate, shingle courses grooved
+    along it (local as dormer_depot). Prints upright on its foot."""
     rise = w / 2 * sg
-    a = w / 2 + over
-    base_v = hwall - over * sg
     lift = t * math.sqrt(1 + sg * sg)
-    outer = poly([(-a, base_v), (a, base_v), (0.0, hwall + rise + lift)])
-    inner = poly([(-a - 5.0, base_v - 5.0 * sg), (a + 5.0, base_v - 5.0 * sg), (0.0, hwall + rise)])
-    slab_ = outer - inner
+    a = (rise + lift) / sg                                   # the cap's half width at its flat foot (on the box's top)
+    outer = poly([(-a, hwall), (a, hwall), (0.0, hwall + rise + lift)])
+    face = poly([(-w / 2, hwall - 0.01), (w / 2, hwall - 0.01), (0.0, hwall + rise)]).offset(0.05, MJ, 4.0)
     notches = []
-    L = math.hypot(a, rise + over * sg)
-    for k in np.arange(pitch, L - 0.4, pitch):
+    L = math.hypot(a, rise + lift)
+    for k in np.arange(pitch, L - 0.6, pitch):
         f = k / L
         for sg_ in (-1, 1):
-            notches.append(circle((sg_ * a * (1 - f), base_v + (hwall + rise + lift - base_v) * f), 0.22, 8))
-    cs = slab_ - cs_union(notches)
-    return max(ext(cs, -dep - back, over).decompose(), key=lambda m_: m_.volume())       # drop the notched-off tips
+            notches.append(circle((sg_ * a * (1 - f), hwall + (rise + lift) * f), 0.22, 8))
+    cap = ext(outer - cs_union(notches), -dep - back, over) - ext(face, -1.21, over + 1.0)
+    return max(cap.decompose(), key=lambda m_: m_.volume())
 
 
 def clock_face(D=16.0, t=1.0):
@@ -684,3 +685,973 @@ def clock_face(D=16.0, t=1.0):
     marks.append(circle((0.0, 0.0), 0.9, 16))
     mk = ext(cs_union(marks), t - 0.01, t + 0.45)
     return dial + ring + mk, dial, mk
+
+
+# ================================================================== 63 Harmon Town Hall
+def brick_civic(region, datum=0.0, bands=()):
+    """Red pressed brick in English cross bond (stretcher courses shifting half a brick in turn,
+    a header course between), with smooth stone bands ``bands`` = [(v0, v1)] standing proud
+    (Harmon Town Hall)."""
+    if region.is_empty():
+        return M()
+    b = region.bounds()
+    bh = 0.8
+    out = M.extrude(region, 0.12)
+    bricks = []
+    for k in range(int(math.floor((b[1] - datum) / bh)) - 1, int(math.ceil((b[3] - datum) / bh)) + 1):
+        v = datum + k * bh
+        if k % 2:                                           # headers
+            step, off = 1.2, 0.3
+        else:                                               # stretchers, shifting half a brick every other time
+            step, off = 2.4, (0.0 if (k // 2) % 2 == 0 else 1.2)
+        for u in np.arange(b[0] - 2.4 + off, b[2] + 2.4, step):
+            bricks.append(rect(u + 0.1, v + 0.1, u + step - 0.1, v + bh - 0.1))
+    br = cs_union(bricks) ^ region
+    stone = cs_union([rect(b[0] - 1, v0, b[2] + 1, v1) for v0, v1 in bands]) ^ region if bands else None
+    if stone is not None:
+        br = br - stone
+    out = out + ext(br, 0.11, 0.35)
+    if stone is not None and not stone.is_empty():
+        out = out + ext(stone, 0.0, 0.6)
+    return out
+
+
+def foundation_cushion(reg, seed=0):
+    """Cushion rustication: long limestone blocks whose faces swell like pillows, deep V joints
+    between (Harmon Town Hall)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 919)
+    ch = 3.0
+    out = [M.extrude(reg, 0.2)]
+    for k, v in enumerate(np.arange(b[1], b[3] - 0.5, ch)):
+        u = b[0] - (k % 2) * 3.0
+        while u < b[2]:
+            L = rng.uniform(5.6, 7.6)
+            blk = rect(u + 0.25, v + 0.25, u + L - 0.25, min(v + ch, b[3]) - 0.25) ^ reg
+            if not blk.is_empty():
+                bb = blk.bounds()
+                if bb[2] - bb[0] > 1.6 and bb[3] - bb[1] > 1.2:
+                    out.append(chamfer_box(bb[0], bb[1], bb[2], bb[3], 0.19, 0.6, c=0.45))
+            u += L
+    return union(out)
+
+
+def frieze_lambrequin(L, h, b, pitch, margin, pair, half):
+    """A lambrequin: a band along the top from which pointed drapery tabs hang, each ending in a
+    small bead, three to a bay (Harmon Town Hall)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    parts = [rect(0.3, v1 - 0.9, L - 0.3, v1)]
+    tw = max(1.8, min(pitch / 3.0, 3.2))
+    n = int((L - 0.6) / tw)
+    u0 = (L - n * tw) / 2
+    for k in range(n):
+        a = u0 + k * tw
+        parts.append(poly([(a + 0.1, v1 - 0.85), (a + tw - 0.1, v1 - 0.85), (a + tw / 2, v0 + 0.9)]))
+        parts.append(circle((a + tw / 2, v0 + 0.55), 0.5, 12))
+    return [_st(cs_union(parts), b, 0.45)], []
+
+
+def frieze_roundelpanel(L, h, b, pitch, margin, pair, half):
+    """Between the brackets, a long sunk panel with a raised roundel at its middle; a plain face
+    behind every bracket (Harmon Town Hall)."""
+    v0, v1 = 0.6, h - 0.6
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 0.6):
+        if wd < 3.0:
+            continue
+        pan = rect(uc - wd / 2, v0, uc + wd / 2, v1)
+        rim = pan - pan.offset(-0.5, MJ, 4.0)
+        rnd = circle((uc, (v0 + v1) / 2), min(1.3, (v1 - v0) * 0.32), 20)
+        out.append(_st(rim + rnd, b, 0.4))
+    return out, []
+
+
+def course_beadbar(L, h, b, pitch, margin, p):
+    """Bead and bar: long bars and round beads in turn along a fillet."""
+    vc = h / 2
+    items = []
+    u = 0.8
+    while u < L - 1.4:
+        items.append(rect(u, vc - 0.3, u + 1.3, vc + 0.3))
+        items.append(circle((u + 1.9, vc), min(0.42, h * 0.3), 12))
+        u += 2.5
+    return [ext(rect(0.3, 0.05, L - 0.3, 0.3), b - 0.05, b + 0.25), ext(cs_union(items), b - 0.05, b + 0.4)]
+
+
+def bracket_civicconsole(h, d, t):
+    """A civic console: a stepped block head over an S-curved front that rolls into a scroll at
+    the foot, an acorn drop hanging under it (side profile, top at v = 0)."""
+    hb = max(3.0, h)
+    head = [(0.0, 0.0), (d, 0.0), (d, -0.8), (d - 0.4, -0.8), (d - 0.4, -1.3)]
+    s = [(d - 0.4 - (d - 1.6) * (3 * q * q - 2 * q ** 3), -1.3 - (hb - 2.5) * q) for q in np.linspace(0.05, 1.0, 10)]
+    prof = poly(head + s + [(0.9, -hb + 1.0), (0.0, -hb + 1.0)])
+    return cs_union([prof, circle((1.2, -hb + 1.2), 0.9, 16), circle((0.7, -hb + 0.5), 0.55, 12)])
+
+
+CO.FRIEZE_EXTRA.update(lambrequin=frieze_lambrequin, roundelpanel=frieze_roundelpanel)
+CO.COURSE_EXTRA.update(beadbar=course_beadbar)
+TW.BRACKET_EXTRA.update(civicconsole=bracket_civicconsole)
+TW.FOUNDATION_EXTRA.update(cushion=foundation_cushion)
+
+
+def _sash(plug_cs, pl, rows=2, cols=2, arch_v=None):
+    """Glazed sash in a plug: ``rows`` x ``cols`` lights (a meeting rail between the rows)."""
+    g = plug_cs.offset(-0.5, RND)
+    u0, v0, u1, v1 = g.bounds()
+    bars = [rect(u0 - 1, v0 + (v1 - v0) * k / rows - 0.3, u1 + 1, v0 + (v1 - v0) * k / rows + 0.3) for k in range(1, rows)]
+    bars += [rect(u0 + (u1 - u0) * k / cols - 0.22, v0 - 1, u0 + (u1 - u0) * k / cols + 0.22, v1 + 1) for k in range(1, cols)]
+    return _glazed([ext(plug_cs, -pl, -0.6)], g, pl, cs_union(bars) if bars else None, plug_cs)
+
+
+def window_civic_lower(w, h, A=1.4):
+    """Harmon's ground-floor window: two-over-two sash under a segmental head, in a stone lintel
+    of five raised voussoirs and a tall keystone, on a lugged sill."""
+    rise = w * 0.18
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    sash = _sash(plug_cs, pl)
+    s = h - rise
+    lint = (op.offset(A + 1.6, RND) - op) ^ rect(-w, s - 0.6, w, 999)
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext((op.offset(A, RND) - op) ^ rect(-w, 0.0, w, s), 0.0, 0.6),
+             ext(lint, 0.0, 0.8)]
+    vs = []
+    R = 50.0
+    cy = s - (w * w / 4 - rise * rise) / (2 * rise)
+    for k in range(5):
+        a0 = math.atan2(s + rise - cy, 0.0) - 0.6 + k * 0.24
+        vs.append(poly([(0.0, cy), (R * math.cos(a0), cy + R * math.sin(a0)), (R * math.cos(a0 + 0.2), cy + R * math.sin(a0 + 0.2))]))
+    parts.append(ext(lint ^ cs_union(vs), 0.79, 1.1))
+    parts.append(chamfer_box(-1.0, h - 0.4, 1.0, h + A + 2.2, 0.0, 1.4, c=0.3))
+    hw = w / 2 + A
+    parts.append(chamfer_box(-hw - 1.0, -1.2, hw + 1.0, 0.2, 0.0, 1.4, c=0.4, bottom=0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.2, -1.2)
+
+
+def window_civic_upper(w, h, A=1.3):
+    """Harmon's council-chamber window: a tall round-headed sash with radiating bars in its arch,
+    under a moulded hood on two scrolled consoles with a keystone, on a sill with a panel apron."""
+    op = O.opening_cs(w, h)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, RND)
+    u0, v0, u1, v1 = g.bounds()
+    s = h - w / 2
+    bars = [rect(u0 - 1, s - 0.3, u1 + 1, s + 0.3), rect(u0 - 1, v0 + (s - v0) * 0.5 - 0.3, u1 + 1, v0 + (s - v0) * 0.5 + 0.3),
+            rect(-0.22, v0 - 1, 0.22, s)]
+    bars += [stroke([(0.0, s), (w * math.cos(a), s + w * math.sin(a))], 0.4, caps=False) for a in (math.pi / 4, 3 * math.pi / 4)]
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, cs_union(bars), plug_cs)
+    hood = (op.offset(A + 1.6, RND) - op.offset(A + 0.2, RND)) ^ rect(-w * 2, s, w * 2, 999)
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext((op.offset(A, RND) - op) ^ rect(-w, 0.0, w, 999), 0.0, 0.6),
+             ext(hood, 0.0, 1.3), chamfer_box(-1.0, h + 0.2, 1.0, h + A + 2.6, 0.0, 1.5, c=0.3)]
+    x = w / 2 + A + 0.9
+    for sg in (-1, 1):
+        parts.append(ext(cs_union([rect(sg * x - 0.8, s - 3.0, sg * x + 0.8, s + 0.1), circle((sg * x, s - 3.0), 0.8, 14)]), 0.0, 1.3))
+    hw = w / 2 + A
+    parts.append(chamfer_box(-hw - 1.0, -1.2, hw + 1.0, 0.2, 0.0, 1.4, c=0.4, bottom=0.8))
+    apron = rect(-hw + 0.6, -3.6, hw - 0.6, -1.19)
+    parts.append(ext(apron, 0.0, 0.5))
+    parts.append(ext(apron.offset(-0.6, MJ, 4.0) - apron.offset(-1.1, MJ, 4.0), 0.49, 0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.6, -3.6)
+
+
+def window_civicbelfry(w, h, A=1.4):
+    """Harmon's belfry opening: a round arch on impost blocks filled with louvres, a keystone
+    over it and a pilaster strip each side."""
+    op = O.opening_cs(w, h)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, RND)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, None, plug_cs)
+    sash.append(ext(cs_union([rect(-w, v, w, v + 0.8) for v in np.arange(1.0, h, 1.6)]) ^ g, -pl + O.GLASS - 0.01, -0.3))
+    s = h - w / 2
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext((op.offset(A, RND) - op) ^ rect(-w, s, w, 999), 0.0, 0.9),
+             chamfer_box(-1.0, h - 0.2, 1.0, h + A + 1.2, 0.0, 1.3, c=0.3)]
+    for sg in (-1, 1):
+        x = sg * (w / 2 + A / 2)
+        parts.append(chamfer_box(x - A / 2 - 0.4, s - 1.0, x + A / 2 + 0.4, s + 0.2, 0.0, 1.2, c=0.3))
+        parts.append(ext(rect(x - A / 2, 0.0, x + A / 2, s - 0.99), 0.0, 0.8))
+    parts.append(chamfer_box(-w / 2 - A - 0.8, -1.2, w / 2 + A + 0.8, 0.2, 0.0, 1.4, c=0.4, bottom=0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.2, -1.2)
+
+
+def door_civic(w=15.0, h=30.0):
+    """Harmon's entrance: a pair of raised-panel leaves under a fanlight of radiating bars, in a
+    rusticated arch of alternate long and short blocks with a keystone, between pilasters on
+    plinths carrying an entablature."""
+    op = O.opening_cs(w, h)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    s = h - w / 2
+    fan = (plug_cs.offset(-0.5, RND) ^ rect(-w, s + 0.4, w, 999))
+    body = [ext(plug_cs, -pl, -1.0)]
+    leaves = plug_cs.offset(-0.3, RND) ^ rect(-w, 0.0, w, s - 0.3)
+    body.append(ext(leaves, -1.0, -0.6))
+    lb = leaves.bounds()
+    for sg in (-1, 1):
+        a, e = sorted((sg * 0.5, sg * (lb[2] - 0.2)))
+        for (p0, p1) in ((1.0, (s - 0.3) * 0.42), ((s - 0.3) * 0.48, s - 1.2)):
+            body.append(chamfer_box(a + 0.6, p0, e - 0.6, p1, -0.6, 0.35, c=0.2))
+    body.append(ext(rect(-w, s - 0.3, w, s + 0.4) ^ plug_cs, -pl, -0.6))
+    bars = cs_union([stroke([(0.0, s + 0.4), (w * math.cos(a), s + 0.4 + w * math.sin(a))], 0.45, caps=False)
+                     for a in np.linspace(math.pi / 6, 5 * math.pi / 6, 5)] + [circle((0.0, s + 0.4), 1.4, 20) ^ rect(-3, s + 0.4, 3, s + 3)])
+    sash = _glazed(body, fan, pl, bars, plug_cs)
+    A = 2.2
+    arch = (op.offset(A, RND) - op) ^ rect(-w * 2, s, w * 2, 999)
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext((op.offset(A, RND) - op) ^ rect(-w * 2, 0.0, w * 2, s), 0.0, 0.8),
+             ext(arch, 0.0, 0.8)]
+    R = 60.0
+    blocks = []
+    n = 9
+    for k in range(0, n, 2):
+        a0, a1 = math.pi * k / n, math.pi * (k + 1) / n
+        blocks.append(poly([(0.0, s), (R * math.cos(a0), s + R * math.sin(a0)), (R * math.cos(a1), s + R * math.sin(a1))]))
+    parts.append(ext((op.offset(A + 1.0, RND) - op) ^ rect(-w * 2, s, w * 2, 999) ^ cs_union(blocks), 0.0, 1.2))
+    parts.append(chamfer_box(-1.3, h - 0.3, 1.3, h + A + 2.2, 0.0, 1.6, c=0.35))
+    xp = w / 2 + A + 2.2
+    ztop = h + A + 2.2
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * xp - 1.6, 0.0, sg * xp + 1.6, 3.2, 0.0, 1.8, c=0.4))
+        parts.append(ext(rect(sg * xp - 1.3, 3.19, sg * xp + 1.3, ztop), 0.0, 1.3))
+        parts.append(ext(cs_union([rect(sg * xp + d_ - 0.2, 4.2, sg * xp + d_ + 0.2, ztop - 1.2) for d_ in (-0.6, 0.0, 0.6)]), 1.29, 1.5))
+    parts.append(ext(rect(-xp - 1.6, ztop - 0.01, xp + 1.6, ztop + 2.4), 0.0, 1.6))
+    parts.append(chamfer_box(-xp - 2.2, ztop + 2.39, xp + 2.2, ztop + 3.4, 0.0, 2.2, c=0.5, bottom=1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, ztop + 3.4, 0.0)
+
+
+def name_tablet(text, L, H=6.0, t=1.2, cap=3.0):
+    """A carved stone tablet: a moulded border under a low pediment, raised capitals (facade
+    frame, centred on u = 0, foot at v = 0). Returns (tablet, letters)."""
+    from .storefront import text_cs
+    b = rect(-L / 2, 0.0, L / 2, H)
+    ped = poly([(-L / 2 - 0.8, H - 0.01), (L / 2 + 0.8, H - 0.01), (0.0, H + L * 0.12)])
+    body = ext(b, 0.0, t) + ext(b - b.offset(-0.7, MJ, 4.0), t - 0.01, t + 0.5) + ext(ped, 0.0, t + 0.3)
+    letters = text_cs(text, cap=cap, font="serif", track=0.3)
+    lb = letters.bounds()
+    sc = min(1.0, (L - 2.4) / max(1e-6, lb[2] - lb[0]))
+    letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (H - cap) / 2 - lb[1]))
+    lt = ext(letters, t - 0.01, t + 0.45)
+    return body + lt, lt
+
+
+def clock_civic(D=13.0, t=1.0):
+    """Harmon's tower clock: a round dial with Roman-style bar numerals in a square stone frame
+    with carved spandrels, a small pediment over it. Facade frame, centred on the dial.
+    Returns (whole, dial, marks)."""
+    r = D / 2
+    sq = r + 2.0
+    frame = ext(rect(-sq, -sq, sq, sq), 0.0, t) + ext(rect(-sq, -sq, sq, sq) - circle((0, 0), r + 0.3, 64), t - 0.01, t + 0.8)
+    frame = frame + ext(poly([(-sq - 0.6, sq - 0.01), (sq + 0.6, sq - 0.01), (0.0, sq + 3.0)]), 0.0, t + 0.9)
+    for x in (-1, 1):
+        for y in (-1, 1):
+            frame = frame + ext(circle((x * (sq - 1.2), y * (sq - 1.2)), 0.7, 12), t + 0.79, t + 1.1)
+    dial = ext(circle((0, 0), r + 0.31, 64), 0.0, t)
+    marks = []
+    for k in range(12):
+        a = math.pi / 2 - k * math.pi / 6
+        n = 1 if k % 3 else 2
+        for j in range(n):
+            off = (j - (n - 1) / 2) * 0.55
+            ca, sa = math.cos(a), math.sin(a)
+            marks.append(stroke([((r - 0.7) * ca - off * sa, (r - 0.7) * sa + off * ca), ((r - 2.0) * ca - off * sa, (r - 2.0) * sa + off * ca)], 0.42, caps=False))
+    ah = math.pi / 2 - (3 + 40 / 60) * math.pi / 6
+    am = math.pi / 2 - 40 * math.pi / 30
+    marks.append(stroke([(0.0, 0.0), (r * 0.5 * math.cos(ah), r * 0.5 * math.sin(ah))], 0.75, caps=True))
+    marks.append(stroke([(0.0, 0.0), (r * 0.8 * math.cos(am), r * 0.8 * math.sin(am))], 0.5, caps=True))
+    marks.append(circle((0, 0), 0.8, 14))
+    mk = ext(cs_union(marks), t - 0.01, t + 0.4)
+    return frame + dial + mk, dial, mk
+
+
+def flagstaff(h=16.0, r=0.7):
+    """A flagstaff for a tower roof: a pole with a gilt ball and a pennant whose foot rises at 45
+    degrees from the pole (prints upright). Local: foot at z = 0."""
+    pole = M.cylinder(h, r, r * 0.8, 16)
+    ball = M.sphere(1.0, 16).translate([0, 0, h + 0.4])
+    zp = h - 7.0
+    pen = poly([(0.0, zp), (4.6, zp + 4.6), (4.6, zp + 5.4), (0.0, zp + 6.2)])
+    pen = M.extrude(pen, 0.8).translate([0, 0, -0.4]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+    return pole + ball + pen
+
+
+# ================================================================== 64 Engine Company No. 3
+def brick_firehouse(region, datum=0.0, soldiers=()):
+    """Buff brick in American common bond (a course of headers every sixth), with soldier
+    courses (bricks set on end, standing proud for the red) at ``soldiers`` = [v] (Engine No. 3)."""
+    if region.is_empty():
+        return M()
+    b = region.bounds()
+    bh = 0.8
+    rows = []
+    for k in range(int(math.floor((b[1] - datum) / bh)) - 1, int(math.ceil((b[3] - datum) / bh)) + 1):
+        v = datum + k * bh
+        step = 1.2 if k % 6 == 0 else 2.4
+        off = 0.0 if k % 2 == 0 else step / 2
+        rows += [rect(u + 0.1, v + 0.1, u + step - 0.1, v + bh - 0.1) for u in np.arange(b[0] - 2.4 + off, b[2] + 2.4, step)]
+    sold = cs_union([rect(b[0] - 1, v, b[2] + 1, v + 2.0) for v in soldiers]) ^ region if soldiers else None
+    br = cs_union(rows) ^ region
+    if sold is not None:
+        br = br - sold
+    out = M.extrude(region, 0.12) + ext(br, 0.11, 0.35)
+    if sold is not None and not sold.is_empty():
+        sb = sold.bounds()
+        ends = cs_union([rect(u - 0.1, sb[1] - 1, u + 0.1, sb[3] + 1) for u in np.arange(sb[0], sb[2], 0.8)])
+        out = out + ext(sold, 0.0, 0.5) - ext(ends ^ sold, 0.3, 1.0)
+    return out
+
+
+def foundation_bevelgranite(reg, seed=0):
+    """A granite water table: long smooth blocks in two courses, the upper one bevelled back at
+    45 degrees along its top (Engine No. 3)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 431)
+    out = [M.extrude(reg, 0.25)]
+    vm = b[1] + (b[3] - b[1]) * 0.5
+    for (v0, v1, bev) in ((b[1], vm, False), (vm, b[3], True)):
+        u = b[0] - rng.uniform(0.0, 5.0)
+        while u < b[2]:
+            L = rng.uniform(9.0, 14.0)
+            blk = rect(u + 0.15, v0 + 0.15, u + L - 0.15, v1 - 0.15) ^ reg
+            if not blk.is_empty():
+                bb = blk.bounds()
+                if bev:
+                    out.append(chamfer_box(bb[0], bb[1], bb[2], bb[3], 0.24, 0.55, c=0.5, square=("v0", "u0", "u1")))
+                else:
+                    out.append(ext(blk, 0.24, 0.55))
+            u += L
+    return union(out)
+
+
+def _maltese(c, r):
+    """A Maltese cross: four arms widening outward, each notched at its end."""
+    arms = []
+    for k in range(4):
+        a = k * math.pi / 2
+        ca, sa = math.cos(a), math.sin(a)
+        pts = [(0.18, 0.12), (1.0, 0.55), (0.8, 0.0), (1.0, -0.55), (0.18, -0.12)]
+        arms.append(poly([(c[0] + r * (x * ca - y * sa), c[1] + r * (x * sa + y * ca)) for x, y in pts]))
+    return cs_union(arms + [circle(c, r * 0.28, 12)])
+
+
+def frieze_maltese(L, h, b, pitch, margin, pair, half):
+    """A Maltese cross at every station, a twisted hose-rope line running between them
+    (Engine No. 3)."""
+    v0, v1 = 0.6, h - 0.6
+    vc = (v0 + v1) / 2
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        out.append(_st(_maltese((u, vc), min(1.9, (v1 - v0) * 0.46)), b, 0.45))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 2.4):
+        if wd < 2.0:
+            continue
+        rope = [stroke([(x, vc - 0.45), (x + 0.9, vc + 0.45)], 0.45, caps=False) for x in np.arange(uc - wd / 2, uc + wd / 2 - 0.9, 0.7)]
+        out.append(_st(cs_union(rope) ^ rect(uc - wd / 2, vc - 0.8, uc + wd / 2, vc + 0.8), b, 0.35))
+    return out, []
+
+
+def frieze_flames(L, h, b, pitch, margin, pair, half):
+    """A row of flame tongues rising from a fillet, tall and short in turn (Engine No. 3)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    parts = [rect(0.3, v0, L - 0.3, v0 + 0.7)]
+    k = 0
+    for u in np.arange(1.2, L - 1.0, 1.9):
+        top = v0 + hh * (0.95 if k % 2 == 0 else 0.62)
+        parts.append(poly([(u - 0.75, v0 + 0.6), (u + 0.75, v0 + 0.6), (u + 0.5, v0 + (top - v0) * 0.55), (u + 0.1, top),
+                           (u - 0.25, v0 + (top - v0) * 0.6)]))
+        k += 1
+    return [_st(cs_union(parts), b, 0.45)], []
+
+
+def course_rungs(L, h, b, pitch, margin, p):
+    """A ladder laid along the course: two rails and a rung every 1.6 mm."""
+    rails = cs_union([rect(0.3, 0.1, L - 0.3, 0.45), rect(0.3, h - 0.45, L - 0.3, h - 0.1)])
+    rungs = cs_union([rect(u - 0.25, 0.3, u + 0.25, h - 0.3) for u in np.arange(0.9, L - 0.6, 1.6)])
+    return [ext(rails, b - 0.05, b + 0.4), ext(rungs, b - 0.05, b + 0.3)]
+
+
+def bracket_hook(h, d, t):
+    """A pike-pole bracket: a square head along the soffit, a straight drop, and a hook curling
+    out and up at the foot, the hook's bow filled solid (side profile, top at v = 0)."""
+    hb = max(3.0, h)
+    r = min(1.2, d * 0.35)
+    pts = [(0.0, 0.0), (d, 0.0), (d, -0.9), (1.1, -0.9), (1.1, -hb + 2 * r)]
+    pts += [(1.1 + r - r * math.cos(a), -hb + 2 * r - r * math.sin(a) - 0.0) for a in np.linspace(0.0, math.pi, 10)]
+    pts += [(1.1 + 2 * r, -hb + 2 * r + 0.6), (0.0, -hb + 2 * r + 0.6)]
+    return cs_union([poly(pts), rect(0.0, -hb + 2 * r - 0.01, 1.1 + 2 * r, -hb + 2 * r + 0.61), circle((1.1 + r, -hb + r), r, 16)])
+
+
+CO.FRIEZE_EXTRA.update(maltese=frieze_maltese, flames=frieze_flames)
+CO.COURSE_EXTRA.update(rungs=course_rungs)
+TW.BRACKET_EXTRA.update(hook=bracket_hook)
+TW.FOUNDATION_EXTRA.update(bevelgranite=foundation_bevelgranite)
+
+
+def _rowlock(op, s, A, rows=2):
+    """A rowlock arch of ``rows`` rings of bricks on end round a round or segmental head."""
+    out = []
+    for k in range(rows):
+        ring = (op.offset(A + 1.2 * (k + 1), RND) - op.offset(A + 1.2 * k, RND)) ^ rect(-100, s, 100, 999)
+        R = 60.0
+        n = 26 + 6 * k
+        joints = cs_union([stroke([(0.0, s), (R * math.cos(math.pi * j / n), s + R * math.sin(math.pi * j / n))], 0.18, caps=False)
+                           for j in range(1, n)])
+        out.append(ext(ring, 0.0, 0.7 + 0.25 * k) - ext(joints ^ ring, 0.45 + 0.25 * k, 2.0))
+    return out
+
+
+def door_apparatus(w=26.0, h=36.0):
+    """An engine-house door: a pair of tall leaves, each with six lights over X-braced panels,
+    under a fanlight of radiating bars, in a round arch of two rowlock rings with a stone
+    keystone and impost blocks."""
+    op = O.opening_cs(w, h)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    s = h - w / 2
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, RND), -pl, 0.0)]
+    glass = []
+    lw = (w - 2 * O.CLR - 1.0) / 2
+    for sg in (-1, 1):
+        a, e = sorted((sg * 0.5, sg * (0.5 + lw)))
+        leaf = rect(a, 0.3, e, s - 0.3)
+        body.append(ext(leaf, -1.0, -0.6))
+        gl = rect(a + 1.0, s * 0.5, e - 1.0, s - 1.3)
+        gb = gl.bounds()
+        for i in range(2):
+            for j in range(3):
+                glass.append(rect(gb[0] + (gb[2] - gb[0]) * i / 2 + 0.25, gb[1] + (gb[3] - gb[1]) * j / 3 + 0.25,
+                                  gb[0] + (gb[2] - gb[0]) * (i + 1) / 2 - 0.25, gb[1] + (gb[3] - gb[1]) * (j + 1) / 3 - 0.25))
+        pan = rect(a + 1.0, 1.4, e - 1.0, s * 0.5 - 1.2)
+        pb = pan.bounds()
+        body.append(ext(pan - pan.offset(-0.55, MJ, 4.0), -0.6, -0.25))
+        body.append(ext(cs_union([stroke([(pb[0] + 0.4, pb[1] + 0.4), (pb[2] - 0.4, pb[3] - 0.4)], 0.55),
+                                  stroke([(pb[0] + 0.4, pb[3] - 0.4), (pb[2] - 0.4, pb[1] + 0.4)], 0.55)]) ^ pan, -0.6, -0.2))
+    fan = plug_cs.offset(-0.5, RND) ^ rect(-w, s + 0.4, w, 999)
+    glass.append(fan)
+    body.append(ext(rect(-w, s - 0.3, w, s + 0.4) ^ plug_cs, -pl, -0.6))
+    bars = cs_union([stroke([(0.0, s + 0.4), (w * math.cos(a), s + 0.4 + w * math.sin(a))], 0.5, caps=False)
+                     for a in np.linspace(math.pi / 8, 7 * math.pi / 8, 7)])
+    sash = _glazed(body, cs_union(glass), pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext((op.offset(1.4, RND) - op) ^ rect(-w, 0.0, w, s), 0.0, 0.7)]
+    parts += _rowlock(op, s, 0.0, rows=2)
+    parts.append(chamfer_box(-1.6, h + 0.6, 1.6, h + 3.4, 0.0, 1.6, c=0.35))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2 + 1.3) - 1.8, s - 1.4, sg * (w / 2 + 1.3) + 1.8, s + 0.2, 0.0, 1.4, c=0.3))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 3.4, 0.0)
+
+
+def window_fire_upper(w, h):
+    """The engine house's upper window: a tall one-over-one sash under a segmental head of two
+    rowlock rings, a stone keystone, a stone sill on brick corbels."""
+    rise = w * 0.2
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    sash = _sash(plug_cs, pl, rows=2, cols=1)
+    s = h - rise
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext((op.offset(1.2, RND) - op) ^ rect(-w, 0.0, w, s), 0.0, 0.6)]
+    parts += _rowlock(op, s, 0.0, rows=2)
+    parts.append(chamfer_box(-1.1, h + 0.4, 1.1, h + 2.9, 0.0, 1.4, c=0.3))
+    hw = w / 2 + 1.2
+    parts.append(chamfer_box(-hw - 0.8, -1.2, hw + 0.8, 0.2, 0.0, 1.4, c=0.4, bottom=0.8))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (hw - 0.4) - 0.9, -2.6, sg * (hw - 0.4) + 0.9, -1.19, 0.0, 0.9, c=0.25, bottom=0.9))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.9, -2.6)
+
+
+def window_fire_lower(w, h):
+    """The engine house's ground-floor window: two-over-two sash under a flat stone lintel with
+    a raised centre block and eared ends, on a plain stone sill."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    sash = _sash(plug_cs, pl, rows=2, cols=2)
+    hw = w / 2 + 1.2
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.2, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h), 0.0, 0.6),
+             chamfer_box(-hw - 1.2, h - 0.01, hw + 1.2, h + 2.6, 0.0, 1.2, c=0.3, bottom=0.8),
+             chamfer_box(-2.0, h + 0.4, 2.0, h + 2.9, 0.0, 1.6, c=0.35),
+             chamfer_box(-hw - 0.8, -1.2, hw + 0.8, 0.2, 0.0, 1.3, c=0.4, bottom=0.8)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.9, -1.2)
+
+
+def window_hoseslit(w, h):
+    """A slit light in the hose tower: tall and narrow under a round head, a stone sill."""
+    op = O.opening_cs(w, h)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    sash = _sash(plug_cs, pl, rows=1, cols=1)
+    s = h - w / 2
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext((op.offset(1.0, RND) - op) ^ rect(-w, 0.0, w, 999), 0.0, 0.6)]
+    parts += _rowlock(op, s, 1.0, rows=1)
+    parts.append(chamfer_box(-w / 2 - 1.4, -1.0, w / 2 + 1.4, 0.2, 0.0, 1.2, c=0.35, bottom=0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.2, -1.0)
+
+
+def window_hoselouvre(w, h):
+    """The hose tower's drying vents: a louvred round-headed opening under a rowlock ring."""
+    op = O.opening_cs(w, h)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, RND)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, None, plug_cs)
+    sash.append(ext(cs_union([rect(-w, v, w, v + 0.8) for v in np.arange(1.0, h, 1.5)]) ^ g, -pl + O.GLASS - 0.01, -0.3))
+    s = h - w / 2
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext((op.offset(1.0, RND) - op) ^ rect(-w, 0.0, w, 999), 0.0, 0.6)]
+    parts += _rowlock(op, s, 1.0, rows=1)
+    parts.append(chamfer_box(-w / 2 - 1.4, -1.0, w / 2 + 1.4, 0.2, 0.0, 1.2, c=0.35, bottom=0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.2, -1.0)
+
+
+def door_fire_rear(w=11.0, h=25.0):
+    """The engine house's back door: a four-panel leaf with a transom light, under a segmental
+    rowlock head."""
+    rise = w * 0.18
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    s = h - rise
+    ht = s - 4.0
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, RND), -pl, 0.0),
+            ext(rect(-w / 2, 0.3, w / 2, ht) ^ plug_cs, -1.0, -0.6), ext(rect(-w / 2, ht, w / 2, ht + 0.7) ^ plug_cs, -pl, -0.6)]
+    for (a, e) in ((-w / 2 + 1.0, -0.5), (0.5, w / 2 - 1.0)):
+        for (p0, p1) in ((1.2, ht * 0.45), (ht * 0.52, ht - 1.0)):
+            body.append(chamfer_box(a, p0, e, p1, -0.6, 0.35, c=0.2))
+    tr = plug_cs.offset(-0.5, RND) ^ rect(-w, ht + 0.7, w, 999)
+    sash = _glazed(body, tr, pl, None, plug_cs)
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext((op.offset(1.2, RND) - op) ^ rect(-w, 0.0, w, s), 0.0, 0.6)]
+    parts += _rowlock(op, s, 0.0, rows=2)
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.4, 0.0)
+
+
+def tablet_fire(text, L, H=6.0, t=1.2, cap=3.0):
+    """The engine house's name stone: a tablet with a round-arched top and a raised rim, raised
+    capitals (facade frame, centred on u = 0, foot at v = 0). Returns (tablet, letters)."""
+    from .storefront import text_cs
+    b = cs_union([rect(-L / 2, 0.0, L / 2, H), circle((0.0, H), L / 2, 64) ^ rect(-L / 2, H, L / 2, H + L / 2)])
+    b = b ^ rect(-L / 2, 0.0, L / 2, H + L * 0.22)
+    body = ext(b, 0.0, t) + ext(b - b.offset(-0.7, RND), t - 0.01, t + 0.5)
+    letters = text_cs(text, cap=cap, font="serif", track=0.3)
+    lb = letters.bounds()
+    sc = min(1.0, (L - 2.4) / max(1e-6, lb[2] - lb[0]))
+    letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (H - cap) / 2 - lb[1]))
+    lt = ext(letters, t - 0.01, t + 0.45)
+    return body + lt, lt
+
+
+def chimney_firehouse(w=9.0, d=7.0, h=20.0):
+    """The engine house's stack: buff brick with a red soldier band, three corbelled courses and
+    a stone cap with a low hood."""
+    h = round(h / 0.2) * 0.2
+    zt = h - 3.6
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zt])
+    body = body + TW._skin(w, d, 0.0, zt - 0.2, lambda reg, i: brick_firehouse(reg, soldiers=(zt - 4.0,)))
+    z = zt
+    for k in range(3):
+        g = 0.3 * (k + 1)
+        body = body + box([-w / 2 - g, -d / 2 - g, z - 0.01], [w / 2 + g, d / 2 + g, z + 0.6])
+        z += 0.6
+    body = body + box([-w / 2 - 1.1, -d / 2 - 1.1, z - 0.01], [w / 2 + 1.1, d / 2 + 1.1, z + 0.6])
+    body = body + M.hull_points([(x * (w / 2 + 1.1), y * (d / 2 + 1.1), z + 0.59) for x in (-1, 1) for y in (-1, 1)] +
+                                [(x * (w / 2 - 1.5), y * (d / 2 - 1.5), h) for x in (-1, 1) for y in (-1, 1)])
+    return body
+
+
+def finial_blockball(h=9.0):
+    """The hose tower's finial: a square block on a neck, a ball and a short spike (prints
+    upright). Local: foot at z = 0."""
+    return (box([-1.4, -1.4, 0.0], [1.4, 1.4, 2.2]) + M.cylinder(2.0, 0.8, 0.6, 16).translate([0, 0, 2.19]) +
+            M.sphere(1.3, 20).translate([0, 0, 5.2]) + M.cylinder(h - 6.2, 0.45, 0.2, 12).translate([0, 0, 6.2]))
+
+
+def apron_setts(w, depth, rise):
+    """A granite-sett apron sloping from the ground up to the engine-house floor: ``w`` wide,
+    ``depth`` out from the wall, ``rise`` high at the wall. Local: u across (centred), v up,
+    w out from the wall (its back face at w = 0)."""
+    from .ornament import side_profile
+    body = side_profile([(0.0, 0.0), (depth, 0.0), (depth, 0.4), (0.0, rise)], -w / 2, w / 2)
+    slope = (rise - 0.4) / depth
+    grooves = [box([-w / 2 - 1, -2.0, x - 0.1], [w / 2 + 1, rise + 2.0, x + 0.1]) for x in np.arange(1.8, depth, 1.4)]
+    top = M.hull_points([(-w / 2 - 1, rise + 1.0, 0.0), (w / 2 + 1, rise + 1.0, 0.0), (-w / 2 - 1, rise + 1.0, depth + 1), (w / 2 + 1, rise + 1.0, depth + 1)] +
+                        [(-w / 2 - 1, rise - 0.15, 0.0), (w / 2 + 1, rise - 0.15, 0.0), (-w / 2 - 1, 0.4 - 0.15 - slope, depth + 1), (w / 2 + 1, 0.4 - 0.15 - slope, depth + 1)])
+    band = union([g for g in grooves]) ^ top
+    cols = union([box([u - 0.1, -2.0, -1.0], [u + 0.1, rise + 2, depth + 1]) for u in np.arange(-w / 2 + 1.8, w / 2, 1.8)]) ^ top
+    return body - band - cols
+
+
+# ================================================================== 65 Lakeshore Freight House
+def shiplap_alternating(region, datum=0.0, wide=2.2, narrow=1.2):
+    """Shiplap in alternating wide and narrow courses, each with a square rebate shadow at its
+    foot (the Lakeshore Freight House)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    lines = []
+    v = datum - 4 * (wide + narrow)
+    k = 0
+    while v < v1 + wide:
+        lines.append(rect(u0 - 1, v - 0.2, u1 + 1, v + 0.2))
+        v += wide if k % 2 == 0 else narrow
+        k += 1
+    return M.extrude(region, 0.4) - ext(cs_union(lines) ^ region, 0.15, 1.0)
+
+
+def foundation_crib(reg, seed=0):
+    """A timber crib: squared timbers laid in courses, their ends showing where the courses
+    cross at intervals (the Lakeshore Freight House)."""
+    b = reg.bounds()
+    th = 1.6
+    out = [M.extrude(reg, 0.2)]
+    for k, v in enumerate(np.arange(b[1], b[3] - 0.4, th)):
+        out.append(ext(rect(b[0] - 1, v + 0.12, b[2] + 1, v + th - 0.12) ^ reg, 0.19, 0.55))
+        for u in np.arange(b[0] + (4.0 if k % 2 else 10.0), b[2] - 1.0, 12.0):
+            end = rect(u, v + 0.12, u + th - 0.24, v + th - 0.12) ^ reg
+            if not end.is_empty():
+                out.append(ext(end, 0.54, 0.85))
+    return union(out)
+
+
+def frieze_rivetplates(L, h, b, pitch, margin, pair, half):
+    """Riveted iron plates at every station, a flat bar with rivets between them (the Lakeshore
+    Freight House)."""
+    v0, v1 = 0.6, h - 0.6
+    out = []
+    pw = min(pitch * 0.55, 6.0)
+    for u in CO._us(L, pitch, margin, 0.0):
+        pl_ = rect(u - pw / 2, v0, u + pw / 2, v1)
+        riv = cs_union([circle((x, y), 0.32, 10) for x in (u - pw / 2 + 0.7, u + pw / 2 - 0.7)
+                        for y in np.linspace(v0 + 0.7, v1 - 0.7, max(2, int((v1 - v0) / 1.3)))])
+        out.append(_st(pl_ - pl_.offset(-0.2, MJ, 4.0), b, 0.3))
+        out.append(_st(pl_.offset(-0.2, MJ, 4.0), b, 0.25))
+        out.append(_st(riv ^ pl_, b, 0.45))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + pw / 2 + 0.4):
+        if wd < 2.0:
+            continue
+        vc = (v0 + v1) / 2
+        bar = rect(uc - wd / 2, vc - 0.5, uc + wd / 2, vc + 0.5)
+        riv = cs_union([circle((x, vc), 0.3, 10) for x in np.arange(uc - wd / 2 + 0.8, uc + wd / 2 - 0.5, 1.6)])
+        out.append(_st(bar, b, 0.3))
+        out.append(_st(riv ^ bar, b, 0.45))
+    return out, []
+
+
+def course_boltheads(L, h, b, pitch, margin, p):
+    """Square bolt heads on round washers along a plain fillet."""
+    vc = h / 2
+    wash = cs_union([circle((u, vc), min(0.55, h * 0.36), 12) for u in np.arange(1.0, L - 0.6, 2.0)])
+    heads = cs_union([rect(u - 0.3, vc - 0.3, u + 0.3, vc + 0.3) for u in np.arange(1.0, L - 0.6, 2.0)])
+    return [ext(rect(0.3, 0.1, L - 0.3, h - 0.1), b - 0.05, b + 0.2), ext(wash, b - 0.05, b + 0.35), ext(heads, b + 0.3, b + 0.5)]
+
+
+def bracket_dockbrace(h, d, t):
+    """A dock-shed brace: a plumb post on the wall, a long diagonal strut out to the soffit's edge,
+    the triangle between them filled solid with a bolt plate at the joint (side profile, top at
+    v = 0)."""
+    hb = max(4.0, h)
+    return cs_union([poly([(0.0, 0.0), (d, 0.0), (d, -0.9), (1.0, -hb + 0.8), (1.0, -hb), (0.0, -hb)]),
+                     rect(0.0, -hb * 0.55, 1.6, -hb * 0.55 + 1.8)])
+
+
+CO.FRIEZE_EXTRA.update(rivetplates=frieze_rivetplates)
+CO.COURSE_EXTRA.update(boltheads=course_boltheads)
+TW.BRACKET_EXTRA.update(dockbrace=bracket_dockbrace)
+TW.FOUNDATION_EXTRA.update(crib=foundation_crib)
+
+
+def door_freightx(w=20.0, h=28.0):
+    """A freight house door: a sliding leaf framed round a cross-buck, the fields between filled
+    with diagonal boards, hung from a track under a sheet-iron hood that runs on past the opening."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    leaf = rect(-w / 2 - 0.8, 0.2, w / 2 + 0.8, h + 0.6)
+    lb = leaf.bounds()
+    inner = leaf.offset(-1.4, MJ, 4.0)
+    ib = inner.bounds()
+    diag = cs_union([stroke([(x, ib[1] - 1), (x + (ib[3] - ib[1]) + 2, ib[3] + 1)], 0.2, caps=False)
+                     for x in np.arange(ib[0] - (ib[3] - ib[1]) - 2, ib[2] + 2, 1.3)]) ^ inner
+    body = [ext(plug_cs, -pl, 0.0), ext(leaf, 0.0, 0.8) - ext(diag, 0.55, 1.0)]
+    frame = (leaf - inner) + cs_union([stroke([(ib[0], ib[1]), (ib[2], ib[3])], 1.3, caps=False),
+                                       stroke([(ib[0], ib[3]), (ib[2], ib[1])], 1.3, caps=False),
+                                       rect(ib[0], (ib[1] + ib[3]) / 2 - 0.6, ib[2], (ib[1] + ib[3]) / 2 + 0.6)]) ^ leaf
+    body.append(ext(frame, 0.79, 1.3))
+    tr0, tr1 = -w / 2 - 1.6, w / 2 + w * 0.85
+    body.append(ext(rect(tr0, h + 1.0, tr1, h + 2.0), 0.0, 1.5))
+    hood = poly([(tr0 - 0.4, h + 1.9), (tr1 + 0.4, h + 1.9), (tr1 + 0.4, h + 3.6), (tr0 - 0.4, h + 3.6)])
+    body.append(chamfer_box(tr0 - 0.4, h + 1.99, tr1 + 0.4, h + 3.6, 0.0, 2.2, c=0.8, square=("v1", "u0", "u1")))
+    for u in (-w / 4, w / 4):
+        body.append(ext(rect(u - 0.8, h - 1.2, u + 0.8, h + 1.4), 0.79, 1.4))
+    return O._one_piece(body, [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.5)], op, plug_cs, pl, h + 3.6, 0.0)
+
+
+def window_freight(w=8.0, h=8.0):
+    """A freight house light: a fixed sash of four panes in a flat casing under a drip cap."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    sash = _sash(plug_cs, pl, rows=2, cols=2)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext(op.offset(1.2, MJ, 4.0) - op, 0.0, 0.6),
+             chamfer_box(-w / 2 - 1.8, h + 1.19, w / 2 + 1.8, h + 2.0, 0.0, 1.2, c=0.3, bottom=1.0),
+             chamfer_box(-w / 2 - 1.4, -1.2, w / 2 + 1.4, 0.2, 0.0, 1.2, c=0.35, bottom=0.8)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.0, -1.2)
+
+
+def door_office(w=10.0, h=24.0):
+    """The freight agent's door: four lights over two tall panels, a transom over, in a flat
+    casing under a drip cap."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    ht = h - 4.0
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0),
+            ext(rect(-w / 2, 0.3, w / 2, ht) ^ plug_cs, -1.0, -0.6), ext(rect(-w / 2, ht, w / 2, ht + 0.7) ^ plug_cs, -pl, -0.6)]
+    gl = rect(-w / 2 + 1.1, ht * 0.52, w / 2 - 1.1, ht - 1.0)
+    for a, e in ((-w / 2 + 1.1, -0.4), (0.4, w / 2 - 1.1)):
+        body.append(chamfer_box(a, 1.2, e, ht * 0.52 - 1.0, -0.6, 0.35, c=0.2))
+    gb = gl.bounds()
+    bars = cs_union([rect((gb[0] + gb[2]) / 2 - 0.22, gb[1] - 1, (gb[0] + gb[2]) / 2 + 0.22, gb[3] + 1),
+                     rect(gb[0] - 1, (gb[1] + gb[3]) / 2 - 0.22, gb[2] + 1, (gb[1] + gb[3]) / 2 + 0.22)])
+    tr = plug_cs.offset(-0.5, MJ, 4.0) ^ rect(-w, ht + 0.7, w, 999)
+    sash = _glazed(body, gl + tr, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.3, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.3), 0.0, 0.6),
+             chamfer_box(-w / 2 - 2.0, h + 1.29, w / 2 + 2.0, h + 2.2, 0.0, 1.3, c=0.3, bottom=1.0)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.2, 0.0)
+
+
+def skirt_dockcrib(reg, d=1.2):
+    """The dock's face: a heavy timber fascia over cribbed timbers with their ends showing."""
+    if reg.is_empty():
+        return M()
+    u0, v0, u1, v1 = reg.bounds()
+    body = M.extrude(reg, d * 0.5)
+    fas = rect(u0 - 1, v1 - 2.2, u1 + 1, v1) ^ reg
+    lines = cs_union([rect(u0 - 1, v - 0.12, u1 + 1, v + 0.12) for v in np.arange(v1 - 2.2, v0, -1.6)]) ^ reg
+    ends = cs_union([rect(u, v - 1.4, u + 1.4, v) for v in np.arange(v1 - 2.4, v0 + 1.4, -3.2)
+                     for u in np.arange(u0 + 3.0, u1 - 2.0, 9.0)]) ^ reg.offset(-0.3, MJ, 4.0)
+    return body - ext(lines, d * 0.35, d) + ext(fas, 0.0, d * 0.7) + ext(ends, d * 0.49, d * 0.8)
+
+
+PW.SKIRTS.update(dockcrib=skirt_dockcrib)
+
+
+def sign_freight(text, L, H=5.0, t=1.0, cap=3.0):
+    """A long painted sign board with a raised rim and raised capitals (facade frame, centred on
+    u = 0, foot at v = 0). Returns (board, letters)."""
+    from .storefront import text_cs
+    b = rect(-L / 2, 0.0, L / 2, H)
+    board = ext(b, 0.0, t) + ext(b - b.offset(-0.6, MJ, 4.0), t - 0.01, t + 0.4)
+    letters = text_cs(text, cap=cap, font="sans" if False else "serif", track=0.6)
+    lb = letters.bounds()
+    sc = min(1.0, (L - 2.0) / max(1e-6, lb[2] - lb[0]))
+    letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (H - cap) / 2 - lb[1]))
+    lt = ext(letters, t - 0.01, t + 0.4)
+    return board + lt, lt
+
+
+# ================================================================== 66 Pleasant Valley School
+def lap_german(region, datum=0.0, pitch=1.6, corners=()):
+    """German (cove) siding: each course a flat board whose top is cut in a hollow under the
+    board above, a crisp line at its foot; flat corner boards at ``corners`` (u positions)
+    (Pleasant Valley School)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    ks = range(k0, k0 + int((v1 - v0) / pitch) + 4)
+    lines = cs_union([rect(u0 - 1, datum + k * pitch - 0.15, u1 + 1, datum + k * pitch + 0.15) for k in ks])
+    coves = cs_union([rect(u0 - 1, datum + k * pitch + 0.15, u1 + 1, datum + k * pitch + 0.75) for k in ks])
+    out = M.extrude(region, 0.4) - ext(lines ^ region, 0.1, 1.0) - ext(coves ^ region, 0.28, 1.0)
+    if corners:
+        out = out + ext(cs_union([rect(u - 0.9, v0 - 1, u + 0.9, v1 + 1) for u in corners]) ^ region, 0.0, 0.85)
+    return out
+
+
+def foundation_pierlattice(reg, seed=0):
+    """Brick piers at intervals with diagonal lattice between them (Pleasant Valley School)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.15)]
+    piers = []
+    for u in np.arange(b[0] + 0.5, b[2], 16.0):
+        pr = rect(u, b[1], u + 4.0, b[3]) ^ reg
+        if not pr.is_empty():
+            piers.append(pr)
+    pc = cs_union(piers) if piers else None
+    lat = []
+    H = b[3] - b[1]
+    for x in np.arange(b[0] - H, b[2] + H, 1.8):
+        lat.append(stroke([(x, b[1]), (x + H, b[3])], 0.45, caps=False))
+        lat.append(stroke([(x + H, b[1]), (x, b[3])], 0.45, caps=False))
+    field = reg.offset(-0.6, MJ, 4.0)
+    if pc is not None:
+        field = field - pc.offset(0.3, MJ, 4.0)
+        bricks = SK.brick_bond(pc, "running", bl=2.0, bh=0.7, d=0.25)
+        out.append(ext(pc, 0.14, 0.5) + bricks.translate([0, 0, 0.49]))
+    out.append(ext(cs_union(lat) ^ field, 0.14, 0.5))
+    out.append(ext((reg - reg.offset(-0.6, MJ, 4.0)) ^ rect(b[0] - 1, b[3] - 0.9, b[2] + 1, b[3] + 1), 0.14, 0.7))
+    return union(out)
+
+
+def frieze_bellflowers(L, h, b, pitch, margin, pair, half):
+    """Between the brackets, a stem with three small hanging bells (Pleasant Valley School)."""
+    v0, v1 = 0.6, h - 0.6
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 0.8):
+        if wd < 3.5:
+            continue
+        parts = [rect(uc - wd / 2 + 0.3, v1 - 0.6, uc + wd / 2 - 0.3, v1)]
+        for k, dx in enumerate((-wd * 0.28, 0.0, wd * 0.28)):
+            x = uc + dx
+            ln = (v1 - v0) * (0.55 if k == 1 else 0.38)
+            parts.append(rect(x - 0.22, v1 - ln, x + 0.22, v1 - 0.5))
+            bell = poly([(x - 0.35, v1 - ln + 0.05), (x + 0.35, v1 - ln + 0.05), (x + 0.75, v1 - ln - 1.2), (x - 0.75, v1 - ln - 1.2)])
+            parts.append(bell)
+        out.append(_st(cs_union(parts) ^ rect(0.0, v0, L, v1), b, 0.45))
+    return out, []
+
+
+def course_abacus(L, h, b, pitch, margin, p):
+    """A counting frame: a thin rod along the course with beads strung in groups of five."""
+    vc = h / 2
+    rod = rect(0.3, vc - 0.18, L - 0.3, vc + 0.18)
+    beads = []
+    u = 1.0
+    while u < L - 4.5:
+        for k in range(5):
+            beads.append(circle((u + k * 0.75, vc), min(0.36, h * 0.25), 10))
+        u += 5.4
+    return [ext(rod, b - 0.05, b + 0.25), ext(cs_union(beads), b - 0.05, b + 0.45)]
+
+
+def bracket_schoolscroll(h, d, t):
+    """A sawn scroll bracket: a C-scroll under the soffit, its tail running down the wall into a
+    teardrop (side profile, top at v = 0)."""
+    hb = max(3.0, h)
+    r = min(d * 0.42, hb * 0.3)
+    pts = [(0.0, 0.0), (d, 0.0)] + [(d - r + r * math.cos(a), -r + r * math.sin(a)) for a in np.linspace(0.0, -math.pi * 0.8, 10)]
+    pts += [(0.8, -hb + 1.0), (0.0, -hb + 1.0)]
+    return cs_union([poly(pts), circle((0.5, -hb + 0.9), 0.6, 14)])
+
+
+CO.FRIEZE_EXTRA.update(bellflowers=frieze_bellflowers)
+CO.COURSE_EXTRA.update(abacus=course_abacus)
+TW.BRACKET_EXTRA.update(schoolscroll=bracket_schoolscroll)
+TW.FOUNDATION_EXTRA.update(pierlattice=foundation_pierlattice)
+
+
+def window_school(w, h):
+    """The schoolroom window: tall six-over-six sash in flat casings under a head cap on two
+    small blocks, on a sill."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, MJ, 4.0)
+    u0, v0, u1, v1 = g.bounds()
+    vm = (v0 + v1) / 2
+    bars = [rect(u0 - 1, vm - 0.35, u1 + 1, vm + 0.35)]
+    for vv in (v0 + (vm - v0) / 2, vm + (v1 - vm) / 2):
+        bars.append(rect(u0 - 1, vv - 0.2, u1 + 1, vv + 0.2))
+    for uu in (u0 + (u1 - u0) / 3, u0 + 2 * (u1 - u0) / 3):
+        bars.append(rect(uu - 0.2, v0 - 1, uu + 0.2, v1 + 1))
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, cs_union(bars), plug_cs)
+    hw = w / 2 + 1.4
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.4, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.4), 0.0, 0.6),
+             ext(rect(-hw, h + 1.39, hw, h + 3.0), 0.0, 0.7),
+             chamfer_box(-hw - 1.4, h + 2.99, hw + 1.4, h + 4.0, 0.0, 1.5, c=0.4, bottom=1.1)]
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * hw - 0.7, h + 1.4, sg * hw + 0.7, h + 3.0, 0.0, 1.1, c=0.25))
+    parts.append(chamfer_box(-hw - 0.8, -1.2, hw + 0.8, 0.2, 0.0, 1.3, c=0.4, bottom=0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 4.0, -1.2)
+
+
+def door_school(w=16.0, h=28.0):
+    """The school's doors: a pair of four-panel leaves under a three-light transom, sheltered by a
+    gabled hood on two scroll brackets."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    ht = h - 5.0
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0),
+            ext(rect(-w / 2, 0.3, w / 2, ht) ^ plug_cs, -1.0, -0.6), ext(rect(-w / 2, ht, w / 2, ht + 0.7) ^ plug_cs, -pl, -0.6),
+            ext(rect(-0.25, 0.3, 0.25, ht), -1.0, -0.4)]
+    for sg in (-1, 1):
+        a, e = sorted((sg * 0.7, sg * (w / 2 - 0.9)))
+        for (p0, p1) in ((1.0, ht * 0.3), (ht * 0.36, ht - 0.9)):
+            for (q0, q1) in ((a, (a + e) / 2 - 0.3), ((a + e) / 2 + 0.3, e)):
+                body.append(chamfer_box(q0, p0, q1, p1, -0.6, 0.35, c=0.2))
+    tw = (w - 2 * O.CLR - 2.4) / 3
+    tr = cs_union([rect(-w / 2 + O.CLR + 0.6 + k * (tw + 0.6), ht + 1.3, -w / 2 + O.CLR + 0.6 + k * (tw + 0.6) + tw, h - O.CLR - 0.6)
+                   for k in range(3)])
+    sash = _glazed(body, tr, pl, None, plug_cs)
+    hw = w / 2 + 1.5
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.5, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.5), 0.0, 0.7)]
+    # the hood: a gabled canopy on two scroll brackets, its underside 45 degrees back to the wall
+    hd = 4.0
+    zh = h + 1.5
+    rise = (hw + 2.0) * 0.55
+    from .ornament import side_profile
+    for sg in (-1, 1):
+        br = side_profile([(0.0, zh), (hd, zh), (hd - 0.6, zh - 1.2), (0.9, zh - 5.5), (0.0, zh - 5.5)], sg * hw - 0.6, sg * hw + 0.6)
+        parts.append(br.transform(np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0]])))
+    tri = poly([(-hw - 2.0, zh), (hw + 2.0, zh), (0.0, zh + rise)])
+    hood = M.extrude(tri, hd).transform(np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0]]))
+    parts.append(hood)
+    parts.append(ext(tri - tri.offset(-0.9, MJ, 4.0), hd - 0.01, hd + 0.6))
+    return O._one_piece(sash, parts, op, plug_cs, pl, zh + rise, 0.0)
+
+
+def belfry_school(w=16.0, h0=10.0, hl=11.0, s=1.5):
+    """The school's belfry, one piece printed upright: a square base (its foot sits on a flat seat
+    in the ridge), a louvred stage with corner posts, a flared cornice, a steep pyramid with
+    45-degree eaves and a ball finial. Local: centred, z = 0 at the foot."""
+    base = box([-w / 2, -w / 2, 0.0], [w / 2, w / 2, h0])
+    wi = w - 2.0
+    stage = box([-wi / 2, -wi / 2, h0 - 0.01], [wi / 2, wi / 2, h0 + hl])
+    slats = []
+    for k, (ax, sg) in enumerate(((0, 1), (0, -1), (1, 1), (1, -1))):
+        for z in np.arange(h0 + 1.2, h0 + hl - 1.2, 1.3):
+            y0, y1 = sorted((sg * (wi / 2 - 0.9), sg * (wi / 2 + 0.3)))
+            if ax == 0:
+                slats.append(box([-wi / 2 + 1.5, y0, z], [wi / 2 - 1.5, y1, z + 0.6]))
+            else:
+                slats.append(box([y0, -wi / 2 + 1.5, z], [y1, wi / 2 - 1.5, z + 0.6]))
+    recess = union([box([-wi / 2 + 1.6, -wi / 2 - 1, h0 + 0.8], [wi / 2 - 1.6, wi / 2 + 1, h0 + hl - 0.8]),
+                    box([-wi / 2 - 1, -wi / 2 + 1.6, h0 + 0.8], [wi / 2 + 1, wi / 2 - 1.6, h0 + hl - 0.8])])
+    stage = stage - (recess - box([-wi / 2 + 0.8, -wi / 2 + 0.8, 0], [wi / 2 - 0.8, wi / 2 - 0.8, 100])) + union(slats)
+    zc = h0 + hl
+    corn = M.hull_points([(x * wi / 2, y * wi / 2, zc - 0.01) for x in (-1, 1) for y in (-1, 1)] +
+                         [(x * (w / 2 + 0.6), y * (w / 2 + 0.6), zc + 1.4) for x in (-1, 1) for y in (-1, 1)])
+    corn = corn + box([-(w / 2 + 0.6), -(w / 2 + 0.6), zc + 1.39], [w / 2 + 0.6, w / 2 + 0.6, zc + 2.0])
+    a = w / 2 + 1.6
+    zr = zc + 2.0
+    pyr = M.hull_points([(x * (w / 2 + 0.6), y * (w / 2 + 0.6), zr - 0.01) for x in (-1, 1) for y in (-1, 1)] +
+                        [(x * a, y * a, zr + 1.0) for x in (-1, 1) for y in (-1, 1)] + [(0.0, 0.0, zr + 1.0 + s * a)])
+    ball = M.sphere(1.2, 18).translate([0, 0, zr + 1.0 + s * a + 0.8]) + M.cylinder(1.0, 0.7, 0.7, 12).translate([0, 0, zr + 1.0 + s * a - 0.6])
+    return base + stage + corn + pyr + ball
+
+
+def chimney_school(w=8.0, d=8.0, h=16.0):
+    """The stove flue at the back gable: a plain brick stack with a projecting band and a
+    stepped cap."""
+    h = round(h / 0.2) * 0.2
+    zt = h - 2.4
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zt])
+    body = body + TW._skin(w, d, 0.0, zt - 0.2, lambda reg, i: SK.brick_bond(reg, "english", bl=2.2, bh=0.75, d=0.25))
+    body = body + box([-w / 2 - 0.5, -d / 2 - 0.5, zt - 3.0], [w / 2 + 0.5, d / 2 + 0.5, zt - 2.2])
+    body = body + box([-w / 2 - 0.6, -d / 2 - 0.6, zt - 0.01], [w / 2 + 0.6, d / 2 + 0.6, zt + 1.2])
+    body = body + box([-w / 2 + 0.6, -d / 2 + 0.6, zt + 1.19], [w / 2 - 0.6, d / 2 - 0.6, h])
+    return body - box([-w / 2 + 1.8, -d / 2 + 1.8, h - 1.4], [w / 2 - 1.8, d / 2 - 1.8, h + 1])
+
+
+def board_school(text, L, H=5.0, t=1.0, cap=2.6):
+    """The school's name board: a long board with round ends and a raised rim, raised capitals
+    (facade frame, centred on u = 0, foot at v = 0). Returns (board, letters)."""
+    from .storefront import text_cs
+    b = cs_union([rect(-L / 2 + H / 2, 0.0, L / 2 - H / 2, H), circle((-L / 2 + H / 2, H / 2), H / 2, 24),
+                  circle((L / 2 - H / 2, H / 2), H / 2, 24)])
+    board = ext(b, 0.0, t) + ext(b - b.offset(-0.6, RND), t - 0.01, t + 0.4)
+    letters = text_cs(text, cap=cap, font="serif", track=0.35)
+    lb = letters.bounds()
+    sc = min(1.0, (L - H - 1.0) / max(1e-6, lb[2] - lb[0]))
+    letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (H - cap) / 2 - lb[1]))
+    lt = ext(letters, t - 0.01, t + 0.4)
+    return board + lt, lt
