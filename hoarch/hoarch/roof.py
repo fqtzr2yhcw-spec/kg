@@ -484,6 +484,16 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 laps.append(rect(b[0] - 1, j * pitch - 0.25, b[2] + 1, j * pitch + 0.25))
             tex = (M.extrude(cs_union(ribs) ^ clip, d) + M.extrude(cs_union(side) ^ clip, d + 0.12) +
                    M.extrude(cs_union(laps) ^ clip, d * 0.45))
+        elif shape == "doublecourse":     # double-coursed shingles: every course laid over an under-course
+            b = loc.bounds()              # whose butt shows a hair below it (Section House No. 4)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh, under = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                for u in np.arange(b[0] - wtab + (j % 2) * wtab / 2, b[2] + wtab, wtab):
+                    sh.append(rect(u + 0.08, v + 0.45, u + wtab - 0.08, v + pitch - 0.1))
+                under.append(rect(b[0] - 1, v, b[2] + 1, v + 0.5))
+            tex = M.extrude(cs_union(sh) ^ clip, d) + M.extrude(cs_union(under) ^ clip, d * 0.55)
         elif shape == "beadbutt":         # sawn shingles in broken joint, a half-round bead nailed along every
             b = loc.bounds()              # butt line (the Blackwater Yard Office)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)

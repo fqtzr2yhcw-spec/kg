@@ -1472,3 +1472,122 @@ def stoop_yard(w=12.0, rise=4.0, n=2, run=2.6, t=0.9):
     grooves = union([box([u - 0.15, -1, rise - 5], [u + 0.15, n * run + 2, rise + 1]) for u in np.arange(-w / 2 + 1.5, w / 2, 1.5)])
     m = union(out) - grooves
     return m.transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+
+
+# ================================================================== 76 Section House No. 4 (tool house and speeder shed)
+def reverse_batten(region, datum=0.0, pitch=3.0, gap=0.9):
+    """Reverse board and batten: wide boards standing proud with narrow recessed boards between
+    them (Section House No. 4)."""
+    if region.is_empty():
+        return M()
+    b = region.bounds()
+    out = M.extrude(region, 0.15)
+    boards = cs_union([rect(u + gap / 2, b[1] - 1, u + pitch - gap / 2, b[3] + 1) for u in np.arange(b[0] - pitch, b[2] + pitch, pitch)])
+    return out + ext(boards ^ region, 0.14, 0.55)
+
+
+def foundation_sillblocks(reg, seed=0):
+    """A timber sill on stone blocks: a heavy sill along the top, squared stones under it every
+    8 mm with the dark crawl space between (Section House No. 4)."""
+    b = reg.bounds()
+    out = M.extrude(reg, 0.05)
+    sill = rect(b[0] - 1, b[3] - 1.3, b[2] + 1, b[3] + 1) ^ reg
+    blocks = cs_union([rect(u - 2.0, b[1] - 1, u + 2.0, b[3] - 1.29) for u in np.arange(b[0] + 2.0, b[2] - 1.0, 8.0)] +
+                      [rect(b[2] - 4.0, b[1] - 1, b[2] + 1, b[3] - 1.29)]) ^ reg
+    return out + ext(sill, 0.0, 0.7) + ext(blocks, 0.0, 0.8)
+
+
+def course_spikes(L, h, b, pitch, margin, p):
+    """A row of track spikes, heads up, on a tie-plate strip (Section House No. 4)."""
+    strip = rect(0.3, 0.2, L - 0.3, 0.6)
+    sp = cs_union([cs_union([rect(u - 0.22, 0.55, u + 0.22, h - 0.7), rect(u - 0.5, h - 0.75, u + 0.35, h - 0.25)])
+                   for u in np.arange(1.0, L - 0.6, 1.6)])
+    return [ext(strip, b - 0.05, b + 0.3), ext(sp, b - 0.05, b + 0.45)]
+
+
+def frieze_trackgang(L, h, b, pitch, margin, pair, half):
+    """A section gang's tools: at every station a lining bar and a spike maul crossed over a
+    tie, a rail between (Section House No. 4)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    out = [_st(rect(0.3, v0, L - 0.3, v0 + 0.45), b, 0.25)]
+    for u in CO._us(L, pitch, margin, 0.0):
+        tie = rect(u - 1.8, v0 + 0.3, u + 1.8, v0 + 0.9)
+        bar = stroke([(u - hh * 0.55, v0 + 0.8), (u + hh * 0.55, v1 - 0.2)], 0.42, caps=False)
+        maul = stroke([(u + hh * 0.5, v0 + 0.8), (u - hh * 0.35, v1 - 0.8)], 0.42, caps=False)
+        head = poly([(u - hh * 0.35 - 1.0, v1 - 0.5), (u - hh * 0.35 + 0.5, v1 - 0.1), (u - hh * 0.35 + 0.9, v1 - 1.0), (u - hh * 0.35 - 0.6, v1 - 1.4)])
+        out.append(_st(cs_union([tie, bar, maul, head]) ^ rect(0.0, v0, L, v1), b + 0.25, 0.35))
+    return out, []
+
+
+CO.FRIEZE_EXTRA.update(trackgang=frieze_trackgang)
+CO.COURSE_EXTRA.update(spikes=course_spikes)
+TW.FOUNDATION_EXTRA.update(sillblocks=foundation_sillblocks)
+
+
+def door_toolhouse(w=9.0, h=19.0):
+    """The tool house door: boards on a Z brace, strap hinges, a hasp and staple, in a plank
+    casing under a drip board."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    leaf = plug_cs.offset(-0.3, MJ, 4.0)
+    lb = leaf.bounds()
+    grooves = cs_union([rect(u - 0.2, -1, u + 0.2, h + 1) for u in np.arange(lb[0] + 1.5, lb[2], 1.5)]) ^ leaf
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0), ext(leaf, -1.0, -0.6) - ext(grooves, -0.85, -0.5)]
+    q0, q1 = lb[1] + 1.4, lb[3] - 1.4
+    body.append(ext(cs_union([rect(lb[0] + 0.4, q0 - 0.5, lb[2] - 0.4, q0 + 0.5), rect(lb[0] + 0.4, q1 - 0.5, lb[2] - 0.4, q1 + 0.5),
+                              stroke([(lb[0] + 0.9, q0 + 0.4), (lb[2] - 0.9, q1 - 0.4)], 0.95, caps=False)]), -0.61, -0.25))
+    body.append(ext(cs_union([_strap_hinge(lb[0] + 0.3, lb[0] + 5.0, v) for v in (q0, q1)]), -0.26, -0.05))
+    body.append(ext(rect(lb[2] - 1.6, h * 0.48 - 0.5, lb[2] - 0.4, h * 0.48 + 0.5), -0.61, -0.1))
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.2, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.2), 0.0, 0.6),
+             chamfer_box(-w / 2 - 1.8, h + 1.19, w / 2 + 1.8, h + 2.0, 0.0, 1.3, c=0.3, bottom=1.0)]
+    return O._one_piece(body, parts, op, plug_cs, pl, h + 2.0, 0.0)
+
+
+def door_speeder(w=16.0, h=18.0):
+    """The speeder shed's doors: a pair of boarded leaves, each braced with a K of ledges and a
+    brace, strap hinges, under a plank head."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    lb = plug_cs.offset(-0.3, MJ, 4.0).bounds()
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0)]
+    for (a, e, sg) in ((lb[0], -0.15, 1), (0.15, lb[2], -1)):
+        leaf = rect(a, lb[1], e, lb[3])
+        grooves = cs_union([rect(u - 0.2, -1, u + 0.2, h + 1) for u in np.arange(a + 1.5, e, 1.5)]) ^ leaf
+        body.append(ext(leaf, -1.0, -0.6) - ext(grooves, -0.85, -0.5))
+        q0, qm, q1 = lb[1] + 1.2, (lb[1] + lb[3]) / 2, lb[3] - 1.2
+        hu = a if sg > 0 else e
+        body.append(ext(cs_union([rect(a + 0.3, q - 0.45, e - 0.3, q + 0.45) for q in (q0, qm, q1)] +
+                                 [stroke([(hu + sg * 0.8, q0 + 0.4), (hu + sg * (e - a - 0.8), qm - 0.4)], 0.8, caps=False),
+                                  stroke([(hu + sg * 0.8, qm + 0.4), (hu + sg * (e - a - 0.8), q1 - 0.4)], 0.8, caps=False)]) ^ leaf, -0.61, -0.25))
+        body.append(ext(cs_union([_strap_hinge(hu + sg * 0.3, hu + sg * 5.0, v) for v in (q0, q1)]), -0.26, -0.05))
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.2, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.2), 0.0, 0.6),
+             chamfer_box(-w / 2 - 2.0, h + 1.19, w / 2 + 2.0, h + 2.4, 0.0, 1.3, c=0.35, bottom=1.0)]
+    return O._one_piece(body, parts, op, plug_cs, pl, h + 2.4, 0.0)
+
+
+def window_section(w=7.0, h=9.0):
+    """The section house's window: six lights (three over three) in a plain casing with
+    square corner blocks at the head, a sill."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, MJ, 4.0)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, _muntins(g, 3, 2, 0.4), plug_cs)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext(op.offset(1.1, MJ, 4.0) - op, 0.0, 0.55),
+             chamfer_box(-w / 2 - 1.1, h - 0.01, -w / 2 + 0.01, h + 1.1, 0.0, 0.9, c=0.25),
+             chamfer_box(w / 2 - 0.01, h - 0.01, w / 2 + 1.1, h + 1.1, 0.0, 0.9, c=0.25),
+             chamfer_box(-w / 2 - 1.5, -1.1, w / 2 + 1.5, 0.2, 0.0, 1.1, c=0.3, bottom=0.8)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 1.1, -1.1)
+
+
+def stovepipe_section(h=14.0, r=1.1):
+    """The tool house stove's pipe: a round pipe with a collar and a cone cap on three legs'
+    worth of solid web. Local: centred, z = 0 inside the roof (it drops into a hole)."""
+    pipe = M.cylinder(h, r, r, 24)
+    collar = M.cylinder(1.0, r + 1.1, r + 0.4, 24).translate([0, 0, 4.0])
+    cap = M.cylinder(0.9, r + 0.1, r + 1.4, 24).translate([0, 0, h + 0.8]) + M.cylinder(0.9, r + 1.4, 0.3, 24).translate([0, 0, h + 1.69])
+    web = box([-0.3, -r - 0.2, h - 0.01], [0.3, r + 0.2, h + 0.81])
+    return pipe + collar + cap + web
