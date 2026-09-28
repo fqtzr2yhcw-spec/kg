@@ -612,3 +612,75 @@ def cross_finial(h=11.0, arm=5.4, t=1.4):
     prof = poly([(-p, 0.0), (p, 0.0), (p, za - (a - p)), (a, za), (a, za + t), (p, za + t), (p, h), (-p, h), (-p, za + t),
                  (-a, za + t), (-a, za), (-p, za - (a - p))])
     return M.extrude(prof, t).translate([0, 0, -p]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+
+
+# ------------------------------------------------------------------ the Millbrook's dormer (added after review)
+def dormer_depot(w=24.0, dep=16.0, hwall=11.0, sg=0.9):
+    """The Millbrook's dormer over the agent's bay: a gabled front of drop siding with a
+    two-light window under a rayed head, a king-post truss in the peak, corner and raking boards.
+    Local as the other dormers (u across, v up from its foot, w out from the face); returns
+    (body, core, face)."""
+    rise = w / 2 * sg
+    face = poly([(-w / 2, 0.0), (w / 2, 0.0), (w / 2, hwall), (0.0, hwall + rise), (-w / 2, hwall)])
+    inner = face.offset(-1.2, MJ, 4.0) ^ rect(-50, 1.2, 50, 999)
+    body = ext(face, -dep, 0.0) - ext(inner, -dep - 1, -1.2)
+    win = rect(-4.6, 2.4, 4.6, 8.4)
+    trim = cs_union([rect(-w / 2, 0.0, -w / 2 + 1.1, hwall), rect(w / 2 - 1.1, 0.0, w / 2, hwall),
+                     (face - face.offset(-1.1, MJ, 4.0)) ^ rect(-50, hwall - 0.01, 50, 999), rect(-w / 2, hwall - 0.9, w / 2, hwall + 0.2)])
+    sid_reg = (face ^ rect(-50, 0.0, 50, hwall - 0.9)) - trim - win.offset(1.0, MJ, 4.0) - rect(-5.8, 0.9, 5.8, 2.4)
+    body = body + depot_droplap(sid_reg, datum=0.0, pitch=1.5)
+    body = body + ext(trim, -0.01, 0.8)
+    body = body - ext(win, -1.3, 1.0)
+    body = body + ext(win.offset(0.9, MJ, 4.0) - win, -0.01, 0.7)
+    body = body + ext(cs_union([rect(-0.4, 2.4, 0.4, 8.4), rect(-4.6, 5.2, 4.6, 5.7)]) ^ win, -1.2, -0.4)
+    body = body + chamfer_box(-5.8, 1.2, 5.8, 2.4, -0.01, 1.1, c=0.3, bottom=1.0)
+    body = body + union(_ray_pediment(5.6, 9.29, 2.2, rays=5, proud=0.9))
+    # the king-post truss in the peak, every member tied into the raking boards
+    vc = hwall + 1.4
+    xc = (hwall + rise - vc) / sg
+    truss = cs_union([rect(-xc, vc - 0.45, xc, vc + 0.45), rect(-0.45, vc, 0.45, hwall + rise - 0.8),
+                      stroke([(-xc * 0.55, vc + 0.3), (0.0, hwall + rise - 2.2)], 0.8, caps=False),
+                      stroke([(xc * 0.55, vc + 0.3), (0.0, hwall + rise - 2.2)], 0.8, caps=False)]) ^ face.offset(-0.2, MJ, 4.0)
+    body = body + ext(truss, -0.01, 0.7)
+    core = ext(inner ^ rect(-50, 1.2, 50, hwall - 1.0), -dep + 1.2, -1.2)
+    return body, core, face
+
+
+def dormer_depot_roof(w, dep, hwall, sg=0.9, over=1.8, t=1.3, back=18.0, pitch=1.7):
+    """The dormer's gable roof: a chevron slab over the face's rakes running back into the main
+    roof, shingle courses grooved along it (local as dormer_depot)."""
+    rise = w / 2 * sg
+    a = w / 2 + over
+    base_v = hwall - over * sg
+    lift = t * math.sqrt(1 + sg * sg)
+    outer = poly([(-a, base_v), (a, base_v), (0.0, hwall + rise + lift)])
+    inner = poly([(-a - 5.0, base_v - 5.0 * sg), (a + 5.0, base_v - 5.0 * sg), (0.0, hwall + rise)])
+    slab_ = outer - inner
+    notches = []
+    L = math.hypot(a, rise + over * sg)
+    for k in np.arange(pitch, L - 0.4, pitch):
+        f = k / L
+        for sg_ in (-1, 1):
+            notches.append(circle((sg_ * a * (1 - f), base_v + (hwall + rise + lift - base_v) * f), 0.22, 8))
+    cs = slab_ - cs_union(notches)
+    return max(ext(cs, -dep - back, over).decompose(), key=lambda m_: m_.volume())       # drop the notched-off tips
+
+
+def clock_face(D=16.0, t=1.0):
+    """A tower clock: a stone ring round a dial with twelve hour marks and the hands at ten past
+    ten, a boss at the centre. Facade frame, centred on u = v = 0. Returns (whole, dial, marks)."""
+    r = D / 2
+    dial = ext(circle((0.0, 0.0), r + 1.8, 64), 0.0, t)
+    ring = ext(circle((0.0, 0.0), r + 1.8, 64) - circle((0.0, 0.0), r + 0.2, 64), t - 0.01, t + 0.9)
+    marks = []
+    for k in range(12):
+        a = math.pi / 2 - k * math.pi / 6
+        ln = 1.8 if k % 3 == 0 else 1.1
+        marks.append(stroke([((r - 0.8) * math.cos(a), (r - 0.8) * math.sin(a)), ((r - 0.8 - ln) * math.cos(a), (r - 0.8 - ln) * math.sin(a))], 0.55, caps=False))
+    ah = math.pi / 2 - (10 + 10 / 60) * math.pi / 6
+    am = math.pi / 2 - 10 * math.pi / 30
+    marks.append(stroke([(0.0, 0.0), (r * 0.5 * math.cos(ah), r * 0.5 * math.sin(ah))], 0.8, caps=True))
+    marks.append(stroke([(0.0, 0.0), (r * 0.78 * math.cos(am), r * 0.78 * math.sin(am))], 0.55, caps=True))
+    marks.append(circle((0.0, 0.0), 0.9, 16))
+    mk = ext(cs_union(marks), t - 0.01, t + 0.45)
+    return dial + ring + mk, dial, mk

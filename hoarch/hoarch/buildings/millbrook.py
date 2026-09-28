@@ -10,7 +10,8 @@ the track side under a low canopy on round columns (octagonal bases, ringed neck
 brackets at every column and a beaded fascia with rosettes; steps at the west end. The agent's
 canted bay stands out onto the platform under the canopy. Two-over-two windows and the waiting
 room doors wear low gabled heads with fans of rays; the freight room has sliding doors on
-track bars. Name boards on both ends; two brick stove flues with iron stovepipes.
+track bars. A gabled dormer over the agent's bay (drop siding, a rayed window head, a king-post
+truss in its peak). Name boards on both ends; two brick stove flues with iron stovepipes.
 
 usage: python3 -m hoarch.buildings.millbrook [check] [export]
 """
@@ -203,7 +204,22 @@ def build(kit=None):
         roof = roof + (box([cx - CW / 2 - 1.8, cy - CW / 2 - 1.8, ZW + 0.01], [cx + CW / 2 + 1.8, cy + CW / 2 + 1.8, z0 + 0.01]) ^ solid_env)
         roof = roof - box([cx - CW / 2 - 0.6, cy - CW / 2 - 0.6, z0], [cx + CW / 2 + 0.6, cy + CW / 2 + 0.6, zr + 60])
         flues.append(TN.chimney_depot(CW, CW, zr + 12.0 - z0).translate([cx, cy, z0]))
+    # the dormer over the agent's bay, its face on the front slope
+    DW, DDEP, DHW = 24.0, 16.0, 11.0
+    dyf = 8.0
+    zdf = round((Z_EAVE + S_MAIN * (dyf + D_EAVE) - 1.0) / 0.2) * 0.2
+    dbody, dcore, dface = TN.dormer_depot(DW, DDEP, DHW)
+    droof = TN.dormer_depot_roof(DW, DDEP, DHW)
+    Ad = np.column_stack([(1.0, 0, 0), (0, 0, 1.0), (0, -1.0, 0), (CX, dyf, zdf)]).astype(float)
+    dkeep = TN.ext(dface.offset(0.3, TN.MJ, 4.0), -DDEP - 0.3, 0.3).transform(Ad)
+    dpocket = dkeep ^ box([-500, -500, zdf], [500, 500, 999])
+    seat = box([-DW / 2 - 1.3, ZW - zdf, -DDEP - 1.3], [DW / 2 + 1.3, 0.0, 1.6]).transform(Ad) ^ solid_env
+    roof = roof - dpocket + (seat - dpocket - lip_keep(base, 3.0, ZW)) - dbody.transform(Ad)
     kit.add("ROOF", "Green", roof, group="roof")
+    kit.add("DORMER", "Gold", dbody.transform(Ad), group="roof")
+    kit.add("DORMER-core", "Green", dcore.transform(Ad), group="roof", render=[("Glass", dcore.transform(Ad))])
+    dr = droof.transform(Ad) - solid_env - dbody.transform(Ad) - roof
+    kit.add("DORMER-roof", "Green", max(dr.decompose(), key=lambda m_: m_.volume()), group="roof")
     for k, fl in enumerate(flues):
         kit.add(f"FLUE-{k}", "Brick", fl, key="FLUE", group="roof")
     print("roof", round(time.time() - t0, 1))

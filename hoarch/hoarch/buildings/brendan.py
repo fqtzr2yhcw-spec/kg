@@ -3,7 +3,7 @@
 
 A High Victorian Gothic church of about 1878 in red brick banded with buff (polychromy) on a
 snecked rubble plinth: a steep nave between stepped buttresses, a tower at the west corner
-rising through a stage of lancets and a louvred belfry to an octagonal spire of slates pointed
+rising through a stage of lancets and clocks and a louvred belfry to an octagonal spire of slates pointed
 in zigzag bands, with a gabled pinnacle at each corner and a stone cross at the tip. The west
 front has a rose window of eight cusped petals over a door of three receding orders under a
 gablet with a trefoil; lancets of diamond quarries under hood moulds light the nave, three
@@ -28,9 +28,9 @@ NAME = "St. Brendan's Church"
 COLORS = {"Brick": "#8E3B2A", "Buff": "#D6C298", "Stone": "#C4BDAD", "Slate": "#4A5058", "Rubble": "#8F8778",
           "Windows_Doors": "#C4BDAD"}
 RENDER_MAT = {"Brick": "brick", "Buff": "buff", "Stone": "stone", "Slate": "roof", "Rubble": "rubble",
-              "Windows_Doors": "stone", "Door": "door", "Glass": "glass"}
+              "Windows_Doors": "stone", "Door": "door", "Glass": "glass", "Dial": "dial", "Hands": "hands"}
 PALETTE = {"brick": ("#8E3B2A", 0.9), "buff": ("#D6C298", 0.8), "stone": ("#C4BDAD", 0.85), "roof": ("#4A5058", 0.8),
-           "rubble": ("#8F8778", 0.9), "door": ("#6B4A2E", 0.6)}
+           "rubble": ("#8F8778", 0.9), "door": ("#6B4A2E", 0.6), "dial": ("#EFEADC", 0.6), "hands": ("#1E1E1E", 0.5)}
 VIEWS = {"hero": [-36, 14, 70, 0.95, [0, 0, 0]], "front": [0, 6, 80, 0.92, [0, 0, 0]], "rear": [150, 16, 70, 0.95, [0, 0, 0]],
          "right": [60, 12, 70, 0.95, [0, 0, 0]]}
 
@@ -107,11 +107,17 @@ def _openings():
 OPENINGS = _openings()
 
 
+CLOCK_V, CLOCK_D = 92.0, 16.0                     # the tower clocks (front and west faces), v from ZF
+CLOCKS = (0, 3)                                    # TOWER facade edges
+
+
 def _skin(f, b, reg):
     if b is NAVE:
         reg = reg - TN.rect(-1, ZE - LEDGE - 0.6 - b.z0, f.L + 1, ZW - b.z0 + 0.2)
     else:
         reg = reg - TN.rect(-1, ZT - LEDGE - 0.6 - b.z0, f.L + 1, 999)
+        if any(np.allclose(TOWER.facades()[e].n, f.n) for e in CLOCKS):          # the clock's plain field
+            reg = reg - TN.circle((f.L / 2, CLOCK_V), CLOCK_D / 2 + 2.0, 64)
     return TN.brick_polychrome(reg, datum=0.0)
 
 
@@ -171,6 +177,16 @@ def build(kit=None):
         part = kit.add(f"{key}-{op.name}", "Windows_Doors", world, P=P,
                        key=f"{key}-{b[2] - b[0]:.1f}x{b[3] - b[1]:.1f}-{op.name[:5]}", group="inserts", render=zones)
         ins_keep.append(part.solid)
+    # the tower clocks, each glued by its whole back into the plain field left in the brick
+    for e in CLOCKS:
+        f = TOWER.facades()[e]
+        A = f.A.copy()
+        A[:, 3] = f.world(f.L / 2, CLOCK_V, 0.0)
+        whole, dial, marks = TN.clock_face(CLOCK_D)
+        Pp = np.column_stack([np.vstack([A[:, 0], A[:, 1], A[:, 2]]), np.zeros(3)])
+        ring = whole - dial - marks
+        kit.add(f"CLOCK-{'S' if e == 0 else 'W'}", "Stone", whole.transform(A), P=Pp, key="CLOCK", group="tower",
+                render=[("Stone", ring.transform(A)), ("Dial", dial.transform(A)), ("Hands", marks.transform(A))])
     print("walls + cornices + inserts", round(time.time() - t0, 1))
 
     # --- the nave roof: pointed-band slates, a ridge cap, cut round the tower

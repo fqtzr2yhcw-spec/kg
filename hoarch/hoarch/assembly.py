@@ -1138,9 +1138,44 @@ the walls, the roofs, the terrace and the chimney print upright.
 """, """The cornices' upper parts, the PORCH-deck and the PORCH-top print upside down; the walls, the
 roof trays, the chimney and the horno print upright.
 """),
+    "millbrook": ("THE MILLBROOK DEPOT - RAILROAD STICK STATION", """  1. FOUNDATION (drafted-margin ashlar).
+  2. WALLS onto the foundation's lip: the whole depot and the agent's bay in one part (it prints
+     chocolate to the chair rail, then gold).
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside.
+     The sliding freight doors' leaves, tracks and hangers lie on the plain fields left in the
+     siding.
+  4. The CORNICE-E parts round the eave band.
+  5. The SIGN boards into the plain fields high on the end walls, each glued by its whole back.
+  6. ROOF onto the lip at the wall tops; DORMER on its seat in the front slope with DORMER-core
+     inside it and DORMER-roof over it; each FLUE down through its pocket.
+  7. The platform: PLATFORM-deck against the foundation along the track side; PLATFORM-top (the
+     canopy, beams and round columns in one piece) lowered onto it, each column's peg into its
+     socket in the planks, its back edge against the wall and round the bay; PLATFORM-roof on
+     its flat top against the wall; PLATFORM-steps-0 at the west end.
+""", """The cornice's upper part, the PLATFORM-deck and the PLATFORM-top print upside down; the name
+boards print face up; the walls, the roof, the dormer and the flues print upright.
+"""),
+    "brendan": ("ST. BRENDAN'S CHURCH - GOTHIC REVIVAL", """  1. FOUNDATION (snecked rubble, with plinths under the buttresses).
+  2. WALLS-1 onto the foundation's lip: the nave with its gables and buttresses and the tower's
+     lower stage, one part.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside
+     (the rose into the west gable, the louvres into the belfry once WALLS-2 is on).
+  4. The CORNICE-E parts round the nave's eave band (they stop at the tower).
+  5. The CLOCKs into the round plain fields on the tower's front and west faces, each glued by
+     its whole back.
+  6. ROOF onto the lip at the nave's wall tops, between the gables.
+  7. JOINT (the tower's string course) onto the tower top of WALLS-1; the CORNICE-J parts round
+     it; WALLS-2 (the belfry stage) onto the joint's lip.
+  8. The CORNICE-T parts round the tower top; SPIRE (the deck, pinnacles, spire and cross in one)
+     onto the lip.
+  9. STEPS-west and STEPS-tower at the doors.
+""", """The cornices' upper parts print upside down; the clocks print face up; the walls, the roof and
+the spire print upright (the spire changes to stone for its cross).
+"""),
 }
 
-ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire"}
+ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire",
+           "millbrook": "Millbrook_Depot", "brendan": "St_Brendans_Church"}
 
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}
 SHOPS = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in SHOPS.items()}
