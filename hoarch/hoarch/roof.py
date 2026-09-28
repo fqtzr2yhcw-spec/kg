@@ -474,6 +474,16 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                     else:
                         sh.append(rect(s0, v, s1, v + pitch - 0.1))
             tex = M.extrude(cs_union(sh) ^ clip, d)
+        elif shape == "corrugated":       # corrugated iron: round-topped ribs down the slope every 1.2 mm, a
+            b = loc.bounds()              # heavier side lap every ``wtab`` and an end lap every ``pitch``
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)      # up the roof (the Blackwater Coaling Tower)
+            ribs, side, laps = [], [], []
+            for k, u in enumerate(np.arange(b[0] + 0.6, b[2], 1.2)):
+                (side if k % max(1, int(round(wtab / 1.2))) == 0 else ribs).append(rect(u - 0.27, b[1] - 1, u + 0.27, b[3] + 1))
+            for j in range(int(np.floor(b[1] / pitch)), int(np.ceil(b[3] / pitch)) + 1):
+                laps.append(rect(b[0] - 1, j * pitch - 0.25, b[2] + 1, j * pitch + 0.25))
+            tex = (M.extrude(cs_union(ribs) ^ clip, d) + M.extrude(cs_union(side) ^ clip, d + 0.12) +
+                   M.extrude(cs_union(laps) ^ clip, d * 0.45))
         elif shape == "octabutt":         # sawn wood shingles in broken-joint courses, every other course's butts
             b = loc.bounds()              # clipped at both corners (octagon butts) (the Millbrook)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
