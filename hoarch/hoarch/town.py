@@ -1671,10 +1671,10 @@ def boards_butted(region, datum=0.0, pitch=1.8, seed=0):
     for k in range(k0, k0 + int((v1 - v0) / pitch) + 4):
         v = datum + k * pitch
         cuts.append(rect(u0 - 1, v - 0.18, u1 + 1, v + 0.18))
-        u = u0 + rng.uniform(2.0, 14.0)
+        u = u0 + rng.uniform(4.0, 40.0)
         while u < u1:
             cuts.append(rect(u - 0.15, v, u + 0.15, v + pitch))
-            u += rng.uniform(10.0, 22.0)
+            u += rng.uniform(26.0, 48.0)
     return M.extrude(region, 0.4) - ext(cs_union(cuts) ^ region, 0.15, 1.0)
 
 

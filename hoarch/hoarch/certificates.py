@@ -37,7 +37,8 @@ TERMS = ("Anthropic Consumer Terms of Service, effective 8 October 2025 "
 # Building number -> module, where the module isn't the name.
 MODULES = {2: "villa", 11: "pemberton", 12: "barber", 13: "bank", 14: "general", 15: "drugstore",
            16: "hotel", 17: "bakery", 18: "hardware", 19: "millinery", 20: "jeweler", 24: "twins",
-           34: "vantassel", 61: "millbrook", 62: "brendan"}
+           34: "vantassel", 61: "millbrook", 62: "brendan",
+           63: "harmon", 64: "engine3", 65: "lakeshore", 66: "pleasant", 67: "thorne", 68: "mxtower", 69: "tank12", 70: "greenfield"}
 
 INK = colors.HexColor("#2b2118")
 ACCENT = colors.HexColor("#7a2e1d")

@@ -1172,10 +1172,92 @@ boards print face up; the walls, the roof, the dormer and the flues print uprigh
 """, """The cornices' upper parts print upside down; the clocks print face up; the walls, the roof and
 the spire print upright (the spire changes to stone for its cross).
 """),
+    "harmon": ("HARMON TOWN HALL - ITALIANATE CIVIC HALL", """  1. FOUNDATION (cushion-rusticated limestone).
+  2. WALLS-1 onto the foundation's lip: the ground storey and the tower's foot, one part.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside.
+  4. JOINT onto WALLS-1; the CORNICE-J parts round it; WALLS-2 (the upper storey with the tower
+     rising through the roof) onto the joint's lip.
+  5. The CORNICE-E parts round the eave band (they stop at the tower); ROOF onto the lip.
+  6. The TABLET and the three CLOCKs into their plain fields on the tower, glued by their backs;
+     the belfry louvres into their arches.
+  7. The CORNICE-T parts round the tower top; TOWER-roof (with its flagstaff) onto the lip.
+  8. STEPS at the front door, STEPS-back at the back.
+""", """The cornices' upper parts print upside down; the tablet and clocks print face up; the walls,
+the roofs and the steps print upright (the tower roof changes colour for its flagstaff).
+"""),
+    "engine3": ("ENGINE COMPANY No. 3 - VILLAGE ENGINE HOUSE", """  1. FOUNDATION (the bevelled granite water table).
+  2. WALLS-1 onto the foundation's lip: the apparatus floor and the hose tower's foot.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside (the two engine doors into their arches).
+  4. JOINT; the CORNICE-J parts round it; WALLS-2 (the upper storey, both gables and the hose
+     tower) onto the joint's lip.
+  5. The CORNICE-E parts round the eave band; the NAME-STONE into its field in the front gable.
+  6. ROOF onto the lip; CHIMNEY down through its pocket.
+  7. The CORNICE-T parts round the tower top; TOWER-roof (with its finial) onto the lip.
+  8. APRON before the engine doors; STEP-back at the back door.
+""", """The cornices' upper parts print upside down; the name stone prints face up; the walls, roofs,
+chimney and apron print upright.
+"""),
+    "lakeshore": ("THE LAKESHORE FREIGHT HOUSE - RAILROAD FREIGHT SHED", """  1. FOUNDATION (the timber crib).
+  2. WALLS onto the crib's lip, with both gable ends.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside. The sliding doors' leaves, tracks and hoods lie on the plain
+     fields left in the shiplap.
+  4. The CORNICE-E parts round the eave band; the SIGN into its field over the track-side doors.
+  5. ROOF onto the lip; STOVEPIPE down through its hole.
+  6. DOCK-S along the track side and DOCK-N along the street side against the crib, each with its
+     steps at the west end.
+""", """The cornice's upper part and the two docks print upside down; the sign prints face up; the
+walls, roof and stovepipe print upright.
+"""),
+    "pleasant": ("PLEASANT VALLEY SCHOOL - ONE-ROOM SCHOOLHOUSE", """  1. FOUNDATION (brick piers with lattice between).
+  2. WALLS onto the foundation's lip, with both gables.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside.
+  4. The CORNICE-E parts round the eave band; the NAME-BOARD into its field in the front gable.
+  5. ROOF onto the lip; BELFRY onto its flat seat at the front of the ridge; CHIMNEY down
+     through its pocket at the back.
+  6. STEPS at the door.
+""", """The cornice's upper part prints upside down; the name board prints face up; the walls, the roof,
+the belfry and the chimney print upright.
+"""),
+    "thorne": ("THE THORNE LIVERY - LIVERY AND FEED STABLE", """  1. FOUNDATION (river cobbles).
+  2. WALLS onto the foundation's lip, with both gables.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside (the hay door into the front gable).
+  4. The CORNICE-E parts round the eave band; the SIGN into its field over the big doors; the
+     HAY-HOOD into its field at the peak, glued by its back.
+  5. ROOF onto the lip; CUPOLA onto its flat seat in the ridge.
+  6. RAMP-front and RAMP-back at the big doors.
+""", """The cornice's upper part prints upside down; the sign and the hay hood print on their backs;
+the walls, roof, cupola and ramps print upright.
+"""),
+    "mxtower": ("MX TOWER - INTERLOCKING TOWER", """  1. FOUNDATION (the scored concrete plinth).
+  2. WALLS-1 (the brick relay room) onto the foundation's lip.
+  3. Windows and doors: clip off the supports and push each plug into its opening from outside.
+  4. JOINT; the CORNICE-J parts round it; WALLS-2 (the operating floor) onto the joint's lip.
+  5. The CORNICE-E parts round the eave band; the SIGN into its field on the west end.
+  6. ROOF onto the lip.
+  7. STAIR against the back wall, its head at the operator's door.
+""", """The cornices' upper parts print upside down; the sign prints face up; the stair prints lying on
+its outer stringer; the walls and roof print upright.
+"""),
+    "tank12": ("WATER TANK No. 12 - RAILROAD WATER TANK", """  1. FOOTINGS (the pad and nine footing blocks) on the layout.
+  2. TRESTLE onto the footings, each post's peg into its socket.
+  3. TANK onto the trestle's deck, the spout toward the track.
+  4. ROOF onto the tank's rim.
+""", """The trestle prints upside down on its deck; the footings, tank and roof print upright.
+"""),
+    "greenfield": ("THE GREENFIELD BANDSTAND - OCTAGONAL PARK BANDSTAND", """  1. DECK (the planked floor on its lattice skirt).
+  2. TOP-top (the columns, railings, arches and roof slab in one piece) lowered onto it, each
+     column's peg into its socket in the planks.
+  3. ROOF (with its finial) on the top's flat roof.
+  4. STEPS-0 at the front face.
+""", """The deck and the top print upside down; the roof prints upright (it changes colour for its
+finial).
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire",
-           "millbrook": "Millbrook_Depot", "brendan": "St_Brendans_Church"}
+           "millbrook": "Millbrook_Depot", "brendan": "St_Brendans_Church", "harmon": "Harmon_Town_Hall",
+           "engine3": "Engine_Company_No3", "lakeshore": "Lakeshore_Freight_House", "pleasant": "Pleasant_Valley_School",
+           "thorne": "Thorne_Livery", "mxtower": "MX_Tower", "tank12": "Water_Tank_No12", "greenfield": "Greenfield_Bandstand"}
 
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}
 SHOPS = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in SHOPS.items()}
