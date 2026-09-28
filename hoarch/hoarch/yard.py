@@ -957,6 +957,7 @@ def wetbin(w=20.0, d=16.0, h=9.0, t=1.2):
     walls = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, h]) - box([-w / 2 + t, -d / 2 - 1.0, 1.2], [w / 2 - t, d / 2 - t, h + 1.0])
     walls = walls - box([-w / 2 + t, -d / 2 - 1.0, -1.0], [w / 2 - t, -d / 2 + 2.0, h + 1.0])
     grooves = union([box([-w / 2 - 1, -d / 2 - 1, z - 0.15], [w / 2 + 1, d / 2 + 1, z + 0.15]) for z in np.arange(1.8, h - 0.5, 1.8)])
+    grooves = grooves - box([-w / 2 + 0.3, -d / 2 + 0.3, -1.0], [w / 2 - 0.3, d / 2 - 0.3, h + 1.0])   # surface lines only
     posts = union([box([x - 0.9, y - 0.9, 0.0], [x + 0.9, y + 0.9, h + 0.6]) for x in (-w / 2 + 0.3, 0.0, w / 2 - 0.3) for y in (d / 2 - 0.3,)] +
                   [box([x - 0.9, y - 0.9, 0.0], [x + 0.9, y + 0.9, h + 0.6]) for x in (-w / 2 + 0.3, w / 2 - 0.3) for y in (-d / 2 + 0.6, 0.0)])
     def lumps(p):
