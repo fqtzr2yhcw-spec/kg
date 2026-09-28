@@ -25,7 +25,7 @@ OUT = os.path.normpath(os.path.join(HERE, "..", "out"))
 
 LATER = {"roof", "cupola", "top", "dormers", "extras", "street"}
 OPEN = {"porch": "porch", "portico": "portico", "balcony": "balcony", "gallery": "gallery", "stoop": "steps",
-        "boardwalk": "boardwalk"}
+        "boardwalk": "boardwalk", "walkway": "walkway and chutes"}
 TOPS = re.compile(r"roof|finial|crest|spire|chimney|weathervane", re.I)
 
 

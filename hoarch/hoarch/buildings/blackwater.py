@@ -214,9 +214,9 @@ def build(kit=None):
     pad = YD.footings_coal(XS, YS, (-6.0, -2.0, SX1 + 1.4, D + 3.0), shaft=(SX0, SY0, SX1, SY1), zt=Z_FOOT, pad_t=PAD_T)
     pad = pad + box([-6.0, -10.5, 0.0], [0.0, -1.9, PAD_T])                    # under the ladder's feet
     pad = pad + lip_ring(SHAFT.cs, 2.4, Z_FOOT)
-    kit.add("FOOTINGS", "Concrete", pad, group="base")
+    kit.add("FOOTINGS", "Concrete", pad, group="foundation")
     tr = YD.trestle_coal(XS, YS, H_TR, DECK, WALK, notch=notch.translate([0, 0, -Z_FOOT])).translate([0, 0, Z_FOOT])
-    kit.add("TRESTLE", "Timber", tr, P=print_flip(), group="trestle",
+    kit.add("TRESTLE", "Timber", tr, P=print_flip(), group="foundation",
             render=[("Timber", tr - box([-10, -20, Z_DECK - 0.35], [SX1, D + 10, Z_DECK + 1])),
                     ("Planks", tr ^ box([-10, -20, Z_DECK - 0.35], [SX1, D + 10, Z_DECK + 1]))])
     print("trestle", round(time.time() - t0, 1))
@@ -234,7 +234,7 @@ def build(kit=None):
                        gables=gables, undress=undress)
     no_lip = union([box([-1, -20, ZW - 1], [5.0, D + 20, ZW + 5]), box([W - 5.0, -20, ZW - 1], [W + 1, D + 20, ZW + 5])])
     walls = walls + ((_corbel(base, 3.0, ZW) + lip_ring(base, 3.0, ZW)) - no_lip) + (CO.ledge(MAIN.pts, ZE, LEDGE) - SHAFT_CUT)
-    kit.add("WALLS", "Tuscan", walls, group="walls")
+    kit.add("WALLS", "Tuscan", walls, group="walls-bin")
     rings, _ = CO.level(MAIN.pts, Z_DECK, BASE, cut=SHAFT_CUT)
     CO.add_level(kit, rings, "CORNICE-B", "cornice")
     rings, _ = CO.level(MAIN.pts, ZE, EAVE, cut=SHAFT_CUT)
@@ -306,7 +306,7 @@ def build(kit=None):
         A = f.A.copy()
         A[:, 3] = f.world(x, GATE_V, 0.0)
         c = YD.chute_apron().transform(A)
-        kit.add(f"CHUTE-{k + 1}", "Iron", c, P=_face_P(A), key="CHUTE", group="chutes")
+        kit.add(f"CHUTE-{k + 1}", "Iron", c, P=_face_P(A), key="CHUTE", group="walkway")
     L_r = DECK[2] - DECK[0]
     rl = YD.rail_walkway(L_r, h=11.0, ret=6.0).transform(np.array([[1.0, 0, 0, DECK[0]], [0, 1.0, 0, WALK], [0, 0, 1.0, Z_DECK]]))
     kit.add("RAILING", "Timber", rl, group="walkway")
@@ -328,9 +328,9 @@ def build(kit=None):
     kwall = wall_shell([HOIST], ho_ops, t=2.4, belt=None, corners="none", water_table=False, siding=_skin, gables=kgab,
                        undress=[slab(offset(kb, 8.0), ZK_E - LEDGE - 0.6, ZK_W + 0.01)])
     kwall = kwall + CO.ledge(HOIST.pts, ZK_E, LEDGE, t=2.4) - lip_keep(kb, 2.4, ZK_F, 1.2)
-    kit.add("HOIST-WALLS", "Tuscan", kwall, group="hoist")
+    kit.add("HOIST-WALLS", "Tuscan", kwall, group="walls-hoist")
     kf = foundation([HOIST], 0.0, ZK_F, t=2.4, style="formboard", openings=[])
-    kit.add("HOIST-FOUNDATION", "Concrete", kf, group="hoist")
+    kit.add("HOIST-FOUNDATION", "Concrete", kf, group="foundation")
     rings, _ = CO.level(HOIST.pts, ZK_E, HOE, t=2.4, cut=box([SX0 - 5, SY0 - 1.0, -10], [SX1 + 0.9, SY1 + 1.0, 400]))
     CO.add_level(kit, rings, "CORNICE-K", "cornice")
     kroof = krf["body"] + krf["tex"] + krf["skins"] + krf["skin_tex"]
@@ -342,7 +342,7 @@ def build(kit=None):
     kroof = (kroof - box([SX0 - 5, SY0 - 1.0, -10], [SX1 + 0.9, SY1 + 1.0, 400]) - M.cylinder(80.0, 1.75, 1.75, 28).translate([px, py, ZK_W])
              - stack).trim_by_plane([0, 0, 1.0], ZK_W)
     kit.add("HOIST-ROOF", "Galv", max(kroof.decompose(), key=lambda m_: m_.volume()), group="hoist")
-    kit.add("STACK", "Iron", stack - M.cylinder(3.0, 5.0, 5.0, 12).translate([px, py, zp - 3.0]), group="hoist")
+    kit.add("STACK", "Iron", stack - M.cylinder(3.0, 5.0, 5.0, 12).translate([px, py, zp - 3.0]), group="roof")
     ins += _add_inserts(kit, ho_ops)
     print("hoist house", round(time.time() - t0, 1))
     print("specks dropped:", kit.drop_specks())

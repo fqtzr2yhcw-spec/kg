@@ -1252,12 +1252,31 @@ its outer stringer; the walls and roof print upright.
 """, """The deck and the top print upside down; the roof prints upright (it changes colour for its
 finial).
 """),
+    "blackwater": ("THE BLACKWATER COALING TOWER - TIMBER COALING TOWER", """  1. FOOTINGS on the layout, the long side (with the ladder's pad at its west end) along the track the chutes serve.
+  2. TRESTLE onto the footings, each post's peg into its socket, the walkway toward the track.
+  3. WALLS onto the deck, the door onto the walkway; CORNICE-B-lower (the strapped sill) round their foot.
+  4. The windows and the walkway door into the bin house; SIGN on the plain field under the eave.
+  5. CORNICE-E-lower onto the ledge under the eave, then CORNICE-E-upper on top of it.
+  6. SHAFT onto its footing at the east end, its plain face against the bin house; its windows; CORNICE-S-lower, then CORNICE-S-upper, onto the ledge at its top.
+  7. ROOF onto the bin house, notched round the shaft, the spout toward the shaft.
+  8. HEAD-WALLS onto the shaft's cornice, the plain patch on the west face against the spout's end; its windows; CORNICE-H-course, then CORNICE-H-crown; HEAD-ROOF.
+  9. HOIST-FOUNDATION beside the shaft, HOIST-WALLS onto it (the door toward the track); its windows and door; CORNICE-K-frieze, then CORNICE-K-crown; HOIST-ROOF; STACK down through the hole in the roof.
+  10. CHUTE-1 and CHUTE-2 onto the two plain fields either side of the walkway door, the aprons out over the track; RAILING along the walkway's edge; LADDER at the walkway's west end, its tab flat on the deck.
+""", """The trestle prints upside down on its deck; the walls, shaft (about 190 mm) and hoist house upright; the chutes and the sign on their backs; the ladder on its face; windows and doors face up with supports under their frames only.
+"""),
+    "stonehaven": ("THE STONEHAVEN TUNNEL PORTALS - SINGLE-TRACK STONE PORTALS (PAIR)", """  1. Lay the track first. Stand each PORTAL square across it, the date tablet up, the arch centred on the track (60 mm wide, 82 mm to the crown).
+  2. LINER against the back of each portal, lined up with the arch; it glues by its whole end ring.
+  3. WING-L and WING-R against the portal's sides, their angled ends flat on the portal's side faces, the walls splaying forward along the approach.
+  4. Build the hillside behind and over the linings (foam, plaster cloth or a cardboard web), up to the cornice and the wing walls' copings. The kit has two of each part, one set for each end of the tunnel.
+""", """Every part prints face up, flat on its back, with no supports; the linings stand on end.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire",
            "millbrook": "Millbrook_Depot", "brendan": "St_Brendans_Church", "harmon": "Harmon_Town_Hall",
            "engine3": "Engine_Company_No3", "lakeshore": "Lakeshore_Freight_House", "pleasant": "Pleasant_Valley_School",
-           "thorne": "Thorne_Livery", "mxtower": "MX_Tower", "tank12": "Water_Tank_No12", "greenfield": "Greenfield_Bandstand"}
+           "thorne": "Thorne_Livery", "mxtower": "MX_Tower", "tank12": "Water_Tank_No12", "greenfield": "Greenfield_Bandstand",
+           "blackwater": "Blackwater_Coaling_Tower", "stonehaven": "Stonehaven_Tunnel_Portals"}
 
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}
 SHOPS = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in SHOPS.items()}

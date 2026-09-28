@@ -118,11 +118,11 @@ def frieze_headwheels(L, h, b, pitch, margin, pair, half):
     v0, v1 = 0.6, h - 0.6
     vc = (v0 + v1) / 2
     r = min(2.2, (v1 - v0) / 2)
-    out = [_st(rect(0.3, vc + r * 0.55 - 0.15, L - 0.3, vc + r * 0.55 + 0.15), b, 0.25),
-           _st(rect(0.3, vc - r * 0.55 - 0.15, L - 0.3, vc - r * 0.55 + 0.15), b, 0.25)]
+    out = [_st(rect(0.3, vc + r * 0.55 - 0.21, L - 0.3, vc + r * 0.55 + 0.21), b, 0.25),
+           _st(rect(0.3, vc - r * 0.55 - 0.21, L - 0.3, vc - r * 0.55 + 0.21), b, 0.25)]
     for u in CO._us(L, pitch, margin, 0.0):
         ring = circle((u, vc), r, 28) - circle((u, vc), r - 0.45, 28)
-        spokes = cs_union([stroke([(u, vc), (u + (r - 0.3) * math.cos(a), vc + (r - 0.3) * math.sin(a))], 0.32, caps=False)
+        spokes = cs_union([stroke([(u, vc), (u + (r - 0.3) * math.cos(a), vc + (r - 0.3) * math.sin(a))], 0.44, caps=False)
                            for a in np.linspace(0, 2 * math.pi, 7)[:-1]])
         out.append(_st(cs_union([ring, spokes, circle((u, vc), 0.5, 12)]), b + 0.25, 0.3))
     return out, []
@@ -136,25 +136,26 @@ def frieze_pickshovel(L, h, b, pitch, margin, pair, half):
     out = []
     for u in CO._us(L, pitch, margin, 0.0):
         s = hh * 0.95
-        shaft1 = stroke([(u - s, vc - s), (u + s * 0.7, vc + s * 0.7)], 0.32, caps=False)
-        head = stroke([(u + s * 0.7 - 1.1, vc + s * 0.7 + 0.5), (u + s * 0.7, vc + s * 0.7 + 0.15), (u + s * 0.7 + 1.1, vc + s * 0.7 - 0.9)], 0.34)
-        shaft2 = stroke([(u + s, vc - s * 0.3), (u - s * 0.45, vc + s * 0.9)], 0.32, caps=False)
+        shaft1 = stroke([(u - s, vc - s), (u + s * 0.7, vc + s * 0.7)], 0.42, caps=False)
+        head = stroke([(u + s * 0.7 - 1.1, vc + s * 0.7 + 0.5), (u + s * 0.7, vc + s * 0.7 + 0.15), (u + s * 0.7 + 1.1, vc + s * 0.7 - 0.9)], 0.42)
+        shaft2 = stroke([(u + s, vc - s * 0.3), (u - s * 0.45, vc + s * 0.9)], 0.42, caps=False)
         blade = poly([(u + s - 0.1, vc - s * 0.3 + 0.2), (u + s + 0.9, vc - s * 0.3 - 0.5), (u + s + 0.3, vc - s - 0.3), (u + s - 0.6, vc - s * 0.3 - 0.4)])
         out.append(_st(cs_union([shaft1, head, shaft2, blade]) ^ rect(0.0, v0, L, v1), b, 0.4))
     return out, []
 
 
 def course_chainlinks(L, h, b, pitch, margin, p):
-    """A chain: open links flat to the face alternating with links seen edge-on."""
+    """A chain: oval links flat to the face, each with a sunk eye, alternating with links
+    seen edge-on."""
     vc = h / 2
     out = []
-    ry = min(0.55, h * 0.34)
-    for k, u in enumerate(np.arange(1.0, L - 1.0, 1.35)):
+    ry = min(0.5, h * 0.32)
+    for k, u in enumerate(np.arange(1.0, L - 1.0, 1.45)):
         if k % 2 == 0:
-            out.append(ext(cs_union([circle((u - 0.25, vc), ry, 12), circle((u + 0.25, vc), ry, 12), rect(u - 0.25, vc - ry, u + 0.25, vc + ry)])
-                           - cs_union([rect(u - 0.3, vc - 0.12, u + 0.3, vc + 0.12)]), b - 0.05, b + 0.35))
+            link = cs_union([circle((u - 0.2, vc), ry, 12), circle((u + 0.2, vc), ry, 12), rect(u - 0.2, vc - ry, u + 0.2, vc + ry)])
+            out.append(ext(link, b - 0.05, b + 0.35) - ext(rect(u - 0.3, vc - 0.1, u + 0.3, vc + 0.1), b + 0.2, b + 1.0))
         else:
-            out.append(ext(rect(u - 0.55, vc - 0.16, u + 0.55, vc + 0.16), b - 0.05, b + 0.45))
+            out.append(ext(rect(u - 0.6, vc - 0.22, u + 0.6, vc + 0.22), b - 0.05, b + 0.45))
     return out
 
 
@@ -162,10 +163,10 @@ def course_sprockets(L, h, b, pitch, margin, p):
     """Sprocket wheels every 4 mm on a roller chain (the head house cornice)."""
     vc = h / 2
     r = min(0.62, h * 0.4)
-    chain = rect(0.3, vc - 0.13, L - 0.3, vc + 0.13)
+    chain = rect(0.3, vc - 0.2, L - 0.3, vc + 0.2)
     wheels = []
     for u in np.arange(2.0, L - 1.2, 4.0):
-        teeth = cs_union([rect(u - 0.12, vc - r - 0.14, u + 0.12, vc + r + 0.14).transform(
+        teeth = cs_union([rect(u - 0.2, vc - r - 0.14, u + 0.2, vc + r + 0.14).transform(
             np.array([[math.cos(a), -math.sin(a), u - u * math.cos(a) + vc * math.sin(a)],
                       [math.sin(a), math.cos(a), vc - u * math.sin(a) - vc * math.cos(a)]])) for a in np.linspace(0, math.pi, 5)[:-1]])
         wheels.append(cs_union([circle((u, vc), r, 16), teeth]))
@@ -326,7 +327,7 @@ def trestle_coal(xs, ys, h, deck, walk_y, post=4.0, deck_t=2.0, joist=1.8, peg=1
             out.append(box([x - post / 2, y - post / 2, 0.0], [x + post / 2, y + post / 2, zt + 0.01]))
             out.append(box([x - peg / 2, y - peg / 2, -1.6], [x + peg / 2, y + peg / 2, 0.01]))
     gw = 1.4
-    for z in (1.8, zm, zt - 1.0):
+    for z in (1.8, zm, zt - 0.8):
         for y in ys:
             out.append(box([xs[0] - post / 2, y - gw / 2, z - 0.8], [xs[-1] + post / 2, y + gw / 2, z + 0.8]))
         for x in xs:
@@ -343,7 +344,7 @@ def trestle_coal(xs, ys, h, deck, walk_y, post=4.0, deck_t=2.0, joist=1.8, peg=1
                 pts.append((x + n[0] * s, y + n[1] * s, z + (1.6 if z < (az + bz) / 2 else -1.6)))
         return M.hull_points(pts)
 
-    for (za, zb) in ((1.8, zm), (zm, zt - 1.0)):
+    for (za, zb) in ((1.8, zm), (zm, zt - 0.8)):
         for a, e in zip(xs[:-1], xs[1:]):
             for y, sg in ((ys[0], -1), (ys[-1], 1)):
                 yy = y + sg * (post / 2 + bw / 2 - 0.3)
@@ -365,7 +366,7 @@ def trestle_coal(xs, ys, h, deck, walk_y, post=4.0, deck_t=2.0, joist=1.8, peg=1
     dk = box([x0, y0, zj], [x1, y1, h])
     if notch is not None:
         dk = dk - notch
-    planks = union([box([x0 - 1, y - 0.12, h - 0.3], [x1 + 1, y + 0.12, h + 1]) for y in np.arange(y0 + 1.7, y1, 1.7)])
+    planks = union([box([x0 - 1, y - 0.22, h - 0.4], [x1 + 1, y + 0.22, h + 1]) for y in np.arange(y0 + 2.0, y1, 2.0)])
     fascia = box([x0, y0 - 0.9, zj - 1.6], [x1, y0 + 0.01, h])
     return union(out) + (dk - planks) + fascia
 
@@ -456,9 +457,10 @@ def ladder_coal(H, w=5.6, above=9.0, tab=4.0):
     for x in (0.0, w - 1.2):
         out.append(box([x, 0.0, 0.0], [x + 1.2, H + above, 1.2]))
     for y in np.arange(3.0, H + above - 1.5, 3.5):
-        out.append(box([0.6, y - 0.45, 0.2], [w - 0.6, y + 0.45, 1.0]))
+        out.append(box([0.6, y - 0.45, 0.2], [w - 0.6, y + 0.45, 1.2]))
     out.append(box([0.0, H + above - 1.2, 0.0], [w, H + above, 1.2]))
     out.append(box([0.0, H, -tab], [w, H + 1.0, 0.01]))
+    out.append(box([0.6, H, 0.0], [w - 0.6, H + 1.0, 1.2]))
     return union(out)
 
 
@@ -517,7 +519,7 @@ def _dressed(cs, w0, d, c=0.5):
                          [(p[0], p[1], w0 + d) for loop in inner.to_polygons() for p in loop])
 
 
-def rock_ashlar(region, seed=0, course=5.4, lmin=7.0, lmax=14.0, joint=0.4, w0=0.0, d=0.6, face=0.6, datum=0.0, u0=None):
+def rock_ashlar(region, seed=0, course=5.4, lmin=7.0, lmax=14.0, joint=0.5, w0=0.0, d=0.6, face=0.6, datum=0.0, u0=None):
     """Rock-faced ashlar filling ``region`` (u, v): level courses ``course`` high of stones of
     random length in broken joint, each with a drafted margin and a pitched face (the Stonehaven
     portals). Stones cut by the region's edge keep their face; the joints show the plate."""
@@ -636,13 +638,13 @@ def liner_stone(opening, depth=30.0, t=2.4, course=5.4, spring=52.0, r0=30.0):
     for v in np.arange(7.0, spring, course):
         for s in (-1, 1):
             a, e = sorted((s * (r0 - 0.01), s * (r0 + 0.3)))
-            cuts.append(rect(a, v - 0.15, e, v + 0.15))
+            cuts.append(rect(a, v - 0.25, e, v + 0.25))
     for a in np.linspace(0, math.pi, 13)[1:-1]:
         c, s_ = math.cos(a), math.sin(a)
-        cuts.append(poly([((r0 - 0.01) * c - 0.15 * s_, spring + (r0 - 0.01) * s_ + 0.15 * c), ((r0 + 0.3) * c - 0.15 * s_, spring + (r0 + 0.3) * s_ + 0.15 * c),
-                          ((r0 + 0.3) * c + 0.15 * s_, spring + (r0 + 0.3) * s_ - 0.15 * c), ((r0 - 0.01) * c + 0.15 * s_, spring + (r0 - 0.01) * s_ - 0.15 * c)]))
+        cuts.append(poly([((r0 - 0.01) * c - 0.25 * s_, spring + (r0 - 0.01) * s_ + 0.25 * c), ((r0 + 0.35) * c - 0.25 * s_, spring + (r0 + 0.35) * s_ + 0.25 * c),
+                          ((r0 + 0.35) * c + 0.25 * s_, spring + (r0 + 0.35) * s_ - 0.25 * c), ((r0 - 0.01) * c + 0.25 * s_, spring + (r0 - 0.01) * s_ - 0.25 * c)]))
     body = ext(ring - cs_union(cuts), -depth, 0.0)
-    rings = union([ext((opening.offset(0.3, MJ, 4.0) - opening) ^ rect(-200, 0.0, 200, 300), -w - 0.15, -w + 0.15)
+    rings = union([ext((opening.offset(0.3, MJ, 4.0) - opening) ^ rect(-200, 0.0, 200, 300), -w - 0.2, -w + 0.2)
                    for w in np.arange(9.0, depth - 1.0, 9.0)])
     return body - rings
 
