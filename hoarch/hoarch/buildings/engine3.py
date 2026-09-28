@@ -73,7 +73,7 @@ BLOCKS = [MAIN, TOWER]
 V1 = 10.0
 V2 = S1 + RJ + 5.0 - ZF
 SOLDIERS = (V1 - 2.4, V1 + 20.0 + 3.2, V2 - 3.0, V2 + 25.2)
-TAB_V, TAB_L, TAB_H = Z_EAVE - ZF + 5.0, 40.0, 6.0      # the name stone in the front gable
+TAB_V, TAB_L, TAB_H = Z_EAVE - ZF + 5.0, 46.0, 6.0      # the name stone in the front gable
 CHIM = (XC + 16.0, D - 22.0)
 
 

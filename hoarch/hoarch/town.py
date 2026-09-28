@@ -1234,7 +1234,7 @@ def tablet_fire(text, L, H=6.0, t=1.2, cap=3.0):
     body = ext(b, 0.0, t) + ext(b - b.offset(-0.7, RND), t - 0.01, t + 0.5)
     letters = text_cs(text, cap=cap, font="serif", track=0.3)
     lb = letters.bounds()
-    sc = min(1.0, (L - 2.4) / max(1e-6, lb[2] - lb[0]))
+    sc = min(1.0, (L - 4.4) / max(1e-6, lb[2] - lb[0]))
     letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (Ht - cap) / 2 - lb[1]))
     lt = ext(letters, t - 0.01, t + 0.45)
     return body + lt, lt
