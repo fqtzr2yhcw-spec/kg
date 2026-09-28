@@ -1588,7 +1588,8 @@ def stovepipe_section(h=14.0, r=1.1):
     """The tool house stove's pipe: a round pipe with a collar and a cone cap on three legs'
     worth of solid web. Local: centred, z = 0 inside the roof (it drops into a hole)."""
     pipe = M.cylinder(h, r, r, 24)
-    collar = M.cylinder(1.0, r + 1.1, r + 0.4, 24).translate([0, 0, 4.0])
+    collar = M.cylinder(1.0, r + 1.1, r + 0.4, 24).translate([0, 0, 4.0]) + \
+        M.cylinder(1.1, r - 0.01, r + 1.1, 24).translate([0, 0, 2.9])           # 45-degree skirt: no flat ledge to print
     cap = M.cylinder(0.9, r + 0.1, r + 1.4, 24).translate([0, 0, h + 0.8]) + M.cylinder(0.9, r + 1.4, 0.3, 24).translate([0, 0, h + 1.69])
     web = box([-0.3, -r - 0.2, h - 0.01], [0.3, r + 0.2, h + 0.81])
     return pipe + collar + cap + web
