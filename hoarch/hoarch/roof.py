@@ -484,6 +484,20 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 laps.append(rect(b[0] - 1, j * pitch - 0.25, b[2] + 1, j * pitch + 0.25))
             tex = (M.extrude(cs_union(ribs) ^ clip, d) + M.extrude(cs_union(side) ^ clip, d + 0.12) +
                    M.extrude(cs_union(laps) ^ clip, d * 0.45))
+        elif shape == "randomslate":      # rough slates of random width, each butt set a little higher or lower
+            b = loc.bounds()              # than its neighbours (the Blackwater Engine House)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(7)
+            sh = []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                u = b[0] - wtab * rng.uniform(0.2, 1.0)
+                while u < b[2] + wtab:
+                    wd = wtab * rng.uniform(0.65, 1.35)
+                    dv = rng.uniform(-0.3, 0.3)
+                    sh.append(rect(u + 0.1, v + dv, u + wd - 0.1, v + pitch - 0.12))
+                    u += wd
+            tex = M.extrude(cs_union(sh) ^ clip, d)
         elif shape == "tarbatten":        # tar paper in wide strips lapped up the roof, held by wood battens
             b = loc.bounds()              # running down the slope every ``wtab`` (the Blackwater Sand House)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)

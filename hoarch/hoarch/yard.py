@@ -966,3 +966,258 @@ def wetbin(w=20.0, d=16.0, h=9.0, t=1.2):
 
     heap = M.sphere(1.0, 64).scale([w / 2 - t - 0.1, d / 2 - 0.4, h + 1.8]).warp_batch(lumps) ^ box([-w / 2 + t + 0.01, -d / 2, 1.21], [w / 2 - t - 0.01, d / 2 - t - 0.01, 60])
     return (walls - grooves) + posts, heap
+
+
+# ================================================================== 74 the Blackwater Engine House
+def brick_american(region, datum=0.0, every=6, piers=(), pier_w=6.0, pier_top=None):
+    """American (common) bond: five courses of stretchers to one of headers; ``piers`` (u) are
+    brick pilasters ``pier_w`` wide standing 1.1 proud, bonded the same, up to ``pier_top``
+    (the Blackwater Engine House)."""
+    if region.is_empty():
+        return M()
+    b = region.bounds()
+    bh = 0.8
+
+    def bond(reg, w0):
+        rb = reg.bounds()
+        bricks = []
+        for k in range(int(math.floor((rb[1] - datum) / bh)) - 1, int(math.ceil((rb[3] - datum) / bh)) + 1):
+            v = datum + k * bh
+            hdr = k % every == 0
+            L = 1.2 if hdr else 2.4
+            off = (k % 2) * (0.6 if hdr else 1.2)
+            bricks += [rect(u + 0.1, v + 0.1, u + L - 0.1, v + bh - 0.1) for u in np.arange(rb[0] - 2.4 + off, rb[2] + 2.4, L)]
+        return ext(reg, w0 - 0.01, w0 + 0.1) + ext(cs_union(bricks) ^ reg, w0 + 0.09, w0 + 0.35)
+
+    out = bond(region, 0.0)
+    top = b[3] if pier_top is None else pier_top
+    for u in piers:
+        pr = rect(u - pier_w / 2, b[1] - 1, u + pier_w / 2, top) ^ region
+        if pr.is_empty():
+            continue
+        out = out + ext(pr, 0.0, 1.1) + bond(pr, 1.1)
+    return out
+
+
+def foundation_stippled(reg, seed=0):
+    """Bush-stippled concrete: a plain plinth with a drafted margin round a field of small
+    random pits, a sloped wash along its top (the Blackwater Engine House)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed)
+    out = M.extrude(reg, 0.5)
+    inner = reg.offset(-0.6, MJ, 4.0)
+    pits = []
+    for _ in range(int((b[2] - b[0]) * (b[3] - b[1]) / 1.6)):
+        u, v = rng.uniform(b[0], b[2]), rng.uniform(b[1], b[3])
+        pits.append(circle((u, v), rng.uniform(0.2, 0.32), 6))
+    if pits:
+        out = out - ext(cs_union(pits) ^ inner, 0.3, 1.0)
+    wash = rect(b[0] - 1, b[3] - 0.8, b[2] + 1, b[3] + 1) ^ reg
+    return out + ext(wash, 0.49, 0.75)
+
+
+def frieze_diamondstacks(L, h, b, pitch, margin, pair, half):
+    """Diamond-stack smokestacks: at every station a tapered stack on a saddle crowned by the
+    rhombus of its spark arrester, a pipe rail between (the Blackwater Engine House)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    out = [_st(rect(0.3, v0, L - 0.3, v0 + 0.5), b, 0.25)]
+    for u in CO._us(L, pitch, margin, 0.0):
+        sad = poly([(u - 1.3, v0 + 0.45), (u + 1.3, v0 + 0.45), (u + 0.8, v0 + hh * 0.2), (u - 0.8, v0 + hh * 0.2)])
+        stack = poly([(u - 0.55, v0 + hh * 0.2 - 0.05), (u + 0.55, v0 + hh * 0.2 - 0.05), (u + 0.4, v0 + hh * 0.55), (u - 0.4, v0 + hh * 0.55)])
+        dia = poly([(u, v0 + hh * 0.5), (u + 1.6, v0 + hh * 0.78), (u, v1), (u - 1.6, v0 + hh * 0.78)])
+        out.append(_st(cs_union([sad, stack, dia]), b + 0.25, 0.4))
+    return out, []
+
+
+def course_railprofiles(L, h, b, pitch, margin, p):
+    """Rails seen end on in a row: head, web and foot of a T rail every 2.2 mm."""
+    parts = []
+    s = min(1.0, h / 1.6)
+    for u in np.arange(1.2, L - 0.8, 2.2):
+        parts += [rect(u - 0.7 * s, 0.25, u + 0.7 * s, 0.25 + 0.3 * s), rect(u - 0.18, 0.25, u + 0.18, h - 0.35),
+                  rect(u - 0.42 * s, h - 0.35 - 0.36 * s, u + 0.42 * s, h - 0.25)]
+    return [ext(cs_union(parts), b - 0.05, b + 0.4)]
+
+
+def bracket_enginecorbel(h, d, t):
+    """A stepped brick corbel: four courses each standing out beyond the one below (side
+    profile, top at v = 0)."""
+    hb = max(3.0, h)
+    n = 4
+    pts = [(0.0, 0.0), (d, 0.0)]
+    for k in range(n):
+        x = d * (n - k - 1) / n + 0.4 if k < n - 1 else 0.6
+        pts += [(d * (n - k) / n + (0.0 if k else 0.0), -hb * (k + 1) / n), (x, -hb * (k + 1) / n)]
+    pts[-1] = (0.6, -hb)
+    pts.append((0.0, -hb))
+    return poly(pts)
+
+
+CO.FRIEZE_EXTRA.update(diamondstacks=frieze_diamondstacks)
+CO.COURSE_EXTRA.update(railprofiles=course_railprofiles)
+TW.BRACKET_EXTRA.update(enginecorbel=bracket_enginecorbel)
+TW.FOUNDATION_EXTRA.update(stippled=foundation_stippled)
+
+
+def _hood_mould(w, h, A=1.1, stop=1.4):
+    """A projecting brick hood over a round-arched opening: a band following the arch down to
+    the springing, square label stops at its ends."""
+    r = w / 2
+    spring = h - r
+    ring = (circle((0.0, spring), r + 0.7 + A, 64) - circle((0.0, spring), r + 0.7, 64)) ^ rect(-w, spring, w, h + 10)
+    st = [rect(r + 0.5, spring - stop, r + 0.7 + A + 0.3, spring + 0.01), rect(-r - 0.7 - A - 0.3, spring - stop, -r - 0.5, spring + 0.01)]
+    return ring, st
+
+
+def window_engine(w=13.0, h=30.0):
+    """The engine house's side window: twelve small lights under a round head filled with a
+    fanlight of five, a projecting brick hood with label stops, a stone sill."""
+    op = O.opening_cs(w, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, MJ, 4.0)
+    r = w / 2
+    spring = h - r
+    gb = g.bounds()
+    bars = [rect(gb[0] + (gb[2] - gb[0]) * k / 3 - 0.2, gb[1] - 1, gb[0] + (gb[2] - gb[0]) * k / 3 + 0.2, spring) for k in (1, 2)]
+    bars += [rect(gb[0] - 1, gb[1] + (spring - gb[1]) * k / 4 - 0.2, gb[2] + 1, gb[1] + (spring - gb[1]) * k / 4 + 0.2) for k in (1, 2, 3)]
+    bars.append(rect(gb[0] - 1, spring - 0.3, gb[2] + 1, spring + 0.3))
+    for a in np.linspace(0, math.pi, 6)[1:-1]:
+        bars.append(stroke([(0.0, spring), (r * 1.2 * math.cos(a), spring + r * 1.2 * math.sin(a))], 0.4, caps=False))
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, cs_union(bars), plug_cs)
+    ring, stops = _hood_mould(w, h)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(0.8, RND) - op), 0.0, 0.45),
+             ext(ring, 0.0, 1.0), ext(ring - ring.offset(-0.35, RND), 0.99, 1.3)]
+    parts += [ext(s_, 0.0, 1.1) for s_ in stops]
+    parts.append(chamfer_box(-w / 2 - 1.4, -1.3, w / 2 + 1.4, 0.2, 0.0, 1.3, c=0.35, bottom=0.9))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.1, -1.3)
+
+
+def oculus_engine(D=14.0):
+    """The gable's round window: a wheel of eight lights round a round centre, in a brick
+    surround keyed at the four quarters."""
+    op = circle((0.0, D / 2), D / 2, 64)
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, RND)
+    c = (0.0, D / 2)
+    bars = [circle(c, 1.5, 24) - circle(c, 1.1, 24)]
+    for a in np.linspace(0, 2 * math.pi, 9)[:-1]:
+        bars.append(stroke([(c[0] + 1.3 * math.cos(a), c[1] + 1.3 * math.sin(a)), (c[0] + D * math.cos(a), c[1] + D * math.sin(a))], 0.4, caps=False))
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, cs_union(bars), plug_cs)
+    ring = circle(c, D / 2 + 1.8, 64) - op
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7), ext(ring, 0.0, 0.7)]
+    for a in (0.0, math.pi / 2, math.pi, 1.5 * math.pi):
+        k = poly([(c[0] + (D / 2 - 0.2) * math.cos(a + s * 0.16), c[1] + (D / 2 - 0.2) * math.sin(a + s * 0.16)) for s in (-1, 1)] +
+                 [(c[0] + (D / 2 + 2.6) * math.cos(a + s * 0.2), c[1] + (D / 2 + 2.6) * math.sin(a + s * 0.2)) for s in (1, -1)])
+        parts.append(ext(k, 0.0, 1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, D + 2.6, -2.6)
+
+
+def door_engine_arch(w=42.0, h=64.0, leaf_h=None):
+    """A stall's doorway head, installed whatever the doors: a double rowlock arch with a
+    stone keystone on moulded imposts, and the fanlight filling the round head over a transom
+    bar (radial bars, a hub). The opening below stays clear for the track; the leaves are
+    separate parts (door_engine_leaf). Facade frame, u centred, v from the floor."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    head = plug_cs ^ rect(-w, spring - 1.2, w, h + 5)
+    g = head.offset(-0.6, MJ, 4.0) ^ rect(-w, spring, w, h + 5)
+    bars = [rect(-w, spring - 1.3, w, spring + 0.2)]
+    c = (0.0, spring)
+    bars.append(circle(c, 2.6, 32) - circle(c, 1.9, 32))
+    for a in np.linspace(0, math.pi, 10)[1:-1]:
+        bars.append(stroke([(2.2 * math.cos(a), spring + 2.2 * math.sin(a)), (r * 1.2 * math.cos(a), spring + r * 1.2 * math.sin(a))], 0.5, caps=False))
+    bars.append(circle(c, r * 0.62, 48) - circle(c, r * 0.62 - 0.5, 48))
+    sash = _glazed([ext(head, -pl, -0.6)], g, pl, cs_union(bars), head)
+    rings = []
+    for k, (r0, r1, n) in enumerate(((r + 0.1, r + 2.5, 21), (r + 2.6, r + 5.0, 25))):
+        for j in range(n):
+            t0 = math.pi * j / n + 0.012
+            t1 = math.pi * (j + 1) / n - 0.012
+            rings.append(poly([(r0 * math.cos(t0), spring + r0 * math.sin(t0)), (r1 * math.cos(t0), spring + r1 * math.sin(t0)),
+                               (r1 * math.cos(t1), spring + r1 * math.sin(t1)), (r0 * math.cos(t1), spring + r0 * math.sin(t1))]))
+    band = (circle(c, r + 5.0, 96) - circle(c, r - 0.05, 96)) ^ rect(-w, spring, w, h + 10)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7) - ext(rect(-w, -1, w, spring - 1.2), -1, 2),
+             ext(band, 0.0, 0.4)] + [ext(bk, 0.39, 0.8) for bk in rings]
+    parts.append(ext(poly([(-2.2, h - 0.6), (2.2, h - 0.6), (2.8, h + 5.6), (-2.8, h + 5.6)]), 0.0, 1.5))
+    for s in (-1, 1):
+        a, e = sorted((s * (r - 0.3), s * (r + 5.6)))
+        parts.append(chamfer_box(a, spring - 3.0, e, spring + 0.01, 0.0, 1.6, c=0.4, bottom=1.2))
+        a2, e2 = sorted((s * (r - 0.3), s * (r + 1.2)))
+        parts.append(ext(rect(a2, 0.0, e2, spring - 2.99), 0.0, 0.6))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 5.6, 0.0)
+
+
+def door_engine_leaf(w=20.6, h=40.0, t=1.2, side=1):
+    """One leaf of a stall door, printed flat on its back: vertical boards below a rail, six
+    lights above, a diagonal brace, strap hinges on the hinge edge (``side`` = +1 hinged at
+    u = 0 opening to +u). Local: u across (0..w), v up (0..h), w out of its face (back at 0);
+    glue it into the doorway (closed) or by its hinge edge to the jamb, standing open."""
+    leaf = rect(0.0, 0.0, w, h)
+    out = [ext(leaf, 0.0, t)]
+    rail = h * 0.62
+    frame = leaf - rect(1.2, 1.2, w - 1.2, rail - 0.4) - rect(1.2, rail + 0.4, w - 1.2, h - 1.2)
+    out.append(ext(frame, t - 0.01, t + 0.5))
+    grooves = cs_union([rect(u - 0.2, 1.2, u + 0.2, rail - 0.4) for u in np.arange(2.6, w - 1.3, 1.5)])
+    out = [out[0] - ext(grooves, t - 0.3, t + 1)] + out[1:]
+    out.append(ext(stroke([(1.6, 1.8), (w - 1.6, rail - 1.0)], 1.0, caps=False) ^ rect(1.2, 1.2, w - 1.2, rail - 0.4), t - 0.01, t + 0.45))
+    gl = rect(1.2, rail + 0.4, w - 1.2, h - 1.2)
+    glb = gl.bounds()
+    bars = cs_union([rect(glb[0] + (glb[2] - glb[0]) * k / 3 - 0.22, glb[1], glb[0] + (glb[2] - glb[0]) * k / 3 + 0.22, glb[3]) for k in (1, 2)] +
+                    [rect(glb[0], (glb[1] + glb[3]) / 2 - 0.22, glb[2], (glb[1] + glb[3]) / 2 + 0.22)])
+    out.append(ext(bars, t - 0.01, t + 0.35))
+    hu = 0.0 if side > 0 else w
+    out.append(ext(cs_union([_strap_hinge(hu + side * 0.4, hu + side * 9.0, v) for v in (4.0, h - 4.0)]), t - 0.01, t + 0.25))
+    return union(out), gl
+
+
+def smokejack(w=12.0, h0=5.0, flue_h=24.0, r=2.8):
+    """A smoke jack, one piece printed upright: a boarded hood tapering up from a curb that
+    sits on a flat seat in the roof, a riveted flue with a band and a cap. Local: centred,
+    z = 0 at its foot."""
+    curb = box([-w / 2, -w / 2, 0.0], [w / 2, w / 2, 1.2])
+    hood = M.hull_points([(x * (w / 2 - 0.4), y * (w / 2 - 0.4), 1.19) for x in (-1, 1) for y in (-1, 1)] +
+                         [(x * (r + 1.0), y * (r + 1.0), h0) for x in (-1, 1) for y in (-1, 1)])
+    flue = M.cylinder(flue_h, r, r * 0.92, 32).translate([0, 0, h0 - 0.01])
+    band = M.cylinder(0.8, r + 0.35, r + 0.3, 32).translate([0, 0, h0 + flue_h * 0.5])
+    cap = M.cylinder(1.4, r * 0.92, r + 1.2, 32).translate([0, 0, h0 + flue_h - 0.4]) + M.cylinder(0.6, r + 1.2, r + 1.2, 32).translate([0, 0, h0 + flue_h + 0.99])
+    return curb + hood + flue + band + cap - M.cylinder(flue_h + 10, r - 0.8, r - 0.8, 24).translate([0, 0, h0 + 4.0])
+
+
+def monitor_engine(L=170.0, w=24.0, hw=13.0, s=0.45, over=1.8):
+    """The clerestory along the ridge, one piece printed upright: plain walls sitting on a flat
+    seat, a row of three-light sashes each side, end walls with a louvre, a low roof of standing
+    seams with a ridge roll. Local: centred on its length (along y), z = 0 at its foot.
+    Returns (monitor, glass zone, z of its eave)."""
+    body = box([-w / 2, -L / 2, 0.0], [w / 2, L / 2, hw])
+    lights, glass = [], []
+    zl0, zl1 = hw - 7.2, hw - 1.8
+    for y in np.arange(-L / 2 + 8.0, L / 2 - 6.0, 10.0):
+        for sg in (-1, 1):
+            x0, x1 = sorted((sg * (w / 2 - 0.5), sg * (w / 2 + 0.1)))
+            lights.append(box([x0, y - 3.4, zl0], [x1, y + 3.4, zl1]))
+            glass.append(box([x0 - 0.01, y - 3.4, zl0], [x1 - 0.01, y + 3.4, zl1]))
+    body = body - union(lights)
+    muntins = []
+    for y in np.arange(-L / 2 + 8.0, L / 2 - 6.0, 10.0):
+        for sg in (-1, 1):
+            x0, x1 = sorted((sg * (w / 2 - 0.5), sg * (w / 2 + 0.25)))
+            for dy in (-1.13, 1.13):
+                muntins.append(box([x0, y + dy - 0.2, zl0], [x1, y + dy + 0.2, zl1]))
+            muntins.append(box([x0 - (0.3 if sg < 0 else 0), y - 3.9, zl1 - 0.01], [x1 + (0.3 if sg > 0 else 0), y + 3.9, zl1 + 0.6]))
+            muntins.append(box([x0 - (0.4 if sg < 0 else 0), y - 3.9, zl0 - 0.8], [x1 + (0.4 if sg > 0 else 0), y + 3.9, zl0 + 0.01]))
+    lv = union([box([-w / 2 + 3.0, sg * (L / 2) - 0.5, z - 0.25], [w / 2 - 3.0, sg * (L / 2) + 0.5, z + 0.25])
+                for sg in (-1, 1) for z in np.arange(3.0, hw - 1.5, 1.4)])
+    eave = M.hull_points([(x * w / 2, y * L / 2, hw - 0.01) for x in (-1, 1) for y in (-1, 1)] +
+                         [(x * (w / 2 + over), y * (L / 2 + over), hw + over) for x in (-1, 1) for y in (-1, 1)])
+    rf = M.hull_points([(x * (w / 2 + over), y * (L / 2 + over), hw + over - 0.01) for x in (-1, 1) for y in (-1, 1)] +
+                       [(0.0, y * (L / 2 + over), hw + over + s * (w / 2 + over)) for y in (-1, 1)])
+    seams = union([box([x - 0.25, -L / 2 - over, 0], [x + 0.25, L / 2 + over, 400]) for x in np.arange(-w / 2, w / 2 + 0.1, 3.0)])
+    rf_top = rf + (seams ^ rf.translate([0, 0, 0.35]) - rf)
+    roll = M.cylinder(L + 2 * over, 0.8, 0.8, 16).rotate([90, 0, 0]).translate([0, L / 2 + over, hw + over + s * (w / 2 + over)])
+    return body + union(muntins) + lv + eave + rf_top + roll, union(glass), hw
