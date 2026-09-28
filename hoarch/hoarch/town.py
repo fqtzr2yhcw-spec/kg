@@ -1229,12 +1229,13 @@ def tablet_fire(text, L, H=6.0, t=1.2, cap=3.0):
     capitals (facade frame, centred on u = 0, foot at v = 0). Returns (tablet, letters)."""
     from .storefront import text_cs
     b = cs_union([rect(-L / 2, 0.0, L / 2, H), circle((0.0, H), L / 2, 64) ^ rect(-L / 2, H, L / 2, H + L / 2)])
-    b = b ^ rect(-L / 2, 0.0, L / 2, H + L * 0.22)
+    Ht = H + L * 0.22
+    b = b ^ rect(-L / 2, 0.0, L / 2, Ht)
     body = ext(b, 0.0, t) + ext(b - b.offset(-0.7, RND), t - 0.01, t + 0.5)
     letters = text_cs(text, cap=cap, font="serif", track=0.3)
     lb = letters.bounds()
     sc = min(1.0, (L - 2.4) / max(1e-6, lb[2] - lb[0]))
-    letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (H - cap) / 2 - lb[1]))
+    letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (Ht - cap) / 2 - lb[1]))
     lt = ext(letters, t - 0.01, t + 0.45)
     return body + lt, lt
 
@@ -1655,3 +1656,577 @@ def board_school(text, L, H=5.0, t=1.0, cap=2.6):
     letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (H - cap) / 2 - lb[1]))
     lt = ext(letters, t - 0.01, t + 0.4)
     return board + lt, lt
+
+
+# ================================================================== 67 Thorne Livery
+def boards_butted(region, datum=0.0, pitch=1.8, seed=0):
+    """Rough horizontal boards, each course broken by butt joints at random along it (the Thorne
+    Livery)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed + 71)
+    cuts = []
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    for k in range(k0, k0 + int((v1 - v0) / pitch) + 4):
+        v = datum + k * pitch
+        cuts.append(rect(u0 - 1, v - 0.18, u1 + 1, v + 0.18))
+        u = u0 + rng.uniform(2.0, 14.0)
+        while u < u1:
+            cuts.append(rect(u - 0.15, v, u + 0.15, v + pitch))
+            u += rng.uniform(10.0, 22.0)
+    return M.extrude(region, 0.4) - ext(cs_union(cuts) ^ region, 0.15, 1.0)
+
+
+def foundation_cobble(reg, seed=0):
+    """River cobbles set in mortar, packed in rough rows (the Thorne Livery)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 523)
+    stones = []
+    for k, v in enumerate(np.arange(b[1] + 0.9, b[3], 1.9)):
+        u = b[0] + rng.uniform(0.0, 1.2)
+        while u < b[2]:
+            r = rng.uniform(0.7, 1.05)
+            stones.append(circle((u + r, v + rng.uniform(-0.2, 0.2)), r, 14))
+            u += 2 * r + rng.uniform(0.15, 0.4)
+    st = cs_union(stones) ^ reg.offset(-0.2, MJ, 4.0)
+    return M.extrude(reg, 0.25) + ext(st, 0.24, 0.6) + ext(st.offset(-0.35, RND), 0.59, 0.75)
+
+
+def frieze_horseshoes(L, h, b, pitch, margin, pair, half):
+    """A horseshoe at every station, points up for luck, with its nail holes, a thin rail
+    between (the Thorne Livery)."""
+    v0, v1 = 0.6, h - 0.6
+    vc = (v0 + v1) / 2
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        r = min(1.9, (v1 - v0) * 0.45)
+        shoe = (circle((u, vc), r, 32) - circle((u, vc), r - 0.75, 32)) - rect(u - r * 0.55, vc + r * 0.35, u + r * 0.55, vc + r + 1)
+        out.append(_st(shoe, b, 0.45))
+    for uc, wd in CO._between(L, pitch, margin, pair, half + 2.4):
+        if wd < 2.0:
+            continue
+        out.append(_st(rect(uc - wd / 2, vc - 0.3, uc + wd / 2, vc + 0.3), b, 0.3))
+    return out, []
+
+
+def course_snaffles(L, h, b, pitch, margin, p):
+    """Snaffle bits in a row: two rings joined by a jointed bar."""
+    vc = h / 2
+    r = min(0.55, h * 0.34)
+    parts = []
+    for u in np.arange(1.2, L - 3.0, 3.6):
+        parts += [circle((u, vc), r, 14) - circle((u, vc), r - 0.28, 12), circle((u + 2.4, vc), r, 14) - circle((u + 2.4, vc), r - 0.28, 12),
+                  rect(u + r - 0.1, vc - 0.2, u + 2.4 - r + 0.1, vc + 0.2)]
+    return [ext(cs_union(parts), b - 0.05, b + 0.4)]
+
+
+def bracket_ogeebrace(h, d, t):
+    """An ogee brace: a solid sweep from the wall to the soffit whose outer edge is an S curve,
+    a round peg at the joint (side profile, top at v = 0)."""
+    hb = max(3.0, h)
+    pts = [(0.0, 0.0), (d, 0.0)] + [(d - (d - 0.8) * s_, -hb * s_ - 0.5 * math.sin(2 * math.pi * s_)) for s_ in np.linspace(0.05, 1.0, 12)]
+    pts += [(0.0, -hb)]
+    return cs_union([poly(pts), circle((0.6, -hb + 0.6), 0.5, 12)])
+
+
+CO.FRIEZE_EXTRA.update(horseshoes=frieze_horseshoes)
+CO.COURSE_EXTRA.update(snaffles=course_snaffles)
+TW.BRACKET_EXTRA.update(ogeebrace=bracket_ogeebrace)
+TW.FOUNDATION_EXTRA.update(cobble=foundation_cobble)
+
+
+def door_stable(w=30.0, h=34.0):
+    """The livery's big doors: a pair of hinged leaves in heavy frames, each field boarded in a
+    chevron, long strap hinges with round ends, under a plain head casing and drip cap."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0)]
+    for sg in (-1, 1):
+        a, e = sorted((sg * 0.3, sg * (w / 2 - O.CLR)))
+        leaf = rect(a, 0.3, e, h - O.CLR)
+        body.append(ext(leaf, -1.0, -0.6))
+        fld = leaf.offset(-1.4, MJ, 4.0)
+        fb = fld.bounds()
+        mid = (fb[1] + fb[3]) / 2
+        for (q0, q1) in ((fb[1], mid - 0.6), (mid + 0.6, fb[3])):
+            f_ = rect(fb[0], q0, fb[2], q1)
+            xc = (fb[0] + fb[2]) / 2
+            grooves = cs_union([stroke([(xc, y), (xc - 20, y - 20)], 0.2, caps=False) for y in np.arange(q0 - 20, q1 + 20, 1.3)] +
+                               [stroke([(xc, y), (xc + 20, y - 20)], 0.2, caps=False) for y in np.arange(q0 - 20, q1 + 20, 1.3)] +
+                               [rect(xc - 0.15, q0, xc + 0.15, q1)]) ^ f_
+            body.append(ext(f_, -0.6, -0.45) - ext(grooves, -0.55, 0.0))
+        for v in (h * 0.2, h * 0.75):
+            st_ = cs_union([rect(min(sg * 0.8, sg * (w / 2 - 3.0)), v - 0.4, max(sg * 0.8, sg * (w / 2 - 3.0)), v + 0.4),
+                            circle((sg * (w / 2 - 3.0), v), 0.8, 12)])
+            body.append(ext(st_ ^ leaf, -0.61, -0.3))
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.6, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.6), 0.0, 0.8),
+             chamfer_box(-w / 2 - 2.4, h + 1.59, w / 2 + 2.4, h + 2.6, 0.0, 1.4, c=0.35, bottom=1.0)]
+    return O._one_piece(body, parts, op, plug_cs, pl, h + 2.6, 0.0)
+
+
+def door_hay(w=14.0, h=14.0):
+    """The hay-loft door: a pair of small board leaves with a Z brace each, in a plain frame."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0), ext(plug_cs.offset(-0.3, MJ, 4.0), -1.0, -0.6)]
+    grooves = cs_union([rect(u - 0.15, -1, u + 0.15, h + 1) for u in np.arange(-w / 2 + 1.2, w / 2, 1.2)]) ^ plug_cs
+    body[2] = body[2] - ext(grooves, -0.8, -0.5)
+    for sg in (-1, 1):
+        a, e = sorted((sg * 0.6, sg * (w / 2 - 0.9)))
+        z = cs_union([rect(a, 1.2, e, 2.4), rect(a, h - 2.6, e, h - 1.4), stroke([(a + 0.5, 2.0), (e - 0.5, h - 2.0)], 1.0, caps=False)])
+        body.append(ext(z, -0.61, -0.25))
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.2, MJ, 4.0) - op), 0.0, 0.7)]
+    return O._one_piece(body, parts, op, plug_cs, pl, h + 1.2, -1.2)
+
+
+def window_stall(w=7.0, h=7.0):
+    """A stall window: a four-light sash in a plain frame with a board sill."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    sash = _sash(plug_cs, pl, rows=2, cols=2)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext(op.offset(1.1, MJ, 4.0) - op, 0.0, 0.6),
+             chamfer_box(-w / 2 - 1.6, -1.1, w / 2 + 1.6, 0.2, 0.0, 1.2, c=0.35, bottom=0.8)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 1.1, -1.1)
+
+
+def door_dutch(w=10.0, h=22.0):
+    """A stall's Dutch door: the leaf split across the middle, each half boarded with a cross
+    brace, a ledge on the lower half, strap hinges."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    leaf = plug_cs.offset(-0.3, MJ, 4.0)
+    grooves = cs_union([rect(u - 0.15, -1, u + 0.15, h + 1) for u in np.arange(-w / 2 + 1.2, w / 2, 1.2)] +
+                       [rect(-w, h * 0.52 - 0.2, w, h * 0.52 + 0.2)]) ^ leaf
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0), ext(leaf, -1.0, -0.6) - ext(grooves, -0.85, -0.5)]
+    lb = leaf.bounds()
+    for (q0, q1) in ((lb[1] + 0.6, h * 0.52 - 0.6), (h * 0.52 + 0.6, lb[3] - 0.6)):
+        body.append(ext(cs_union([stroke([(lb[0] + 0.8, q0 + 0.4), (lb[2] - 0.8, q1 - 0.4)], 0.9, caps=False),
+                                  rect(lb[0] + 0.5, q0, lb[2] - 0.5, q0 + 0.9), rect(lb[0] + 0.5, q1 - 0.9, lb[2] - 0.5, q1)]), -0.61, -0.25))
+    body.append(chamfer_box(lb[0], h * 0.52 - 0.2, lb[2], h * 0.52 + 0.8, -0.61, 1.2, c=0.3, bottom=0.9))
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.2, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.2), 0.0, 0.6)]
+    return O._one_piece(body, parts, op, plug_cs, pl, h + 1.2, 0.0)
+
+
+def hay_hood(w=22.0, rise=10.0, depth=10.0, t=1.4):
+    """The hay hood: a small gabled canopy standing out from the gable over the loft door, a
+    square hoist beam under its ridge. Facade frame (u across, v up from the hood's foot, w out);
+    prints on its back face (the flat that glues to the gable)."""
+    outer = poly([(-w / 2, 0.0), (w / 2, 0.0), (0.0, rise)])
+    inner = poly([(-w / 2 + t * 1.6, -0.01), (w / 2 - t * 1.6, -0.01), (0.0, rise - t * 1.9)])
+    shell = ext(outer, 0.0, depth) - ext(inner, 1.2, depth + 1.0)
+    rake = ext(outer - outer.offset(-0.9, MJ, 4.0), depth - 0.01, depth + 0.6)
+    beam = ext(rect(-0.9, rise - t * 1.9 - 2.4, 0.9, rise - t * 1.9 + 0.2), 0.0, depth + 1.6)
+    hook = ext(rect(-0.3, rise - t * 1.9 - 4.2, 0.3, rise - t * 1.9 - 2.3), depth + 0.4, depth + 1.0)
+    return shell + rake + beam + hook
+
+
+def _horse():
+    """A trotting horse in silhouette for the weathervane, about 6 mm long, facing +u."""
+    pts = [(0.0, 1.4), (0.4, 1.9), (1.2, 2.3), (3.6, 2.3), (4.3, 2.9), (4.9, 3.8), (5.6, 3.9), (6.0, 3.4), (5.3, 3.1), (4.9, 2.4),
+           (4.8, 1.6), (5.4, 0.6), (5.2, 0.4), (4.4, 1.3), (4.0, 1.4), (3.6, 0.2), (3.2, 0.2), (3.4, 1.4), (1.6, 1.4), (1.1, 0.2),
+           (0.7, 0.2), (0.9, 1.5), (0.4, 1.6)]
+    return poly(pts)
+
+
+def cupola_livery(w=18.0, h0=9.0, hl=10.0, s=1.1):
+    """The livery's ventilator cupola, one piece printed upright: a base that sits on a seat in
+    the ridge, louvred sides between corner boards, a flared eave, a steep hip and a weathervane
+    (a trotting horse over the points of the compass). Local: centred, z = 0 at its foot."""
+    base = box([-w / 2, -w / 2, 0.0], [w / 2, w / 2, h0])
+    wi = w - 1.6
+    stage = box([-wi / 2, -wi / 2, h0 - 0.01], [wi / 2, wi / 2, h0 + hl])
+    cut = union([box([-wi / 2 + 1.4, -wi / 2 - 1, h0 + 0.8], [wi / 2 - 1.4, wi / 2 + 1, h0 + hl - 0.8]),
+                 box([-wi / 2 - 1, -wi / 2 + 1.4, h0 + 0.8], [wi / 2 + 1, wi / 2 - 1.4, h0 + hl - 0.8])])
+    core = box([-wi / 2 + 0.8, -wi / 2 + 0.8, 0.0], [wi / 2 - 0.8, wi / 2 - 0.8, 100.0])
+    stage = stage - (cut - core)
+    slats = []
+    for z in np.arange(h0 + 1.3, h0 + hl - 1.2, 1.2):
+        for sg in (-1, 1):
+            y0, y1 = sorted((sg * (wi / 2 - 0.9), sg * (wi / 2 + 0.1)))
+            slats.append(M.hull_points([(x, y, z + dz) for x in (-wi / 2 + 1.2, wi / 2 - 1.2) for (y, dz) in ((y0, 0.0), (y1, 0.0), (y0, 0.7), (y1, 0.3))]))
+            slats.append(M.hull_points([(y, x, z + dz) for x in (-wi / 2 + 1.2, wi / 2 - 1.2) for (y, dz) in ((y0, 0.0), (y1, 0.0), (y0, 0.7), (y1, 0.3))]))
+    zc = h0 + hl
+    a = w / 2 + 1.4
+    eave = M.hull_points([(x * wi / 2, y * wi / 2, zc - 0.01) for x in (-1, 1) for y in (-1, 1)] +
+                         [(x * a, y * a, zc + 1.4) for x in (-1, 1) for y in (-1, 1)])
+    hipr = M.hull_points([(x * a, y * a, zc + 1.39) for x in (-1, 1) for y in (-1, 1)] + [(0.0, 0.0, zc + 1.4 + s * a)])
+    zt = zc + 1.4 + s * a
+    rod = M.cylinder(9.0, 0.45, 0.45, 12).translate([0, 0, zt - 1.0])
+    arms = union([box([-2.4, -0.3, zt + 2.6], [2.4, 0.3, zt + 3.2]), box([-0.3, -2.4, zt + 2.6], [0.3, 2.4, zt + 3.2])])
+    horse = M.extrude(_horse().translate((-3.0, 0.0)), 0.8).translate([0, 0, -0.4]).transform(
+        np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])).translate([0, 0, zt + 5.0])
+    ball = M.sphere(0.9, 14).translate([0, 0, zt + 0.6])
+    return base + stage + union(slats) + eave + hipr + rod + arms + horse + ball
+
+
+def board_livery(text, L, H=6.0, t=1.0, cap=3.2):
+    """The livery's sign: a board with swallowtail ends and a raised rim, raised capitals (facade
+    frame, centred on u = 0, foot at v = 0). Returns (board, letters)."""
+    from .storefront import text_cs
+    n = 2.2
+    b = poly([(-L / 2, 0.0), (L / 2, 0.0), (L / 2 - n, H / 2), (L / 2, H), (-L / 2, H), (-L / 2 + n, H / 2)])
+    board = ext(b, 0.0, t) + ext(b - b.offset(-0.6, MJ, 4.0), t - 0.01, t + 0.4)
+    letters = text_cs(text, cap=cap, font="serif", track=0.35)
+    lb = letters.bounds()
+    sc = min(1.0, (L - 2 * n - 1.6) / max(1e-6, lb[2] - lb[0]))
+    letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (H - cap) / 2 - lb[1]))
+    lt = ext(letters, t - 0.01, t + 0.4)
+    return board + lt, lt
+
+
+# ================================================================== 68 MX Tower (interlocking tower)
+def brick_raked(region, datum=0.0, every=5):
+    """Red brick in stretcher bond with every ``every``-th course raked back, reading as
+    horizontal shadow bands (MX Tower's lower storey)."""
+    if region.is_empty():
+        return M()
+    b = region.bounds()
+    bh = 0.8
+    bricks = []
+    for k in range(int(math.floor((b[1] - datum) / bh)) - 1, int(math.ceil((b[3] - datum) / bh)) + 1):
+        if k % every == every - 1:
+            continue
+        v = datum + k * bh
+        off = 0.0 if k % 2 == 0 else 1.2
+        bricks += [rect(u + 0.1, v + 0.1, u + 2.3, v + bh - 0.1) for u in np.arange(b[0] - 2.4 + off, b[2] + 2.4, 2.4)]
+    return M.extrude(region, 0.1) + ext(cs_union(bricks) ^ region, 0.09, 0.35)
+
+
+def boards_panelled(region, datum=0.0, rails=(), pitch=1.1):
+    """Narrow vertical beaded boards framed into panels by flat horizontal rails at ``rails``
+    (v positions) (MX Tower's operating floor)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    grooves = cs_union([rect(u - 0.16, v0 - 1, u + 0.16, v1 + 1) for u in np.arange(u0 + pitch / 2, u1, pitch)])
+    out = M.extrude(region, 0.35) - ext(grooves ^ region, 0.15, 1.0)
+    if rails:
+        out = out + ext(cs_union([rect(u0 - 1, v - 0.8, u1 + 1, v + 0.8) for v in rails]) ^ region, 0.0, 0.75)
+    return out
+
+
+def foundation_scoredconcrete(reg, seed=0):
+    """A poured concrete plinth scored into long panels, a chamfered wash along its top (MX
+    Tower)."""
+    b = reg.bounds()
+    out = M.extrude(reg, 0.45)
+    lines = cs_union([rect(u - 0.12, b[1] - 1, u + 0.12, b[3] - 0.9) for u in np.arange(b[0] + 9.0, b[2], 9.0)])
+    out = out - ext(lines ^ reg, 0.3, 1.0)
+    wash = rect(b[0] - 1, b[3] - 0.9, b[2] + 1, b[3] + 1) ^ reg
+    return out + ext(wash, 0.44, 0.7)
+
+
+def frieze_levers(L, h, b, pitch, margin, pair, half):
+    """A lever frame: interlocking levers standing in a row, each a bar with a round handle and a
+    latch plate, a quadrant along their feet (MX Tower)."""
+    v0, v1 = 0.6, h - 0.6
+    parts = [rect(0.3, v0, L - 0.3, v0 + 0.8)]
+    for u in np.arange(1.4, L - 1.0, 1.9):
+        parts.append(rect(u - 0.25, v0 + 0.7, u + 0.25, v1 - 0.8))
+        parts.append(circle((u, v1 - 0.75), 0.55, 12))
+        parts.append(rect(u - 0.5, v0 + (v1 - v0) * 0.45, u + 0.5, v0 + (v1 - v0) * 0.45 + 0.7))
+    return [_st(cs_union(parts), b, 0.45)], []
+
+
+def frieze_semaphores(L, h, b, pitch, margin, pair, half):
+    """Semaphore signals at every station: a mast with its blade raised at 45 degrees and a
+    spectacle plate of two round lenses (MX Tower)."""
+    v0, v1 = 0.6, h - 0.6
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        hh = v1 - v0
+        parts = [rect(u - 0.3, v0, u + 0.3, v1 - 0.4), circle((u, v1 - 0.5), 0.5, 12),
+                 stroke([(u + 0.2, v0 + hh * 0.62), (u + hh * 0.42, v0 + hh * 0.62 + hh * 0.3)], 0.6, caps=False),
+                 circle((u - 0.9, v0 + hh * 0.55), 0.45, 12), circle((u - 0.9, v0 + hh * 0.3), 0.45, 12),
+                 rect(u - 0.9, v0 + hh * 0.3, u - 0.2, v0 + hh * 0.55)]
+        out.append(_st(cs_union(parts) ^ rect(0.0, v0, L, v1), b, 0.45))
+    return out, []
+
+
+def course_pulleys(L, h, b, pitch, margin, p):
+    """Signal wires on their pulley wheels: two thin lines, a wheel every 3 mm."""
+    wires = cs_union([rect(0.3, h * 0.3 - 0.12, L - 0.3, h * 0.3 + 0.12), rect(0.3, h * 0.7 - 0.12, L - 0.3, h * 0.7 + 0.12)])
+    wheels = cs_union([circle((u, h / 2), min(0.55, h * 0.35), 14) for u in np.arange(1.5, L - 1.0, 3.0)])
+    return [ext(wires, b - 0.05, b + 0.25), ext(wheels, b - 0.05, b + 0.4)]
+
+
+def bracket_towerknee(h, d, t):
+    """A tower eave knee: a plumb post and a diagonal brace meeting the soffit, the triangle
+    solid, the brace's foot notched (side profile, top at v = 0)."""
+    hb = max(3.0, h)
+    return poly([(0.0, 0.0), (d, 0.0), (d, -0.8), (1.6, -hb + 1.2), (1.2, -hb + 0.6), (0.9, -hb + 0.8), (0.9, -hb), (0.0, -hb)])
+
+
+CO.FRIEZE_EXTRA.update(levers=frieze_levers, semaphores=frieze_semaphores)
+CO.COURSE_EXTRA.update(pulleys=course_pulleys)
+TW.BRACKET_EXTRA.update(towerknee=bracket_towerknee)
+TW.FOUNDATION_EXTRA.update(scoredconcrete=foundation_scoredconcrete)
+
+
+def window_operator(w=14.0, h=16.0):
+    """The operator's window: a pair of sliding sashes of six lights each (two across, three up)
+    in a flat casing with a sill and a drip cap."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, MJ, 4.0)
+    u0, v0, u1, v1 = g.bounds()
+    um = (u0 + u1) / 2
+    bars = [rect(um - 0.45, v0 - 1, um + 0.45, v1 + 1)]
+    for a, e in ((u0, um), (um, u1)):
+        bars.append(rect((a + e) / 2 - 0.2, v0 - 1, (a + e) / 2 + 0.2, v1 + 1))
+    for k in (1, 2):
+        bars.append(rect(u0 - 1, v0 + (v1 - v0) * k / 3 - 0.2, u1 + 1, v0 + (v1 - v0) * k / 3 + 0.2))
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, cs_union(bars), plug_cs)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.3, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.3), 0.0, 0.6),
+             chamfer_box(-w / 2 - 2.0, h + 1.29, w / 2 + 2.0, h + 2.2, 0.0, 1.3, c=0.3, bottom=1.0),
+             chamfer_box(-w / 2 - 1.8, -1.2, w / 2 + 1.8, 0.2, 0.0, 1.3, c=0.4, bottom=0.8)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.2, -1.2)
+
+
+def door_tower_upper(w=9.0, h=22.0):
+    """The operator's door at the stair head: four lights over a cross-braced panel."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    leaf = plug_cs.offset(-0.3, MJ, 4.0)
+    lb = leaf.bounds()
+    gl = rect(lb[0] + 0.9, h * 0.5, lb[2] - 0.9, lb[3] - 0.9)
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0), ext(leaf - gl, -1.0, -0.6)]
+    pan = rect(lb[0] + 0.9, lb[1] + 0.9, lb[2] - 0.9, h * 0.5 - 0.9)
+    pb = pan.bounds()
+    body.append(ext(cs_union([stroke([(pb[0], pb[1]), (pb[2], pb[3])], 0.6), stroke([(pb[0], pb[3]), (pb[2], pb[1])], 0.6)]) ^ pan, -0.6, -0.25))
+    gb = gl.bounds()
+    bars = cs_union([rect((gb[0] + gb[2]) / 2 - 0.2, gb[1] - 1, (gb[0] + gb[2]) / 2 + 0.2, gb[3] + 1),
+                     rect(gb[0] - 1, (gb[1] + gb[3]) / 2 - 0.2, gb[2] + 1, (gb[1] + gb[3]) / 2 + 0.2)])
+    sash = _glazed(body, gl, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.2, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.2), 0.0, 0.6),
+             chamfer_box(-w / 2 - 1.8, h + 1.19, w / 2 + 1.8, h + 2.0, 0.0, 1.2, c=0.3, bottom=1.0)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.0, 0.0)
+
+
+def stair_tower(rise, run, w=7.0, landing=10.0, n=None, t=1.2, rail=6.0):
+    """An outside stair up to the operator's door, one piece: a closed flight between boarded
+    stringers that rise into solid balustrades, a landing at the head on a boarded under-frame.
+    Local: u across the flight (its wall side at u = 0, the flight to +u... w), v up, w along the
+    wall (the foot at w = 0, the landing at the head). Prints lying on its outer stringer."""
+    n = n or max(4, int(round(rise / 2.4)))
+    r = rise / n
+    tr = run / n
+    from .ornament import side_profile
+    # the flight's profile along w (horizontal) and v: treads stepping up
+    prof = [(0.0, 0.0)]
+    for k in range(n):
+        prof += [(k * tr, (k + 1) * r), ((k + 1) * tr, (k + 1) * r)]
+    prof += [(run + landing, rise), (run + landing, 0.0)]
+    body = side_profile([(v_w, v_v) for v_w, v_v in prof], 0.0, w).transform(np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0]]))
+    # stringers with balustrades (solid, boarded), the outer one full length
+    sprof = [(0.0, 0.0), (0.0, r + rail), (run, rise + rail), (run + landing, rise + rail), (run + landing, 0.0)]
+    outer = side_profile(sprof, w, w + t)
+    front = box([0.0, 0.0, run + landing - t], [w + t, rise + rail, run + landing])
+    grooves = union([box([w + t - 0.2, -1.0, z - 0.12], [w + t + 1.0, rise + rail + 1, z + 0.12]) for z in np.arange(1.2, run + landing, 1.2)])
+    return (body + outer + front) - grooves
+
+
+def sign_tower(text, L, H=6.0, t=1.0, cap=4.0):
+    """The tower's call-letter board: chamfered corners, a raised rim, big raised letters
+    (facade frame, centred on u = 0, foot at v = 0). Returns (board, letters)."""
+    from .storefront import text_cs
+    c = 1.2
+    b = poly([(-L / 2 + c, 0.0), (L / 2 - c, 0.0), (L / 2, c), (L / 2, H - c), (L / 2 - c, H), (-L / 2 + c, H), (-L / 2, H - c), (-L / 2, c)])
+    board = ext(b, 0.0, t) + ext(b - b.offset(-0.6, MJ, 4.0), t - 0.01, t + 0.4)
+    letters = text_cs(text, cap=cap, font="serif", track=0.6)
+    lb = letters.bounds()
+    sc = min(1.0, (L - 2.0) / max(1e-6, lb[2] - lb[0]))
+    letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (H - cap) / 2 - lb[1]))
+    lt = ext(letters, t - 0.01, t + 0.45)
+    return board + lt, lt
+
+
+def window_relay(w=8.0, h=13.0):
+    """The relay room's window: two-over-two sash under a flat arch of splayed bricks with a
+    keystone, on a stone sill."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    sash = _sash(plug_cs, pl, rows=2, cols=2)
+    hw = w / 2 + 1.1
+    arch = poly([(-hw, h), (hw, h), (hw + 1.4, h + 2.6), (-hw - 1.4, h + 2.6)])
+    joints = cs_union([stroke([(x, h - 0.1), (x * 1.35, h + 2.7)], 0.18, caps=False) for x in np.linspace(-hw + 0.9, hw - 0.9, 7)])
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.1, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h), 0.0, 0.5),
+             ext(arch, 0.0, 0.7) - ext(joints ^ arch, 0.45, 1.0), chamfer_box(-0.8, h - 0.2, 0.8, h + 2.9, 0.0, 1.0, c=0.25),
+             chamfer_box(-hw - 0.8, -1.1, hw + 0.8, 0.2, 0.0, 1.2, c=0.35, bottom=0.8)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.9, -1.1)
+
+
+# ================================================================== 69 Water Tank No. 12
+def tank_body(r=34.0, h=40.0, hoops=4, spout_at=0.0):
+    """A wooden water tank of vertical staves, one piece: a stave-grooved drum with a projecting
+    chime at its foot, iron hoops with lugs, a rim at the top, and the hinged spout on its pivot
+    box, raised at 45 degrees. Local: centred, z = 0 at the drum's foot; the spout faces -y."""
+    n = max(48, int(2 * math.pi * r / 1.5))
+    drum = M.cylinder(h, r, r, n)
+    grooves = union([box([r - 0.35, -0.13, 1.2], [r + 1.0, 0.13, h - 0.6]).rotate([0, 0, 360.0 * k / n]) for k in range(n)])
+    drum = drum - grooves
+    chime = M.cylinder(1.4, r + 0.6, r + 0.6, n)
+    rim = M.cylinder(1.2, r + 0.5, r + 0.5, n).translate([0, 0, h - 1.2])
+    hoops_ = []
+    for k in range(hoops):
+        z = 4.0 + k * (h - 9.0) / max(1, hoops - 1)
+        hoops_.append(M.cylinder(0.9, r + 0.45, r + 0.45, n).translate([0, 0, z]))
+        a = 40.0 + 70.0 * k
+        hoops_.append(box([r - 0.2, -0.8, z - 0.3], [r + 1.4, 0.8, z + 1.2]).rotate([0, 0, a]))
+    body = drum + chime + rim + union(hoops_)
+    # the spout: a pivot box on the drum, the trough rising from it at 45 degrees
+    zp = h * 0.3
+    piv = box([-2.4, -r - 3.2, zp - 2.4], [2.4, -r + 0.6, zp + 2.4])
+    L = 16.0
+    trough = box([-1.6, -1.6, 0.0], [1.6, 1.6, L]) - box([-1.0, 0.2, 1.0], [1.0, 2.0, L + 1.0])
+    trough = trough.rotate([45.0, 0, 0]).translate([0, -r - 2.0, zp])
+    return body + piv + trough
+
+
+def tank_roof(r, rise=16.0, over=2.4):
+    """The tank's conical roof, printed upright: boards running up the cone, a ball vent at the
+    tip. Local: centred, z = 0 at its eave."""
+    from . import roof as R_
+    ap = r + over
+    sol, tex, _, zt = R_.bell_roof((0.0, 0.0), ap, 0.0, [(round(rise / 0.2) * 0.2, rise / ap)], n=24, texture="upboards",
+                                   tex_kw=dict(pitch=1.6, wtab=1.6, d=0.35))
+    vent = M.cylinder(2.4, 1.6, 1.4, 20).translate([0, 0, zt - 0.8]) + M.sphere(1.8, 20).translate([0, 0, zt + 2.2])
+    return sol + tex + vent
+
+
+def trestle(r, h, post=2.4, deck_t=2.0, peg=1.2):
+    """The tank's timber trestle, one piece printed upside down on its deck: a 3 x 3 grid of posts
+    under a planked deck on joists, girts at mid-height and at the foot, X braces in every outer
+    bay, a square peg under every post. Local: z = 0 at the posts' feet, the deck's top at h."""
+    q = r * 0.72
+    xs = (-q, 0.0, q)
+    out = []
+    for x in xs:
+        for y in xs:
+            out.append(box([x - post / 2, y - post / 2, 0.0], [x + post / 2, y + post / 2, h - deck_t]))
+            out.append(box([x - peg / 2, y - peg / 2, -1.6], [x + peg / 2, y + peg / 2, 0.01]))
+    for z in (h * 0.5, 2.0):
+        for c in xs:
+            out.append(box([-q - post / 2, c - 0.8, z - 0.8], [q + post / 2, c + 0.8, z + 0.8]))
+            out.append(box([c - 0.8, -q - post / 2, z - 0.8], [c + 0.8, q + post / 2, z + 0.8]))
+    for (z0, z1) in ((2.0, h * 0.5), (h * 0.5, h - deck_t)):
+        for a, b in ((-q, 0.0), (0.0, q)):
+            for side in (-q, q):
+                out.append(M.hull_points([(a, side - 0.6, z0), (a, side + 0.6, z0), (b, side - 0.6, z1), (b, side + 0.6, z1),
+                                          (a + 1.4, side - 0.6, z0), (a + 1.4, side + 0.6, z0), (b - 1.4, side - 0.6, z1), (b - 1.4, side + 0.6, z1)]))
+                out.append(M.hull_points([(b, side - 0.6, z0), (b, side + 0.6, z0), (a, side - 0.6, z1), (a, side + 0.6, z1),
+                                          (b - 1.4, side - 0.6, z0), (b - 1.4, side + 0.6, z0), (a + 1.4, side - 0.6, z1), (a + 1.4, side + 0.6, z1)]))
+                out.append(M.hull_points([(side - 0.6, a, z0), (side + 0.6, a, z0), (side - 0.6, b, z1), (side + 0.6, b, z1),
+                                          (side - 0.6, a + 1.4, z0), (side + 0.6, a + 1.4, z0), (side - 0.6, b - 1.4, z1), (side + 0.6, b - 1.4, z1)]))
+                out.append(M.hull_points([(side - 0.6, b, z0), (side + 0.6, b, z0), (side - 0.6, a, z1), (side + 0.6, a, z1),
+                                          (side - 0.6, b - 1.4, z0), (side + 0.6, b - 1.4, z0), (side - 0.6, a + 1.4, z1), (side + 0.6, a + 1.4, z1)]))
+    dw = r + 1.6
+    deck = box([-dw, -dw, h - deck_t], [dw, dw, h])
+    planks = union([box([x - 0.12, -dw - 1, h - 0.3], [x + 0.12, dw + 1, h + 1]) for x in np.arange(-dw + 1.6, dw, 1.6)])
+    joists = union([box([-dw, y - 0.8, h - deck_t - 1.6], [dw, y + 0.8, h - deck_t + 0.01]) for y in (-q, 0.0, q)])
+    return union(out) + (deck - planks) + joists
+
+
+def footings(r, post=2.4, peg=1.2, pad=1.8):
+    """A concrete pad with a footing block under every trestle post, each socketed for its peg.
+    Local: z = 0 at the ground, the blocks' tops at 4.0."""
+    q = r * 0.72
+    xs = (-q, 0.0, q)
+    slab_ = box([-q - 6.0, -q - 6.0, 0.0], [q + 6.0, q + 6.0, pad])
+    out = [slab_]
+    socks = []
+    for x in xs:
+        for y in xs:
+            out.append(M.hull_points([(x + a * (post / 2 + 1.4), y + c * (post / 2 + 1.4), pad - 0.01) for a in (-1, 1) for c in (-1, 1)] +
+                                     [(x + a * (post / 2 + 0.5), y + c * (post / 2 + 0.5), 4.0) for a in (-1, 1) for c in (-1, 1)]))
+            socks.append(box([x - peg / 2 - 0.12, y - peg / 2 - 0.12, 4.0 - 1.8], [x + peg / 2 + 0.12, y + peg / 2 + 0.12, 4.1]))
+    return union(out) - union(socks)
+
+
+# ================================================================== 70 the Greenfield Bandstand
+def post_bandstand(h, collar=None, abacus=4.0, slot=None):
+    """A bandstand column: a square plinth, a vase-turned base, a slim shaft with a ring at mid
+    height, a bell capital under the abacus (the Greenfield)."""
+    zt = h - 2.2
+    body = PW._plinth(3.8, 1.2)
+    prof = [(0.0, 1.19), (1.7, 1.19), (1.7, 1.8), (1.2, 2.4), (1.55, 3.6), (1.55, 5.0), (1.0, 6.4), (0.95, zt * 0.5 - 0.5),
+            (1.35, zt * 0.5), (1.35, zt * 0.5 + 0.5), (0.95, zt * 0.5 + 1.0), (0.9, zt - 1.8), (1.3, zt - 0.8), (1.0, zt), (0.0, zt)]
+    return body + PW._revolve(prof, 28) + PW._top(h, abacus / 2, zt - 0.01, 1.0, slot)
+
+
+def fill_bandstand(L, vb, vt):
+    """The bandstand railing: top and bottom rails with sawn balusters whose waists are cut in a
+    lyre's outline, set close."""
+    parts = [rect(0.0, vb, L, vb + 1.0), rect(0.0, vt - 1.2, L, vt)]
+    n = max(2, int(L / 2.2))
+    for k in range(n):
+        c = L * (k + 0.5) / n
+        hh = vt - vb
+        parts.append(poly([(c - 0.55, vb + 0.9), (c + 0.55, vb + 0.9), (c + 0.8, vb + hh * 0.3), (c + 0.35, vb + hh * 0.5),
+                           (c + 0.8, vb + hh * 0.72), (c + 0.55, vt - 1.1), (c - 0.55, vt - 1.1), (c - 0.8, vb + hh * 0.72),
+                           (c - 0.35, vb + hh * 0.5), (c - 0.8, vb + hh * 0.3)]))
+    return parts
+
+
+def frieze_bandarch(u0, u1, v_bot, v_top):
+    """A shallow elliptical arch between the columns, a solid sunburst of rays in each spandrel,
+    the beam over it."""
+    L = u1 - u0
+    v0 = v_top - 2.4
+    beam = rect(u0, v0, u1, v_top + 0.05)
+    depth = min(4.5, L * 0.2)
+    span = rect(u0, v0 - depth, u1, v0 + 0.01)
+    uc = (u0 + u1) / 2
+    ell = [(uc + (L / 2) * math.cos(a), v0 - depth + depth * 0.9 * math.sin(a)) for a in np.linspace(0.0, math.pi, 24)]
+    opening = poly([(u1, v0 - depth - 1)] + ell + [(u0, v0 - depth - 1)])
+    spandrel = span - opening
+    rays = []
+    for ue, sg in ((u0, 1), (u1, -1)):
+        for a in np.linspace(0.15, 1.35, 4):
+            rays.append(stroke([(ue, v0), (ue + sg * depth * 1.1 * math.cos(a), v0 - depth * 1.1 * math.sin(a))], 0.45, caps=False))
+    return beam + spandrel + (cs_union(rays) ^ span.offset(0.5, MJ, 4.0))
+
+
+def edge_bellvalance(L, z0, zc):
+    """A valance of small bells along the fascia's foot, a flat band over them."""
+    band = rect(0.3, zc - 1.3, L - 0.3, zc)
+    bells = []
+    for u in np.arange(1.4, L - 1.0, 2.4):
+        bells.append(poly([(u - 0.4, zc - 1.29), (u + 0.4, zc - 1.29), (u + 0.85, zc - 2.5), (u - 0.85, zc - 2.5)]))
+        bells.append(circle((u, zc - 2.75), 0.35, 10))
+    return band + cs_union(bells), 0.7
+
+
+def skirt_gridlattice(reg, d=1.2):
+    """A square-grid lattice skirt: upright and level slats crossing, behind a flat rim."""
+    if reg.is_empty():
+        return M()
+    u0, v0, u1, v1 = reg.bounds()
+    body = M.extrude(reg, d * 0.3)
+    grid = cs_union([rect(u - 0.3, v0 - 1, u + 0.3, v1 + 1) for u in np.arange(u0 + 1.0, u1, 2.0)] +
+                    [rect(u0 - 1, v - 0.3, u1 + 1, v + 0.3) for v in np.arange(v0 + 1.0, v1, 2.0)])
+    rim = reg - reg.offset(-0.8, MJ, 4.0)
+    return body + ext((grid ^ reg) + rim, d * 0.29, d * 0.8)
+
+
+PW.POSTS.update(bandstand=post_bandstand)
+PW.FILLS.update(bandstand=fill_bandstand)
+PW.FRIEZES.update(bandarch=frieze_bandarch)
+PW.SKIRTS.update(gridlattice=skirt_gridlattice)
+FT.EDGE_EXTRA.update(bellvalance=edge_bellvalance)
+
+
+def finial_bandstand(h=10.0):
+    """The bandstand's finial: a turned knop, an urn and a spike (prints upright). Local: foot at
+    z = 0."""
+    prof = [(0.0, 0.0), (1.8, 0.0), (1.8, 0.6), (1.0, 1.4), (1.4, 2.2), (1.4, 2.8), (0.8, 3.4), (1.2, 4.4), (1.2, 5.0), (0.5, 5.8),
+            (0.35, h), (0.0, h)]
+    return PW._revolve(prof, 24)

@@ -375,6 +375,44 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
             for n_, h_ in enumerate(hx):
                 lay[n_ % 2].append(h_)
             tex = M.extrude(cs_union(hx) ^ clip, d)
+        elif shape == "upboards":         # boards running up the slope, a groove between each pair, the butts cut
+            b = loc.bounds()              # square along the eave (the water tank's cone)
+            clip = loc.offset(-0.2, JoinType.Miter, 4.0)
+            gr = cs_union([rect(u - 0.12, b[1] - 1, u + 0.12, b[3] + 1) for u in np.arange(b[0] + wtab / 2, b[2], wtab)])
+            tex = M.extrude(clip - gr, d)
+        elif shape == "longshort":        # slates long and short in turn along each course, so the butts step
+            b = loc.bounds()              # down and up like a battlement (the Greenfield Bandstand)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh = []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                for k, u in enumerate(np.arange(b[0] - wtab + (j % 2) * wtab / 2, b[2] + wtab, wtab)):
+                    dv = 0.0 if k % 2 else pitch * 0.35
+                    sh.append(rect(u + 0.08, v - pitch * 0.35 + dv, u + wtab - 0.08, v + pitch - 0.1))
+            tex = M.extrude(cs_union(sh) ^ clip, d)
+        elif shape == "tapered":          # slates narrower at the butt than at the head, so a V of shadow opens
+            b = loc.bounds()              # between each pair (MX Tower)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh = []
+            tp = min(0.35, wtab * 0.15)
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                for u in np.arange(b[0] - wtab + (j % 2) * wtab / 2, b[2] + wtab, wtab):
+                    s0, s1 = u + 0.08, u + wtab - 0.08
+                    sh.append(poly([(s0 + tp, v), (s1 - tp, v), (s1, v + pitch - 0.1), (s0, v + pitch - 0.1)]))
+            tex = M.extrude(cs_union(sh) ^ clip, d)
+        elif shape == "roundcorner":      # sawn shingles with their two lower corners rounded off (not a scallop: the
+            b = loc.bounds()              # butt stays straight between them), broken joints (the Thorne Livery)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh = []
+            rr = min(0.45, wtab * 0.2, pitch * 0.3)
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                for u in np.arange(b[0] - wtab + (j % 2) * wtab / 2, b[2] + wtab, wtab):
+                    s0, s1 = u + 0.08, u + wtab - 0.08
+                    sh.append(cs_union([rect(s0, v + rr, s1, v + pitch - 0.1), rect(s0 + rr, v, s1 - rr, v + rr + 0.01),
+                                        circle((s0 + rr, v + rr), rr, 10), circle((s1 - rr, v + rr), rr, 10)]))
+            tex = M.extrude(cs_union(sh) ^ clip, d)
         elif shape == "bevelbutt":        # sawn shingles of random width whose butts are bevelled back, a sharp
             b = loc.bounds()              # shadow line under each course (Pleasant Valley School)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
