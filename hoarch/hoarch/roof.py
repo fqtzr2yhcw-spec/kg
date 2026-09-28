@@ -375,6 +375,34 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
             for n_, h_ in enumerate(hx):
                 lay[n_ % 2].append(h_)
             tex = M.extrude(cs_union(hx) ^ clip, d)
+        elif shape == "zigband":          # plain slates in broken-joint courses, every fifth course pointed at its
+            b = loc.bounds()              # butt so the band reads as a zigzag (St. Brendan's)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh = []
+            c = min(0.7, pitch * 0.45)
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                for u in np.arange(b[0] - wtab + (j % 2) * wtab / 2, b[2] + wtab, wtab):
+                    s0, s1 = u + 0.08, u + wtab - 0.08
+                    if j % 5 == 0:
+                        sh.append(poly([(s0, v + c), ((s0 + s1) / 2, v), (s1, v + c), (s1, v + pitch - 0.1), (s0, v + pitch - 0.1)]))
+                    else:
+                        sh.append(rect(s0, v, s1, v + pitch - 0.1))
+            tex = M.extrude(cs_union(sh) ^ clip, d)
+        elif shape == "octabutt":         # sawn wood shingles in broken-joint courses, every other course's butts
+            b = loc.bounds()              # clipped at both corners (octagon butts) (the Millbrook)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh = []
+            c = min(0.45, pitch * 0.3)
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                for u in np.arange(b[0] - wtab + (j % 2) * wtab / 2, b[2] + wtab, wtab):
+                    s0, s1 = u + 0.08, u + wtab - 0.08
+                    if j % 2:
+                        sh.append(poly([(s0, v + c), (s0 + c, v), (s1 - c, v), (s1, v + c), (s1, v + pitch - 0.1), (s0, v + pitch - 0.1)]))
+                    else:
+                        sh.append(rect(s0, v, s1, v + pitch - 0.1))
+            tex = M.extrude(cs_union(sh) ^ clip, d)
         else:
             tex = scallop_rows(loc, pitch, wtab, d=d, shape=shape, datum=loc.bounds()[1])
         vdir = np.array([t[0] * cth, t[1] * cth, s * cth])

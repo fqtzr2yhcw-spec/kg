@@ -1092,7 +1092,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
         # a joined railing runs into the round shafts instead
         clr = 0.8 if (joined or top) else max(1.75, 1.6 * (abs(f.u[0]) + abs(f.u[1])) + 0.15)
         for a_, b_ in zip(us[:-1], us[1:]):
-            if any(not (b_ <= s0 or a_ >= s1) for s0, s1 in skip):
+            if rail is None or any(not (b_ <= s0 or a_ >= s1) for s0, s1 in skip):     # rail=None: an open platform
                 continue
             L = (b_ - a_) - 2 * clr
             if L < 3.0:
