@@ -1788,3 +1788,162 @@ def crossbuck(h=40.0, arm=17.0, bw=2.4, t=0.9):
     foot = box([-3.0, 0.0, 0.0], [3.0, 1.0, 5.4])
     cap = box([-1.2, h - 0.01, -0.2], [1.2, h + 0.8, 1.8])
     return post + union(boards) + foot + cap
+
+
+# ================================================================== 78 the Kiln Ridge Tunnel Portals (double track, brick)
+def brick_flemish(region, datum=0.0):
+    """Flemish bond, a stretcher and a header in turn along every course, the headers (burnt
+    dark) standing a little prouder so the bond reads as a checker (the Kiln Ridge portals).
+    Relief on w = 0, prints face up."""
+    if region.is_empty():
+        return M()
+    b = region.bounds()
+    bh = 0.9
+    st, hd = [], []
+    for k in range(int(math.floor((b[1] - datum) / bh)) - 1, int(math.ceil((b[3] - datum) / bh)) + 1):
+        v = datum + k * bh
+        u = b[0] - 3.6 + (1.8 if k % 2 else 0.0)
+        while u < b[2] + 3.6:
+            st.append(rect(u + 0.12, v + 0.12, u + 2.4 - 0.12, v + bh - 0.12))
+            hd.append(rect(u + 2.4 + 0.12, v + 0.12, u + 3.6 - 0.12, v + bh - 0.12))
+            u += 3.6
+    return (ext(region, -0.01, 0.12) + ext(cs_union(st) ^ region, 0.11, 0.5) + ext(cs_union(hd) ^ region, 0.11, 0.7))
+
+
+def _ring_bricks(cy, R0, R1, a0, a1, n):
+    out = []
+    for j in range(n):
+        t0 = a0 + (a1 - a0) * j / n + 0.01
+        t1 = a0 + (a1 - a0) * (j + 1) / n - 0.01
+        out.append(poly([(R0 * math.sin(t0), cy + R0 * math.cos(t0)), (R1 * math.sin(t0), cy + R1 * math.cos(t0)),
+                         (R1 * math.sin(t1), cy + R1 * math.cos(t1)), (R0 * math.sin(t1), cy + R0 * math.cos(t1))]))
+    return out
+
+
+def portal_brick(W=180.0, H=100.0, ow=112.0, spring=50.0, rise=30.0, T=4.0, label="No 7"):
+    """A double-track tunnel portal in brick with stone dressings, one piece printed face up:
+    Flemish bond on a stone base course; the segmental arch in three rowlock rings stepping back
+    from the opening, stone springers and a tall keystone lettered with the tunnel's number; a
+    stone impost band across the face at the springing; stone quoins on the end piers; a
+    corbelled brick cornice under a stone coping; a stepped parapet over the arch with a stone
+    roundel. Local: u across (centred), v up, w out of the face (the back at w = -T). Returns
+    (portal, opening outline, letters)."""
+    from .storefront import text_cs
+    hw = W / 2
+    opening = O.opening_cs(ow, spring + rise, rise)
+    half = ow / 2
+    Rr = (half * half + rise * rise) / (2 * rise)
+    cy = spring + rise - Rr
+    a0 = math.asin(half / Rr)
+    steps = [(-hw + 30.0, H + 5.0), (-44.0, H + 10.0), (44.0, H + 5.0), (hw - 30.0, H)]
+    par = cs_union([rect(-hw + 30.0, H - 0.1, hw - 30.0, H + 5.0), rect(-44.0, H - 0.1, 44.0, H + 10.0), rect(-18.0, H - 0.1, 18.0, H + 15.0)])
+    outline = cs_union([rect(-hw, 0.0, hw, H), par])
+    parts = [ext(outline - opening, -T, 0.0)]
+    # arch rings, springers, keystone
+    ring_zone = cs_union([(circle((0.0, cy), Rr + 7.6, 160) - circle((0.0, cy), Rr, 160)) ^ rect(-hw, spring - 0.5, hw, H)])
+    for k, (r0, r1, d, n) in enumerate(((Rr + 0.15, Rr + 2.5, 0.95, 44), (Rr + 2.6, Rr + 5.0, 0.85, 48), (Rr + 5.1, Rr + 7.5, 0.75, 52))):
+        band = poly([(r0 * math.sin(t), cy + r0 * math.cos(t)) for t in np.linspace(-a0, a0, 60)] +
+                    [(r1 * math.sin(t), cy + r1 * math.cos(t)) for t in np.linspace(a0, -a0, 60)])
+        parts.append(ext(band, -0.01, d * 0.5))
+        parts += [ext(bk, d * 0.5 - 0.01, d) for bk in _ring_bricks(cy, r0, r1, -a0, a0, n)]
+    key = poly([(-3.4, cy + Rr - 0.3), (3.4, cy + Rr - 0.3), (4.6, cy + Rr + 11.0), (-4.6, cy + Rr + 11.0)])
+    parts.append(_dressed(key, 0.0, 2.6, 0.5))
+    letters = text_cs(label, cap=2.8, font="serif", track=0.3)
+    lb = letters.bounds()
+    sc = min(1.0, 6.6 / max(1e-6, lb[2] - lb[0]))
+    letters = letters.scale((sc, 1.0)).translate((-(lb[0] + lb[2]) / 2 * sc, cy + Rr + 4.2 - (lb[1] + lb[3]) / 2))
+    lt = ext(letters, 2.59, 3.1)
+    parts.append(lt)
+    for s in (-1, 1):
+        a, e = sorted((s * (half - 0.2), s * (half + 9.0)))
+        parts.append(_dressed(rect(a, spring - 6.0, e, spring), 0.0, 2.0, 0.5))
+    # stone impost band, base course, quoins, cornice
+    imp = (rect(-hw, spring - 2.4, hw, spring + 0.6) - rect(-half - 9.2, -1, half + 9.2, 999))
+    parts.append(_dressed(imp, 0.0, 1.5, 0.45) if imp.to_polygons() and len(imp.to_polygons()) == 1 else
+                 union([_dressed(poly(p), 0.0, 1.5, 0.45) for p in imp.to_polygons()]))
+    base = rect(-hw, 0.0, hw, 6.0) - opening
+    for p in base.to_polygons():
+        bb = poly(p).bounds()
+        for u in np.arange(bb[0], bb[2], 14.0):
+            r = rect(u + 0.2, 0.2, min(u + 14.0, bb[2]) - 0.2, 5.8)
+            if not (r ^ base).is_empty():
+                q = (r ^ base).bounds()
+                parts.append(chamfer_box(q[0], q[1], q[2], q[3], -0.01, 1.4, c=0.4))
+    quo = []
+    for s in (-1, 1):
+        for j, v in enumerate(np.arange(6.0, H - 10.0, 5.4)):
+            L = 9.0 if j % 2 == 0 else 5.5
+            a, e = sorted((s * hw, s * (hw - L)))
+            q = rect(a + (0.2 if s < 0 else 0.0), v + 0.2, e - (0.2 if s > 0 else 0.0), min(v + 5.4, H - 10.0) - 0.2)
+            quo.append(rect(a, v, e, min(v + 5.4, H - 10.0)))
+            parts.append(_dressed(q, 0.0, 1.6, 0.4))
+    for u in np.arange(-hw + 1.2, hw - 0.5, 2.4):                   # the corbel table's dentils
+        parts.append(ext(rect(u - 0.7, H - 10.0, u + 0.7, H - 8.4), -0.01, 1.2))
+    parts.append(ext(rect(-hw, H - 8.4, hw, H - 6.6), -0.01, 1.6))
+    parts.append(ext(rect(-hw, H - 6.6, hw, H - 4.8), -0.01, 2.0))
+    parts.append(_dressed(rect(-hw, H - 4.8, hw, H), 0.0, 2.6, 0.9))
+    for (x0, x1, top) in ((-hw + 30.0, hw - 30.0, H + 5.0), (-44.0, 44.0, H + 10.0), (-18.0, 18.0, H + 15.0)):
+        parts.append(_dressed(rect(x0, top - 2.2, x1, top), 0.0, 2.2, 0.7))
+    rc = (0.0, H + 7.4)
+    parts.append(_dressed(poly([(rc[0] + 4.6 * math.cos(t), rc[1] + 4.6 * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 40, endpoint=False)]), 0.0, 1.4, 0.4))
+    parts.append(ext(circle(rc, 3.2, 40) - circle(rc, 2.6, 40), 1.39, 1.8))
+    field = outline - opening - ring_zone - rect(-hw - 1, -1, hw + 1, 6.0) - imp - cs_union(quo) - rect(-hw - 1, H - 10.0, hw + 1, H + 0.01) \
+        - rect(-half - 9.2, spring - 6.2, half + 9.2, spring + 0.2) - key.offset(0.3, MJ, 4.0)
+    for (x0, x1, top) in ((-hw + 30.0, hw - 30.0, H + 5.0), (-44.0, 44.0, H + 10.0), (-18.0, 18.0, H + 15.0)):
+        field = field - rect(x0, top - 2.2, x1, top + 1)
+    field = field - circle(rc, 4.9, 40)
+    parts.append(brick_flemish(field, datum=6.0))
+    return union(parts), opening, lt
+
+
+def liner_brick(opening, depth=30.0, t=2.4):
+    """The brick lining behind a double-track portal: the barrel ``depth`` long, its inner face
+    coursed in brick (joints along the tunnel and staggered joints across). Prints on end."""
+    ring = (opening.offset(t, MJ, 4.0) - opening) ^ rect(-400, 0.0, 400, 400)
+    inner = (opening.offset(0.35, MJ, 4.0) - opening) ^ rect(-400, 0.0, 400, 400)
+    body = ext(ring, -depth, 0.0)
+    b = opening.bounds()
+    joints = []
+    for v in np.arange(1.8, b[3], 1.8):
+        joints.append(ext(rect(-400, v - 0.22, 400, v + 0.22) ^ inner, -depth - 1, 1))
+    cross = union([ext(inner, -w - 0.22, -w + 0.22) for w in np.arange(3.6, depth - 1.0, 3.6)])
+    return body - union(joints) - cross
+
+
+def wing_brick(Lw=70.0, h0=86.0, T=4.0, side=1, back=6.0):
+    """A stepped wing wall in brick: Flemish bond on the stone base course, the top stepping
+    down in three stages each with a stone coping, a quoined end pier with a cap. Local as
+    wing_stone: u along the wall away from the portal (toward ``side`` * u), v up, w out of the
+    face; it starts ``back`` short of u = 0 to be cut square to the portal's side."""
+    s = float(side)
+
+    def S(cs):
+        return cs.transform(np.array([[s, 0.0, 0.0], [0.0, 1.0, 0.0]])) if s < 0 else cs
+
+    stages = [(-back, Lw * 0.36, h0), (Lw * 0.36, Lw * 0.68, h0 * 0.68), (Lw * 0.68, Lw - 9.0, h0 * 0.4)]
+    outline = cs_union([rect(a, 0.0, e, top) for (a, e, top) in stages] + [rect(Lw - 9.0, 0.0, Lw, h0 * 0.4 + 5.0)])
+    parts = [ext(S(outline), -T, 0.0)]
+    for u in np.arange(-back, Lw, 14.0):
+        r = rect(u + 0.2, 0.2, min(u + 14.0, Lw) - 0.2, 5.8)
+        bb = S(r).bounds()
+        parts.append(chamfer_box(bb[0], bb[1], bb[2], bb[3], -0.01, 1.4, c=0.4))
+    cops = []
+    for (a, e, top) in stages:
+        c = rect(a, top - 2.2, e + (0.0 if e < Lw - 9.0 else 0.0), top)
+        cops.append(c)
+        bb = S(c).bounds()
+        parts.append(_dressed(S(c), 0.0, 2.2, 0.7))
+    pier = rect(Lw - 9.0, 6.0, Lw, h0 * 0.4 + 2.8)
+    quo = []
+    for j, v in enumerate(np.arange(6.0, h0 * 0.4 + 2.8, 5.4)):
+        L = 9.0 if j % 2 == 0 else 5.5
+        q = rect(Lw - L, v, Lw, min(v + 5.4, h0 * 0.4 + 2.8))
+        quo.append(q)
+        bb = S(q.offset(-0.2, MJ, 4.0)).bounds()
+        parts.append(chamfer_box(bb[0], bb[1], bb[2], bb[3], -0.01, 1.6, c=0.4))
+    capr = rect(Lw - 9.0, h0 * 0.4 + 2.8, Lw, h0 * 0.4 + 5.0)
+    bb = S(capr).bounds()
+    parts.append(chamfer_box(bb[0], bb[1], bb[2], bb[3], -0.01, 2.6, c=0.9))
+    field = outline - rect(-back - 1, -1, Lw + 1, 6.0) - cs_union(cops) - cs_union(quo) - capr - (pier ^ rect(Lw - 9.0, 0, Lw, 999))
+    parts.append(brick_flemish(S(field), datum=6.0))
+    return union(parts)
