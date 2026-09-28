@@ -1768,10 +1768,11 @@ def stovepipe_shanty(h=12.0, r=0.9):
     """The shanty stove's pipe: a pipe with a round bonnet cap over a spark screen. Local:
     centred, z = 0 inside the roof (it drops into a hole)."""
     pipe = M.cylinder(h, r, r, 20)
-    screen = M.cylinder(1.6, r + 0.5, r + 0.5, 20).translate([0, 0, h - 0.01])
-    bonnet = M.cylinder(0.8, r + 1.3, r + 1.3, 24).translate([0, 0, h + 1.59]) + M.sphere(r + 1.3, 24).scale([1, 1, 0.5]).translate([0, 0, h + 2.39]) ^ box([-9, -9, h + 2.38], [9, 9, h + 9])
-    collar = M.cylinder(0.8, r + 0.9, r + 0.3, 20).translate([0, 0, 3.0])
-    return pipe + screen + bonnet + collar
+    screen = M.cylinder(1.6, r + 0.5, r + 0.5, 20).translate([0, 0, h - 0.01]) + M.cylinder(0.5, r - 0.01, r + 0.5, 20).translate([0, 0, h - 0.5])
+    bonnet = M.cylinder(0.8, r + 0.5, r + 1.3, 24).translate([0, 0, h + 1.58]) + \
+        (M.sphere(r + 1.3, 24).scale([1, 1, 0.5]).translate([0, 0, h + 2.37]) ^ box([-9, -9, h + 2.37], [9, 9, h + 9]))
+    collar = M.cylinder(0.8, r + 0.9, r + 0.3, 20).translate([0, 0, 3.0]) + M.cylinder(0.9, r - 0.01, r + 0.9, 20).translate([0, 0, 2.1])
+    return pipe + screen + bonnet + collar                  # every flare at 45 degrees: nothing flat to print over
 
 
 def crossbuck(h=40.0, arm=17.0, bw=2.4, t=0.9):
@@ -1786,9 +1787,9 @@ def crossbuck(h=40.0, arm=17.0, bw=2.4, t=0.9):
         c, s = math.cos(r_), math.sin(r_)
         pts = [(x * c - y * s, cy + x * s + y * c) for (x, y) in ((-arm / 2, -bw / 2), (arm / 2, -bw / 2), (arm / 2, bw / 2), (-arm / 2, bw / 2))]
         bd = poly(pts)
-        boards.append(ext(bd, 1.59, 1.6 + t) + ext(bd - bd.offset(-0.45, MJ, 4.0), 1.6 + t - 0.01, 1.6 + t + 0.3))
-    foot = box([-3.0, 0.0, 0.0], [3.0, 1.0, 5.4])
-    cap = box([-1.2, h - 0.01, -0.2], [1.2, h + 0.8, 1.8])
+        boards.append(ext(bd, 0.0, 1.6 + t) + ext(bd - bd.offset(-0.45, MJ, 4.0), 1.6 + t - 0.01, 1.6 + t + 0.3))   # solid to the back: the arms print on the bed
+    foot = box([-3.5, 0.0, 0.0], [3.5, 1.2, 6.0])
+    cap = box([-1.2, h - 0.01, 0.0], [1.2, h + 0.8, 1.8])
     return post + union(boards) + foot + cap
 
 
@@ -2042,29 +2043,37 @@ def pier_concrete(L=44.0, t0=18.0, t1=14.0, h=36.0, nose=8.0, cap=4.0, pads=(-10
 
 def span_girder(L=120.0, gx=10.0, depth=16.0, deck_w=36.0, deck_t=2.0, curb=3.0, fl=6.0, tw=1.2, stiff=10.0):
     """A ballasted deck plate-girder span, one piece printed upright on its bottom flanges: two
-    riveted plate girders under a steel deck plate with ballast curbs, the deck's overhang
-    carried on 45 degree fascia plates, stiffener angles up the webs, solid diaphragms between
-    the girders. Local: centred on its length (along y), x across, z = 0 at the flanges' feet."""
+    riveted plate girders under a steel deck plate with ballast curbs, the flange angles filleted
+    at 45 degrees along the webs, stiffener angles up the webs, the deck's overhang carried on
+    45 degree outrigger brackets at every stiffener, and knee-braced diaphragms between the
+    girders whose undersides rise at 45 degrees, so the only bridge is the deck plate between
+    the top flanges. Local: centred on its length (along y), x across, z = 0 at the flanges' feet."""
     out = []
+    ang = fl / 2 - tw / 2                                                                   # the flange angles' leg
+    ys = [float(y) for y in np.arange(-L / 2 + 2.0, L / 2 - 1.0, stiff)]
     for s in (-1, 1):
         x = s * gx
         out.append(box([x - fl / 2, -L / 2, 0.0], [x + fl / 2, L / 2, 1.2]))                 # bottom flange
-        out.append(M.hull_points([(x + dx, y, z) for y in (-L / 2, L / 2) for (dx, z) in ((-fl / 2, 1.19), (fl / 2, 1.19), (-tw / 2, 1.19 + fl / 2 - tw / 2), (tw / 2, 1.19 + fl / 2 - tw / 2))]))
+        out.append(M.hull_points([(x + dx, y, z) for y in (-L / 2, L / 2) for (dx, z) in ((-fl / 2, 1.19), (fl / 2, 1.19), (-tw / 2, 1.19 + ang), (tw / 2, 1.19 + ang))]))
         out.append(box([x - tw / 2, -L / 2, 1.0], [x + tw / 2, L / 2, depth]))              # web
         out.append(box([x - fl / 2, -L / 2, depth - 1.2], [x + fl / 2, L / 2, depth + 0.01]))  # top flange
-        for y in np.arange(-L / 2 + 2.0, L / 2 - 1.0, stiff):
+        out.append(M.hull_points([(x + dx, y, z) for y in (-L / 2, L / 2) for (dx, z) in ((-fl / 2, depth - 1.19), (fl / 2, depth - 1.19), (-tw / 2, depth - 1.19 - ang), (tw / 2, depth - 1.19 - ang))]))
+        for y in ys:
             for sx in (-1, 1):
                 out.append(box([x + sx * tw / 2 - (0.9 if sx < 0 else 0.0), y - 0.45, 1.19], [x + sx * tw / 2 + (0.9 if sx > 0 else 0.0), y + 0.45, depth - 1.19]))
+        xw, xe = x + s * (tw / 2 - 0.01), s * deck_w / 2                                    # outrigger brackets, web to deck edge
+        run = abs(xe - xw)
+        for y in ys + [-L / 2 + 0.45, L / 2 - 0.45]:
+            out.append(M.hull_points([(u, y + dy, z) for dy in (-0.45, 0.45) for (u, z) in ((xw, depth - run), (xw, depth + 0.01), (xe, depth + 0.01))]))
         riv = [M.sphere(0.28, 8).translate([x + sx * (tw / 2 + 0.05), y, z]) for sx in (-1, 1)
-               for y in np.arange(-L / 2 + 1.0, L / 2, 1.6) for z in (2.0, depth - 2.0)]
+               for y in np.arange(-L / 2 + 1.0, L / 2, 1.6) for z in (1.19 + ang + 0.6, depth - 1.19 - ang - 0.6)]
         out.append(union(riv))
+    xi = gx - tw / 2 + 0.01                                                                 # the webs' inner faces
     for y in np.arange(-L / 2 + 6.0, L / 2 - 5.0, (L - 12.0) / 4):
-        out.append(box([-gx + tw / 2 - 0.01, y - 0.6, 3.0], [gx - tw / 2 + 0.01, y + 0.6, depth - 0.5]))
+        for sx in (-1, 1):
+            out.append(M.hull_points([(sx * u, y + dy, z) for dy in (-0.6, 0.6) for (u, z) in ((xi, 3.0), (xi, depth + 0.01), (0.0, depth + 0.01), (0.0, 3.0 + xi))]))
     deck = box([-deck_w / 2, -L / 2, depth], [deck_w / 2, L / 2, depth + deck_t])
     for s in (-1, 1):
-        out.append(M.hull_points([(s * gx + s * fl / 2, y, depth - 0.01) for y in (-L / 2, L / 2)] + [(s * (gx + fl / 2 - 0.01), y, depth - 1.2) for y in (-L / 2, L / 2)] +
-                                 [(s * deck_w / 2, y, depth + 0.01) for y in (-L / 2, L / 2)] +
-                                 [(s * (deck_w / 2 - 0.01), y, depth - (deck_w / 2 - gx - fl / 2) - 0.01) for y in (-L / 2, L / 2)]))
         out.append(box([s * deck_w / 2 - (1.4 if s > 0 else 0.0), -L / 2, depth + deck_t - 0.01], [s * deck_w / 2 + (1.4 if s < 0 else 0.0), L / 2, depth + deck_t + curb]))
     return union(out) + deck
 
@@ -2077,7 +2086,7 @@ def bent_timber(h=60.0, top=8.0, batter=0.12, post=2.2, cap=2.6, story=30.0, inn
     the bed under the posts. Local: x across (centred), z up (the sill's foot at 0), y the
     member depth (0..post, braces 0..1.2)."""
     bot = top + h * batter
-    L_sill, L_cap = bot + 3.0, top + 3.5
+    L_sill, L_cap = bot + 3.0, top + 4.8                    # the cap runs under both stringer chords
     out = [box([-L_cap, 0.0, h - cap], [L_cap, post, h]), box([-L_sill, 0.0, 0.0], [L_sill, post, cap])]
     for x in (-inner, inner):
         out.append(box([x - post / 2, 0.0, cap - 0.01], [x + post / 2, post, h - cap + 0.01]))
@@ -2100,15 +2109,16 @@ def bent_timber(h=60.0, top=8.0, batter=0.12, post=2.2, cap=2.6, story=30.0, inn
 
 
 def deck_trestle(L=50.0, tie_w=2.6, tie_t=1.8, tie_l=30.0, pitch=4.0, str_w=1.8, str_h=3.2, guard=1.6):
-    """One span of the trestle's open deck, one piece printed upside down on its guard timbers:
-    four stringers (two under each rail) on spacer blocks, ties across them every 4 mm, guard
+    """One span of the trestle's open deck, one piece printed upright on its stringers: two
+    chords of three stringers (one under each rail and one either side of it) on spacer blocks,
+    ties across them every 4 mm (bridging only between the chords, and 2.8 mm past them), guard
     timbers along the tie ends. Local: centred on its length (along y), x across, z = 0 at the
     stringers' foot (they rest on the bents' caps)."""
     out = []
-    for x in (-9.9, -7.1, 7.1, 9.9):
+    for x in (-11.3, -8.5, -5.7, 5.7, 8.5, 11.3):
         out.append(box([x - str_w / 2, -L / 2, 0.0], [x + str_w / 2, L / 2, str_h]))
     for y in (-L / 2 + 3.0, 0.0, L / 2 - 3.0):
-        for x in (-8.5, 8.5):
+        for x in (-9.9, -7.1, 7.1, 9.9):
             out.append(box([x - 1.2, y - 1.0, 0.6], [x + 1.2, y + 1.0, str_h]))
     for y in np.arange(-L / 2 + pitch / 2, L / 2, pitch):
         out.append(box([-tie_l / 2, y - tie_w / 2, str_h - 0.01], [tie_l / 2, y + tie_w / 2, str_h + tie_t]))

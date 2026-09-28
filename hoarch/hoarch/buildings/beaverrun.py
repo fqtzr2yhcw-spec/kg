@@ -4,7 +4,7 @@
 Five four-post bents graded to cross a valley (35, 60, 75, 60 and 35 mm), each with two plumb
 posts under the stringers and two battered outer posts, a cap and a sill running past them with
 bolt heads, X sway braces in every story and a sash girt between stories on the tall ones; six
-open-deck spans of four stringers on spacer blocks under ties every 4 mm with guard timbers; two
+open-deck spans of six stringers in two chords on spacer blocks under ties every 4 mm with guard timbers; two
 plank bulkheads retaining the banks at the ends. Lay rail on the ties (or flex track on the
 stringers). About 300 mm long; the rail is about 82 mm over the creek.
 
@@ -20,7 +20,7 @@ from manifold3d import Manifold as M
 
 from hoarch.core import box, union
 from hoarch import yard as YD
-from hoarch.kit import Kit, print_flip
+from hoarch.kit import Kit
 
 NAME = "The Beaver Run Trestle"
 COLORS = {"Timber": "#4B3C2F"}
@@ -50,7 +50,7 @@ def build(kit=None):
         kit.add(f"BENT-{k + 1}", "Timber", YD.bent_timber(h).transform(A), P=_face_up(A), key=f"BENT-{h:.0f}", group="bents")
     deck = YD.deck_trestle(SPACING - 0.2)
     for k in range(len(BENTS) + 1):
-        kit.add(f"SPAN-{k + 1}", "Timber", deck.translate([0, SPACING * k + SPACING / 2, DECK]), P=print_flip(), key="SPAN", group="spans")
+        kit.add(f"SPAN-{k + 1}", "Timber", deck.translate([0, SPACING * k + SPACING / 2, DECK]), key="SPAN", group="spans")
     bh = YD.bulkhead_timber(32.0, BULK_H)
     L_end = SPACING * (len(BENTS) + 1)
     for tag, A in (("S", np.array([[1.0, 0, 0, 0.0], [0, 1.0, 0, -2.1], [0, 0, 1.0, DECK - BULK_H]])),

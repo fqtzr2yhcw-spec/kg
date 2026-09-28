@@ -142,7 +142,7 @@ def build(kit=None):
     gd = [dict(p0=(OX1, OY0), p1=(OX1, OY1), slope=S_OIL, e=0.3), dict(p0=(OX0, OY1), p1=(OX0, OY0), slope=S_OIL, e=0.3)]
     ze = ZW_O + 1.2
     rf = G.gabled_roof(pieces, ze, 3.2, gd, texture="cleatseam", tex_kw=dict(pitch=6.0, wtab=2.8, d=0.3), skin=1.4, rake=2.4,
-                       inner_cs=offset(base, -2.4), fascia=1.2, hollow=2.2)
+                       inner_cs=None, fascia=1.2)      # solid: a pitch this low can't be hollowed and print
     we, ww = rf["walls"]
     gables = [(OIL, 1, we["cs"].translate((0.0, ze - ZF_O))), (OIL, 3, ww["cs"].translate((0.0, ze - ZF_O)))]
     walls = wall_shell([OIL], ops, t=2.4, belt=None, corners="none", water_table=False, siding=_skin, gables=gables,

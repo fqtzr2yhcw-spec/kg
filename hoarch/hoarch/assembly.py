@@ -1321,7 +1321,7 @@ finial).
   2. The BENTs upright in order, square across the line, their caps level.
   3. The SPANs from cap to cap, each resting on half a cap at each end.
   4. Rail on the ties, or flex track on the stringers.
-""", """Bents and bulkheads print flat on their faces, the spans upside down on their guard timbers; no supports.
+""", """Bents and bulkheads print flat on their faces, the spans upright on their stringers; no supports.
 """),
 }
 

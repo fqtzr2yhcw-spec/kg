@@ -7,8 +7,8 @@ chamfered panels, a coping under the seat and bearing pads for the girders, the 
 with the date cast in a plate, splayed wing walls with panels sloping down under copings to capped
 ends, all on a projecting footing. The pier is battered with a pointed cutwater at each end,
 panelled faces and a coping cap carrying both spans' bearings. Each span is two riveted plate
-girders, 120 mm long and 16 mm deep, with stiffener angles and solid diaphragms, under a steel
-deck with ballast curbs; lay the track in its ballast on the deck. The rail's height over the
+girders, 120 mm long and 16 mm deep, with flange angles, stiffener angles and knee-braced
+diaphragms, under a steel deck with ballast curbs carried on outrigger brackets; lay the track in its ballast on the deck. The rail's height over the
 creek bed is about 67 mm.
 
 The water and track in the renders are scenery for the pictures, not parts.
