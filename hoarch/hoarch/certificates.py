@@ -38,7 +38,7 @@ TERMS = ("Anthropic Consumer Terms of Service, effective 8 October 2025 "
 MODULES = {2: "villa", 11: "pemberton", 12: "barber", 13: "bank", 14: "general", 15: "drugstore",
            16: "hotel", 17: "bakery", 18: "hardware", 19: "millinery", 20: "jeweler", 24: "twins",
            34: "vantassel", 61: "millbrook", 62: "brendan",
-           63: "harmon", 64: "engine3", 65: "lakeshore", 66: "pleasant", 67: "thorne", 68: "mxtower", 69: "tank12", 70: "greenfield", 71: "blackwater", 72: "stonehaven"}
+           63: "harmon", 64: "engine3", 65: "lakeshore", 66: "pleasant", 67: "thorne", 68: "mxtower", 69: "tank12", 70: "greenfield", 71: "blackwater", 72: "stonehaven", 73: "sandhouse", 74: "enginehouse", 75: "yardoffice", 76: "section4", 77: "shanty", 78: "kilnridge", 79: "millcreek", 80: "beaverrun"}
 
 INK = colors.HexColor("#2b2118")
 ACCENT = colors.HexColor("#7a2e1d")

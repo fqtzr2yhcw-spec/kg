@@ -1270,13 +1270,67 @@ finial).
   4. Build the hillside behind and over the linings (foam, plaster cloth or a cardboard web), up to the cornice and the wing walls' copings. The kit has two of each part, one set for each end of the tunnel.
 """, """Every part prints face up, flat on its back, with no supports; the linings stand on end.
 """),
+    "sandhouse": ("THE BLACKWATER SAND HOUSE - LOCOMOTIVE SANDING PLANT", """  1. FOUNDATION on the layout, the long side with three windows toward the track.
+  2. WALLS onto the foundation's lip; the windows and doors into their openings.
+  3. CORNICE-E-lower onto the ledge under the eave, then CORNICE-E-upper on top of it.
+  4. ROOF onto the walls; CHIMNEY onto its flat seat on the back slope.
+  5. TOWER-FOOTINGS between the house and the track; TOWER-LEGS onto them, each peg into its socket, the open upper bay toward the track.
+  6. TOWER-BIN down through the hole in the legs' plate, its flat bottom on the plate; TOWER-CAP on its top; SPOUTS under the outlet, raking out over the track.
+  7. WET-BIN at the west end by the wet-sand doors, its open side toward the track; SAND-HEAP into it.
+""", """The tower's legs print upside down on their plate and the bin on its top; the walls, roof, cap, spouts and bins upright. Windows and doors print face up with supports under their frames only.
+"""),
+    "enginehouse": ("THE BLACKWATER ENGINE HOUSE - TWO-STALL BRICK ENGINE HOUSE", """  1. Lay the two stall tracks first, 58 mm apart. FOUNDATION over them, its gaps at the stall doorways.
+  2. WALLS onto the foundation; the side and back windows and the two gable oculi into their openings.
+  3. DOOR-stall1 and DOOR-stall2 (the arched heads with their fanlights) into the stall doorways.
+  4. CORNICE-E-lower onto the ledge under the eave, then CORNICE-E-upper on top of it.
+  5. ROOF onto the walls; MONITOR onto the flat seat along the ridge; SMOKEJACK-1 and SMOKEJACK-2 onto their seats over the stalls.
+  6. The door leaves (LEAF-L and LEAF-R, two of each): glue them into a doorway to shut the stall, or stand them open at right angles, the hinge edge against the jamb band.
+""", """The walls (116 x 230 mm) fill the P1S/P2S bed; walls, roof and monitor print upright, the leaves flat. Windows and doors print face up with supports under their frames only.
+"""),
+    "yardoffice": ("THE BLACKWATER YARD OFFICE - TWO-STOREY YARD OFFICE", """  1. FOUNDATION on the layout, the bay toward the tracks.
+  2. WALLS-1 (with the bay) onto the foundation; its windows and the door; JOINT onto WALLS-1.
+  3. CORNICE-B-course round the bay's top, then CORNICE-B-crown; BAY-ROOF onto the bay, under the joint.
+  4. CORNICE-J-lower round the joint, then CORNICE-J-crown; WALLS-2 onto the joint; its windows; SIGN on the plain field on the front.
+  5. CORNICE-E-lower onto the ledge under the eave, then CORNICE-E-upper on top of it.
+  6. ROOF onto the walls; LOOKOUT onto the flat seat at the top of the hip; CHIMNEY onto its seat on the back slope.
+  7. STOOP under the door.
+""", """Walls, roofs, lookout and chimney print upright. Windows and doors print face up with supports under their frames only.
+"""),
+    "section4": ("SECTION HOUSE No. 4 - TOOL HOUSE AND SPEEDER SHED", """  1. TOOL-FOUNDATION on the layout, the door side toward the track; TOOL-WALLS onto it; the door and windows; TOOL-CORNICE-frieze, then TOOL-CORNICE-crown; TOOL-ROOF; STOVEPIPE down into the hole in the back slope.
+  2. SPEEDER-FOUNDATION with its gable end to the speeder's spur; SPEEDER-WALLS onto it; the doors and window; SPEEDER-CORNICE-course, then SPEEDER-CORNICE-crown; SPEEDER-ROOF.
+""", """Walls and roofs print upright. Windows and doors print face up with supports under their frames only.
+"""),
+    "shanty": ("THE CROSSING SHANTY AND OIL HOUSE - WATCHMAN'S SHANTY, OIL HOUSE AND CROSSBUCK", """  1. SHANTY-CRIB by the crossing; SHANTY-WALLS onto it, the door toward the road; its windows and door; SHANTY-CORNICE-course, then SHANTY-CORNICE-crown; SHANTY-ROOF; STOVEPIPE down into its hole.
+  2. OIL-FOUNDATION; OIL-WALLS onto it; the door and the two vents; OIL-CORNICE-frieze, then OIL-CORNICE-crown; OIL-ROOF.
+  3. CROSSBUCK beside the road, its foot flat on the ground.
+""", """Walls and roofs print upright, the crossbuck flat on its back. Windows and doors print face up with supports under their frames only.
+"""),
+    "kilnridge": ("THE KILN RIDGE TUNNEL PORTALS - DOUBLE-TRACK BRICK PORTALS (PAIR)", """  1. Lay the two tracks first, 51 mm apart. Stand each PORTAL square across them, the keystone up, the arch (112 mm wide, 80 mm to the crown) centred between the tracks.
+  2. LINER against the back of each portal, lined up with the arch; it glues by its whole end ring.
+  3. WING-L and WING-R against the portal's sides, their angled ends flat on the portal's side faces, the walls stepping down along the approach.
+  4. Build the hillside behind and over the linings, up to the cornice and the wing walls' copings. The kit has two of each part, one set for each end of the tunnel.
+""", """Every part prints face up, flat on its back, with no supports; the linings stand on end. For stone dressings in a second colour, change filament at 5.0 mm on the portals and wing walls (one change).
+"""),
+    "millcreek": ("THE MILL CREEK BRIDGE - CONCRETE ABUTMENTS, PIER AND TWO GIRDER SPANS", """  1. Set the two ABUTMENTs facing each other, their breasts 226 mm apart, each backwall top level with the track's subgrade on its bank.
+  2. PIER midway, 113 mm from each breast, its cutwaters up and down stream, its top level with the abutments' seats.
+  3. SPAN-1 and SPAN-2 onto the bearing pads, each from its abutment's seat to the pier.
+  4. Lay the track in its ballast on the decks, level with the approaches.
+""", """Abutments, pier and spans print upright (the spans on their bottom flanges), with no supports.
+"""),
+    "beaverrun": ("THE BEAVER RUN TRESTLE - TIMBER TRESTLE BRIDGE", """  1. Shape the valley so each bent's sill sits at the depth its length gives below the cap line (35, 60, 75, 60 and 35 mm), the bents 50 mm apart; the two BULKHEADs at the banks, 300 mm apart, their caps at the same level.
+  2. The BENTs upright in order, square across the line, their caps level.
+  3. The SPANs from cap to cap, each resting on half a cap at each end.
+  4. Rail on the ties, or flex track on the stringers.
+""", """Bents and bulkheads print flat on their faces, the spans upside down on their guard timbers; no supports.
+"""),
 }
 
 ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt": "Harcourt_Second_Empire",
            "millbrook": "Millbrook_Depot", "brendan": "St_Brendans_Church", "harmon": "Harmon_Town_Hall",
            "engine3": "Engine_Company_No3", "lakeshore": "Lakeshore_Freight_House", "pleasant": "Pleasant_Valley_School",
            "thorne": "Thorne_Livery", "mxtower": "MX_Tower", "tank12": "Water_Tank_No12", "greenfield": "Greenfield_Bandstand",
-           "blackwater": "Blackwater_Coaling_Tower", "stonehaven": "Stonehaven_Tunnel_Portals"}
+           "blackwater": "Blackwater_Coaling_Tower", "stonehaven": "Stonehaven_Tunnel_Portals",
+           "sandhouse": "Blackwater_Sand_House", "enginehouse": "Blackwater_Engine_House", "yardoffice": "Blackwater_Yard_Office", "section4": "Section_House_No4", "shanty": "Crossing_Shanty_Oil_House", "kilnridge": "Kiln_Ridge_Tunnel_Portals", "millcreek": "Mill_Creek_Bridge", "beaverrun": "Beaver_Run_Trestle"}
 
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}
 SHOPS = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in SHOPS.items()}
