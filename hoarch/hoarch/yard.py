@@ -676,3 +676,293 @@ def wing_stone(Lw=76.0, h0=86.0, h1=26.0, T=4.0, side=1, seed=0, back=6.0):
     field = outline - plinth - cop - pier - rect(Lw - 10.0, h1 + 5.9, Lw + 1, h1 + 10.0)
     parts.append(rock_ashlar(S(field), seed=seed + 5, course=5.4, lmin=7.0, lmax=14.0, d=0.6, face=0.6, datum=7.0))
     return union(parts)
+
+
+# ================================================================== 73 the Blackwater Sand House
+def brick_english(region, datum=0.0, soldiers=()):
+    """English bond: a course of headers over a course of stretchers, all the way up, with a
+    soldier course (bricks on end) at each ``soldiers`` v (the Blackwater Sand House)."""
+    if region.is_empty():
+        return M()
+    b = region.bounds()
+    bh = 0.8
+    bricks = []
+    sold = [(v, v + 2.3) for v in soldiers]
+    for k in range(int(math.floor((b[1] - datum) / bh)) - 1, int(math.ceil((b[3] - datum) / bh)) + 1):
+        v = datum + k * bh
+        if any(s0 - 0.01 < v + bh / 2 < s1 + 0.01 for s0, s1 in sold):
+            continue
+        L = 1.2 if k % 2 else 2.4
+        off = 0.0 if k % 2 == 0 else 0.6
+        bricks += [rect(u + 0.1, v + 0.1, u + L - 0.1, v + bh - 0.1) for u in np.arange(b[0] - 2.4 + off, b[2] + 2.4, L)]
+    for s0, s1 in sold:
+        bricks += [rect(u + 0.1, s0 + 0.1, u + 0.8 - 0.1, s1 - 0.1) for u in np.arange(b[0] - 1.0, b[2] + 1.0, 0.8)]
+    return M.extrude(region, 0.1) + ext(cs_union(bricks) ^ region, 0.09, 0.35)
+
+
+def foundation_tooled(reg, seed=0):
+    """Tooled granite: long blocks in one course, each face drafted round its edge and dressed
+    with fine plumb tool lines (the Blackwater Sand House)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed)
+    out = M.extrude(reg, 0.25)
+    blocks = []
+    u = b[0] - rng.uniform(0.0, 8.0)
+    while u < b[2]:
+        L = rng.uniform(9.0, 15.0)
+        r = rect(u + 0.25, b[1] + 0.25, u + L - 0.25, b[3] - 0.25) ^ reg
+        if not r.is_empty():
+            blocks.append(r)
+        u += L
+    body = ext(cs_union(blocks), 0.2, 0.7)
+    lines = cs_union([rect(x - 0.2, b[1] + 0.9, x + 0.2, b[3] - 0.9) for x in np.arange(b[0] + 0.9, b[2], 0.9)])
+    inner = cs_union([bl.offset(-0.6, MJ, 4.0) for bl in blocks])
+    return out + body - ext(lines ^ inner, 0.5, 1.0)
+
+
+def frieze_sanddomes(L, h, b, pitch, margin, pair, half):
+    """Locomotive sand domes: at every station a dome on its base ring with a lid, a pipe
+    running between them (the Blackwater Sand House)."""
+    v0, v1 = 0.6, h - 0.6
+    out = [_st(rect(0.3, v0 + 0.5, L - 0.3, v0 + 0.95), b, 0.25)]
+    for u in CO._us(L, pitch, margin, 0.0):
+        rw = min(2.4, pitch * 0.3)
+        hd = v1 - v0 - 1.4
+        dome = poly([(u + rw * math.cos(t), v0 + 1.0 + hd * math.sin(t)) for t in np.linspace(0, math.pi, 17)])
+        out.append(_st(cs_union([dome, rect(u - rw - 0.3, v0, u + rw + 0.3, v0 + 1.0)]), b + 0.25, 0.35))
+        out.append(_st(rect(u - 0.7, v0 + 1.0 + hd - 0.1, u + 0.7, v0 + 1.0 + hd + 0.6), b + 0.25, 0.5))
+    return out, []
+
+
+def course_rivetpairs(L, h, b, pitch, margin, p):
+    """An iron strap with its rivets in pairs."""
+    vc = h / 2
+    strap = rect(0.3, vc - 0.45, L - 0.3, vc + 0.45)
+    rv = cs_union([circle((u + du, vc), 0.3, 10) for u in np.arange(1.6, L - 1.2, 3.2) for du in (-0.45, 0.45)])
+    return [ext(strap, b - 0.05, b + 0.25), ext(rv, b + 0.2, b + 0.45)]
+
+
+def bracket_sandcove(h, d, t):
+    """A cove bracket: a plumb back, a flat soffit, the front a quarter hollow, a bead at the
+    foot (side profile, top at v = 0)."""
+    hb = max(3.0, h)
+    r = min(d - 0.6, hb - 0.9)
+    pts = [(0.0, 0.0), (d, 0.0), (d, -0.6)] + [(d - r + r * math.cos(a), -0.6 - r * math.sin(a))
+                                               for a in np.linspace(0.0, math.pi / 2, 10)][1:]
+    pts += [(d - r, -hb + 0.6), (0.0, -hb)]
+    return cs_union([poly(pts), circle((0.55, -hb + 0.5), 0.5, 12)])
+
+
+CO.FRIEZE_EXTRA.update(sanddomes=frieze_sanddomes)
+CO.COURSE_EXTRA.update(rivetpairs=course_rivetpairs)
+TW.BRACKET_EXTRA.update(sandcove=bracket_sandcove)
+TW.FOUNDATION_EXTRA.update(tooled=foundation_tooled)
+
+
+def _brickarch(op_w, h, rise, A=1.6, n=9):
+    """A segmental arch of rowlock bricks over an opening ``op_w`` wide, its springing at h - rise."""
+    half = op_w / 2
+    R = (half * half + rise * rise) / (2 * rise)
+    cy = h - R
+    a0 = math.asin(half / R)
+    ts = np.linspace(-a0, a0, 24)
+    band = poly([((R - 0.05) * math.sin(t), cy + (R - 0.05) * math.cos(t)) for t in ts] +
+                [((R + A) * math.sin(t), cy + (R + A) * math.cos(t)) for t in ts[::-1]])
+    parts = [band]
+    for k in range(n):
+        t0 = -a0 + 2 * a0 * k / n + 0.012
+        t1 = -a0 + 2 * a0 * (k + 1) / n - 0.012
+        pts = [((R + 0.15) * math.sin(t0), cy + (R + 0.15) * math.cos(t0)), ((R + A) * math.sin(t0), cy + (R + A) * math.cos(t0)),
+               ((R + A) * math.sin(t1), cy + (R + A) * math.cos(t1)), ((R + 0.15) * math.sin(t1), cy + (R + 0.15) * math.cos(t1))]
+        parts.append(poly(pts))
+    return parts, cy, R
+
+
+def window_sand(w=8.0, h=13.0, rise=1.6):
+    """The sand house's window: six-over-six lights under a segmental head, a rowlock brick
+    arch with a keystone over it, a stone sill with a drip."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, MJ, 4.0)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, _muntins(g, 3, 4, 0.4), plug_cs)
+    bricks, cy, R = _brickarch(w, h, rise)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(0.9, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h - rise), 0.0, 0.5)]
+    parts += [ext(bricks[0], 0.0, 0.4)] + [ext(bk, 0.39, 0.75) for bk in bricks[1:]]
+    parts.append(chamfer_box(-0.8, h - 0.4, 0.8, h + 2.1, 0.0, 1.0, c=0.25))
+    parts.append(chamfer_box(-w / 2 - 1.5, -1.3, w / 2 + 1.5, 0.2, 0.0, 1.3, c=0.35, bottom=0.9))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.1, -1.3)
+
+
+def door_sand(w=10.0, h=22.0, rise=1.6):
+    """The sand house's door: a boarded leaf with a two-light window, a three-light transom
+    under a segmental head and its rowlock arch."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    ht = h - rise - 4.0
+    leaf = plug_cs.offset(-0.3, MJ, 4.0) ^ rect(-w, 0.0, w, ht)
+    lb = leaf.bounds()
+    grooves = cs_union([rect(u - 0.18, -1, u + 0.18, h + 1) for u in np.arange(lb[0] + 1.3, lb[2], 1.3)]) ^ leaf
+    gl = rect(lb[0] + 1.1, ht * 0.62, lb[2] - 1.1, ht - 1.0)
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0),
+            ext(leaf, -1.0, -0.6) - ext(grooves, -0.8, -0.5), ext(rect(-w, ht, w, ht + 0.7) ^ plug_cs, -pl, -0.5)]
+    body.append(ext(cs_union([rect(lb[0] + 0.4, 1.4, lb[2] - 0.4, 2.4), rect(lb[0] + 0.4, ht * 0.62 - 1.8, lb[2] - 0.4, ht * 0.62 - 0.8),
+                              stroke([(lb[0] + 0.9, 2.2), (lb[2] - 0.9, ht * 0.62 - 1.6)], 0.9, caps=False)]), -0.61, -0.25))
+    tr = plug_cs.offset(-0.5, MJ, 4.0) ^ rect(-w, ht + 0.7, w, 999)
+    tb = tr.bounds()
+    bars = cs_union([rect(gl.bounds()[0] + (gl.bounds()[2] - gl.bounds()[0]) / 2 - 0.22, gl.bounds()[1] - 1,
+                          gl.bounds()[0] + (gl.bounds()[2] - gl.bounds()[0]) / 2 + 0.22, gl.bounds()[3] + 1)] +
+                    [rect(tb[0] + (tb[2] - tb[0]) * k / 3 - 0.22, tb[1] - 1, tb[0] + (tb[2] - tb[0]) * k / 3 + 0.22, tb[3] + 1) for k in (1, 2)])
+    sash = _glazed(body, gl + tr, pl, bars, plug_cs)
+    bricks, cy, R = _brickarch(w, h, rise, n=11)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(0.9, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h - rise), 0.0, 0.5)]
+    parts += [ext(bricks[0], 0.0, 0.4)] + [ext(bk, 0.39, 0.75) for bk in bricks[1:]]
+    parts.append(chamfer_box(-0.9, h - 0.4, 0.9, h + 2.1, 0.0, 1.0, c=0.25))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.1, 0.0)
+
+
+def door_sandbin(w=16.0, h=20.0):
+    """The wet-sand doors: a pair of leaves of diagonal boards in heavy frames, iron straps,
+    under a timber lintel on corbels."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    lb = plug_cs.offset(-0.3, MJ, 4.0).bounds()
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0)]
+    for (a, e, sg) in ((lb[0], -0.15, 1), (0.15, lb[2], -1)):
+        leaf = rect(a, lb[1], e, lb[3])
+        fld = leaf.offset(-1.0, MJ, 4.0)
+        diag = cs_union([stroke([(x, lb[1] - 2), (x + sg * 30.0, lb[1] + 28.0)], 0.3, caps=False) for x in np.arange(a - 30.0, e + 30.0, 1.3)])
+        body.append(ext(leaf, -1.0, -0.6) - ext(diag ^ fld, -0.8, -0.5))
+        body.append(ext(leaf - fld, -0.61, -0.25))
+        hinge_u = a + 0.4 if sg > 0 else e - 0.4
+        body.append(ext(cs_union([_strap_hinge(hinge_u, hinge_u + sg * 5.5, v) for v in (lb[1] + 2.5, lb[3] - 2.5)]), -0.26, -0.05))
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.4, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.4), 0.0, 0.7),
+             chamfer_box(-w / 2 - 2.6, h + 1.39, w / 2 + 2.6, h + 3.2, 0.0, 1.5, c=0.4, bottom=1.2)]
+    for s in (-1, 1):
+        parts.append(ext(poly([(s * (w / 2 + 1.4), h + 1.4), (s * (w / 2 + 2.6), h + 1.4), (s * (w / 2 + 1.4), h - 0.8)]), 0.0, 1.2))
+    return O._one_piece(body, parts, op, plug_cs, pl, h + 3.2, 0.0)
+
+
+def chimney_sand(w=7.0, d=7.0, h=16.0):
+    """The drying stove's stack: English-bond brick, three corbelled courses under a stone cap,
+    a round clay pot. Local: centred, z = 0 at its seat."""
+    h = round(h / 0.2) * 0.2
+    zt = h - 3.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zt])
+    body = body + TW._skin(w, d, 0.0, zt - 0.2, lambda reg, i: brick_english(reg))
+    z = zt
+    for k in range(3):
+        g = 0.3 * (k + 1)
+        body = body + box([-w / 2 - g, -d / 2 - g, z - 0.01], [w / 2 + g, d / 2 + g, z + 0.6])
+        z += 0.6
+    body = body + chamfer_box(-w / 2 - 1.2, -d / 2 - 1.2, w / 2 + 1.2, d / 2 + 1.2, z - 0.01, 1.0, c=0.4)
+    pot = M.cylinder(3.0, 1.6, 1.3, 20).translate([0, 0, z + 0.98]) + M.cylinder(0.6, 1.7, 1.7, 20).translate([0, 0, z + 3.9])
+    return body + pot - M.cylinder(10.0, 0.8, 0.8, 16).translate([0, 0, z + 1.5])
+
+
+def sand_legs(h=58.0, s=17.0, leg=2.0, ring=1.6, hole=7.3, open_face=None):
+    """The sand tower's steel frame, one piece printed upright: four legs splayed a little,
+    X braces in every face at two tiers, girts, a plate at the head the bin sits on (a hole for
+    its hopper), and the air pipe up one leg. Prints upside down on the plate. Local: centred,
+    z = 0 at the legs' feet (square pegs below)."""
+    out = []
+    top = s / 2 - 0.8
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            out.append(M.hull_points([(sx * s / 2 + dx, sy * s / 2 + dy, 0.0) for dx in (-leg / 2, leg / 2) for dy in (-leg / 2, leg / 2)] +
+                                     [(sx * top + dx, sy * top + dy, h) for dx in (-leg / 2, leg / 2) for dy in (-leg / 2, leg / 2)]))
+            out.append(box([sx * s / 2 - 0.6, sy * s / 2 - 0.6, -1.6], [sx * s / 2 + 0.6, sy * s / 2 + 0.6, 0.01]))
+
+    def at(z):
+        return s / 2 + (top - s / 2) * z / h
+
+    zs = (1.5, h * 0.5, h - 1.2)
+    for z in zs:
+        a = at(z)
+        for sg in (-1, 1):
+            out.append(box([-a, sg * a - 0.5, z - 0.6], [a, sg * a + 0.5, z + 0.6]))
+            out.append(box([sg * a - 0.5, -a, z - 0.6], [sg * a + 0.5, a, z + 0.6]))
+    for tier, (za, zb) in enumerate(((zs[0], zs[1]), (zs[1], zs[2]))):
+        aa, ab = at(za), at(zb)
+        for sg in (-1, 1):
+            for (p0, p1) in (((-aa, za), (ab, zb)), ((aa, za), (-ab, zb))):
+                if not (tier == 1 and open_face == sg):          # the track side's upper bay stays open for the spouts
+                    out.append(M.hull_points([(p0[0], sg * aa + dy, p0[1] + dz) for dy in (-0.4, 0.4) for dz in (0.0, 1.2)] +
+                                             [(p1[0], sg * ab + dy, p1[1] - dz) for dy in (-0.4, 0.4) for dz in (0.0, 1.2)]))
+                out.append(M.hull_points([(sg * aa + dy, p0[0], p0[1] + dz) for dy in (-0.4, 0.4) for dz in (0.0, 1.2)] +
+                                         [(sg * ab + dy, p1[0], p1[1] - dz) for dy in (-0.4, 0.4) for dz in (0.0, 1.2)]))
+    a = at(h)
+    deck = box([-a - 1.2, -a - 1.2, h - 0.01], [a + 1.2, a + 1.2, h + ring]) - M.cylinder(ring + 2.0, hole, hole, 48).translate([0, 0, h - 1.0])
+    out.append(deck)
+    pipe = M.hull_points([(s / 2 + 1.3 + dx, -s / 2 + dy, 0.0) for dx in (-0.55, 0.55) for dy in (-0.55, 0.55)] +
+                         [(top + 1.3 + dx, -top + dy, h) for dx in (-0.55, 0.55) for dy in (-0.55, 0.55)])
+    return union(out) + pipe
+
+
+def sand_bin(r=11.0, h=18.0, hop=9.0, flat=2.6, rh=7.0):
+    """The sand tower's bin, one piece printed upside down on its top: a riveted steel drum
+    with seams, its flat bottom resting on the frame's plate, the hopper (``rh`` at the top)
+    coned down through the plate to a flat outlet the spouts glue to. Local: centred, z = 0 at
+    the outlet, the drum's bottom at hop, its top at hop + h."""
+    n = 64
+    out = [M.cylinder(hop + 0.01, flat, rh, n), M.cylinder(h, r, r, n).translate([0, 0, hop])]
+    for z in (hop + h * 0.33, hop + h * 0.66, hop + h - 0.9):
+        out.append(M.cylinder(0.9, r + 0.35, r + 0.35, n).translate([0, 0, z]))
+    riv = union([M.sphere(0.32, 8).translate([r * math.cos(a), r * math.sin(a), hop + 1.2]) for a in np.linspace(0, 2 * math.pi, 40, endpoint=False)])
+    return union(out) + riv
+
+
+def sand_cap(r=11.0, rise=6.0):
+    """The bin's roof: a low cone on a flat rim that sits on the drum's top and stands out
+    past it, a hatch and a vent. Local: centred, z = 0 at its foot."""
+    lip = M.cylinder(1.4, r + 0.9, r + 0.9, 64)
+    cone = M.cylinder(rise, r + 0.9, 1.2, 64).translate([0, 0, 1.39])
+    hatch = box([2.0, -2.2, 0.0], [6.2, 2.2, 1.0]).transform(np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 1.4 + rise * 0.55]]))
+    vent = M.cylinder(2.0, 0.9, 0.9, 16).translate([0, 0, 1.3 + rise]) + M.cylinder(0.6, 1.6, 0.3, 16).translate([0, 0, 3.2 + rise])
+    return lip + cone + hatch + vent
+
+
+def sand_spouts(reach=21.0, drop=17.0, r=0.95, flat=2.6):
+    """The two sand spouts, one piece printed upright: a flanged collar that glues under the
+    bin's outlet, two pipes raking down and out toward the track, each with a telescoping
+    lower length and a counterweight lever. Local: z = 0 at the collar's top, the spouts
+    reaching toward -y."""
+    out = [M.cylinder(1.6, flat, flat, 32).translate([0, 0, -1.6]), M.cylinder(3.0, 1.9, 1.9, 24).translate([0, 0, -4.6])]
+    for sx in (-1, 1):
+        p0 = np.array([sx * 0.9, 0.0, -4.0])
+        p1 = np.array([sx * 4.5, -reach, -drop])
+        d = p1 - p0
+        L = float(np.linalg.norm(d))
+        d = d / L
+        # an upright cylinder rotated onto the pipe's axis
+        z = np.array([0.0, 0.0, -1.0])
+        v = np.cross(z, d)
+        c = float(z @ d)
+        vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+        Rm = np.eye(3) + vx + vx @ vx * (1.0 / (1.0 + c))
+        A = np.column_stack([Rm @ np.array([1.0, 0, 0]), Rm @ np.array([0, 1.0, 0]), Rm @ np.array([0, 0, 1.0]), p0])
+        pipe = M.cylinder(L, r, r, 20).translate([0, 0, -L]).transform(A)
+        sleeve = M.cylinder(L * 0.45, r + 0.35, r + 0.35, 20).translate([0, 0, -L]).transform(A)
+        band = M.cylinder(0.7, r + 0.55, r + 0.55, 20).translate([0, 0, -L * 0.55 - 0.35]).transform(A)
+        out += [pipe, sleeve, band]
+    return union(out)
+
+
+def wetbin(w=20.0, d=16.0, h=9.0, t=1.2):
+    """The wet-sand bin: three walls of planks between posts on a sill, open toward the track,
+    heaped with sand above the boards. Local: z = 0 at its foot; its open side toward -y.
+    Returns (bin, heap)."""
+    walls = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, h]) - box([-w / 2 + t, -d / 2 - 1.0, 1.2], [w / 2 - t, d / 2 - t, h + 1.0])
+    walls = walls - box([-w / 2 + t, -d / 2 - 1.0, -1.0], [w / 2 - t, -d / 2 + 2.0, h + 1.0])
+    grooves = union([box([-w / 2 - 1, -d / 2 - 1, z - 0.15], [w / 2 + 1, d / 2 + 1, z + 0.15]) for z in np.arange(1.8, h - 0.5, 1.8)])
+    posts = union([box([x - 0.9, y - 0.9, 0.0], [x + 0.9, y + 0.9, h + 0.6]) for x in (-w / 2 + 0.3, 0.0, w / 2 - 0.3) for y in (d / 2 - 0.3,)] +
+                  [box([x - 0.9, y - 0.9, 0.0], [x + 0.9, y + 0.9, h + 0.6]) for x in (-w / 2 + 0.3, w / 2 - 0.3) for y in (-d / 2 + 0.6, 0.0)])
+    def lumps(p):
+        x, y, z = p[:, 0], p[:, 1], p[:, 2]
+        k = np.clip(z / (h + 1.8), 0.0, 1.0)
+        return np.column_stack([x, y, z * (1.0 + 0.16 * np.sin(x / 1.9) * np.cos(y / 2.3) * k) + 0.6 * np.sin(x / 1.3 + y / 1.7) * k])
+
+    heap = M.sphere(1.0, 64).scale([w / 2 - t - 0.1, d / 2 - 0.4, h + 1.8]).warp_batch(lumps) ^ box([-w / 2 + t + 0.01, -d / 2, 1.21], [w / 2 - t - 0.01, d / 2 - t - 0.01, 60])
+    return (walls - grooves) + posts, heap

@@ -484,6 +484,13 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 laps.append(rect(b[0] - 1, j * pitch - 0.25, b[2] + 1, j * pitch + 0.25))
             tex = (M.extrude(cs_union(ribs) ^ clip, d) + M.extrude(cs_union(side) ^ clip, d + 0.12) +
                    M.extrude(cs_union(laps) ^ clip, d * 0.45))
+        elif shape == "tarbatten":        # tar paper in wide strips lapped up the roof, held by wood battens
+            b = loc.bounds()              # running down the slope every ``wtab`` (the Blackwater Sand House)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            laps = [rect(b[0] - 1, j * pitch, b[2] + 1, j * pitch + pitch - 0.3)
+                    for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1)]
+            bat = [rect(u - 0.35, b[1] - 1, u + 0.35, b[3] + 1) for u in np.arange(b[0] + wtab / 2, b[2], wtab)]
+            tex = M.extrude(cs_union(laps) ^ clip, d * 0.5) + M.extrude(cs_union(bat) ^ clip, d + 0.2)
         elif shape == "octabutt":         # sawn wood shingles in broken-joint courses, every other course's butts
             b = loc.bounds()              # clipped at both corners (octagon butts) (the Millbrook)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
