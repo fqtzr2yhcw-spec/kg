@@ -1591,3 +1591,200 @@ def stovepipe_section(h=14.0, r=1.1):
     cap = M.cylinder(0.9, r + 0.1, r + 1.4, 24).translate([0, 0, h + 0.8]) + M.cylinder(0.9, r + 1.4, 0.3, 24).translate([0, 0, h + 1.69])
     web = box([-0.3, -r - 0.2, h - 0.01], [0.3, r + 0.2, h + 0.81])
     return pipe + collar + cap + web
+
+
+# ================================================================== 77 the Crossing Shanty and Oil House
+def shanty_diag(region, datum=0.0, rail=8.0, pitch=1.3):
+    """The shanty's walls: a wainscot of boards laid on the diagonal up to a rail at ``rail``,
+    narrow level boards above it (the Crossing Shanty)."""
+    if region.is_empty():
+        return M()
+    b = region.bounds()
+    lo = region ^ rect(b[0] - 1, b[1] - 1, b[2] + 1, datum + rail - 0.6)
+    hi = region ^ rect(b[0] - 1, datum + rail + 0.6, b[2] + 1, b[3] + 1)
+    out = M.extrude(region, 0.3)
+    if not lo.is_empty():
+        diag = cs_union([stroke([(u, b[1] - 2), (u + 30.0, b[1] + 28.0)], 0.3, caps=False) for u in np.arange(b[0] - 30.0, b[2] + 2.0, pitch * 1.4)])
+        out = out - ext(diag ^ lo, 0.12, 1.0)
+    if not hi.is_empty():
+        gr = cs_union([rect(b[0] - 1, v - 0.14, b[2] + 1, v + 0.14) for v in np.arange(datum + rail + 0.6 + pitch, b[3], pitch)])
+        out = out - ext(gr ^ hi, 0.12, 1.0)
+    out = out + _st(rect(b[0] - 1, datum + rail - 0.6, b[2] + 1, datum + rail + 0.6) ^ region, 0.25, 0.5)
+    return out
+
+
+def brick_dogtooth(region, datum=0.0, dog=None):
+    """Running bond with a dogtooth course (bricks set corner-out in a row of teeth) at ``dog``
+    (v) (the Oil House)."""
+    if region.is_empty():
+        return M()
+    b = region.bounds()
+    bh = 0.8
+    bricks = []
+    for k in range(int(math.floor((b[1] - datum) / bh)) - 1, int(math.ceil((b[3] - datum) / bh)) + 1):
+        v = datum + k * bh
+        if dog is not None and dog - 0.1 < v + bh / 2 < dog + 1.7:
+            continue
+        off = 0.0 if k % 2 == 0 else 1.2
+        bricks += [rect(u + 0.1, v + 0.1, u + 2.3, v + bh - 0.1) for u in np.arange(b[0] - 2.4 + off, b[2] + 2.4, 2.4)]
+    out = M.extrude(region, 0.1) + ext(cs_union(bricks) ^ region, 0.09, 0.35)
+    if dog is not None:
+        teeth = cs_union([poly([(u, dog), (u + 1.0, dog), (u + 0.5, dog + 1.5)]) for u in np.arange(b[0] - 1.0, b[2] + 1.0, 1.0)]) ^ region
+        out = out + _st(teeth, 0.05, 0.5)
+    return out
+
+
+def foundation_tiecrib(reg, seed=0):
+    """A crib of old crossties: the ends of ties laid log-cabin fashion, alternate courses
+    showing their ends and their sides (the Crossing Shanty)."""
+    b = reg.bounds()
+    out = M.extrude(reg, 0.1)
+    rows = []
+    for k, v in enumerate(np.arange(b[1], b[3] - 0.3, 2.0)):
+        if k % 2:
+            rows.append(rect(b[0] - 1, v + 0.1, b[2] + 1, v + 1.9))
+        else:
+            rows += [rect(u - 1.3, v + 0.1, u + 1.3, v + 1.9) for u in np.arange(b[0] + 1.3, b[2], 3.2)]
+    return out + ext(cs_union(rows) ^ reg, 0.05, 0.6)
+
+
+def foundation_granitesill(reg, seed=0):
+    """One course of long granite sills, their joints every 12 mm, a chamfered top edge (the Oil
+    House)."""
+    b = reg.bounds()
+    out = M.extrude(reg, 0.2)
+    for u in np.arange(b[0], b[2], 12.0):
+        r = rect(u + 0.15, b[1] + 0.1, min(u + 12.0, b[2]) - 0.15, b[3] - 0.1) ^ reg
+        if not r.is_empty():
+            bb = r.bounds()
+            out = out + chamfer_box(bb[0], bb[1], bb[2], bb[3], 0.15, 0.6, c=0.35)
+    return out
+
+
+def frieze_oilcans(L, h, b, pitch, margin, pair, half):
+    """Oil cans: at every station a can with a bail and a long spout, a shelf rail under them
+    (the Oil House)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    out = [_st(rect(0.3, v0, L - 0.3, v0 + 0.5), b, 0.25)]
+    for u in CO._us(L, pitch, margin, 0.0):
+        can = rect(u - 1.0, v0 + 0.45, u + 1.0, v0 + hh * 0.62)
+        top = poly([(u - 1.0, v0 + hh * 0.62), (u + 1.0, v0 + hh * 0.62), (u + 0.4, v0 + hh * 0.78), (u - 0.4, v0 + hh * 0.78)])
+        spout = stroke([(u + 0.3, v0 + hh * 0.74), (u + 2.1, v1 - 0.2)], 0.42, caps=False)
+        bail = (circle((u - 0.2, v0 + hh * 0.7), hh * 0.22, 20) - circle((u - 0.2, v0 + hh * 0.7), hh * 0.22 - 0.42, 20)) ^ rect(u - 5, v0 + hh * 0.7, u + 5, v1)
+        out.append(_st(cs_union([can, top, spout, bail]) ^ rect(0.0, v0, L, v1), b + 0.25, 0.4))
+    return out, []
+
+
+def course_signalwire(L, h, b, pitch, margin, p):
+    """A crossing bell's wire: a line carried on little pulleys every 3 mm (the Crossing
+    Shanty)."""
+    vc = h / 2
+    wire = rect(0.3, vc - 0.2, L - 0.3, vc + 0.2)
+    wheels = cs_union([circle((u, vc), min(0.6, h * 0.36), 14) for u in np.arange(1.4, L - 1.0, 3.0)])
+    return [ext(wire, b - 0.05, b + 0.25), ext(wheels, b - 0.05, b + 0.42) - ext(cs_union([circle((u, vc), 0.2, 8) for u in np.arange(1.4, L - 1.0, 3.0)]), b + 0.25, b + 1.0)]
+
+
+CO.FRIEZE_EXTRA.update(oilcans=frieze_oilcans)
+CO.COURSE_EXTRA.update(signalwire=course_signalwire)
+TW.FOUNDATION_EXTRA.update(tiecrib=foundation_tiecrib, granitesill=foundation_granitesill)
+
+
+def window_shanty(w=7.0, h=11.0):
+    """The shanty's window: two over two, big for the watchman's view, in a casing with a
+    sloped head board on two little brackets."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, MJ, 4.0)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, _muntins(g, 2, 2, 0.42), plug_cs)
+    hw = w / 2 + 1.0
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext(op.offset(1.0, MJ, 4.0) - op, 0.0, 0.55),
+             ext(rect(-hw - 0.6, h + 0.99, hw + 0.6, h + 1.7), 0.0, 1.5),
+             chamfer_box(-hw, -1.0, hw, 0.2, 0.0, 1.0, c=0.3, bottom=0.8)]
+    for s in (-1, 1):
+        parts.append(ext(poly([(s * (hw - 0.8), h + 1.0), (s * (hw + 0.2), h + 1.0), (s * (hw - 0.8), h - 0.8)]), 0.0, 1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 1.7, -1.0)
+
+
+def door_shanty(w=7.0, h=18.0):
+    """The shanty's door: four lights over a panel, a plain casing."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0),
+            ext(plug_cs.offset(-0.3, MJ, 4.0), -1.0, -0.6)]
+    lb = plug_cs.offset(-0.3, MJ, 4.0).bounds()
+    gl = rect(lb[0] + 0.9, h * 0.5, lb[2] - 0.9, lb[3] - 0.9)
+    body.append(chamfer_box(lb[0] + 0.9, 1.0, lb[2] - 0.9, h * 0.5 - 0.9, -0.6, 0.35, c=0.2))
+    gb = gl.bounds()
+    bars = cs_union([rect((gb[0] + gb[2]) / 2 - 0.22, gb[1] - 1, (gb[0] + gb[2]) / 2 + 0.22, gb[3] + 1),
+                     rect(gb[0] - 1, (gb[1] + gb[3]) / 2 - 0.22, gb[2] + 1, (gb[1] + gb[3]) / 2 + 0.22)])
+    sash = _glazed(body, gl, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.0, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h + 1.0), 0.0, 0.55),
+             chamfer_box(-w / 2 - 1.4, h + 0.99, w / 2 + 1.4, h + 1.8, 0.0, 1.1, c=0.3, bottom=0.9)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 1.8, 0.0)
+
+
+def door_oilhouse(w=8.0, h=17.0):
+    """The oil house's fire door: sheet iron over boards, riveted round its edges and crossed
+    by iron straps, heavy strap hinges, in a stone frame with a lintel."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    leaf = plug_cs.offset(-0.3, MJ, 4.0)
+    lb = leaf.bounds()
+    body = [ext(plug_cs, -pl, -1.0), ext(plug_cs - plug_cs.offset(-0.5, MJ, 4.0), -pl, 0.0), ext(leaf, -1.0, -0.6)]
+    straps = cs_union([stroke([(lb[0] + 0.6, lb[1] + 0.6), (lb[2] - 0.6, lb[3] - 0.6)], 0.8, caps=False),
+                       stroke([(lb[2] - 0.6, lb[1] + 0.6), (lb[0] + 0.6, lb[3] - 0.6)], 0.8, caps=False),
+                       leaf - leaf.offset(-0.7, MJ, 4.0)]) ^ leaf
+    body.append(ext(straps, -0.61, -0.3))
+    riv = cs_union([circle((u, v), 0.25, 8) for u in np.linspace(lb[0] + 0.35, lb[2] - 0.35, 7) for v in (lb[1] + 0.35, lb[3] - 0.35)] +
+                   [circle((u, v), 0.25, 8) for v in np.linspace(lb[1] + 1.4, lb[3] - 1.4, 9) for u in (lb[0] + 0.35, lb[2] - 0.35)])
+    body.append(ext(riv, -0.31, -0.1))
+    body.append(ext(cs_union([_strap_hinge(lb[0] + 0.3, lb[0] + 5.0, v) for v in (lb[1] + 2.5, lb[3] - 2.5)]), -0.31, -0.1))
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext((op.offset(1.4, MJ, 4.0) - op) ^ rect(-w, 0.0, w, h), 0.0, 0.7),
+             chamfer_box(-w / 2 - 1.8, h - 0.01, w / 2 + 1.8, h + 2.6, 0.0, 1.2, c=0.35, bottom=1.0)]
+    return O._one_piece(body, parts, op, plug_cs, pl, h + 2.6, 0.0)
+
+
+def vent_oilhouse(w=6.0, h=4.0):
+    """The oil house's vent: iron bars over a louvre in a stone frame (an insert, glazed dark
+    behind for the renders)."""
+    op = O.opening_cs(w, h, 0)
+    plug_cs = op.offset(-O.CLR, MJ, 4.0)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.4, MJ, 4.0)
+    gb = g.bounds()
+    bars = cs_union([rect(u - 0.22, gb[1] - 1, u + 0.22, gb[3] + 1) for u in np.linspace(gb[0], gb[2], 6)[1:-1]])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MJ, 4.0), 0.0, 0.7), ext(op.offset(1.3, MJ, 4.0) - op, 0.0, 0.7)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 1.3, -1.3)
+
+
+def stovepipe_shanty(h=12.0, r=0.9):
+    """The shanty stove's pipe: a pipe with a round bonnet cap over a spark screen. Local:
+    centred, z = 0 inside the roof (it drops into a hole)."""
+    pipe = M.cylinder(h, r, r, 20)
+    screen = M.cylinder(1.6, r + 0.5, r + 0.5, 20).translate([0, 0, h - 0.01])
+    bonnet = M.cylinder(0.8, r + 1.3, r + 1.3, 24).translate([0, 0, h + 1.59]) + M.sphere(r + 1.3, 24).scale([1, 1, 0.5]).translate([0, 0, h + 2.39]) ^ box([-9, -9, h + 2.38], [9, 9, h + 9])
+    collar = M.cylinder(0.8, r + 0.9, r + 0.3, 20).translate([0, 0, 3.0])
+    return pipe + screen + bonnet + collar
+
+
+def crossbuck(h=40.0, arm=17.0, bw=2.4, t=0.9):
+    """A crossbuck on its post, printed flat on its back: the two boards crossed at right angles
+    with a raised rim, the post, and a foot plate at its base (standing out behind, it lies on
+    the ground and takes the glue). Local: x across, y up (the foot at 0), z out of its face."""
+    post = box([-0.9, 0.0, 0.0], [0.9, h, 1.6])
+    cy = h - arm * 0.36 - 1.5
+    boards = []
+    for a in (45.0, -45.0):
+        r_ = math.radians(a)
+        c, s = math.cos(r_), math.sin(r_)
+        pts = [(x * c - y * s, cy + x * s + y * c) for (x, y) in ((-arm / 2, -bw / 2), (arm / 2, -bw / 2), (arm / 2, bw / 2), (-arm / 2, bw / 2))]
+        bd = poly(pts)
+        boards.append(ext(bd, 1.59, 1.6 + t) + ext(bd - bd.offset(-0.45, MJ, 4.0), 1.6 + t - 0.01, 1.6 + t + 0.3))
+    foot = box([-3.0, 0.0, 0.0], [3.0, 1.0, 5.4])
+    cap = box([-1.2, h - 0.01, -0.2], [1.2, h + 0.8, 1.8])
+    return post + union(boards) + foot + cap

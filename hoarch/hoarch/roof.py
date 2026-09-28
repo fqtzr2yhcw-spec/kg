@@ -484,6 +484,26 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 laps.append(rect(b[0] - 1, j * pitch - 0.25, b[2] + 1, j * pitch + 0.25))
             tex = (M.extrude(cs_union(ribs) ^ clip, d) + M.extrude(cs_union(side) ^ clip, d + 0.12) +
                    M.extrude(cs_union(laps) ^ clip, d * 0.45))
+        elif shape == "diamondtin":       # pressed-tin diamonds: square shingles set point-down in courses,
+            b = loc.bounds()              # each with a raised rib down its middle (the Crossing Shanty)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            sh, rib = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 2):
+                v = j * pitch
+                for u in np.arange(b[0] - wtab + (j % 2) * wtab / 2, b[2] + wtab, wtab):
+                    uc = u + wtab / 2
+                    sh.append(poly([(uc, v - 0.05), (uc + wtab / 2 - 0.12, v + pitch * 0.9), (uc, v + pitch * 1.8), (uc - wtab / 2 + 0.12, v + pitch * 0.9)]))
+                    rib.append(rect(uc - 0.2, v + 0.3, uc + 0.2, v + pitch * 1.5))
+            tex = M.extrude(cs_union(sh) ^ clip, d) + M.extrude(cs_union(rib) ^ clip, d + 0.15)
+        elif shape == "cleatseam":        # tin in long pans between standing ribs, their cross seams cleated
+            b = loc.bounds()              # and staggered pan to pan (the Oil House)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            ribs, seams = [], []
+            for k, u in enumerate(np.arange(b[0], b[2] + wtab, wtab)):
+                ribs.append(rect(u - 0.3, b[1] - 1, u + 0.3, b[3] + 1))
+                for v in np.arange(b[1] + (k % 2) * pitch / 2, b[3], pitch):
+                    seams.append(rect(u + 0.3, v - 0.2, u + wtab - 0.3, v + 0.2))
+            tex = M.extrude(cs_union(ribs) ^ clip, d + 0.15) + M.extrude(cs_union(seams) ^ clip, d * 0.5)
         elif shape == "doublecourse":     # double-coursed shingles: every course laid over an under-course
             b = loc.bounds()              # whose butt shows a hair below it (Section House No. 4)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
