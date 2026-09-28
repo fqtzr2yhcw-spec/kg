@@ -67,7 +67,7 @@ def collection():
             continue
         num, name, desc = int(m.group(1)), m.group(2).strip(), m.group(3).strip()
         mod = MODULES.get(num) or re.sub(r"^The ", "", name).lower().replace(" ", "")
-        size = re.search(r"\d+ x \d+ mm|\d+ mm across the flats", desc)
+        size = re.search(r"\d+ x \d+ mm|\d+ mm across(?: the flats)?", desc)
         year = re.search(r"\b1[89]\d\d\b", desc.split("(")[0])
         rows.append(dict(num=num, name=name, mod=mod, style=_clean_style(desc),
                          size=size.group(0) if size else None,
