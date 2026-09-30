@@ -5,7 +5,9 @@ Construction (the house standard):
     per side and PLUG depth, and its surround (casing, sill, hood...) sits on the wall
     face in the landing cut in the siding;
   * the glazing is the plug's back face: GLASS thick (two 0.2 mm layers), so it glows
-    when lit, and the sash is built on it, recessed inside the wall;
+    when lit, and the sash is built on it, recessed inside the wall; the plug is deep
+    enough that every sash bar, rail, leaf and panel stands at least 3 layers over the glass
+    (at 1-2 layers the glass colour showed through the door leaves: the owner's prints);
   * it prints face-up (local w becomes print z + PLUG). The surround is wider than the
     plug, so it starts PLUG above the bed: print these parts WITH supports (tree, on
     the build plate only). The supports touch only the back of the surround, which lies
@@ -24,7 +26,7 @@ from .ornament import (bezier, bullseye, chamfer_box, console, dentils, ext, fan
                        rosette_block, scroll_bracket, stepped, stroke, sunburst, swag, urn_cs, volute)
 
 CLR = 0.15      # plug clearance per side
-PLUG = 1.6      # plug depth into a 3.0 mm wall (8 x 0.2 mm layers)
+PLUG = 2.2      # plug depth into the wall (11 x 0.2 mm layers): flush with a 2.2 mm wall's inside face
 GLASS = 0.4     # glazing thickness (2 x 0.2 mm layers)
 SASH_REC = 0.4  # sash face sits this far behind the wall face
 # face-up relief heights above the wall face sit on the 0.2 mm layer grid:
@@ -342,9 +344,10 @@ def door_insert(w, h, leaves=2, transom=0.0, casing=1.2, crown=True, glass_top=T
         pv = [(0.5 + 0.6, 0.5 + dh * 0.28), (0.5 + dh * 0.28 + 0.6, dh - 0.9)]
         for k, (v0, v1) in enumerate(pv):
             pc = rect(pu0, v0, pu1, v1)
-            if k == 1 and glass_top:
-                parts[-1] = parts[-1] - ext(pc.offset(-0.25, JoinType.Miter), -pl + GLASS, 0.5)
-                parts.append(ext(pc.offset(-0.25, JoinType.Miter), -pl, -pl + GLASS))
+            if k == 1 and glass_top:     # the light opens through the slab and the leaf to its glass
+                light = pc.offset(-0.25, JoinType.Miter)
+                parts = [p_ - ext(light, -pl + GLASS, 0.5) for p_ in parts]
+                parts.append(ext(light, -pl, -pl + GLASS))
                 continue
             parts.append(stepped(pc, [(0.0, -0.8, -0.6), (0.3, -0.6, -0.4)]))
         u += lw + mid

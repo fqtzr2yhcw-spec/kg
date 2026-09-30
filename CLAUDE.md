@@ -26,6 +26,8 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
   - None, except under window and door frames.
   - No support squiggles inside eaves or under trim.
 - Window glass needs at least 2 layers; one layer lets light through.
+- Everything in front of the glass (sash bars, door leaves, rails, panels) needs at least 4 layers over
+  it; at 1-2 layers the glass colour showed through the Ashby's doors.
 - Porch posts are round, not boxy, and printed upright. A post printed on its side comes out
   glossy on one face and boxy on the other.
 

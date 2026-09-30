@@ -25,7 +25,12 @@ BRACKETS_16 = ("Cornice brackets made solid and 1.6 mm thick (were 0.7-0.9 mm); 
                "print as loose strings. Reprint the cornice parts with brackets (the -upper parts).")
 
 # key -> [(version, date, change), ...], oldest first; v1.0 (the first release) is implied
+INSERTS_DEEP = ("Windows and doors: the glass sits 3 layers deeper in the opening, so every sash bar, rail, "
+                "door leaf and panel stands at least 3 layers thicker over it (at 1-2 layers the glass colour "
+                "showed through); the plug now goes 2.2 mm into the wall. Reprint the WIN- and DOOR- parts.")
+
 HISTORY = {
+    "villa": [("1.1", "2026-09-30", INSERTS_DEEP + " The doors' upper lights now open to their glass, as designed.")],
     "camellia": [("1.1", "2026-09-27", "Tower, bay and eave cornice ring brackets: " + BRACKETS_16)],
     "fowler": [("1.1", "2026-09-27", "Fan brackets: " + BRACKETS_16)],
     "marigold": [("1.1", "2026-09-27", "Sawn brackets: " + BRACKETS_16)],
