@@ -30,7 +30,10 @@ INSERTS_DEEP = ("Windows and doors: the glass sits 3 layers deeper in the openin
                 "showed through); the plug now goes 2.2 mm into the wall. Reprint the WIN- and DOOR- parts.")
 
 HISTORY = {
-    "villa": [("1.1", "2026-09-30", INSERTS_DEEP + " The doors' upper lights now open to their glass, as designed.")],
+    "villa": [("1.1", "2026-09-30", INSERTS_DEEP + " The doors' upper lights now open to their glass, as designed. "
+               "WALLS-1: the front and back doors sit 0.8 mm higher, leaving a 6-layer strip of wall under each "
+               "(at 2 layers the wall could kink at the front door); reprint WALLS-1 only if yours kinked, or glue "
+               "the door in with the wall seated on the foundation lip to hold it straight.")],
     "camellia": [("1.1", "2026-09-27", "Tower, bay and eave cornice ring brackets: " + BRACKETS_16)],
     "fowler": [("1.1", "2026-09-27", "Fan brackets: " + BRACKETS_16)],
     "marigold": [("1.1", "2026-09-27", "Sawn brackets: " + BRACKETS_16)],

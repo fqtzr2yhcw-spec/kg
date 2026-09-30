@@ -86,6 +86,8 @@ BLOCKS = [MAIN, ELL]
 CUP_SIZE, CUP_H = 44.0, 28.0
 CUP_C = (90.0, 78.0)
 DOOR_X = 90.0
+DOOR_V = 1.2                      # the doors' sill over the walls' foot: a 6-layer strip of wall under each door
+                                  # ties the wall across it (at 2 layers the first-floor wall kinked there)
 
 
 # ------------------------------------------------------------------ openings
@@ -111,7 +113,7 @@ def _openings():
     for x in (26.0, 58.0, 122.0, 154.0):
         add(MAIN, x, 0, V1, lo, f"S{x:.0f}-1", shutters=True)
         add(MAIN, x, 0, V2, up, f"S{x:.0f}-2", shutters=True)
-    add(MAIN, DOOR_X, 0, 0.4, front, "front-door", "door")
+    add(MAIN, DOOR_X, 0, DOOR_V, front, "front-door", "door")
     add(MAIN, DOOR_X, 0, V2, twin, "S90-2")
     # east, with the canted bay
     for y in (22.0, 134.0):
@@ -136,7 +138,7 @@ def _openings():
     add(ELL, 168, 181.0, 7.0, ell_w, "ellE181", shutters=True)
     add(ELL, 104, 186.0, 7.0, ell_w, "ellW186", shutters=True)
     add(ELL, 122.0, D + 50, 7.0, ell_w, "ellN122", shutters=True)
-    add(ELL, 150.0, D + 50, 0.4, back, "back-door", "door")
+    add(ELL, 150.0, D + 50, DOOR_V, back, "back-door", "door")
     return L
 
 
