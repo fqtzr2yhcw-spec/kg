@@ -169,9 +169,9 @@ def oval_window():
     rx, ry = OVAL_R
     ov = lambda a, b: poly([(a * math.cos(t), b * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 48, endpoint=False)])
     cut = ov(rx, ry)
-    plug = ext(ov(rx - 0.15, ry - 0.15), -1.6, 0.0)
-    glass = ext(ov(rx - 0.8, ry - 0.8), -1.6, -1.2)
-    sash = plug - ext(ov(rx - 0.8, ry - 0.8), -1.21, 1.0)
+    plug = ext(ov(rx - 0.15, ry - 0.15), -O.PLUG, 0.0)
+    glass = ext(ov(rx - 0.8, ry - 0.8), -O.PLUG, -O.PLUG + O.GLASS)
+    sash = plug - ext(ov(rx - 0.8, ry - 0.8), -O.PLUG + O.GLASS - 0.01, 1.0)
     ring = ext(ov(rx + 1.8, ry + 1.8) - ov(rx - 0.2, ry - 0.2), 0.0, 0.6) + ext(ov(rx + 1.1, ry + 1.1) - ov(rx + 0.3, ry + 0.3), 0.59, 1.0)
     keys = M()
     for (x, y, rot) in ((0.0, ry + 0.2, 0.0), (0.0, -ry - 0.2, 180.0), (rx + 0.2, 0.0, -90.0), (-rx - 0.2, 0.0, 90.0)):

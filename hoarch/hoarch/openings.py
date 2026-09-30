@@ -598,6 +598,11 @@ def _ornate_leaf(u, lw, dh, hinge_left):
 _GLASS_BARS = []           # bars a leaf lays over its glass: added back after the glass is cut
 
 
+def _gt():
+    """Just under the glass's top face, where bars laid on the glass start."""
+    return -PLUG + GLASS - 0.01
+
+
 def _glass_bars():
     out = list(_GLASS_BARS)
     _GLASS_BARS.clear()
@@ -675,7 +680,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         c = gl.bounds()
         _GLASS_BARS.append(ext((rect((c[0] + c[2]) / 2 - 0.25, c[1], (c[0] + c[2]) / 2 + 0.25, c[3]) +
                                 rect(c[0], (c[1] + c[3]) / 2 - 0.25, c[2], (c[1] + c[3]) / 2 + 0.25)) ^ gl.offset(0.2),
-                               -1.21, -0.6))
+                               _gt(), -0.6))
         m = (pu0 + pu1) / 2
         panel(rect(pu0, 1.3, m - 0.35, dh * 0.52 - 1.0))
         panel(rect(m + 0.35, 1.3, pu1, dh * 0.52 - 1.0))
@@ -720,7 +725,7 @@ def _leaf(style, u, lw, dh, hinge_left):
             for k in range(-10, 11):
                 x0 = (b[0] + b[2]) / 2 + k * 1.6
                 bars.append(stroke([(x0 - sgn * 12, b[1] - 12), (x0 + sgn * 12, b[1] + 12)], 0.5, caps=False))
-        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), -1.21, -0.6))              # iron grille
+        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), _gt(), -0.6))              # iron grille
         panel(rect(pu0, 1.3, pu1, dh * 0.42 - 1.0))
     elif style == "six_light":            # six lights (two by three) over two short raised panels
         gl = rect(pu0, dh * 0.45, pu1, top - st)
@@ -730,7 +735,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         m = (b[0] + b[2]) / 2
         bars = [rect(m - 0.25, b[1], m + 0.25, b[3])]
         bars += [rect(b[0], b[1] + (b[3] - b[1]) * k / 3 - 0.25, b[2], b[1] + (b[3] - b[1]) * k / 3 + 0.25) for k in (1, 2)]
-        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), -1.21, -0.6))
+        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), _gt(), -0.6))
         panel(rect(pu0, 1.3, m - 0.35, dh * 0.45 - 1.0))
         panel(rect(m + 0.35, 1.3, pu1, dh * 0.45 - 1.0))
     elif style == "margin":               # one big light ringed by narrow margin lights
@@ -743,7 +748,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         ib = inner.bounds()
         ticks = [rect(ib[0] - 0.25, ib[1] - 0.25 - 2, ib[0] + 0.25, ib[1] + 0.25) , rect(ib[2] - 0.25, ib[1] - 2, ib[2] + 0.25, ib[1] + 0.25),
                  rect(ib[0] - 0.25, ib[3] - 0.25, ib[0] + 0.25, ib[3] + 2), rect(ib[2] - 0.25, ib[3] - 0.25, ib[2] + 0.25, ib[3] + 2)]
-        _GLASS_BARS.append(ext((ring + cs_union(ticks)) ^ gl.offset(0.2), -1.21, -0.6))
+        _GLASS_BARS.append(ext((ring + cs_union(ticks)) ^ gl.offset(0.2), _gt(), -0.6))
         panel(rect(pu0, 1.3, pu1, dh * 0.40 - 1.0))
     elif style == "french":               # glazed nearly full height with a grid of lights (2 x 4)
         gl = rect(pu0, 2.2, pu1, top - st)
@@ -753,7 +758,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         m = (b[0] + b[2]) / 2
         bars = [rect(m - 0.25, b[1], m + 0.25, b[3])]
         bars += [rect(b[0], b[1] + (b[3] - b[1]) * k / 4 - 0.25, b[2], b[1] + (b[3] - b[1]) * k / 4 + 0.25) for k in (1, 2, 3)]
-        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), -1.21, -0.6))
+        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), _gt(), -0.6))
     elif style == "dutch":                # a Dutch door: two halves, the top one glazed with four lights
         mid = zq(dh * 0.48)
         parts.append(ext(rect(u, mid - 0.25, u + lw, mid + 0.25), -1.2, -0.4))           # the split, a ledge
@@ -763,7 +768,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         b = gl.bounds()
         m, vm = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
         _GLASS_BARS.append(ext((rect(m - 0.25, b[1], m + 0.25, b[3]) + rect(b[0], vm - 0.25, b[2], vm + 0.25)) ^ gl.offset(0.2),
-                               -1.21, -0.6))
+                               _gt(), -0.6))
         lo = rect(pu0, 1.3, pu1, mid - 1.0)
         panel(lo)
         lb = lo.bounds()
@@ -773,7 +778,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         glass = gl
         parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
         c = gl.bounds()
-        _GLASS_BARS.append(ext(rect((c[0] + c[2]) / 2 - 0.25, c[1], (c[0] + c[2]) / 2 + 0.25, c[3]) ^ gl.offset(0.2), -1.21, -0.6))
+        _GLASS_BARS.append(ext(rect((c[0] + c[2]) / 2 - 0.25, c[1], (c[0] + c[2]) / 2 + 0.25, c[3]) ^ gl.offset(0.2), _gt(), -0.6))
         lo = rect(pu0, 1.3, pu1, dh * 0.34 - 1.0)
         parts.append(ext(lo, -0.81, -0.6))
         lb = lo.bounds()
@@ -787,7 +792,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         cx, cy = (c[0] + c[2]) / 2, (c[1] + c[3]) / 2
         hx, hy = (c[2] - c[0]) / 2 - 0.3, (c[3] - c[1]) / 2 - 0.3
         loz = poly([(cx, cy + hy), (cx + hx, cy), (cx, cy - hy), (cx - hx, cy)])
-        _GLASS_BARS.append(ext((loz - loz.offset(-0.5, JoinType.Miter, 4.0)) ^ gl.offset(0.2), -1.21, -0.6))
+        _GLASS_BARS.append(ext((loz - loz.offset(-0.5, JoinType.Miter, 4.0)) ^ gl.offset(0.2), _gt(), -0.6))
         panel(rect(pu0, 1.3, pu1, dh * 0.36 - 1.0))
     elif style == "keyhole":              # a keyhole-shaped light (a round head on a narrow shaft) over a panel
         cx = (pu0 + pu1) / 2
@@ -818,7 +823,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         bars = [gl.offset(-0.9, JoinType.Round) - gl.offset(-1.45, JoinType.Round), rect(cx - 0.25, c[1], cx + 0.25, c[3])]
         for v in np.linspace(c[1] + 2.0, c[3] - 2.5, 3):
             bars.append(circle((cx, v), 0.75, 16) - circle((cx, v), 0.25, 10))
-        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), -1.21, -0.6))
+        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), _gt(), -0.6))
         panel(rect(pu0, 1.3, pu1, dh * 0.4 - 1.0))
     elif style == "twin_arch":            # two round-headed lights side by side over a raised panel
         gw = (pu1 - pu0 - 0.6) / 2
@@ -894,7 +899,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         parts.append(ext(gl.offset(0.45, JoinType.Round) - gl, -0.8, -0.6))
         spokes = cs_union([stroke([(cx, cy), (cx + r * math.cos(a_), cy + r * math.sin(a_))], 0.45, caps=False)
                            for a_ in np.linspace(0, 2 * math.pi, 6, endpoint=False)] + [circle((cx, cy), 0.5, 12)])
-        _GLASS_BARS.append(ext(spokes ^ gl.offset(0.2), -1.21, -0.6))
+        _GLASS_BARS.append(ext(spokes ^ gl.offset(0.2), _gt(), -0.6))
         panel(rect(pu0, 1.3, pu1, cy - r - 1.4))
     elif style == "shouldered":           # a light under a shouldered head (stepped in at its top corners) over two raised panels (the Hawthorn)
         cx = (pu0 + pu1) / 2
