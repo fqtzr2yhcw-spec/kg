@@ -95,6 +95,8 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
 - Include a rear view in every building's renders, so parts at the back (a kitchen ell's
   three-sided cornice, say) have a picture to match against.
 - Provide finished print files as zips.
+- Once a new version is sent, delete the old version, so only the current zip for each
+  building is kept (a combined zip holding superseded versions goes too).
 - Get a few pilot buildings right before rolling a change across the collection. Don't pile
   fix on fix across every model at once.
 - Mind usage limits and keep working between them.
