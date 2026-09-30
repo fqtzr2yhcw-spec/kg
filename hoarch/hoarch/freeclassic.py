@@ -342,7 +342,7 @@ def door_leaded(w=12.0, h=24.0, side=4.0, fan=6.0):
     leads.append(oval((0.0, h + 0.6), W2 * 0.35, fan * 0.4, 32) - oval((0.0, h + 0.6), W2 * 0.35 - 0.45, fan * 0.4 - 0.45, 32))
     gl = cs_union(glass_cs)
     body = body - ext(gl, -pl + O.GLASS, 0.5) - ext(cs_union(grooves) - gl, face - 0.25, 0.5)
-    sash = [body, ext(gl, -pl, -pl + O.GLASS), ext(cs_union(leads) ^ gl, -pl + O.GLASS - 0.01, face - 0.15),
+    sash = [body, ext(gl, -pl, -pl + O.GLASS), ext(cs_union(leads) ^ gl, -pl + O.GLASS - 0.01, face),
             ext(cs_union(panels), face - 0.01, face + 0.3), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
     # the surround
     parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, O.CAS)]
@@ -918,7 +918,7 @@ def door_consoled(w=13.0, h=24.0, transom=4.4):
     gl = cs_union(glass_cs)
     grooves = [rect(-0.2, 0.0, 0.2, h), rect(-w / 2, h - 0.15, w / 2, h + 0.35)]
     body = body - ext(gl, -pl + O.GLASS, 0.5) - ext(cs_union(grooves) - gl, face - 0.25, 0.5)
-    sash = [body, ext(gl, -pl, -pl + O.GLASS), ext(cs_union(leads) ^ tr, -pl + O.GLASS - 0.01, face - 0.15),
+    sash = [body, ext(gl, -pl, -pl + O.GLASS), ext(cs_union(leads) ^ tr, -pl + O.GLASS - 0.01, face),
             ext(cs_union(panels), face - 0.01, face + 0.3), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
     parts = [ext(op - op.offset(-0.5, JoinType.Miter, 4.0), 0.0, O.CAS)]
     ht = h + transom

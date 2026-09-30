@@ -1856,7 +1856,7 @@ def door_dutch(w, h, transom=4.0, A=1.3):
         uc = tb[0] + (tb[2] - tb[0]) * (k + 0.5) / 4
         bosses.append(circle((uc, (tb[1] + tb[3]) / 2), min(1.0, (tb[3] - tb[1]) * 0.35), 16))
     tbars = [rect(tb[0] + (tb[2] - tb[0]) * k / 4 - 0.25, tb[1], tb[0] + (tb[2] - tb[0]) * k / 4 + 0.25, tb[3]) for k in (1, 2, 3)]
-    sash.append(ext(cs_union(bosses), -pl + O.GLASS - 0.01, -pl + O.GLASS + 0.4))
+    sash.append(ext(cs_union(bosses), -pl + O.GLASS - 0.01, -pl + O.GLASS + 0.8))     # 4 layers: opaque
     sash.append(ext(cs_union(tbars + [rect(-w, dh - 0.3, w, dh + 0.3)]) ^ plug_cs, -pl + O.GLASS - 0.01, -0.4))
     parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
     frame = (op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A)

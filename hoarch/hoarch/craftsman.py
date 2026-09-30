@@ -248,11 +248,11 @@ def attic_vent(w, h, A=1.0):
     pl = O.PLUG
     inner = plug_cs.offset(-0.6, JoinType.Miter, 4.0)
     u0, v0, u1, v1 = inner.bounds()
-    body = [ext(plug_cs, -pl, -pl + 0.8), ext(plug_cs - inner, -pl, 0.05)]
+    body = [ext(plug_cs, -pl, -pl + O.GLASS), ext(plug_cs - inner, -pl, 0.05)]     # the back: glass-thick, dark between the slats
     slats = []
     for v in np.arange(v0 + 0.3, v1 - 1.0, 1.1):
-        slats.append(M.hull_points([(u0 - 0.1, v, -pl + 0.79), (u1 + 0.1, v, -pl + 0.79), (u0 - 0.1, v + 0.9, -0.6),
-                                    (u1 + 0.1, v + 0.9, -0.6), (u0 - 0.1, v + 0.5, -pl + 0.79), (u1 + 0.1, v + 0.5, -pl + 0.79)]))
+        slats.append(M.hull_points([(u0 - 0.1, v, -pl + O.GLASS - 0.01), (u1 + 0.1, v, -pl + O.GLASS - 0.01), (u0 - 0.1, v + 0.9, -0.6),
+                                    (u1 + 0.1, v + 0.9, -0.6), (u0 - 0.1, v + 0.5, -pl + O.GLASS - 0.01), (u1 + 0.1, v + 0.5, -pl + O.GLASS - 0.01)]))
     body.append(union(slats) ^ ext(inner.offset(0.1, JoinType.Miter, 4.0), -pl, 0.0))
     parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
              ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.6)]
