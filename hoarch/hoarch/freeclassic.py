@@ -311,7 +311,7 @@ def door_leaded(w=12.0, h=24.0, side=4.0, fan=6.0):
     op = poly([(-W2, 0.0), (W2, 0.0)] + ell)
     plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
     pl = O.PLUG
-    face = -1.0
+    face = -0.75                       # the leaves' face: the grooves round them keep 4 layers over the glass
     body = ext(plug_cs, -pl, face)
     glass_cs = []
     leads = []
@@ -902,7 +902,7 @@ def door_consoled(w=13.0, h=24.0, transom=4.4):
     op = rect(-w / 2, 0.0, w / 2, h + transom)
     plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
     pl = O.PLUG
-    face = -1.0
+    face = -0.75                       # the leaves' face: the grooves round them keep 4 layers over the glass
     body = ext(plug_cs, -pl, face)
     glass_cs, leads, panels = [], [], []
     for sg in (-1, 1):

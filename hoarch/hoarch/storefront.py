@@ -21,8 +21,7 @@ from manifold3d import CrossSection as CS, FillRule, JoinType, Manifold as M
 from .core import arch_cs, box, circle, cs_union, poly, rect, slab, union
 from .ornament import chamfer_box, ext, stroke
 
-PLUG = 1.6      # depth into the wall opening (as the windows)
-GLASS = 0.4
+from .openings import GLASS, PLUG    # one plug and glass depth for every opening (see openings)
 
 FONTS = {"serif": "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
          "sans": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
