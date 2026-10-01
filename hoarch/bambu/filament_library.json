@@ -1548,5 +1548,93 @@
   "location": "",
   "note": "",
   "page": 3
+ },
+ {
+  "brand": "Inland",
+  "series": "PLA",
+  "colour": "Gray",
+  "code": "",
+  "hex": "#8C8D8F",
+  "grams_left": 1000,
+  "location": "",
+  "note": "colour estimated from Inland's range",
+  "page": 4
+ },
+ {
+  "brand": "Inland",
+  "series": "PLA",
+  "colour": "Black",
+  "code": "",
+  "hex": "#1A1A1A",
+  "grams_left": 1000,
+  "location": "",
+  "note": "colour estimated from Inland's range",
+  "page": 4
+ },
+ {
+  "brand": "Inland",
+  "series": "PLA",
+  "colour": "White",
+  "code": "",
+  "hex": "#F4F4F2",
+  "grams_left": 1000,
+  "location": "",
+  "note": "colour estimated from Inland's range",
+  "page": 4
+ },
+ {
+  "brand": "Inland",
+  "series": "PLA",
+  "colour": "Red",
+  "code": "",
+  "hex": "#C42127",
+  "grams_left": 1000,
+  "location": "",
+  "note": "colour estimated from Inland's range",
+  "page": 4
+ },
+ {
+  "brand": "Inland",
+  "series": "PLA",
+  "colour": "Blue",
+  "code": "",
+  "hex": "#1C4FA8",
+  "grams_left": 1000,
+  "location": "",
+  "note": "colour estimated from Inland's range",
+  "page": 4
+ },
+ {
+  "brand": "Inland",
+  "series": "PLA",
+  "colour": "Green",
+  "code": "",
+  "hex": "#16924A",
+  "grams_left": 1000,
+  "location": "",
+  "note": "colour estimated from Inland's range",
+  "page": 4
+ },
+ {
+  "brand": "Inland",
+  "series": "PLA",
+  "colour": "Bone White",
+  "code": "",
+  "hex": "#E6DFCB",
+  "grams_left": 1000,
+  "location": "",
+  "note": "colour estimated from Inland's range",
+  "page": 4
+ },
+ {
+  "brand": "Inland",
+  "series": "PLA",
+  "colour": "Bone White",
+  "code": "",
+  "hex": "#E6DFCB",
+  "grams_left": 1000,
+  "location": "",
+  "note": "colour estimated from Inland's range",
+  "page": 4
  }
 ]

@@ -55,6 +55,7 @@ SERIES = {
     ("Bambu Lab", "PLA Basic"): ("Bambu PLA Basic @BBL P2S", 1.0),
     ("Generic", "PLA"): ("Generic PLA @BBL P2S", 1.5),
     ("eSUN", "PLA+"): ("Generic PLA @BBL P2S", 1.5),
+    ("Inland", "PLA"): ("Generic PLA @BBL P2S", 1.5),
     ("Generic", "PLA High Speed"): ("Generic PLA High Speed @BBL P2S", 1.5),
     ("Bambu Lab", "PLA Wood"): ("Bambu PLA Wood @BBL P2S", 3.0),
     ("Bambu Lab", "PLA Metal"): ("Bambu PLA Metal @BBL P2S", 3.0),
