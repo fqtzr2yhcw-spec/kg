@@ -28,12 +28,16 @@ BRACKETS_16 = ("Cornice brackets made solid and 1.6 mm thick (were 0.7-0.9 mm); 
 INSERTS_DEEP = ("Windows and doors: the glass sits 3 layers deeper in the opening, so every sash bar, rail, "
                 "door leaf and panel stands at least 3 layers thicker over it (at 1-2 layers the glass colour "
                 "showed through); the plug now goes 2.2 mm into the wall. Reprint the WIN- and DOOR- parts.")
+QUOINS = ("Corner quoins: bigger, flat-faced stones 0.9 mm proud with a solid core in the corner, so the "
+          "joints there are shallow notches (the old thin, bevelled blocks with open gaps printed as a ragged "
+          "fringe up the corner). Walls only: reprint the WALLS- parts if your corners came out fringed.")
 
 HISTORY = {
     "villa": [("1.1", "2026-09-30", INSERTS_DEEP + " The doors' upper lights now open to their glass, as designed. "
                "WALLS-1: the front and back doors sit 0.8 mm higher, leaving a 6-layer strip of wall under each "
                "(at 2 layers the wall could kink at the front door); reprint WALLS-1 only if yours kinked, or glue "
-               "the door in with the wall seated on the foundation lip to hold it straight.")],
+               "the door in with the wall seated on the foundation lip to hold it straight."),
+              ("1.2", "2026-10-01", QUOINS)],
     "camellia": [("1.1", "2026-09-27", "Tower, bay and eave cornice ring brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
     "fowler": [("1.1", "2026-09-27", "Fan brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
     "marigold": [("1.1", "2026-09-27", "Sawn brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
@@ -42,7 +46,7 @@ HISTORY = {
     "rosecroft": [("1.1", "2026-09-27", "Fret brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
     "hawthorn": [("1.1", "2026-09-27", "Ladder brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
     "beaumont": [("1.1", "2026-09-30", INSERTS_DEEP)],
-    "harcourt": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "harcourt": [("1.1", "2026-09-30", INSERTS_DEEP), ("1.2", "2026-10-01", QUOINS)],
     "whitby": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "delancey": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "ardmore": [("1.1", "2026-09-30", INSERTS_DEEP)],

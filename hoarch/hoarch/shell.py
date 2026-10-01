@@ -137,7 +137,7 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     QL, QS, QH, QG, QT, QC = 4.2, 2.8, 3.0, 0.4, 0.9, 0.25   # long, short, course, joint, depth, chamfer
     QB = 0.5                                                  # the underside bevel (leaves a 0.4 ledge)
     if corners == "quoin_even":                               # equal blocks in tighter courses
-        QL, QS, QH, QC, QT, QB = 2.6, 2.6, 2.0, 0.3, 0.7, 0.7
+        QL, QS, QH = 3.2, 3.2, 2.4
     for b in blocks:
         facs = b.facades()
         conv = b.convex_corners(min_turn=70.0)
