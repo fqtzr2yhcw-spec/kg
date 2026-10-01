@@ -94,7 +94,10 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
 - Show a render before going all in; the owner reviews renders and asks for revisions.
 - Include a rear view in every building's renders, so parts at the back (a kitchen ell's
   three-sided cornice, say) have a picture to match against.
-- Provide finished print files as zips.
+- Provide finished print files as zips, and each building as a Bambu Studio project for the P2S too
+  (`python3 -m hoarch.bambu <key>` after packaging): every plate laid out, coloured from the owner's
+  spools (hoarch/bambu/filament_library.json, pasted from Bambu Studio's Filament Manager), the
+  filament changes set. Rebuild it with every release.
 - Once a new version is sent, delete the old version, so only the current zip for each
   building is kept (a combined zip holding superseded versions goes too).
 - Get a few pilot buildings right before rolling a change across the collection. Don't pile
