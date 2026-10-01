@@ -134,9 +134,10 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     shell = shell - union(cuts)
     # dressing per facade
     dress = []
-    QL, QS, QH, QG, QT, QC = 3.6, 2.4, 2.4, 0.4, 0.7, 0.4    # long, short, course, joint, depth, chamfer
+    QL, QS, QH, QG, QT, QC = 4.2, 2.8, 3.0, 0.4, 0.9, 0.25   # long, short, course, joint, depth, chamfer
+    QB = 0.5                                                  # the underside bevel (leaves a 0.4 ledge)
     if corners == "quoin_even":                               # equal blocks in tighter courses
-        QL, QS, QH, QC = 2.6, 2.6, 2.0, 0.3
+        QL, QS, QH, QC, QT, QB = 2.6, 2.6, 2.0, 0.3, 0.7, 0.7
     for b in blocks:
         facs = b.facades()
         conv = b.convex_corners(min_turn=70.0)
@@ -196,13 +197,20 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
                             top = min(v + QH - QG, qb)
                             leg = QL if k % 2 == 0 else QS
                             if at_start:
-                                blk = chamfer_box(-QT, v, leg, top, 0.0, QT, QC, square=("u0",), bottom=QT)
+                                blk = chamfer_box(-QT, v, leg, top, 0.0, QT, QC, square=("u0",), bottom=QB)
                             else:
                                 blk = chamfer_box(f.L - leg, v, f.L + QT, top, 0.0, QT, QC, square=("u1",),
-                                                  bottom=QT)
+                                                  bottom=QB)
                             dress.append(f.place(blk))
                             v += QH
                             k += 1
+                        # a solid core in the corner: the joints there are shallow notches, not
+                        # open gaps, so the corner reads as stone instead of a row of teeth
+                        z0 = max(qa, 1.8) if water_table and qa == 0 else qa
+                        if at_start:
+                            dress.append(f.place(box([-QT + 0.3, z0, 0.0], [0.01, v - QG, QT - 0.3])))
+                        else:
+                            dress.append(f.place(box([f.L - 0.01, z0, 0.0], [f.L + QT - 0.3, v - QG, QT - 0.3])))
             # corner boards, one style per building, each zone between belts on its own
             if boards:
                 zones = _zones(H, belts, 1.8)
