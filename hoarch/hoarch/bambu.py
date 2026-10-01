@@ -7,7 +7,8 @@ or silk last; a spool without enough left for the plate's share is passed over i
 close). A two-colour plate changes filament on the first layer above its height, the way the
 slider's "Change Filament" does; the windows and doors start in black for their two layers of
 glass and change to the frame colour above it; plank-floored parts (porch decks, boardwalks,
-balconies) start in the plank brown for their first 1.2 mm. Supports are on for the windows and
+galleries, docks) start in the plank colour for their first 1.2 mm. A change between two colours
+that come out as the same spool is left out. Supports are on for the windows and
 doors only (tree, on the build plate only). The prime tower is off: the P2S purges into its chute
 at the one change a plate has.
 
@@ -46,7 +47,7 @@ LAYER = 0.2
 GLASS_TOP = 0.4             # openings.GLASS: the windows' glass is their first two layers
 PLANK_TOP = 1.2             # the planked parts' boards are their first six layers
 GLASS_HEX = "#1E2226"       # aim for the glass: near black
-PLANKED = ("PORCH-deck", "BOARDWALK", "GALLERY-deck", "BALCONY", "PIAZZA-top-1")
+DECKS = ("PorchDeck", "Deck", "Boardwalk")   # the kit's plank-floor plates (porches, galleries, docks, platforms)
 
 # (brand, series) -> (Bambu Studio preset, penalty added to the colour difference)
 SERIES = {
@@ -192,13 +193,13 @@ def _plan(key):
         if col == "Windows_Doors":
             start, change, names = GLASS_HEX, (GLASS_TOP + LAYER, hexc), ("Glass", "Windows and doors")
             split = 0.12
-        elif parts and all(any(k in n for k in PLANKED) for n in parts):
-            start, change, names = planks.upper(), (PLANK_TOP + LAYER, hexc), ("Planks", col)
-            split = min(PLANK_TOP / hmax, 0.9)
-        elif p.get("change"):
+        elif p.get("change"):                      # the kit's own two-colour plates (planks included)
             c = p["change"]
             start, change, names = hexc, (round(c["at_mm"], 2) + LAYER, c["to_hex"].upper()), (col, c["to"])
             split = min(c["at_mm"] / hmax, 0.9)
+        elif col in DECKS:
+            start, change, names = planks.upper(), (PLANK_TOP + LAYER, hexc), ("Planks", col)
+            split = min(PLANK_TOP / hmax, 0.9)
         else:
             start, change, names, split = hexc, None, (col, None), 1.0
         roles = {start: (names[0], grams * split)}
@@ -230,6 +231,9 @@ def match(plates, spools):
     for h in sorted(need, key=lambda h: -need[h]):
         f, de = pick(h, need[h], spools)
         chosen[h] = {"spool": f, "de": de, "need": need[h], "name": " / ".join(n.replace("_", " ") for n in names[h])}
+    for p in plates:                               # no change where both colours are the same spool
+        if p["change"] and chosen[p["start"]]["spool"] is chosen[p["change"][1]]["spool"]:
+            p["change"] = None
     return chosen
 
 
@@ -452,6 +456,9 @@ def write_project(key, path=None, verbose=True):
             data = files[k]
             z.writestr(k, data if isinstance(data, bytes) else data.encode())
     os.replace(tmp, path)
+    for old in os.listdir(OUT):                    # only the current version is kept
+        if old.startswith(f"{title}_P2S_v") and old.endswith(".3mf") and os.path.join(OUT, old) != path:
+            os.remove(os.path.join(OUT, old))
     report = colour_report(key, man, plates, chosen, slots, path)
     os.makedirs(os.path.join(OUT, key, "u"), exist_ok=True)
     with open(os.path.join(OUT, key, "u", "bambu_colours.txt"), "w") as fh:
