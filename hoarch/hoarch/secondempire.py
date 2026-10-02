@@ -3585,3 +3585,512 @@ PW.BALUSTERS.update(urnneck=(baluster_urnneck, 1.6))
 PW.FRIEZES.update(basketarch=frieze_basketarch)
 PW.SKIRTS.update(herringboards=skirt_herringboards)
 FT.EDGE_EXTRA.update(dartbeads=edge_dartbeads)
+
+
+# ================================================================== the Rochambeau (house 88)
+# Sage stucco scored as ashlar with chamfered quoins, ivory dressings and burgundy accents, on a
+# bluestone base with a blind arcade; a straight mansard of purple slate laid with crosses; two
+# two-storey side bays under mansard hoods that run into the main roof; a portico on banded
+# columns with an iron balustrade on its roof; a veranda down the east side.
+
+def slate_crosses(k, j):
+    """The Rochambeau's slating: square slates with Greek crosses of diamond-cut ones laid in a
+    quincunx (a cross every ten slates across, every fourteen courses up, alternate rows of
+    crosses half a step on)."""
+    x = j + 0.5 * (k % 2)
+    kk = k % 14 - 6
+    if -3 <= kk <= 3:
+        m = (x + 5 * ((k // 14) % 2)) % 10 - 5.0
+        if (kk == 0 and abs(m) <= 2.01) or (kk != 0 and abs(m) <= 0.51):
+            return "diamond"
+    return "square"
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def frieze_medallions(L, h, b, pitch, margin, pair, half):
+    """Medallions: a row of round medallions (a ring round a six-petalled rosette) linked by
+    ribbons tied in bows between them (the Rochambeau's storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    R_ = min(hh * 0.45, 1.8)
+    pu = max(R_ * 2 + 4.6, 7.0)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    out = []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        out.append(_st(circle((uc, vm), R_, 28) - circle((uc, vm), R_ - 0.45, 24), b, 0.5))
+        pet = cs_union([circle((uc + R_ * 0.45 * math.cos(a), vm + R_ * 0.45 * math.sin(a)), max(0.3, R_ * 0.24), 10)
+                        for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)])
+        out.append(_st(pet + circle((uc, vm), 0.4, 10), b, 0.35))
+    for k in range(n + 1):
+        x = u0 + pu * k
+        xa, xb = max(0.4, x - pu / 2 + R_ - 0.1), min(L - 0.4, x + pu / 2 - R_ + 0.1)
+        if xb - xa < 1.5:
+            continue
+        rib = stroke([(xa, vm), ((xa + x) / 2, vm - hh * 0.18), (x, vm), ((x + xb) / 2, vm - hh * 0.18), (xb, vm)], 0.42)
+        bow = cs_union([_lens((x - 0.55, vm + 0.15), 1.2, 0.55, 0.35), _lens((x + 0.55, vm + 0.15), 1.2, 0.55, -0.35),
+                        circle((x, vm), 0.32, 10)])
+        tails = cs_union([stroke([(x, vm), (x - 0.5, vm - hh * 0.38)], 0.4), stroke([(x, vm), (x + 0.5, vm - hh * 0.38)], 0.4)])
+        out.append(_st((rib + bow + tails) ^ rect(0.3, v0, L - 0.3, v1), b, 0.4))
+    return out, []
+
+
+def frieze_acanthus(L, h, b, pitch, margin, pair, half):
+    """Acanthus: in every bay between the bracket pairs a fan of acanthus leaves rising from a
+    bud, two scrolls rolling out from its foot along the frieze (the Rochambeau's eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 4.6:
+            continue
+        vb = v0 + 0.4
+        fan = cs_union([_lens((uc + math.sin(a) * hh * 0.33, vb + math.cos(a) * hh * 0.33), hh * 0.7, 0.6, math.pi / 2 - a)
+                        for a in (-0.6, -0.3, 0.0, 0.3, 0.6)])
+        out.append(_st(fan ^ rect(-1e3, v0, 1e3, v1), b, 0.45))
+        out.append(_st(circle((uc, vb + 0.2), 0.5, 12), b, 0.55))
+        for sg in (-1, 1):
+            reach = min(wd / 2 - 0.4, 3.6)
+            pts = []
+            for t in np.linspace(0.0, 1.0, 18):
+                a = math.pi * (1.0 + 1.5 * t) if sg < 0 else -math.pi * 1.5 * t
+                r = 0.95 * (1 - 0.5 * t)
+                cx = uc + sg * (reach - 0.95)
+                pts.append((cx + r * math.cos(a) * (1 if sg > 0 else 1), vb + 0.95 + r * math.sin(a)))
+            out.append(_st((stroke([(uc + sg * 0.4, vb + 0.1), (uc + sg * (reach - 0.95), vb)], 0.45) + stroke(pts, 0.42))
+                           ^ rect(-1e3, v0, 1e3, v1), b, 0.4))
+    return out, []
+
+
+def runningdog(L, h):
+    """A running dog (Vitruvian scroll) as CrossSections: a wave curling over into a scroll at
+    every crest, on a fillet."""
+    pu = max(2.4, h * 1.4)
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    out = [rect(0.2, 0.05, L - 0.2, 0.45)]
+    r = min(h * 0.28, 0.65)
+    for k in range(n):
+        x = u0 + pu * k
+        cx, cy = x + pu * 0.62, h * 0.52
+        pts = [(x, 0.3), (x + pu * 0.3, 0.35)]
+        for t in np.linspace(0.0, 1.0, 14):
+            a = -math.pi / 2 - t * 1.6 * math.pi
+            rr = r * (1 + 0.6 * (1 - t))
+            pts.append((cx - rr * math.cos(a + math.pi), cy + rr * math.sin(a)))
+        out.append(stroke(pts, 0.42))
+    return [cs_union(out) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def course_runningdog(L, h, b, pitch, margin, p):
+    """A running dog (Vitruvian scroll) along the course (the Rochambeau)."""
+    return [_st(cs, b, 0.45) for cs in runningdog(L, h)]
+
+
+def course_tripledentil(L, h, b, pitch, margin, p):
+    """Dentils in groups of three, a gap between the groups, under a fillet (the
+    Rochambeau)."""
+    out = [ext(rect(0.2, h - 0.45, L - 0.2, h), b - 0.05, b + 0.55)]
+    teeth = []
+    u = 0.8
+    while u + 3 * 0.9 < L - 0.6:
+        for k in range(3):
+            teeth.append(rect(u + 0.9 * k, 0.2, u + 0.9 * k + 0.6, h - 0.4))
+        u += 3 * 0.9 + 1.1
+    if teeth:
+        out.append(_st(cs_union(teeth), b, 0.45))
+    return out
+
+
+def bracket_cushionconsole(h, d, t):
+    """A cushion console: a block under the soffit, a swelling face curving down and back to a
+    small scroll at its foot on the wall, a sunk eye in the scroll (side profile, top at v = 0;
+    the Rochambeau)."""
+    rf = min(0.7, h * 0.12)
+    pts = [(0.0, 0.0), (d, 0.0), (d, -0.9)]
+    for s in np.linspace(0.0, 1.0, 14):
+        pts.append((d - (d - 2 * rf) * s ** 1.6, -0.9 - (h - 0.9 - 2 * rf) * s))
+    pts += [(0.0, -h + 2 * rf)]
+    prof = cs_union([poly(pts), circle((rf + 0.15, -h + rf + 0.1), rf + 0.15, 16)])
+    return prof - circle((rf + 0.15, -h + rf + 0.1), min(0.45, rf * 0.6), 12)
+
+
+# ------------------------------------------------------------------ the mansard's window add-ins
+def addin_rochambeau(w=5.0, h=10.0, A=0.9):
+    """A Rochambeau add-in: a flat-headed two-light window in an architrave, cheeked by two big
+    S-scrolls climbing from the sill to a cornice cap, a raised tablet with a shell over the cap;
+    its plug's roof a hip."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, h * 0.55 - 0.3, w, h * 0.55 + 0.3)])
+    half = w / 2 + A + 1.6
+    vc = h + A + 1.0
+    body = cs_union([rect(-half, -0.2, half, vc), poly([(-half + 0.6, vc - 0.1), (half - 0.6, vc - 0.1), (0.0, vc + 2.6)])])
+    parts = [ext(body - op, 0.0, 0.6),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-20, 0.0, 20, 40) - op)]
+    for sg in (-1, 1):
+        x0 = sg * (w / 2 + A + 0.2)
+        pts = bezier((x0 + sg * 0.6, 0.6), (x0 + sg * 2.0, h * 0.35), (x0 - sg * 0.2, h * 0.6), (x0 + sg * 0.7, vc - 1.2), 18)
+        parts.append(ext(stroke(pts, 0.9), 0.0, 1.0))
+        for cc, rr in (((x0 + sg * 1.0, 1.0), 0.75), ((x0 + sg * 1.0, vc - 1.3), 0.6)):
+            parts.append(ext(circle(cc, rr, 16) - circle(cc, 0.2, 8), 0.0, 1.15))
+    parts.append(MD.run(-half - 0.3, half + 0.3, vc, MD.CROWN, 1.0, up=False))
+    tab = rect(-1.6, vc - 0.01, 1.6, vc + 1.8)
+    parts.append(ext(tab, 0.0, 0.8))
+    parts.append(ext(poly([(0.0, vc + 0.2)] + [(1.3 * math.cos(a), vc + 0.2 + 1.3 * math.sin(a)) for a in np.linspace(0.35, math.pi - 0.35, 9)]),
+                     0.79, 1.15))
+    sw = half - 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts.append(ext(swag(-1.8, 1.8, -0.8, 0.9, width=0.5) + rect(-2.0, -1.2, 2.0, -0.79), 0.0, 0.7))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.4, JoinType.Miter, 4.0) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=vc + 2.4, bottom=-1.8)
+
+
+# ------------------------------------------------------------------ walls, corners, foundation, chimney
+def scoredstucco(region, datum=0.0, course=3.0, block=6.0, joint=0.45, d=0.4, g=0.2):
+    """Smooth stucco scored as ashlar: a flat coat with fine V-ish joints (a groove ``g`` deep)
+    in courses ``course`` high and blocks ``block`` long, broken joint (the Rochambeau)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    cuts = []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1:
+        v = datum + k * course
+        cuts.append(rect(u0 - 1, v - joint / 2, u1 + 1, v + joint / 2))
+        u = u0 - block + (k % 2) * block / 2
+        while u < u1 + block:
+            cuts.append(rect(u - joint / 2, v, u + joint / 2, v + course))
+            u += block
+        k += 1
+    return M.extrude(region, d) - ext(cs_union(cuts), d - g, d + 0.5)
+
+
+def corner_chamferquoin(L, at_start, qa, qb, w=2.4, t=0.65):
+    """Stucco quoins: blocks long and short in turn, every edge chamfered, standing proud of the
+    scored coat at an outside corner, their courses matching the scoring (the Rochambeau)."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    parts = []
+    v = qa + 0.2
+    k = 0
+    while v < qb - 2.0:
+        leg = 4.6 if k % 2 == 0 else 3.0
+        a, b = span(-t - 0.3, leg)
+        top = min(v + 2.6, qb - 0.2)
+        parts.append(chamfer_box(a, v, b, top, 0.0, t + 0.6, c=0.35, bottom=0.45, square=("u0",) if at_start else ("u1",)))
+        v += 3.0
+        k += 1
+    return union(parts) if parts else M()
+
+
+def foundation_blindarcade(reg, seed=0):
+    """A bluestone base with a blind arcade: a row of sunk round-headed panels between pilaster
+    strips, over a plinth and under a cap (the Rochambeau)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.45)]
+    out.append(ext(rect(b[0] - 1, b[3] - 1.2, b[2] + 1, b[3] + 1) ^ reg, 0.44, 0.75))
+    out.append(ext(rect(b[0] - 1, b[1] - 1, b[2] + 1, b[1] + 1.4) ^ reg, 0.44, 0.75))
+    va, vb = b[1] + 2.2, b[3] - 2.0
+    if vb - va > 3.0:
+        pw_ = 5.2
+        n = max(1, int((b[2] - b[0]) / pw_))
+        p = (b[2] - b[0]) / n
+        arches = []
+        for k in range(n):
+            x0, x1 = b[0] + p * k + 0.8, b[0] + p * (k + 1) - 0.8
+            if x1 - x0 < 1.6:
+                continue
+            arches.append(O.opening_cs(x1 - x0, vb - va, (x1 - x0) / 2).translate([(x0 + x1) / 2, va]))
+        if arches:
+            out = [union(out) - ext(cs_union(arches) ^ reg, 0.2, 2.0)]
+    return union(out)
+
+
+def chimney_rochambeau(w=10.4, d=10.4, h=25.0):
+    """The Rochambeau's stacks: stuccoed, with chamfered quoins at the corners, a cornice cap
+    and four little piers carrying a low pyramid lid (the smoke leaves between the piers)."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 6.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for k, z in enumerate(np.arange(1.0, sh - 3.0, 2.4)):
+                lx, ly = (2.6, 1.6) if k % 2 == 0 else (1.6, 2.6)
+                cx, cy = sx * (w / 2 - lx / 2 + 0.3), sy * (d / 2 - ly / 2 + 0.3)
+                body = body + box([cx - lx / 2, cy - ly / 2, z], [cx + lx / 2, cy + ly / 2, z + 2.0])
+    body = body + M.hull_points([(x, y, sh - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                                [(x, y, sh + 0.7) for x in (-w / 2 - 0.7, w / 2 + 0.7) for y in (-d / 2 - 0.7, d / 2 + 0.7)])
+    body = body + box([-w / 2 - 0.7, -d / 2 - 0.7, sh + 0.69], [w / 2 + 0.7, d / 2 + 0.7, sh + 1.4])
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            body = body + box([sx * (w / 2 - 1.2) - 1.2, sy * (d / 2 - 1.2) - 1.2, sh + 1.39],
+                              [sx * (w / 2 - 1.2) + 1.2, sy * (d / 2 - 1.2) + 1.2, sh + 3.6])
+    zc = sh + 3.59
+    body = body + box([-w / 2 - 0.3, -d / 2 - 0.3, zc], [w / 2 + 0.3, d / 2 + 0.3, zc + 0.6])
+    body = body + M.hull_points([(x, y, zc + 0.59) for x in (-w / 2 - 0.3, w / 2 + 0.3) for y in (-d / 2 - 0.3, d / 2 + 0.3)] +
+                                [(0.0, 0.0, h)])
+    flue = box([-w / 2 + 2.4, -d / 2 + 2.4, sh - 4.0], [w / 2 - 2.4, d / 2 - 2.4, sh + 3.6])
+    return body - flue
+
+
+def fence_rochambeau(L, h):
+    """Rochambeau cresting: ball-topped bars, and between every two a lyre of two C-scrolls back
+    to back on the rail with a bead between their heads."""
+    pitch = 3.2
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    rail = h * 0.28
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, rail, L, rail + 0.45)]
+    for j in range(n + 1):
+        u = p * j
+        cells.append(rect(u - 0.28, 0.0, u + 0.28, h - 0.8))
+        cells.append(circle((u, h - 0.5), 0.5, 12))
+        if j < n:
+            m = u + p / 2
+            vt = h - 1.0
+            for sg in (-1, 1):
+                pts = bezier((m + sg * 0.25, rail + 0.4), (m + sg * 1.1, rail + 0.9), (m + sg * 1.1, vt - 0.6), (m + sg * 0.3, vt - 0.3), 12)
+                cells.append(stroke(pts, 0.42))
+            cells.append(circle((m, vt - 0.1), 0.38, 10))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def fence_rochambeau_balcony(L, h):
+    """The portico roof's iron balustrade: a top rail on square bars, a band of rings between a
+    lower rail and a middle one, a scroll at every bar's foot."""
+    pitch = 2.6
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    r1, r2 = h * 0.18, h * 0.42
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, r1, L, r1 + 0.45), rect(0.0, r2, L, r2 + 0.45), rect(0.0, h - 0.7, L, h)]
+    for j in range(n + 1):
+        u = p * j
+        cells.append(rect(u - 0.28, 0.0, u + 0.28, h - 0.3))
+        if j < n:
+            m = u + p / 2
+            vc = (r1 + 0.45 + r2) / 2
+            rr = min((r2 - r1 - 0.45) / 2 + 0.05, p / 2 - 0.3)
+            cells.append(circle((m, vc), rr, 18) - circle((m, vc), max(rr - 0.42, 0.15), 14))
+            cells.append(rect(m - 0.22, r2 + 0.4, m + 0.22, h - 0.6))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h)
+
+
+# ------------------------------------------------------------------ windows and doors
+def _gibbs(op, w, h, spring, A, blocks=5, deep=1.4):
+    """A Gibbs surround: blocks long and short in turn up each jamb, standing proud of the
+    architrave, and a keystone; returns solids."""
+    parts = []
+    vstep = spring / blocks
+    for sg in (-1, 1):
+        for k in range(blocks):
+            leg = A + 1.4 if k % 2 == 0 else A + 0.6
+            u0, u1 = sorted((sg * (w / 2 - 0.1), sg * (w / 2 + leg)))
+            parts.append(chamfer_box(u0, k * vstep + 0.2, u1, (k + 1) * vstep - 0.2, 0.0, deep, c=0.3))
+    return parts
+
+
+def _baluster_row(u0, u1, v0, v1, n):
+    """Little balusters in silhouette between two rails (for aprons and balconettes)."""
+    out = [rect(u0, v0, u1, v0 + 0.5), rect(u0, v1 - 0.5, u1, v1)]
+    H = v1 - v0 - 1.0
+    for x in np.linspace(u0 + (u1 - u0) / (2 * n), u1 - (u1 - u0) / (2 * n), n):
+        out.append(cs_union([rect(x - 0.25, v0 + 0.4, x + 0.25, v1 - 0.4), oval((x, v0 + 0.5 + H * 0.35), 0.45, H * 0.28, 14)]))
+    return cs_union(out)
+
+
+def window_rochambeau_lower(w=9.6, h=22.0, rise=2.0, A=1.0):
+    """Rochambeau ground floor: a segmental-headed two-over-two sash in a Gibbs surround (blocks
+    long and short up the jambs, voussoirs round the head, a tall keystone), a sill on a band."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, rise, lites=(2, 2), bare=True)["insert"]
+    spring = h - rise
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts += _gibbs(op, w, h, spring, A)
+    ring = (op.offset(A + 1.6, JoinType.Round) - op.offset(A - 0.5, JoinType.Round)) ^ rect(-w, spring - 0.4, w, h + 10)
+    vous = []
+    for a in np.linspace(0.1, 0.9, 5):
+        x = (a - 0.5) * (w + 2 * A + 2.0)
+        vous.append(rect(x - 0.22, spring - 1, x + 0.22, h + 10))
+    parts.append(ext(ring - cs_union(vous) - rect(-1.0, spring, 1.0, h + 10), 0.0, 1.2))
+    parts.append(keystone(0.0, h - 0.6, A + 2.6, 1.6, 2.4, 0.0, 1.6))
+    sw = w / 2 + A + 1.0
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.1, up=False))
+    parts.append(ext(rect(-w / 2 - 0.2, -1.8, w / 2 + 0.2, -0.99), 0.0, 0.6))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A + 2.6 + 0.2, -1.8)
+
+
+def window_rochambeau_upper(w=9.0, h=20.0, A=0.9):
+    """Rochambeau upper floor: a round-headed one-over-one sash in a moulded architrave with a
+    keystone, an archivolt hood on two little consoles at the springing, and a balconette of
+    balusters under the sill."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, r, lites=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    HB = 1.0
+    parts.append(MD.band(op.offset(A + HB - 0.1, JoinType.Round), HB, MD.CROWN, clip=rect(-w - 10, spring, w + 10, h + 40)))
+    for sg in (-1, 1):
+        parts.append(console(2.4, 1.2, 1.0, u=sg * (r + A + HB / 2 - 0.1), v_top=spring + 0.01, w0=0.0))
+    parts.append(keystone(0.0, h - 0.3, A + HB + 0.6, 1.3, 1.9, 0.0, 1.5))
+    sw = r + A + 1.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts.append(ext(_baluster_row(-sw + 0.4, sw - 0.4, -3.4, -0.99, 5), 0.0, 0.8))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (sw - 0.4) - 0.5, -3.8, sg * (sw - 0.4) + 0.5, -0.99, 0.0, 1.1, c=0.25))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A + HB + 0.8, -3.8)
+
+
+def door_rochambeau(w=13.0, h=27.0, rise=2.4, A=1.2):
+    """The Rochambeau's entrance: a pair of leaves with tall lights and a crossbar over sunk
+    panels, under a segmental transom with radiating bars, in a Gibbs surround with voussoirs
+    and a scrolled keystone, a cornice over it on two consoles."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    spring = h - rise
+    dh = spring - 3.6
+    mid = 0.5
+    lw = (w - 2 * O.CLR - 1.0 - mid) / 2
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    u = -w / 2 + O.CLR + 0.5
+    for i in range(2):
+        body.append(ext(rect(u, 0.5, u + lw, dh), -pl, -0.8))
+        gv0 = dh * 0.4
+        lights.append(rect(u + 0.8, gv0, u + lw - 0.8, dh - 0.8))
+        body.append(_panel(rect(u + 0.8, 1.2, u + lw - 0.8, gv0 - 0.8)))
+        u += lw + mid
+    tr = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.4, w, h + 2)
+    c0 = (0.0, dh + 0.4)
+    bars = cs_union([stroke([c0, (w * math.cos(a), dh + 0.4 + w * math.sin(a))], 0.45) for a in np.linspace(0.35, math.pi - 0.35, 5)] +
+                    [rect(-w, (dh * 0.4 + dh - 0.8) / 2 - 0.25, w, (dh * 0.4 + dh - 0.8) / 2 + 0.25) ^ cs_union(lights)])
+    sash = _glazed(body, cs_union(lights) + tr, pl, bars, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.4) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts += _gibbs(op, w, h, spring, A, blocks=7, deep=1.6)
+    ring = (op.offset(A + 1.8, JoinType.Round) - op.offset(A - 0.5, JoinType.Round)) ^ rect(-w, spring - 0.4, w, h + 10)
+    vous = [rect((a - 0.5) * (w + 2 * A + 2.4) - 0.22, spring - 1, (a - 0.5) * (w + 2 * A + 2.4) + 0.22, h + 10)
+            for a in np.linspace(0.1, 0.9, 6)]
+    parts.append(ext(ring - cs_union(vous) - rect(-1.2, spring, 1.2, h + 10), 0.0, 1.4))
+    vk = h + A + 2.2
+    parts.append(MD.scroll_keystone(0.0, h - 0.4, vk - h + 0.4, 1.8, 2.6, 0.0, 1.9))
+    half = w / 2 + A + 2.0
+    for sg in (-1, 1):
+        parts.append(console(3.0, 1.6, 1.3, u=sg * (half - 0.9), v_top=vk + 0.01, w0=0.0))
+    parts.append(ext(rect(-half, vk - 1.0, half, vk + 0.6) - rect(-1.4, vk - 2, 1.4, vk + 0.6), 0.0, 0.6))
+    vc = vk + 0.6 + 1.4
+    parts.append(MD.run(-half - 0.8, half + 0.8, vc, MD.CROWN, 1.4, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc, 0.0)
+
+
+def door_rochambeau_back(w=10.0, h=24.0, A=1.0):
+    """The Rochambeau's back and side doors: one leaf with a tall light over a sunk panel, a
+    flat transom, an architrave with a keystone block and a cornice cap."""
+    transom = 3.2
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    u0, u1 = -w / 2 + O.CLR + 0.5, w / 2 - O.CLR - 0.5
+    gv0 = dh * 0.42
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, dh), -pl, -0.8), _panel(rect(u0 + 0.8, 1.2, u1 - 0.8, gv0 - 0.8))]
+    light = rect(u0 + 0.9, gv0, u1 - 0.9, dh - 0.8)
+    g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.3, w, h + 2)
+    sash = _glazed(body, light + g, pl, None, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.3, w, dh + 0.3) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts.append(chamfer_box(-1.2, h - 0.2, 1.2, h + A + 0.6, 0.0, 1.4, c=0.25))
+    half = w / 2 + A + 0.4
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.4), 0.0, 0.6))
+    parts.append(MD.run(-half - 0.6, half + 0.6, vf + 1.4 + 1.0, MD.CROWN, 1.2, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vf + 2.4, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_bandedcolumn(h, collar=None, abacus=3.2, slot=(1.2, 1.0)):
+    """A banded column: a round shaft ringed by drums of rustication (broad bands) every third
+    of its height up to a plain upper shaft, an astragal, an echinus and a square abacus (the
+    Rochambeau's portico)."""
+    z1 = h - 2.8
+    r, rb = 1.0, 1.32
+    prof = [(0.0, 1.19), (1.5, 1.19), (1.5, 1.45), (1.32, 1.7), (1.32, 2.0), (r, 2.4)]
+    span = (z1 - 2.4) * 0.62
+    nb = 4
+    for k in range(nb):
+        za = 2.4 + span * (k + 0.25) / nb
+        prof += [(r, za), (rb, za + 0.35), (rb, za + 0.35 + 1.0), (r, za + 0.35 + 1.0 + 0.35)]
+    prof += [(r * 0.94, z1 - 0.6), (1.12, z1 - 0.4), (1.12, z1 - 0.1), (r * 0.94, z1 + 0.1), (1.32, z1 + 0.75)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    return body + PW._top(h, abacus / 2, z1 + 0.75, 1.32, slot, seg=32)
+
+
+def baluster_bellbase(h, seg=18):
+    """A baluster: a bell-shaped foot, a slender shaft and a ring under the top block (the
+    Rochambeau)."""
+    prof = [(0.0, 0.8), (0.55, 0.8), (0.52, h * 0.16), (0.36, h * 0.3), (0.28, h * 0.4), (0.26, h * 0.78), (0.42, h * 0.84),
+            (0.28, h * 0.9), (0.3, h - 0.8)]
+    return PW._revolve(prof, seg) + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_wreathpierced(u0, u1, v_bot, v_top):
+    """A porch frieze: an entablature board pierced with a row of laurel wreaths (open rings of
+    little leaves) over a moulded fascia (the Rochambeau)."""
+    v0 = v_top - 3.2
+    board = rect(u0, v0 - 0.8, u1, v_top + 0.05)
+    n = max(1, int((u1 - u0) / 4.2))
+    holes = []
+    for k in range(n):
+        c = (u0 + (u1 - u0) * (k + 0.5) / n, v0 + 1.3)
+        for a in np.linspace(-0.9, 4.04, 5):          # open at the foot, wide webs: nothing inside comes loose
+            holes.append(_lens((c[0] + 0.95 * math.cos(a), c[1] + 0.95 * math.sin(a)), 0.7, 0.42, a + math.pi / 2, seg=6))
+    return board - cs_union(holes) if holes else board
+
+
+def skirt_roundels(reg, d=1.2):
+    """A porch skirt of panels, each with a round vent, between plain stiles under a rail (the
+    Rochambeau)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = M.extrude(reg, d * 0.7)
+    stiles = cs_union([rect(u, v0 - 1, u + 0.9, v1 + 1) for u in np.arange(u0, u1, 4.4)] + [rect(u0 - 1, v1 - 0.8, u1 + 1, v1 + 1)])
+    out = out + M.extrude(stiles ^ reg, d)
+    vm = (v0 + v1 - 0.8) / 2
+    rr = min(1.0, (v1 - v0 - 0.8) / 2 - 0.5)
+    if rr > 0.4:
+        holes = cs_union([circle((u + 2.65, vm), rr, 16) for u in np.arange(u0, u1 - 3.0, 4.4)])
+        out = out - M.extrude(holes, d + 1).translate([0, 0, d * 0.35])
+    return out
+
+
+def edge_crescents(L, z0, zc):
+    """Porch fascia (the Rochambeau): crescents hung horns-up under the crown, a bead between."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for i, x in enumerate(np.arange(1.2, L - 1.0, 1.6)):
+        if i % 2 == 0:
+            out.append(circle((x, zc - 0.95), 0.6, 14) - circle((x, zc - 0.6), 0.5, 14))
+            out.append(rect(x - 0.2, zc - 0.5, x + 0.2, zc - 0.4))
+        else:
+            out.append(circle((x, zc - 0.75), 0.35, 10))
+    return cs_union(out), 0.6
+
+
+CO.FRIEZE_EXTRA.update(medallions=frieze_medallions, acanthus=frieze_acanthus)
+CO.COURSE_EXTRA.update(runningdog=course_runningdog, tripledentil=course_tripledentil)
+TW.BRACKET_EXTRA.update(cushionconsole=bracket_cushionconsole)
+TW.PIERCED = TW.PIERCED + ("cushionconsole",)
+TW.FOUNDATION_EXTRA.update(blindarcade=foundation_blindarcade)
+SH.CORNER_EXTRA.update(chamferquoin=corner_chamferquoin)
+PW.POSTS.update(bandedcolumn=post_bandedcolumn)
+PW.BALUSTERS.update(bellbase=(baluster_bellbase, 1.6))
+PW.FRIEZES.update(wreathpierced=frieze_wreathpierced)
+PW.SKIRTS.update(roundels=skirt_roundels)
+FT.EDGE_EXTRA.update(crescents=edge_crescents)
