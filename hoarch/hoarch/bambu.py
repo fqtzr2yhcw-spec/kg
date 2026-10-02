@@ -47,6 +47,7 @@ LAYER = 0.2
 GLASS_TOP = 0.4             # openings.GLASS: the windows' glass is their first two layers
 PLANK_TOP = 1.2             # the planked parts' boards are their first six layers
 GLASS_HEX = "#1E2226"       # aim for the glass: near black
+SUPPORTED = ("Windows_Doors", "Addins")       # plates with supports under their frames (windows, doors, mansard add-ins)
 DECKS = ("PorchDeck", "Deck", "Boardwalk")   # the kit's plank-floor plates (porches, galleries, docks, platforms)
 
 # (brand, series) -> (Bambu Studio preset, penalty added to the colour difference)
@@ -208,7 +209,7 @@ def _plan(key):
             nm, g = roles.get(change[1], (names[1], 0.0))
             roles[change[1]] = (nm, g + grams * (1 - split))
         plates.append({"base": base, "colour": col, "parts": parts, "start": start, "change": change,
-                       "grams": grams, "roles": roles, "supports": col == "Windows_Doors",
+                       "grams": grams, "roles": roles, "supports": col in SUPPORTED,
                        "file": os.path.join(kit, p["file"]), "preview": os.path.join(kit, p["preview"])})
     return man, plates
 

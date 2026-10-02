@@ -289,6 +289,33 @@ The standard every part now follows (0.4 mm nozzle; design for **0.20 mm layers*
 - **Cresting strips** stop half a fence-thickness short of each corner and take only their
   own fence, so no sliver of the crossing strip rides along.
 
+## The mansard batch's roof system (houses 81 to 90, `secondempire.py`)
+
+The owner asked for the reference kits' roof storey: layered eaves, a flat-topped mansard and
+small windows plugged into it. Our version (the Montclair and the Lafayette are the pilots):
+
+- **A deep eave**: five rings (architrave course, frieze, second course, bracket bed, crown),
+  three parts: the two upright rings, the second course alone, and the bed with the crown.
+- **Window add-ins, one part each.** A slate-coloured plug goes into a pocket in the band; the
+  frame stands in front, upright, so its head stands proud of the leaning roof like a
+  dormer's. The plug's sides and top are the dormer's cheeks and little roof, its front face
+  is the glass: the add-in prints on its back, plug colour first, and changes once to the
+  frame colour where the frame starts. Every add-in on one roof has one plug length
+  (`addin_place` takes the deepest), so they share a plate and its change height. Supports
+  under the frames only (the "Addins" plates, like the windows).
+- **The pocket** runs right through the band at the add-in's foot and stops 0.8 mm into it at
+  its head, leaving a back wall there. The slates are cleared 0.25 round each frame.
+- **The crest** sits on the band's flat top: a course ring and a crown, one part printed upside
+  down (crown first, one change), a lip inside the band to locate it, a 45 degree seat for the
+  deck. Its relief is stepped from the top (`_st_down`) because it prints upside down.
+- **Two mansards that meet** (the Lafayette's pavilion): each is cut back to the other's
+  outer face grown 0.5 mm, past its slates. A pavilion flush with the house's wall does not
+  work when its roof is the other shape: the two faces cross. Break it forward and out.
+- **Bell-cast faces** (`bell_profile`) are facets a whole even number of slate courses long, so
+  the courses run on without a break and keep their half-slate stagger.
+- **Patterned slating**: `scallop_rows` takes a function of (course, slate) for patterns laid
+  slate by slate (the Montclair's lozenges of diamond-cut slate in a field of square slate).
+
 ## Gabled roofs and gable walls (the Whitby onward)
 
 - **The gable wall is part of the top wall shell**, a pentagon standing on the facade, so it
