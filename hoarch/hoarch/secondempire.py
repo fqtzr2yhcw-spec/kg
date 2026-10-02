@@ -1930,6 +1930,9 @@ def chimney_belcourt(w=10.0, d=11.0, h=22.0):
             body = body + M.hull_points([(x - 0.4, sy * (d / 2 + 0.3), sh - 0.01), (x + 0.4, sy * (d / 2 + 0.3), sh - 0.01),
                                          (x - 0.4, sy * (d / 2 + 1.1), sh + 0.8), (x + 0.4, sy * (d / 2 + 1.1), sh + 0.8),
                                          (x - 0.4, sy * (d / 2), sh - 0.01), (x + 0.4, sy * (d / 2), sh - 0.01)])
+    # under the cap on the narrow faces (no corbels there) a 45 degree cove, so nothing prints over air
+    body = body + M.hull_points([(x, y, sh - 0.01) for x in (-w / 2 - 0.3, w / 2 + 0.3) for y in (-d / 2 - 0.3, d / 2 + 0.3)] +
+                                [(x, y, sh + 0.8) for x in (-w / 2 - 1.2, w / 2 + 1.2) for y in (-d / 2 - 0.3, d / 2 + 0.3)])
     body = body + box([-w / 2 - 1.2, -d / 2 - 1.2, sh + 0.79], [w / 2 + 1.2, d / 2 + 1.2, sh + 1.6])
     for sx in (-1, 1):
         body = body + M.revolve(poly([(0.0, 0.0), (1.4, 0.0), (1.2, 1.2), (1.4, 1.6), (1.4, 2.0), (0.0, 2.0)]), 20).translate([sx * w / 4, 0, sh + 1.59])

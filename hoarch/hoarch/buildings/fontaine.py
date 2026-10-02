@@ -12,7 +12,7 @@ bell-capital columns, tulip balusters, a lunette frieze and a fascia of bells.
 
 - Ground-floor windows round-headed between engaged columns under a short entablature, a shield
   keystone; upper windows in eared architraves under broken pediments with urns; the tower's top
-  windows under archivolts over balustered aprons; the entrance a double door under a fanlight of
+  window under an archivolt over a balustered apron; the entrance a double door under a fanlight of
   three circles between paired columns, an entablature and a balustered blocking course.
 - Storey joint: a marble chain of bells, a verdigris frieze of lozenges and rosettes, a marble
   crown.
@@ -131,9 +131,7 @@ def _openings():
 
     add(TOWER, CX, TY0, 0.4, front, "front-door", "door")
     add(TOWER, CX, TY0, V2, up, "T-S2")
-    for x, y, k in ((CX, TY0, "S"), (TX0, -13.0, "W"), (TX1, -13.0, "E")):        # the tower's top storey, its sides
-        # only where they stand clear in front of the centre range's mansard
-        add(TOWER, x, y, V3, tw, f"T-{k}3")
+    add(TOWER, CX, TY0, V3, tw, "T-S3")                     # the tower's top storey: one light, on the street
     for x in (72.0, X1 - 72.0):                                                    # the centre range
         add(MAIN, x, 0, V1, lo, f"C{x:.0f}-1")
         add(MAIN, x, 0, V2, up, f"C{x:.0f}-2")
@@ -143,11 +141,11 @@ def _openings():
     add(MAIN, CX, 104.0, 0.4, back, "back-door", "door")
     for pav, tag in PAVS:                                                          # the pavilions
         x0 = pav.pts[0][0]
-        for x in (x0 + 15.0, x0 + PW_ - 15.0):
-            add(pav, x, PY0, V1, lo, f"{tag}S{x:.0f}-1")
-            add(pav, x, PY0, V2, up, f"{tag}S{x:.0f}-2")
-            add(pav, x, PY1, V1, lo, f"{tag}N{x:.0f}-1")
-            add(pav, x, PY1, V2, up, f"{tag}N{x:.0f}-2")
+        x = x0 + PW_ / 2                                       # one window a floor in each end: solid masonry round it
+        add(pav, x, PY0, V1, lo, f"{tag}S-1")
+        add(pav, x, PY0, V2, up, f"{tag}S-2")
+        add(pav, x, PY1, V1, lo, f"{tag}N-1")
+        add(pav, x, PY1, V2, up, f"{tag}N-2")
         xs = 0.0 if pav is PAVW else X1
         for y in (10.0, 52.0, 94.0):
             add(pav, xs, y, V1, lo, f"{tag}{y:.0f}-1")
