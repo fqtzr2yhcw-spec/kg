@@ -456,6 +456,11 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                 for j_ in range(3):
                     pts_ += [(a_ + tw_ * (j_ + 0.5), vk), (a_ + tw_ * (j_ + 1), vk + 0.4)]
                 tabs.append(poly(pts_ + [(b_, top), (a_, top)]))
+            elif shp == "arrow":          # square shoulders with a narrow V point dropping from the middle of the butt (the Marchand)
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                c, q = (a_ + b_) / 2, min(0.55, (b_ - a_) / 2 - 0.3)
+                tabs.append(poly([(a_, vk + 0.55), (c - q, vk + 0.55), (c, vk), (c + q, vk + 0.55), (b_, vk + 0.55),
+                                  (b_, top), (a_, top)]))
             elif shp == "crenel":         # square butts with a square notch cut up the middle (the Bellerive)
                 c = u + wtab / 2
                 nw = max(0.6, (wtab - gap) * 0.3)

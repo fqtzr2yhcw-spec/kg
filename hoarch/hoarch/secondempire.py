@@ -25,7 +25,7 @@ import numpy as np
 from manifold3d import JoinType, Manifold as M
 
 from .core import RIB, Facade, arch_cs, box, ccw, circle, cs_union, poly, rect, sweep_ring, union
-from .ornament import chamfer_box, console, ext, fan_crest, oval, stroke, swag
+from .ornament import bezier, chamfer_box, console, ext, fan_crest, keystone, oval, quatrefoil, stroke, swag
 from . import cornice as CO, features as FT, moulding as MD, openings as O, porchwork as PW, roof as R
 from . import shell as SH, trimwork as TW
 from .colonial import _lens, _st
@@ -3044,3 +3044,544 @@ PW.FILLS.update(tulipsplats=fill_tulipsplats)
 PW.FRIEZES.update(keyholearcade=frieze_keyholearcade)
 PW.SKIRTS.update(diamondboards=skirt_diamondboards)
 FT.EDGE_EXTRA.update(teardrops=edge_teardrops)
+
+
+# ================================================================== the Marchand (house 87)
+# Rose-red brick stepped a third each course, chequered bands of headers, cream limestone
+# dressings and indigo accents; an octagonal turret engaged at the front-west corner rises a
+# storey over the eave to a bell cap of arrow-pointed slates; a veranda turns round the turret.
+
+def slate_arrowbands(k, j):
+    """The Marchand's slating: square slates with a band of two courses of arrow-pointed slates
+    (square shoulders, a narrow V point dropping from the middle) every nine courses."""
+    return "arrow" if k % 9 in (3, 4) else "square"
+
+
+def bell_cap(z0, h, d0, d1, a=0.6, bands=8):
+    """A bell (ogee) cap profile [(d, z), ...] for a turret: flaring out at its foot (concave),
+    standing steepest half way up, then rounding in like a dome to its neck (convex): the lean
+    is (1 + a cos 2 pi s) times the mean, so it leans most at the two ends; keep
+    (1 + a) (d0 - d1) / h under 1 for it to print upside down. ``bands`` straight facets."""
+    out = []
+    for k in range(bands + 1):
+        s = k / bands
+        out.append((d0 + (d1 - d0) * (s + a * math.sin(2 * math.pi * s) / (2 * math.pi)), z0 + h * s))
+    assert (1 + a) * (d0 - d1) / h < 1.0, "bell cap leans more than 45 degrees"
+    return out
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def frieze_rinceau(L, h, b, pitch, margin, pair, half):
+    """A rinceau: a vine stem running in waves along the frieze, a scroll curling off it into
+    every hollow and a leaf on every swell (the Marchand's storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    lam = max(6.0, hh * 1.9)
+    n = max(1, int((L - 1.0) / lam))
+    u0 = (L - n * lam) / 2
+    amp = hh * 0.2
+    us = np.linspace(u0, u0 + n * lam, n * 24 + 1)
+    cs = [stroke([(u, vm + amp * math.sin(2 * math.pi * (u - u0) / lam)) for u in us], 0.5)]
+    rc = min(hh * 0.3, 1.1)
+    for k in range(2 * n):
+        sg = 1 if k % 2 == 0 else -1
+        up = u0 + lam * (k + 0.5) / 2
+        cx, cy = up + lam * 0.2, vm - sg * (amp * 0.35)
+        pts = []
+        for t in np.linspace(0.0, 1.0, 20):
+            a = sg * math.pi / 2 - sg * t * 1.7 * math.pi
+            r = rc * (1 - 0.55 * t)
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+        cs.append(stroke(pts, 0.42))
+        cs.append(circle(pts[-1], 0.32, 10))
+        cs.append(_lens((up - lam * 0.17, vm + sg * amp * 0.75), 1.7, 0.6, sg * 0.55))
+    return [_st(cs_union(cs) ^ rect(0.2, v0 - 0.3, L - 0.2, v1 + 0.3), b, 0.45)], []
+
+
+def frieze_cartouches(L, h, b, pitch, margin, pair, half):
+    """Cartouches: in every bay between the bracket pairs an oval shield in a rim with a boss,
+    curls at its sides and a little shell on top, hung with a garland to each side (the
+    Marchand's eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = v0 + hh * 0.46
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 5.0:
+            continue
+        rx, ry = min(wd * 0.16, 1.5), hh * 0.34
+        ov = oval((uc, vm), rx, ry, 28)
+        out.append(_st(ov - oval((uc, vm), rx - 0.45, ry - 0.45, 24), b, 0.5))
+        out.append(_st(oval((uc, vm), max(0.4, rx - 0.85), max(0.5, ry - 0.85), 20), b, 0.35))
+        out.append(_st(ov ^ rect(-1e3, -1e3, 1e3, 1e3), b, 0.15))
+        for sg in (-1, 1):
+            cc = (uc + sg * (rx + 0.35), vm - ry * 0.25)
+            curl = circle(cc, 0.55, 14) - circle(cc, 0.15, 8)
+            out.append(_st(curl, b, 0.4))
+            u_end = uc + sg * (wd / 2 - 0.3)
+            out.append(_st(swag(min(uc + sg * (rx + 0.6), u_end), max(uc + sg * (rx + 0.6), u_end), vm + ry * 0.55,
+                                hh * 0.32, width=0.5), b, 0.4))
+        fan = poly([(uc, vm + ry - 0.2)] + [(uc + 1.0 * math.cos(a), vm + ry - 0.2 + 1.0 * math.sin(a))
+                                            for a in np.linspace(0.35, math.pi - 0.35, 9)])
+        out.append(_st(fan ^ rect(-1e3, v0, 1e3, v1), b, 0.45))
+    return out, []
+
+
+def guilloche(L, h):
+    """A guilloche as CrossSections: two strands waving across each other, a round boss in
+    every eye between them."""
+    pu = max(2.2, h * 1.35)
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    amp = h / 2 - 0.35
+    us = np.linspace(u0, u0 + n * pu, n * 16 + 1)
+    out = [stroke([(u, h / 2 + sg * amp * math.sin(math.pi * (u - u0) / pu)) for u in us], 0.42) for sg in (-1, 1)]
+    out += [circle((u0 + pu * (k + 0.5), h / 2), max(0.25, min(0.4, amp - 0.45)), 12) for k in range(n)]
+    return [cs_union(out) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def course_guilloche(L, h, b, pitch, margin, p):
+    """A guilloche: two strands waving across each other with a boss in every eye (the
+    Marchand)."""
+    return [_st(cs, b, 0.45) for cs in guilloche(L, h)]
+
+
+def course_eggdart(L, h, b, pitch, margin, p):
+    """Egg and dart: eggs sitting in open shells, a dart between every two, under a fillet
+    (the Marchand's eave)."""
+    pu = max(1.9, h * 1.15)
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    vc = (h - 0.4) * 0.48
+    eggs, shells, darts = [], [], []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        rx, ry = pu * 0.26, (h - 0.4) * 0.34
+        eggs.append(oval((uc, vc), rx, ry, 18))
+        shells.append((oval((uc, vc), rx + 0.42, ry + 0.4, 18) - oval((uc, vc), rx + 0.05, ry + 0.05, 18))
+                      ^ rect(uc - pu, -1.0, uc + pu, vc + ry * 0.4))
+        x = u0 + pu * k
+        if k:
+            darts.append(cs_union([rect(x - 0.2, vc - ry * 0.2, x + 0.2, h - 0.4),
+                                   poly([(x - 0.38, vc), (x + 0.38, vc), (x, max(0.15, vc - ry - 0.2))])]))
+    out = [ext(rect(0.2, h - 0.42, L - 0.2, h), b - 0.05, b + 0.45)]
+    out.append(_st(cs_union(eggs) ^ rect(0.2, 0.05, L - 0.2, h), b, 0.5))
+    out.append(_st(cs_union(shells) ^ rect(0.2, 0.05, L - 0.2, h), b, 0.35))
+    if darts:
+        out.append(_st(cs_union(darts) ^ rect(0.2, 0.05, L - 0.2, h), b, 0.35))
+    return out
+
+
+def bracket_dropconsole(h, d, t):
+    """A console with a big round head under the soffit, its neck sweeping back to a curled foot
+    on the wall and a pendant drop hung below the foot; a sunk eye in the head (side profile,
+    top at v = 0; the Marchand)."""
+    r = min(0.3 * h, 0.35 * d, 1.0)
+    pts = [(0.0, 0.0), (d, 0.0), (d, -r)]
+    hb = h - 1.7
+    for s in np.linspace(0.0, 1.0, 12):
+        pts.append((d - r - (d - r - 0.9) * (1 - (1 - s) ** 2), -r - (hb - r - 0.6) * s))
+    pts += [(0.0, -hb + 0.6)]
+    prof = cs_union([poly(pts), circle((d - r, -r), r, 18), circle((0.65, -hb + 0.55), 0.65, 14),
+                     poly([(0.0, -hb + 0.3), (0.95, -hb + 0.3), (0.55, -h + 0.55), (0.0, -h + 0.55)]),
+                     circle((0.4, -h + 0.45), 0.4, 12)])
+    return prof - circle((d - r, -r), min(0.55, r * 0.55), 14)
+
+
+# ------------------------------------------------------------------ the mansard's window add-ins
+def addin_marchand(w=5.2, h=10.4, A=0.9):
+    """A Marchand add-in: a round-headed two-light window in an architrave with a keystone and
+    imposts, under a swan-neck pediment (two S-scrolls rising to curls, a ball between them),
+    its plug's roof a segment; a sill on a corbel."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, spring * 0.55 - 0.3, w, spring * 0.55 + 0.3)])
+    half = r + A + 0.7
+    vt = h + A
+    rise = 3.0
+    seg = arch_cs(-half, half, vt - 1.6, vt - 1.6, rise=rise + 1.6, seg=40)
+    body = cs_union([rect(-half, -0.2, half, vt - 1.6), seg])
+    parts = [ext(body - op, 0.0, 0.6),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-20, 0.0, 20, 40) - op)]
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (r + A / 2) - A / 2 - 0.25, spring - 0.5, sg * (r + A / 2) + A / 2 + 0.25, spring + 0.3,
+                                 0.0, 1.1, c=0.2))
+        neck = bezier((sg * (half - 0.2), vt - 1.0), (sg * (half - 0.4), vt + 1.4), (sg * 1.6, vt + 0.6), (sg * 1.1, vt + 2.0), 16)
+        parts.append(ext(stroke(neck, 0.8), 0.0, 1.1))
+        cc = (sg * 1.45, vt + 2.0)
+        parts.append(ext(circle(cc, 0.62, 16) - circle(cc, 0.18, 8), 0.0, 1.2))
+    parts.append(keystone(0.0, h - 0.3, A + 0.9, 1.1, 1.6, 0.0, 1.3))
+    parts.append(ext(cs_union([rect(-0.4, vt + 0.4, 0.4, vt + 1.2), circle((0.0, vt + 1.7), 0.6, 14)]), 0.0, 1.1))
+    sw = half + 0.3
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts.append(ext(poly([(-1.6, -0.8), (1.6, -0.8), (0.0, -2.0)]), 0.0, 0.9))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.4, JoinType.Round) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=vt + 2.7, bottom=-2.0)
+
+
+# ------------------------------------------------------------------ walls, foundation, chimney
+def brick_thirdcheck(region, datum=0.0, bl=2.4, bh=0.8, mortar=0.5, bed=0.2, d=0.25, every=12):
+    """Stretcher bond stepped a third of a brick each course (raking third bond), and every
+    ``every`` courses a chequered band: two courses of headers, alternately proud and sunk (the
+    Marchand)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    hl = bl / 2
+    cells, proud = [], []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        top = v + bh - bed
+        r = k % every
+        if r in (0, 1):
+            u = u0 - 2 * bl
+            j = 0
+            while u < u1 + bl:
+                (proud if (j + r) % 2 == 0 else cells).append(rect(u + mortar / 2, v, u + hl - mortar / 2, top))
+                u += hl
+                j += 1
+        else:
+            u = u0 - 2 * bl + (k % 3) * bl / 3
+            while u < u1 + bl:
+                cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, top))
+                u += bl
+        k += 1
+    out = M.extrude(cs_union(cells) ^ region, d)
+    if proud:
+        out = out + M.extrude(cs_union(proud) ^ region, d + 0.2)
+    return out
+
+
+def foundation_chamferrustic(reg, seed=0):
+    """Chamfered rustication: long blocks in courses, every edge bevelled so the joints are deep
+    V's, over a plain plinth course and under a dressed cap (the Marchand)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.2)]
+    out.append(ext(rect(b[0] - 1, b[3] - 1.2, b[2] + 1, b[3] + 1) ^ reg, 0.19, 0.75))
+    out.append(ext(rect(b[0] - 1, b[1] - 1, b[2] + 1, b[1] + 1.6) ^ reg, 0.19, 0.7))
+    keep = ext(reg, 0.0, 2.0)
+    v = b[1] + 1.6
+    j = 0
+    while v < b[3] - 2.2:
+        hh = min(2.6, b[3] - 1.2 - v)
+        u = b[0] - (j % 2) * 3.2
+        while u < b[2]:
+            blk = rect(u + 0.1, v + 0.1, u + 6.3, v + hh - 0.1) ^ reg
+            if not blk.is_empty():
+                bb = blk.bounds()
+                if bb[2] - bb[0] > 1.0 and bb[3] - bb[1] > 1.0:
+                    out.append(chamfer_box(bb[0], bb[1], bb[2], bb[3], 0.19, 0.5, c=0.4) ^ keep)
+            u += 6.4
+        v += hh
+        j += 1
+    return union(out)
+
+
+def chimney_marchand(w=10.4, d=8.8, h=25.0):
+    """The Marchand's stacks: red brick on a stone plinth, a sunk round-headed panel on every
+    face, a band of dogtooth (bricks set corner-out) under a corbelled stone cap, two round pots."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 5.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    body = body + box([-w / 2 - 0.4, -d / 2 - 0.4, 0.0], [w / 2 + 0.4, d / 2 + 0.4, 1.6])
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        pan = ext(O.opening_cs(L - 3.2, sh - 7.0, (L - 3.2) / 2), -0.5, 0.01).translate([0, 3.0, 0])
+        A = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])
+        body = body - pan.transform(A).translate([0, D / 2, 0]).rotate([0, 0, rot])
+    zd = sh - 2.0
+    teeth = []
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        for x in np.arange(-L / 2 + 0.6, L / 2 - 0.4, 1.0):
+            teeth.append(M.hull_points([(x - 0.4, D / 2 - 0.05, zd), (x + 0.4, D / 2 - 0.05, zd), (x, D / 2 + 0.4, zd),
+                                        (x - 0.4, D / 2 - 0.05, zd + 1.2), (x + 0.4, D / 2 - 0.05, zd + 1.2),
+                                        (x, D / 2 + 0.4, zd + 1.2)]).rotate([0, 0, rot]))
+    body = body + union(teeth)
+    body = body + M.hull_points([(x, y, sh - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                                [(x, y, sh + 0.7) for x in (-w / 2 - 0.7, w / 2 + 0.7) for y in (-d / 2 - 0.7, d / 2 + 0.7)])
+    body = body + box([-w / 2 - 0.7, -d / 2 - 0.7, sh + 0.69], [w / 2 + 0.7, d / 2 + 0.7, sh + 1.6])
+    body = body + box([-w / 2 - 0.3, -d / 2 - 0.3, sh + 1.59], [w / 2 + 0.3, d / 2 + 0.3, sh + 2.2])
+    for sx in (-1, 1):
+        prof = [(0.0, 0.0), (1.3, 0.0), (1.3, 0.5), (1.0, 0.9), (0.9, 2.0), (1.15, 2.4), (1.15, h - sh - 2.2), (0.0, h - sh - 2.2)]
+        body = body + PW._revolve(prof, 24).translate([sx * w / 4, 0.0, sh + 2.19])
+    flues = union([M.cylinder(h, 0.55, 0.55, 12).translate([sx * w / 4, 0.0, sh - 4.0]) for sx in (-1, 1)])
+    return body - flues
+
+
+def fence_marchand(L, h):
+    """Marchand cresting: spear-headed bars, and between every two an anthemion (a fan of five
+    petals) rising out of a pair of C-scrolls on the rail."""
+    pitch = 3.2
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    rail = h * 0.3
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, rail, L, rail + 0.45)]
+    for j in range(n + 1):
+        u = p * j
+        cells.append(rect(u - 0.28, 0.0, u + 0.28, h - 1.0))
+        cells.append(poly([(u - 0.5, h - 1.1), (u + 0.5, h - 1.1), (u, h)]))
+        if j < n:
+            m = u + p / 2
+            vb = rail + 0.4
+            for sg in (-1, 1):
+                cc = (m + sg * 0.6, vb + 0.4)
+                cells.append(circle(cc, 0.5, 12) - circle(cc, 0.1, 6))
+            for a in np.linspace(-0.62, 0.62, 5):
+                ln = (h - vb - 1.2) * (1.0 - 0.3 * abs(a) / 0.62)
+                cells.append(_lens((m + math.sin(a) * ln / 2, vb + 0.6 + math.cos(a) * ln / 2), ln, 0.5, math.pi / 2 - a))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def finial_artichoke(h=10.0):
+    """A finial of an artichoke (stacked cups of leaves, each widening up to its rim) on a
+    turned stem, a needle above (the Marchand's turret)."""
+    z0, z1 = h * 0.36, h * 0.74
+    prof = [(0.0, 0.0), (1.5, 0.0), (1.5, 0.8), (0.95, 1.4), (0.55, 2.0), (0.55, z0 - 0.6), (0.85, z0 - 0.3), (0.6, z0)]
+    nsc = 5
+    for k in range(nsc):
+        za = z0 + (z1 - z0) * k / nsc
+        zb = z0 + (z1 - z0) * (k + 1) / nsc
+        s = (k + 0.5) / nsc
+        rmax = 0.75 + 0.6 * math.sin(math.pi * min(1.0, s * 1.15))
+        prof += [(rmax * 0.7, za + 0.01), (rmax, zb - 0.05)]
+    prof += [(0.45, z1 + 0.3), (0.0, z1 + 0.3)]
+    body = PW._revolve(prof, 28)
+    return body + M.cylinder(h - z1 - 0.1, 0.35, 0.12, 12).translate([0, 0, z1 + 0.1])
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_marchand_lower(w=9.6, h=22.0, A=1.0):
+    """Marchand ground floor: a round-headed two-over-two sash in an architrave on imposts, a
+    hood moulding round the arch ending in curled stops, a shell keystone; a sill on two
+    consoles over a shaped apron with a drop."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, r, lites=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    for sg in (-1, 1):
+        x = sg * (r + A / 2)
+        parts.append(chamfer_box(x - A / 2 - 0.3, spring - 0.7, x + A / 2 + 0.3, spring + 0.3, 0.0, 1.3, c=0.25))
+    HB = 1.0
+    parts.append(MD.band(op.offset(A + HB - 0.1, JoinType.Round), HB, MD.CROWN, clip=rect(-w - 10, spring, w + 10, h + 40)))
+    for sg in (-1, 1):
+        cc = (sg * (r + A - 0.1 + HB / 2), spring - 0.4)
+        parts.append(ext(circle(cc, 0.8, 16) - circle(cc, 0.25, 8), 0.0, 1.2))
+        parts.append(ext(circle(cc, 0.3, 8), 0.0, 0.8))
+    vs = h - 0.5
+    shell = poly([(0.0, vs)] + [(2.0 * math.cos(a), vs + 2.0 * math.sin(a)) for a in np.linspace(0.3, math.pi - 0.3, 13)])
+    ribs = cs_union([stroke([(0.0, vs + 0.3), (1.85 * math.cos(a), vs + 1.85 * math.sin(a))], 0.42)
+                     for a in np.linspace(0.45, math.pi - 0.45, 5)])
+    parts.append(ext(shell, 0.0, 1.3) + ext(ribs ^ shell, 1.29, 1.6))
+    sw = r + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(console(2.2, 1.0, 0.9, u=sg * (r - 0.2), v_top=-0.99, w0=0.0))
+    aw = r - 0.9
+    xs = np.linspace(aw, -aw, 13)
+    apron = poly([(-aw, -0.99), (aw, -0.99)] + [(x, -1.9 - 0.7 * (1 - (x / aw) ** 2)) for x in xs])
+    parts.append(ext(apron, 0.0, 0.55))
+    parts.append(ext(cs_union([rect(-0.25, -3.0, 0.25, -2.4), circle((0.0, -3.0), 0.45, 12)]), 0.0, 0.8))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A + HB + 0.2, -3.45)
+
+
+def window_marchand_upper(w=9.0, h=19.6, A=0.9):
+    """Marchand upper floor: a flat-headed one-over-one sash in a casing, a frieze hung with a
+    garland between two rosettes, a cornice cap crested with an anthemion between two
+    reclining scrolls; a sill on blocks."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.4
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 2.4), 0.0, 0.5))
+    parts.append(ext(swag(-half + 1.4, half - 1.4, vf + 2.0, 1.2, width=0.5), 0.49, 0.9))
+    for sg in (-1, 1):
+        parts.append(MD.rosette(sg * (half - 0.9), vf + 1.4, 0.7, 0.49, 0.6))
+    vc = vf + 2.4 + 1.0
+    parts.append(MD.run(-half - 0.5, half + 0.5, vc, MD.CROWN, 1.2, up=False))
+    parts.append(MD.anthemion((0.0, vc - 0.01), 3.0, 2.6, 0.0, 1.0))
+    for sg in (-1, 1):
+        pts = bezier((sg * 1.2, vc + 0.5), (sg * 2.4, vc + 1.2), (sg * (half - 1.0), vc + 0.2), (sg * (half - 0.2), vc + 0.9), 14)
+        parts.append(ext(stroke(pts, 0.6) ^ rect(-half - 2, vc - 0.01, half + 2, vc + 3), 0.0, 0.8))
+        parts.append(ext(circle((sg * (half - 0.4), vc + 0.8), 0.45, 12), 0.0, 0.9))
+    sw = half + 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.7, -2.0, sg * (w / 2) + 0.7, -0.8, 0.0, 0.9, c=0.25))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + 2.6, -2.0)
+
+
+def door_marchand(w=13.0, h=27.0, A=1.2):
+    """The Marchand's entrance: a pair of leaves, each a round-headed light over a raised panel,
+    under a round fanlight barred like a spider's web; an architrave with a keystone between
+    engaged round columns on pedestals, an entablature with a cartouche in its frieze, a cornice
+    and a crest of two scrolls round a ball."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    mid = 0.5
+    lw = (w - 2 * O.CLR - 1.0 - mid) / 2
+    dh = spring - 0.4
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    u = -w / 2 + O.CLR + 0.5
+    for i in range(2):
+        body.append(ext(rect(u, 0.5, u + lw, dh), -pl, -0.8))
+        gv0 = dh * 0.45
+        lr = lw / 2 - 0.8
+        lights.append(O.opening_cs(2 * lr, dh - 0.8 - gv0, lr).translate([u + lw / 2, gv0]))
+        body.append(_panel(rect(u + 0.8, 1.2, u + lw - 0.8, gv0 - 0.8)))
+        u += lw + mid
+    fan = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, spring + 0.2, w, h + 2)
+    c0 = (0.0, spring + 0.2)
+    web = cs_union([circle(c0, r * 0.5, 32) - circle(c0, r * 0.5 - 0.45, 32)] +
+                   [stroke([(r * 0.48 * math.cos(a), spring + 0.2 + r * 0.48 * math.sin(a)),
+                            (r * 1.2 * math.cos(a), spring + 0.2 + r * 1.2 * math.sin(a))], 0.45)
+                    for a in np.linspace(0.0, math.pi, 7)[1:-1]] + [circle(c0, 1.0, 16)])
+    sash = _glazed(body, cs_union(lights) + fan, pl, web, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, spring + 0.2) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    rc = 1.15
+    xc = r + A + 0.4 + rc
+    vcap = h + A + 0.8
+    half = xc + rc + 0.6
+    for sg in (-1, 1):
+        x = sg * xc
+        parts.append(ext(rect(x - rc - 0.3, 0.0, x + rc + 0.3, vcap), 0.0, 0.6))
+        parts.append(chamfer_box(x - rc - 0.5, 0.0, x + rc + 0.5, 4.2, 0.0, 1.8, c=0.3))
+        prof = [(0.0, 0.0), (rc + 0.25, 0.0), (rc + 0.25, 0.4), (rc, 0.8), (rc * 0.88, vcap - 4.2 - 1.6), (rc + 0.2, vcap - 4.2 - 1.2),
+                (rc + 0.2, vcap - 4.2 - 0.9), (rc * 0.88, vcap - 4.2 - 0.7), (rc + 0.5, vcap - 4.2), (0.0, vcap - 4.2)]
+        col = PW._revolve(prof, 28).rotate([-90, 0, 0]).translate([x, 4.19, 0.0]) ^ box([x - 3, 0.0, 0.0], [x + 3, vcap + 1, 5.0])
+        parts.append(col)
+        parts.append(chamfer_box(x - rc - 0.6, vcap - 0.8, x + rc + 0.6, vcap + 0.01, 0.0, 1.8, c=0.2))
+    parts.append(ext(rect(-xc, spring, xc, vcap) - op.offset(A, JoinType.Round), 0.0, 0.6))
+    parts.append(keystone(0.0, h - 0.3, vcap - h + 0.3, 1.6, 2.4, 0.0, 1.6))
+    parts.append(ext(rect(-half, vcap - 0.01, half, vcap + 0.8), 0.0, 1.0))
+    parts.append(ext(rect(-half + 0.3, vcap + 0.79, half - 0.3, vcap + 3.4), 0.0, 0.7))
+    parts.append(MD.cartouche((0.0, vcap + 2.1), 3.0, 2.2, 0.69, 0.8))
+    vk = vcap + 3.4 + 1.4
+    parts.append(MD.run(-half - 0.8, half + 0.8, vk, MD.CROWN, 1.4, up=False))
+    for sg in (-1, 1):
+        pts = bezier((sg * (half - 0.4), vk + 0.4), (sg * (half - 1.4), vk + 2.4), (sg * 2.6, vk + 0.4), (sg * 1.5, vk + 1.6), 14)
+        parts.append(ext(stroke(pts, 0.8) ^ rect(-half - 2, vk - 0.01, half + 2, vk + 4), 0.0, 1.0))
+        cc = (sg * 1.75, vk + 1.75)
+        parts.append(ext(circle(cc, 0.6, 14) - circle(cc, 0.18, 8), 0.0, 1.1))
+    parts.append(ext(cs_union([rect(-0.5, vk - 0.01, 0.5, vk + 1.4), circle((0.0, vk + 2.0), 0.85, 16)]), 0.0, 1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vk + 2.85, 0.0)
+
+
+def door_marchand_back(w=10.0, h=24.0, A=1.0, rise=1.6):
+    """The Marchand's back door: one leaf with a round-headed light over a panel under a
+    segmental transom, in an architrave with a keystone and a segmental hood."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    spring = h - rise
+    dh = spring - 3.0
+    u0, u1 = -w / 2 + O.CLR + 0.5, w / 2 - O.CLR - 0.5
+    gv0 = dh * 0.45
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, dh), -pl, -0.8), _panel(rect(u0 + 0.8, 1.2, u1 - 0.8, gv0 - 0.8))]
+    lr = (u1 - u0) / 2 - 0.9
+    light = O.opening_cs(2 * lr, dh - 0.8 - gv0, lr).translate([0.0, gv0])
+    g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.3, w, h + 2)
+    sash = _glazed(body, light + g, pl, None, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.3, w, dh + 0.3) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    HB = 1.0
+    parts.append(MD.band(op.offset(A + HB - 0.1, JoinType.Miter, 4.0), HB, MD.CROWN, clip=rect(-w - 10, spring, w + 10, h + 40)))
+    parts.append(keystone(0.0, h - 0.3, A + HB + 0.4, 1.3, 1.9, 0.0, 1.5))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + HB + 0.2, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_cushionwaist(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A turned post: a plain round shaft with a cushion collar between fillets at half its
+    height, a necking ring and an echinus under the capital (the Marchand's veranda)."""
+    z1 = h - 2.6
+    r = 0.95
+    zm = round(z1 * 0.5 / 0.2) * 0.2
+    prof = [(0.0, 1.19), (1.55, 1.19), (1.55, 1.4), (1.35, 1.6), (1.35, 1.9), (r, 2.3),
+            (r, zm - 1.2), (1.2, zm - 0.9), (1.2, zm - 0.7), (1.42, zm - 0.45), (1.42, zm + 0.45), (1.2, zm + 0.7),
+            (1.2, zm + 0.9), (r, zm + 1.2), (r, z1 - 0.6), (1.12, z1 - 0.4), (1.12, z1 - 0.1), (r * 0.95, z1 + 0.1),
+            (1.3, z1 + 0.7)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    return body + PW._top(h, abacus / 2, z1 + 0.7, 1.3, slot, seg=32)
+
+
+def baluster_urnneck(h, seg=18):
+    """A baluster: a squat urn at its foot, a long neck and a collar under the top block (the
+    Marchand)."""
+    prof = [(0.0, 0.8), (0.32, 0.8), (0.5, h * 0.2), (0.56, h * 0.3), (0.42, h * 0.4), (0.28, h * 0.48), (0.28, h * 0.76),
+            (0.45, h * 0.84), (0.3, h * 0.9), (0.3, h - 0.8)]
+    return PW._revolve(prof, seg) + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_basketarch(u0, u1, v_bot, v_top):
+    """A porch frieze: a board cut below into flat basket-handle arches, a pierced quatrefoil
+    in the spandrel over every pier (the Marchand)."""
+    v0 = v_top - 3.4
+    n = max(1, int((u1 - u0) / 9.0))
+    p = (u1 - u0) / n
+    board = rect(u0, v0 - 1.6, u1, v_top + 0.05)
+    cuts, holes = [], []
+    for k in range(n):
+        a, e = u0 + p * k + 0.5, u0 + p * (k + 1) - 0.5
+        m, hw = (a + e) / 2, (e - a) / 2
+        arch = [(m - hw * math.cos(t), v0 - 1.6 + 1.4 * math.sin(t) ** 0.55) for t in np.linspace(0.0, math.pi, 25)]
+        cuts.append(poly([(a, v0 - 3.0)] + arch + [(e, v0 - 3.0)]))
+    for k in range(1, n):
+        holes.append(quatrefoil((u0 + p * k, v0 + 0.3), 0.42, 12))
+    return board - cs_union(cuts) - (cs_union(holes) if holes else rect(0, 0, 0, 0))
+
+
+def skirt_herringboards(reg, d=1.2):
+    """A porch skirt of boards laid diagonally, alternate panels sloping opposite ways so the
+    run reads as herringbone, between upright stiles under a rail (the Marchand)."""
+    u0, v0, u1, v1 = reg.bounds()
+    pw_ = 4.0
+    out = [M.extrude(reg, d * 0.35)]
+    boards, stiles = [], []
+    for k, uc in enumerate(np.arange(u0, u1, pw_)):
+        pan = rect(uc + 0.4, v0 - 1, uc + pw_ - 0.4, v1 - 0.8)
+        sg = 1 if k % 2 == 0 else -1
+        st = [stroke([(x, v0 - 2), (x + sg * (v1 - v0 + 4), v1 + 2)], 0.7, caps=False)
+              for x in np.arange(uc - (v1 - v0) - 4, uc + pw_ + (v1 - v0) + 4, 1.2)]
+        boards.append(cs_union(st) ^ pan)
+        stiles.append(rect(uc - 0.4, v0 - 1, uc + 0.4, v1 + 1))
+    out.append(M.extrude(cs_union(boards) ^ reg, d * 0.75))
+    out.append(M.extrude((cs_union(stiles) + rect(u0 - 1, v1 - 0.8, u1 + 1, v1 + 1)) ^ reg, d))
+    return union(out)
+
+
+def edge_dartbeads(L, z0, zc):
+    """Porch fascia (the Marchand): darts and beads hung under the crown in turn."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for i, x in enumerate(np.arange(1.0, L - 0.8, 1.3)):
+        if i % 2 == 0:
+            out.append(poly([(x - 0.42, zc - 0.4), (x + 0.42, zc - 0.4), (x, zc - 1.5)]))
+        else:
+            out.append(circle((x, zc - 0.8), 0.42, 12))
+    return cs_union(out), 0.6
+
+
+CO.FRIEZE_EXTRA.update(rinceau=frieze_rinceau, cartouches=frieze_cartouches)
+CO.COURSE_EXTRA.update(guilloche=course_guilloche, eggdart=course_eggdart)
+TW.BRACKET_EXTRA.update(dropconsole=bracket_dropconsole)
+TW.PIERCED = TW.PIERCED + ("dropconsole",)
+TW.FOUNDATION_EXTRA.update(chamferrustic=foundation_chamferrustic)
+PW.POSTS.update(cushionwaist=post_cushionwaist)
+PW.BALUSTERS.update(urnneck=(baluster_urnneck, 1.6))
+PW.FRIEZES.update(basketarch=frieze_basketarch)
+PW.SKIRTS.update(herringboards=skirt_herringboards)
+FT.EDGE_EXTRA.update(dartbeads=edge_dartbeads)
