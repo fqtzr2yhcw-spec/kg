@@ -1296,6 +1296,46 @@ finial).
   7. STOOP under the door.
 """, """Walls, roofs, lookout and chimney print upright. Windows and doors print face up with supports under their frames only.
 """),
+    "montclair": ("THE MONTCLAIR - SECOND EMPIRE", "  1. FOUNDATION (reticulated brownstone).\n" + jointed() + """
+  5. The CORNICE-E parts round the eave band, in three: -lower (the architrave and the bee
+     frieze) onto the ledge, -course (the leaf and dart) on it, then -upper (the paired brackets
+     and the crown, printed upside down) on top.
+  6. MANSARD (it prints upside down) down over the walls onto the eave's crown. Each ADDIN
+     (the roof windows; ADDIN-twin over the front door) pushes into its pocket from outside,
+     plug first, until its frame's foot meets the slates; a drop of glue on the plug.
+  7. CREST (upside down) onto the mansard's flat top, its lip inside the band; ROOF-deck into
+     the crest's seat; the CREST-iron strips into the grooves along the crest; the CHIMNEYs in
+     their deck pockets.
+  8. Veranda: """ + top_porch() + """; STOOP-back at the
+     back door.
+""", """Roof windows (ADDIN, on the Addins plates): each prints on its back with supports ON (tree,
+on the build plate only) under its frame, like the windows. Start in the slate colour and
+change once, at the height in the plate's name, to brownstone: the plug (the glass, and the
+cheeks and little roof that show behind the frame) prints slate, the frame above it brownstone.
+The CHIMNEYs change once to brownstone for their caps, the CREST once from brownstone to gold.
+"""),
+    "lafayette": ("THE LAFAYETTE - SECOND EMPIRE WITH A CORNER PAVILION", "  1. FOUNDATION (chequered stone).\n" + jointed(
+        " (the first storey and the pavilion's)", " (the second storey and the pavilion's)") + """
+  5. The CORNICE-E parts round the eave band and round the pavilion, in three: -lower (the
+     ribbon course and the candelabra frieze), -course (the beaded dentils), then -upper (the
+     leaf modillions and the crown, printed upside down).
+  6. MANSARD (upside down) over the main house onto the eave's crown, its front-west corner
+     cut away for the pavilion; then MANSARD-P (the pavilion's taller roof, also upside down)
+     onto the pavilion's eave, its back faces meeting the main roof. The ADDINs and ADDIN-Ps
+     (the roof windows) push into their pockets from outside, plug first.
+  7. CREST (upside down) onto the main mansard's flat top (it stops against the pavilion);
+     ROOF-deck into its seat; the CREST-iron strips into their grooves; the CHIMNEYs in their
+     deck pockets.
+  8. Pavilion: PAV-CREST onto its mansard's top, PAV-deck (its torch finial printed on it)
+     into the seat, the PAV-iron strips into their grooves.
+  9. Veranda: """ + top_porch() + """; STOOP-back at the
+     back door.
+""", """Roof windows (ADDIN and ADDIN-P, on the Addins plates): each prints on its back with supports
+ON (tree, on the build plate only) under its frame, like the windows. Start in the slate colour
+and change once, at the height in the plate's name, to ivory: the plug (the glass, and the
+cheeks and little roof that show behind the frame) prints slate, the frame above it ivory.
+The CHIMNEYs change once to ivory for their cornices, the CRESTs once from plum to ivory.
+"""),
     "section4": ("SECTION HOUSE No. 4 - TOOL HOUSE AND SPEEDER SHED", """  1. TOOL-FOUNDATION on the layout, the door side toward the track; TOOL-WALLS onto it; the door and windows; TOOL-CORNICE-frieze, then TOOL-CORNICE-crown; TOOL-ROOF; STOVEPIPE down into the hole in the back slope.
   2. SPEEDER-FOUNDATION with its gable end to the speeder's spur; SPEEDER-WALLS onto it; the doors and window; SPEEDER-CORNICE-course, then SPEEDER-CORNICE-crown; SPEEDER-ROOF.
 """, """Walls and roofs print upright. Windows and doors print face up with supports under their frames only.

@@ -23,7 +23,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "out"))
 
-LATER = {"roof", "cupola", "top", "dormers", "extras", "street"}
+LATER = {"roof", "cupola", "top", "dormers", "extras", "street", "addins", "pavilion"}
 OPEN = {"porch": "porch", "portico": "portico", "balcony": "balcony", "gallery": "gallery", "stoop": "steps",
         "boardwalk": "boardwalk", "walkway": "walkway and chutes"}
 TOPS = re.compile(r"roof|finial|crest|spire|chimney|weathervane", re.I)
