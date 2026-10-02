@@ -1781,3 +1781,377 @@ PW.BALUSTERS.update(beadstack=(baluster_beadstack, 1.6))
 PW.FRIEZES.update(ogeearcade=frieze_ogeearcade)
 PW.SKIRTS.update(archslats=skirt_archslats)
 FT.EDGE_EXTRA.update(acorndrops=edge_acorndrops)
+
+
+# ================================================================== the Belcourt (house 84)
+# The batch's Italianate flat-roof house: ochre ashlar laid in tall and short courses, cream
+# trim, oxblood accents; the last storey is an attic band of frieze windows between tall paired
+# brackets, under a bracketed eave and a flat roof with a balustrade and a belvedere.
+
+# ------------------------------------------------------------------ cornice ornaments
+def frieze_squarelinks(L, h, b, pitch, margin, pair, half):
+    """Square links: a chain of interlaced squares set on the diagonal, each over the next, a
+    boss in every link (the Belcourt's storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    s = hh * 0.62
+    n = max(1, int((L - 1.0) / (s * 1.1)))
+    u0 = (L - n * s * 1.1) / 2
+    out = []
+    for k in range(n):
+        uc = u0 + s * 1.1 * (k + 0.5)
+        sq = poly([(uc - s * 0.72, vm), (uc, vm + s * 0.72), (uc + s * 0.72, vm), (uc, vm - s * 0.72)])
+        ring = sq - sq.offset(-0.5, JoinType.Miter, 4.0)
+        out.append(_st(ring, b + (0.25 if k % 2 else 0.0), 0.35))
+        out.append(_st(circle((uc, vm), 0.45, 12), b, 0.5))
+    return out, []
+
+
+def course_flutes(L, h, b, pitch, margin, p):
+    """A fluted band: short round-ended flutes sunk in a plain band between fillets (the
+    Belcourt)."""
+    out = [ext(rect(0.2, 0.0, L - 0.2, h), b - 0.05, b + 0.5)]
+    cuts = cs_union([cs_union([rect(u - 0.25, 0.65, u + 0.25, h - 0.65), circle((u, 0.65), 0.25, 10), circle((u, h - 0.65), 0.25, 10)])
+                     for u in np.arange(0.9, L - 0.6, 1.1)])
+    return [out[0] - ext(cuts, b + 0.2, b + 1.0)]
+
+
+def frieze_sixfoils(L, h, b, pitch, margin, pair, half):
+    """Sixfoils: in every bay a round panel holding a six-lobed rosette, a bead between (the
+    Belcourt's belvedere)."""
+    v0, v1 = 0.8, h - 0.8
+    vm = (v0 + v1) / 2
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        r = min((v1 - v0) / 2 - 0.1, wd / 2 - 0.4, 1.8)
+        if r < 0.9:
+            continue
+        out.append(_st(circle((uc, vm), r, 28) - circle((uc, vm), r - 0.45, 28), b, 0.4))
+        lobes = cs_union([circle((uc + r * 0.4 * math.cos(a), vm + r * 0.4 * math.sin(a)), r * 0.32, 12)
+                          for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)])
+        out.append(_st(lobes, b, 0.35))
+        out.append(_st(circle((uc, vm), r * 0.22, 10), b + 0.35, 0.2))
+    return out, []
+
+
+def bracket_longconsole(h, d, t):
+    """A long Italianate console for the attic: a block head under the soffit, a straight
+    tapering shank down the wall, and a big scroll at the foot curling outward over a drop
+    (side profile, top at v = 0; the Belcourt)."""
+    r = min(0.42 * d, 0.16 * h, 1.4)
+    hd = min(1.2, 0.12 * h)
+    c = (r + 0.3, -h + r + 0.8)
+    shank = poly([(0.0, 0.0), (d, 0.0), (d, -hd), (d * 0.55, -hd - 0.6), (c[0] + r * 0.7, c[1] + r * 0.6), (0.0, c[1] + r * 0.3)])
+    prof = cs_union([shank, circle(c, r, 22), rect(0.0, c[1], 0.6, 0.0), circle((0.35, -h + 0.4), 0.4, 12)])
+    return prof - circle(c, r * 0.38, 14)
+
+
+# ------------------------------------------------------------------ walls, foundation, chimney
+def ashlar_pseudoisodomic(region, datum=0.0, tall=3.6, short=1.8, length=7.6, joint=0.5, d=0.3, v=0.2):
+    """Ashlar in tall and short courses in turn (pseudo-isodomic), every joint a shallow V,
+    the blocks broken half a block course to course (the Belcourt)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    cells = []
+    z = datum - 2 * (tall + short)
+    k = 0
+    while z < v1:
+        hh = tall if k % 2 == 0 else short
+        u = u0 - length * 2 + (k % 2) * length / 2
+        while u < u1 + length:
+            cells.append(rect(u + joint / 2, z + joint / 2, u + length - joint / 2, z + hh - joint / 2))
+            u += length
+        z += hh
+        k += 1
+    cs = cs_union(cells) ^ region
+    return ext(cs, 0.0, d - v) + ext(cs.offset(-v, JoinType.Miter, 4.0), d - v - 0.01, d)
+
+
+def foundation_frostwork(reg, seed=0):
+    """Frost-work rustication: big blocks whose faces carry rows of hanging, icicle-like
+    ridges inside a smooth margin (the Belcourt's raised basement)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 84)
+    out = [M.extrude(reg, 0.2)]
+    v = b[1] + 0.2
+    j = 0
+    while v < b[3] - 1.0:
+        hh = min(3.4, b[3] - v - 0.2)
+        u = b[0] - (j % 2) * 3.0
+        while u < b[2]:
+            blk = rect(u + 0.3, v + 0.3, u + 6.0 - 0.3, v + hh - 0.3) ^ reg
+            if not blk.is_empty():
+                out.append(ext(blk, 0.15, 0.45))
+                fld = blk.offset(-0.5, JoinType.Miter, 4.0)
+                if not fld.is_empty():
+                    fb = fld.bounds()
+                    ic = []
+                    for x_ in np.arange(fb[0] + 0.35, fb[2] - 0.2, 0.75):
+                        ln = rng.uniform(0.45, 0.95) * (fb[3] - fb[1])
+                        ic.append(poly([(x_ - 0.3, fb[3]), (x_ + 0.3, fb[3]), (x_ + 0.05, fb[3] - ln), (x_ - 0.05, fb[3] - ln)]))
+                    out.append(ext(cs_union(ic) ^ fld, 0.44, 0.75))
+            u += 6.0
+        v += hh
+        j += 1
+    return union(out)
+
+
+def chimney_belcourt(w=10.0, d=11.0, h=22.0):
+    """The Belcourt's stacks: stucco, a round-headed blind niche on each broad face, a frieze
+    band and a broad cap on a row of little corbels, two squat round pots."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 4.4
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for sy in (-1, 1):
+        nw = w - 4.0
+        niche = cs_union([rect(-nw / 2, 3.0, nw / 2, sh - 3.0 - nw / 2), circle((0.0, sh - 3.0 - nw / 2), nw / 2, 24)])
+        T = np.array([[1.0, 0, 0, 0], [0, 0, sy * 1.0, sy * d / 2], [0, 1.0, 0, 0]])
+        body = body - (ext(niche, -0.6, 1.0) if sy > 0 else ext(niche, -1.0, 0.6)).transform(T)
+    body = body + box([-w / 2 - 0.3, -d / 2 - 0.3, sh - 1.6], [w / 2 + 0.3, d / 2 + 0.3, sh])
+    for x in np.arange(-w / 2 + 0.9, w / 2 - 0.5, 1.6):
+        for sy in (-1, 1):
+            body = body + M.hull_points([(x - 0.4, sy * (d / 2 + 0.3), sh - 0.01), (x + 0.4, sy * (d / 2 + 0.3), sh - 0.01),
+                                         (x - 0.4, sy * (d / 2 + 1.1), sh + 0.8), (x + 0.4, sy * (d / 2 + 1.1), sh + 0.8),
+                                         (x - 0.4, sy * (d / 2), sh - 0.01), (x + 0.4, sy * (d / 2), sh - 0.01)])
+    body = body + box([-w / 2 - 1.2, -d / 2 - 1.2, sh + 0.79], [w / 2 + 1.2, d / 2 + 1.2, sh + 1.6])
+    for sx in (-1, 1):
+        body = body + M.revolve(poly([(0.0, 0.0), (1.4, 0.0), (1.2, 1.2), (1.4, 1.6), (1.4, 2.0), (0.0, 2.0)]), 20).translate([sx * w / 4, 0, sh + 1.59])
+    return body - union([M.cylinder(8.0, 0.6, 0.6, 12).translate([sx * w / 4, 0, sh - 4.0]) for sx in (-1, 1)])
+
+
+# ------------------------------------------------------------------ the roof balustrade and the belvedere's finial
+def fence_belcourt(L, h):
+    """The Belcourt's roof balustrade, as flat strips: a plinth and a coping rail with little
+    vase balusters between them and a pedestal every few balusters."""
+    n_ped = max(1, int(round(L / 22.0)))
+    cells = [rect(0.0, 0.0, L, 0.8), rect(0.0, h - 0.8, L, h)]
+    for j in range(n_ped + 1):
+        x = L * j / n_ped
+        cells.append(rect(max(0.0, x - 1.0), 0.0, min(L, x + 1.0), h))
+        if j < n_ped:
+            a, e = x + 1.0, L * (j + 1) / n_ped - 1.0
+            m = max(1, int((e - a) / 1.7))
+            for k in range(m):
+                cells.append(_baluster_cs(a + (e - a) * (k + 0.5) / m, 0.79, h - 1.58, 1.15))
+    return cs_union(cells)
+
+
+def finial_ballspire(h=8.0):
+    """The belvedere's finial: a turned base, a ball and a short spire (the Belcourt)."""
+    prof = [(0.0, 0.0), (1.3, 0.0), (1.3, 0.7), (0.7, 1.2), (0.55, 2.4), (0.9, 2.7), (0.55, 3.0), (0.0, 3.0)]
+    return PW._revolve(prof, 24) + M.sphere(1.1, 24).translate([0, 0, 3.9]) + \
+        M.cylinder(h - 4.6, 0.45, 0.1, 12).translate([0, 0, 4.6])
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_belcourt_lower(w=9.6, h=22.0, A=1.0):
+    """Belcourt ground floor: a round-headed two-over-two sash in an architrave on imposts, a
+    moulded archivolt with a keystone, rosettes in the spandrels, under a cornice cap."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, r, lites=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (r + A / 2) - 1.0, spring - 0.8, sg * (r + A / 2) + 1.0, spring + 0.1, 0.0, 1.3, c=0.3))
+    Ro = r + A + 1.2
+    arc = (circle((0.0, spring), Ro, 64) - circle((0.0, spring), r + A, 64)) ^ rect(-Ro - 1, spring + 0.09, Ro + 1, spring + Ro + 1)
+    parts.append(ext(arc, 0.0, 1.0))
+    half = Ro + 0.4
+    vc = spring + Ro + 1.2
+    parts.append(ext(rect(-half, spring + 0.1, half, vc - 1.0) - circle((0.0, spring), Ro, 64), 0.0, 0.6))
+    for sg in (-1, 1):
+        parts.append(MD.rosette(sg * (Ro - 0.6), vc - 2.2, 0.55, 0.59, 0.5))
+    parts.append(MD.scroll_keystone(0.0, h - 0.3, vc - h - 0.2, 1.4, 2.0, 0.0, 1.8))
+    parts.append(MD.run(-half - 0.5, half + 0.5, vc, MD.CROWN, 1.2, up=False))
+    sw = r + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(console(1.8, 1.0, 0.8, u=sg * (r + A / 2), v_top=-0.8, w0=0.0))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc, -2.8)
+
+
+def window_belcourt_upper(w=9.0, h=19.0, A=0.9):
+    """Belcourt upper floor: a flat-headed two-over-two sash in an architrave with crossettes,
+    a segmental cap on two little brackets, a plain sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(2, 2), bare=True)["insert"]
+    half = w / 2 + A + 0.7
+    outer = cs_union([op.offset(A, JoinType.Miter, 4.0), rect(-half, h - 1.8, half, h + A)])
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(outer, A + 0.7, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vf = h + A
+    for sg in (-1, 1):
+        parts.append(console(2.2, 1.2, 1.0, u=sg * (half - 0.6), v_top=vf + 1.8, w0=0.0))
+    parts.append(ext(rect(-half + 1.2, vf - 0.01, half - 1.2, vf + 1.8), 0.0, 0.5))
+    rp = 1.8
+    seg = arch_cs(-half - 0.5, half + 0.5, vf + 1.8 - 0.01, vf + 1.8, rise=rp, seg=48)
+    parts.append(MD.band(seg, 1.2, MD.CROWN, clip=rect(-half - 2, vf + 1.79, half + 2, vf + 10)))
+    parts.append(ext(seg.offset(-1.0, JoinType.Round) ^ rect(-half, vf + 1.8, half, vf + 10), 0.0, 0.6))
+    sw = half + 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vf + 1.8 + rp, -1.0)
+
+
+def window_belcourt_attic(w=10.0, h=4.6, A=0.8):
+    """The Belcourt's frieze windows: oblong lights in a moulded frame, glazed behind a cast
+    grille of three rings joined by a bar."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    g = plug_cs.offset(-0.5, JoinType.Miter, 4.0)
+    rr = min(h / 2 - 0.6, 1.3)
+    rings = cs_union([circle((x, h / 2), rr, 20) - circle((x, h / 2), rr - 0.45, 16) for x in (-w / 4, 0.0, w / 4)] +
+                     [rect(-w, h / 2 - 0.22, w, h / 2 + 0.22)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, rings, plug_cs)
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, -5, w + 10, h + 10) - op)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A, -A)
+
+
+def window_belcourt_belvedere(w=6.4, h=13.0, A=0.8):
+    """The belvedere's windows: a round-headed one-over-one sash in an architrave with a
+    keystone."""
+    r = w / 2
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, r, lites=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op),
+             MD.scroll_keystone(0.0, h - 0.3, A + 1.2, 1.1, 1.6, 0.0, 1.4)]
+    sw = r + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 0.8, up=False))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A + 0.9, -0.8)
+
+
+def door_belcourt(w=13.0, h=27.0, A=1.2):
+    """The Belcourt's entrance: a pair of leaves with arched panels under a round fanlight of
+    radiating bars, in a moulded architrave with a big keystone, imposts and spandrels under a
+    cornice."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    mid = 0.5
+    lw = (w - 2 * O.CLR - 1.0 - mid) / 2
+    dh = spring - 0.4
+    body = [ext(plug_cs, -pl, -1.0)]
+    u = -w / 2 + O.CLR + 0.5
+    for i in range(2):
+        body.append(ext(rect(u, 0.5, u + lw, dh), -pl, -0.8))
+        pw_ = lw - 1.6
+        for vb, vt in ((1.2, dh * 0.38), (dh * 0.38 + 0.8, dh - 0.8)):
+            body.append(_panel(cs_union([rect(u + 0.8, vb, u + 0.8 + pw_, vt - pw_ / 2), circle((u + lw / 2, vt - pw_ / 2), pw_ / 2, 24)])))
+        u += lw + mid
+    fan = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, spring + 0.2, w, h + 2)
+    rays = cs_union([stroke([(0.0, spring + 0.2), (r * 1.2 * math.cos(a), spring + 0.2 + r * 1.2 * math.sin(a))], 0.45)
+                     for a in np.linspace(0.3, math.pi - 0.3, 7)] + [circle((0.0, spring + 0.2), 1.4, 20)])
+    sash = _glazed(body, fan, pl, rays, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, spring + 0.2) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (r + A / 2) - 1.1, spring - 1.0, sg * (r + A / 2) + 1.1, spring + 0.1, 0.0, 1.4, c=0.3))
+    Ro = r + A + 1.4
+    half = Ro + 0.6
+    vc = spring + Ro + 1.4
+    parts.append(ext(rect(-half, spring + 0.1, half, vc - 1.2) - op.offset(A, JoinType.Round), 0.0, 0.6))
+    for sg in (-1, 1):
+        parts.append(MD.rosette(sg * (Ro - 0.4), vc - 2.4, 0.7, 0.59, 0.6))
+    parts.append(MD.scroll_keystone(0.0, h - 0.3, vc - h - 0.2, 1.8, 2.6, 0.0, 2.0))
+    parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 1.4, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc, 0.0)
+
+
+def door_belcourt_back(w=10.0, h=24.0, A=1.0):
+    """The Belcourt's back door: one leaf with an arched upper panel and a two-light transom, an
+    architrave and a cornice cap."""
+    transom = 3.4
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    u0, u1 = -w / 2 + O.CLR + 0.5, w / 2 - O.CLR - 0.5
+    pw_ = u1 - u0 - 1.6
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, dh - 0.3), -1.0, -0.8),
+            _panel(rect(u0 + 0.8, 1.2, u1 - 0.8, dh * 0.4)),
+            _panel(cs_union([rect(u0 + 0.8, dh * 0.4 + 0.8, u1 - 0.8, dh - 1.0 - pw_ / 2), circle((0.0, dh - 1.0 - pw_ / 2), pw_ / 2, 24)]))]
+    g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.3, w, h + 2)
+    sash = _glazed(body, g, pl, _muntins(g, 2, 1), plug_cs)
+    sash.append(ext(rect(-w, dh - 0.3, w, dh + 0.3) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.4
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.6), 0.0, 0.6))
+    parts.append(MD.run(-half - 0.6, half + 0.6, vf + 1.6 + 1.0, MD.CROWN, 1.2, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vf + 2.6, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_halffluted(h, collar=None, abacus=3.2, slot=(1.2, 1.0)):
+    """A column fluted on its lower third only, plain above a ring, under a moulded capital
+    (the Belcourt's portico)."""
+    z1 = h - 2.8
+    r = 1.15
+    zf = round((2.2 + (z1 - 2.2) * 0.34) / 0.2) * 0.2
+    prof = [(0.0, 1.19), (1.6, 1.19), (1.6, 1.45), (1.4, 1.75), (r, 2.2), (r, zf), (1.32, zf + 0.2), (1.32, zf + 0.5), (r * 0.97, zf + 0.7),
+            (r * 0.9, z1), (1.25, z1 + 0.25), (1.25, z1 + 0.55), (r * 0.9, z1 + 0.75)]
+    body = PW._revolve(prof, 36) + PW._plinth(3.3)
+    fl = union([M.cylinder(zf - 3.0, 0.26, 0.26, 10).translate([r * math.cos(a), r * math.sin(a), 2.6])
+                for a in np.linspace(0, 2 * math.pi, 10, endpoint=False)])
+    return body - fl + PW._top(h, abacus / 2, z1 + 0.75, r * 0.9, slot, seg=36)
+
+
+def baluster_doubleball(h, seg=18):
+    """A slim baluster with two balls on it, square ends (the Belcourt)."""
+    prof = [(0.0, 0.8), (0.3, 0.8), (0.3, h * 0.3), (0.52, h * 0.36), (0.3, h * 0.42), (0.3, h * 0.6), (0.52, h * 0.66),
+            (0.3, h * 0.72), (0.3, h - 0.8)]
+    return PW._revolve(prof, seg) + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_paterae(u0, u1, v_bot, v_top):
+    """A porch frieze: an architrave band with a row of round paterae on the frieze over it
+    (the Belcourt)."""
+    v0 = v_top - 3.0
+    board = rect(u0, v0, u1, v_top + 0.05)
+    n = max(2, int((u1 - u0) / 3.0))
+    holes = [circle((u0 + (u1 - u0) * (k + 0.5) / n, v0 + 1.9), 0.75, 16) - circle((u0 + (u1 - u0) * (k + 0.5) / n, v0 + 1.9), 0.3, 10)
+             for k in range(n)]
+    return (board - cs_union(holes)) + rect(u0, v0 - 0.6, u1, v0 + 0.8)
+
+
+def skirt_louvres(reg, d=1.2):
+    """A porch skirt of horizontal louvres between plain stiles (the Belcourt)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = M.extrude(reg, d * 0.35)
+    slats = cs_union([rect(u0 - 1, v, u1 + 1, v + 0.6) for v in np.arange(v0 + 0.5, v1 - 0.4, 1.1)])
+    stiles = cs_union([rect(u, v0 - 1, u + 0.9, v1 + 1) for u in np.arange(u0, u1, 6.0)])
+    return out + M.extrude(slats ^ reg, d * 0.75) + M.extrude(stiles ^ reg, d)
+
+
+def edge_pelletdentil(L, z0, zc):
+    """Porch fascia (the Belcourt): dentils with a pellet between each pair."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for x in np.arange(1.0, L - 0.8, 1.6):
+        out.append(rect(x - 0.4, zc - 1.2, x + 0.4, zc - 0.4))
+        out.append(circle((x + 0.8, zc - 0.85), 0.3, 10))
+    return cs_union(out) ^ rect(0.3, zc - 2, L - 0.3, zc + 1), 0.6
+
+
+CO.FRIEZE_EXTRA.update(squarelinks=frieze_squarelinks, sixfoils=frieze_sixfoils)
+CO.COURSE_EXTRA.update(flutecourse=course_flutes)
+TW.BRACKET_EXTRA.update(longconsole=bracket_longconsole)
+TW.PIERCED = TW.PIERCED + ("longconsole",)
+TW.FOUNDATION_EXTRA.update(frostwork=foundation_frostwork)
+PW.POSTS.update(halffluted=post_halffluted)
+PW.BALUSTERS.update(doubleball=(baluster_doubleball, 1.6))
+PW.FRIEZES.update(paterae=frieze_paterae)
+PW.SKIRTS.update(louvres=skirt_louvres)
+FT.EDGE_EXTRA.update(pelletdentil=edge_pelletdentil)
