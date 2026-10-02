@@ -211,8 +211,8 @@ def build(kit=None):
     mans, mtex, inner = R.mansard(MAIN.pts, MANSARD, t=2.6, tex=dict(pitch=1.8, wtab=2.4, d=0.4, shape=SLATE))
     sp = SE.addin_delacroix()
     mk, mf = _addins(kit, MAIN, ADDINS, MANSARD, Z_ADD, sp, "ADDIN")
-    kit.add("MANSARD", "Slate", (mans + (mtex - mf)) - mk - tower_hug, P=print_flip(), group="roof")
     C = SE.crest_ring(MAIN.pts, D_TOP, MZ1, D_TOP - inner(MZ1), CREST_COURSE, CREST_CROWN)
+    kit.add("MANSARD", "Slate", (mans + (mtex - mf)) - mk - tower_hug - C["groove"], P=print_flip(), group="roof")
     kit.add("CREST", "Green", C["solid"] - tower_hug, P=print_flip(), change=C["change"], group="roof",
             render=[(r, z - tower_hug) for r, z in C["zones"]])
     zdeck = C["z_top"]
@@ -238,8 +238,9 @@ def build(kit=None):
     cprof = FT.tower_cap(None, ZTW, TCAP_H, d_flare=TOWER_C["layers"][-1]["P"] + 0.2, d_top=-6.0, bands=6)
     cap, ctex, cin = R.mansard(TOWER.pts, cprof, t=2.4, tex=dict(pitch=1.6, wtab=2.0, d=0.35, shape=SLATE))
     tk, tf = _addins(kit, TOWER, TOWER_ADDINS, cprof, ZTW + 7.0, sp, "ADDIN-T")     # up where the cap is steep
-    kit.add("TOWER-CAP", "Slate", (cap + (ctex - tf)) - tk - lip_keep(TOWER.cs, 3.0, ZTW), P=print_flip(), group="tower")
     TC = SE.crest_ring(TOWER.pts, cprof[-1][0], ZTW + TCAP_H, cprof[-1][0] - cin(ZTW + TCAP_H), CREST_COURSE, CREST_CROWN)
+    kit.add("TOWER-CAP", "Slate", (cap + (ctex - tf)) - tk - lip_keep(TOWER.cs, 3.0, ZTW) - TC["groove"], P=print_flip(),
+            group="tower")
     kit.add("TOWER-CREST", "Green", TC["solid"], P=print_flip(), change=TC["change"], group="tower", render=TC["zones"])
     tz = TC["z_top"]
     kit.add("TOWER-deck", "Slate", TC["deck"], group="tower")

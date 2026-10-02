@@ -218,12 +218,13 @@ def build(kit=None):
     seg, ova, big = SE.addin_lafayette_seg(), SE.addin_lafayette_oval(), SE.addin_lafayette_seg(w=6.4, h=12.4, rise=1.6)
     mk, mf = _addins(kit, MAIN, [(x, y, seg if k == "seg" else ova, k) for x, y, k in ADDINS], MANSARD, Z_ADD, "ADDIN")
     pk, pf = _addins(kit, PAV, [(x, y, big, "big") for x, y in PAV_ADDINS], PAV_MANSARD, Z_ADDP, "ADDIN-P")
-    kit.add("MANSARD", "Slate", (mans + (mtex - mf)) - mk - pav_vol, P=print_flip(), group="roof")
-    kit.add("MANSARD-P", "Slate", (pmans + (ptex - pf)) - pk - main_vol, P=print_flip(), group="pavilion")
+    C = SE.crest_ring(MAIN.pts, D_TOP, MZ1, D_TOP - inner(MZ1), CREST_COURSE, CREST_CROWN)
+    PC = SE.crest_ring(PAV.pts, PD_TOP, PZ1, PD_TOP - pinner(PZ1), CREST_COURSE, CREST_CROWN)
+    kit.add("MANSARD", "Slate", (mans + (mtex - mf)) - mk - pav_vol - C["groove"], P=print_flip(), group="roof")
+    kit.add("MANSARD-P", "Slate", (pmans + (ptex - pf)) - pk - main_vol - PC["groove"], P=print_flip(), group="pavilion")
     print("mansards + add-ins", round(time.time() - t0, 1))
 
     # --- crests, decks, cresting, the pavilion's finial, chimneys
-    C = SE.crest_ring(MAIN.pts, D_TOP, MZ1, D_TOP - inner(MZ1), CREST_COURSE, CREST_CROWN)
     kit.add("CREST", "Plum", C["solid"] - pav_vol, P=print_flip(), change=C["change"], group="roof", render=C["zones"])
     zdeck = C["z_top"]
     chims = [(30.0, 104.0), (164.0, 67.0)]
@@ -245,7 +246,6 @@ def build(kit=None):
         cap = ch ^ box([-1e3, -1e3, zc], [1e3, 1e3, 1e3])
         kit.add(f"CHIMNEY-{k}", "Stone", ch, key="CHIMNEY", group="roof", change=(20.4, "Ivory"),
                 render=[("Stone", ch - cap), ("Ivory", cap)])
-    PC = SE.crest_ring(PAV.pts, PD_TOP, PZ1, PD_TOP - pinner(PZ1), CREST_COURSE, CREST_CROWN)
     kit.add("PAV-CREST", "Plum", PC["solid"], P=print_flip(), change=PC["change"], group="pavilion", render=PC["zones"])
     pz = PC["z_top"]
     pcs = poly(R.offset_path(PC["path"], -1.6))

@@ -174,12 +174,11 @@ def build(kit=None):
                  ("Brownstone", a["frame"].transform(A))]
         kit.add(f"ADDIN-{k}", "Addins", a["solid"].transform(A), P=inv34(A), change=(round(depth, 1), "Brownstone"),
                 key="ADDIN-twin" if sp is twin else "ADDIN", group="addins", render=zones)
-    kit.add("MANSARD", "Slate", mans + (mtex - union(flashes)) - union(keeps), P=print_flip(), group="roof")
+    C = SE.crest_ring(MAIN.pts, D_TOP, MZ1, D_TOP - inner(MZ1), CREST_COURSE, CREST_CROWN)
+    kit.add("MANSARD", "Slate", mans + (mtex - union(flashes)) - union(keeps) - C["groove"], P=print_flip(), group="roof")
     print("mansard + add-ins", round(time.time() - t0, 1), "plug", depth)
 
-    # --- crest on the band's flat top, the deck, cresting, chimneys
-    t_top = D_TOP - inner(MZ1)
-    C = SE.crest_ring(MAIN.pts, D_TOP, MZ1, t_top, CREST_COURSE, CREST_CROWN)
+    # --- crest on the band's flat top (its key in the band's groove), the deck, cresting, chimneys
     kit.add("CREST", "Brownstone", C["solid"], P=print_flip(), change=C["change"], group="roof", render=C["zones"])
     zdeck = C["z_top"]
     deck = C["deck"]

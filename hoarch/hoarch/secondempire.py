@@ -46,14 +46,16 @@ def face_at(prof, z):
     return prof[-1][0]
 
 
-def bell_profile(d0, z0, d1, z1, kick=(1.2, 1.2), power=1.6, step=8.0):
+def bell_profile(d0, z0, d1, z1, kick=(1.2, 1.2), power=1.6, step=8.0, convex=False):
     """A bell-cast (concave) mansard face: a short kick at the foot, then a curve leaning back
-    fast low down and slower toward the top, from (d0, z0) to (d1, z1), as straight facets
+    fast low down and slower toward the top (``convex``: the other way, a swelling face that
+    stands steep low down and leans back more toward its top), from (d0, z0) to (d1, z1), as
+    straight facets
     ``step`` long up the slope (a whole even number of slate courses, so the courses run on
     unbroken from facet to facet); the last facet takes what is left."""
     da, za = d0 - kick[0], z0 + kick[1]
     s = np.linspace(0.0, 1.0, 801)
-    d = da + (d1 - da) * (1 - (1 - s) ** power)
+    d = da + (d1 - da) * (s ** power if convex else 1 - (1 - s) ** power)     # convex: steep low, leaning back high up
     z = za + (z1 - za) * s
     run = np.r_[0.0, np.cumsum(np.hypot(np.diff(d), np.diff(z)))]
     pts = [(d0, z0), (da, za)]
@@ -99,22 +101,28 @@ def _st_down(cs, h, b, d):
     return m.mirror([0, 1, 0]).translate([0, h, 0])
 
 
-def crest_ring(path, d_s, z_s, t_s, course, crown, deck_th=1.2, s_out=-0.6, lip=1.0):
+def crest_ring(path, d_s, z_s, t_s, course, crown, deck_th=1.2, s_out=-0.6, key=(1.2, 2.0, 1.0)):
     """The crest on a mansard band's flat top (its outer edge ``d_s`` off the wall plane ``path``,
-    ``t_s`` thick, at z_s): one part, printed upside down: a course ring sitting on the band top
-    (a lip drops inside the band to locate it), dict(h, b, orn (a cs generator), role), and a
-    crown over it, dict(h, P, kind, role, blocks=(w, pitch) or None), widening to P with a 45
-    degree seat inside for the deck. Returns dict(solid, zones, change, z_top, deck, path)."""
+    ``t_s`` thick, at z_s): one part, printed upside down: a course ring sitting on the band top,
+    dict(h, b, orn (a cs generator), role), and a crown over it, dict(h, P, kind, role,
+    blocks=(w, pitch) or None), widening to P with a 45 degree seat inside for the deck. Under
+    it a key (``key`` = from, to inside the band's outer edge, depth) drops into a groove in
+    the band top to locate it, whatever the band's thickness (``groove``: cut it from the band).
+    Its inside steps in at 45 degrees from the seat to its foot, so nothing in print is a
+    ledge over air. Returns dict(solid, zones, change, z_top, deck, path, P, groove)."""
     top = R.offset_path(path, d_s)
     hA, hB = course["h"], crown["h"]
     H = hA + hB
     b, P = course["b"], crown["P"]
-    di = -t_s - FCLR
+    k0, k1, kd = key
+    assert t_s >= k1 + 0.4, ("band too thin for the crest's key", t_s)
+    d_foot = s_out - deck_th - (H - deck_th)            # where the 45 degree inside meets the band top
     cpro = CO.crown_profile(crown["kind"], b, P, hB)
-    prof = [(di - lip, -1.2), (di, -1.2), (di, 0.0), (b, 0.0), (b, hA)] + [(d, hA + z) for d, z in cpro[1:]] + \
-           [(P, H), (s_out, H), (s_out - deck_th, H - deck_th),
-            (di - lip, H - deck_th - ((s_out - deck_th) - (di - lip)))]     # 45 degrees in to the lip: no ledge in print
+    prof = [(-k1, -kd), (-k0, -kd), (-k0, 0.0), (b, 0.0), (b, hA)] + [(d, hA + z) for d, z in cpro[1:]] + \
+           [(P, H), (s_out, H), (s_out - deck_th, H - deck_th), (min(d_foot, -k1), 0.0), (-k1, 0.0)]
     ring = sweep_ring(top, [(d, z_s + z) for d, z in prof])
+    groove = sweep_ring(top, [(d, z_s + z) for d, z in [(-k1 - FCLR, -kd - 0.2), (-k0 + FCLR, -kd - 0.2), (-k0 + FCLR, 0.5),
+                                                         (-k1 - FCLR, 0.5)]])
     orn = []
     for f in CO._edges(top):
         if f.L < 4.0:
@@ -134,7 +142,7 @@ def crest_ring(path, d_s, z_s, t_s, course, crown, deck_th=1.2, s_out=-0.6, lip=
     bb = np.c_[P_ + (s_out - FCLR - deck_th) * Mi, np.full(len(P_), z_s + H - deck_th)]
     deck = M.hull_points(np.vstack([a, bb]).tolist())
     change = (round(hB / 0.2) * 0.2, course["role"]) if course["role"] != crown["role"] else None
-    return dict(solid=solid, zones=zones, change=change, z_top=z_s + H, deck=deck, path=top, P=P)
+    return dict(solid=solid, zones=zones, change=change, z_top=z_s + H, deck=deck, path=top, P=P, groove=groove)
 
 
 def cresting_strips(path, z0, d_off, fence, h, e=0.4):
@@ -2155,3 +2163,482 @@ PW.BALUSTERS.update(doubleball=(baluster_doubleball, 1.6))
 PW.FRIEZES.update(paterae=frieze_paterae)
 PW.SKIRTS.update(louvres=skirt_louvres)
 FT.EDGE_EXTRA.update(pelletdentil=edge_pelletdentil)
+
+
+# ================================================================== the Valcour (house 85)
+# Dove-grey rusticated boarding with white trim and navy accents; a convex (swelling) mansard
+# of striped slate, a centre pavilion under a taller convex roof, oculus add-ins, a veranda
+# down the east side and a stoop under a hooded doorway.
+
+def slate_stripes(k, j):
+    """The Valcour's slating: square slates with every fourth column cut to a diamond point,
+    so the roof is striped from eave to crest."""
+    x = j + 0.5 * (k % 2)
+    return "diamond" if abs(x % 4 - 1.0) < 0.3 else "square"
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def frieze_crossedpalms(L, h, b, pitch, margin, pair, half):
+    """Crossed palms: in every bay two palm fronds crossed at their stems and tied with a
+    knot; a disc at each station (the Valcour's storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 4.0:
+            continue
+        W = min(wd / 2 - 0.5, hh * 1.2)
+        parts = [circle((uc, v0 + 0.6), 0.5, 12)]
+        for sg in (-1, 1):
+            ts = np.linspace(0.0, 1.0, 12)
+            pts = [(uc - sg * 0.6 + sg * W * t, v0 + 0.4 + hh * 0.85 * math.sin(math.pi * 0.5 * t)) for t in ts]
+            parts.append(stroke(pts, 0.4))
+            for t in np.linspace(0.25, 0.95, 5):
+                i = int(t * 11)
+                p0 = np.array(pts[i])
+                for side in (1, -1):
+                    a = (math.pi / 2 if sg > 0 else math.pi / 2) + side * 0.9 - sg * 0.5
+                    ln = 1.0 * (1.1 - 0.5 * t)
+                    c = p0 + np.array([math.cos(a), math.sin(a)]) * ln * 0.45
+                    parts.append(_lens((c[0], c[1]), ln, 0.4, a))
+        out.append(_st(cs_union(parts) ^ rect(uc - wd / 2 + 0.2, v0, uc + wd / 2 - 0.2, v1), b, 0.4))
+    for u in CO._us(L, pitch, margin, 0.0):
+        out.append(_st(circle((u, (v0 + v1) / 2), 0.7, 16) - circle((u, (v0 + v1) / 2), 0.3, 10), b, 0.4))
+    return out, []
+
+
+def frieze_caducei(L, h, b, pitch, margin, pair, half):
+    """Caducei: in every bay a staff with two serpents twined round it and a pair of wings at
+    its head, a sunk panel either side (the Valcour's eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out, cuts = [], []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 4.4:
+            continue
+        top = v1 - 0.3
+        staff = cs_union([rect(uc - 0.22, v0 + 0.1, uc + 0.22, top - 0.6), circle((uc, top - 0.45), 0.45, 12)])
+        snakes = []
+        for sg in (-1, 1):
+            ts = np.linspace(0.0, 1.0, 16)
+            snakes.append(stroke([(uc + sg * 0.6 * math.sin(2.5 * math.pi * t), v0 + 0.4 + (hh * 0.68) * t) for t in ts], 0.36))
+        wings = [_lens((uc + sg * 1.0, top - 1.0), 1.9, 0.6, sg * 0.35) for sg in (-1, 1)]
+        out.append(_st(cs_union([staff] + snakes + wings), b, 0.45))
+        pw = wd / 2 - 2.0
+        if pw > 1.0:
+            for sg in (-1, 1):
+                x0 = uc + sg * 1.9
+                pan = rect(min(x0, x0 + sg * pw), v0 + 0.5, max(x0, x0 + sg * pw), v1 - 0.5)
+                cuts.append(ext(pan.offset(-0.35, JoinType.Miter, 4.0), b - 0.25, b + 1.0))
+    return out, cuts
+
+
+def course_cusps(L, h, b, pitch, margin, p):
+    """A cusped course: a band cut below into a run of small round arches with pointed cusps
+    where they meet (the Valcour)."""
+    pu = 1.6
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    band = rect(0.2, 0.0, L - 0.2, h)
+    arches = cs_union([circle((u0 + pu * (k + 0.5), 0.0), pu * 0.42, 16) for k in range(n)])
+    return [_st(band - arches, b, 0.45)]
+
+
+def course_tribead(L, h, b, pitch, margin, p):
+    """Triple beads: clusters of three beads (two over one) along a fillet (the Valcour)."""
+    out = [ext(rect(0.2, 0.0, L - 0.2, 0.4), b - 0.05, b + 0.4)]
+    pu = 2.0
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    r = min(0.4, h * 0.22)
+    beads = []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        beads += [circle((uc - r * 1.05, h - r - 0.15), r, 10), circle((uc + r * 1.05, h - r - 0.15), r, 10),
+                  circle((uc, h - 3 * r - 0.1), r, 10)]
+    out.append(_st(cs_union(beads), b, 0.45))
+    return out
+
+
+def tribeads(L, h):
+    """The Valcour's crest course as CrossSections: clusters of three beads on a fillet."""
+    pu = 2.0
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    r = min(0.42, h * 0.22)
+    beads = [rect(0.2, 0.0, L - 0.2, 0.45)]
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        beads += [circle((uc - r * 1.05, h - r - 0.15), r, 10), circle((uc + r * 1.05, h - r - 0.15), r, 10),
+                  circle((uc, h - 3 * r - 0.1), r, 10), rect(uc - 0.2, 0.3, uc + 0.2, h - 3 * r)]
+    return [cs_union(beads)]
+
+
+def bracket_trefoilconsole(h, d, t):
+    """A console whose front is cut in three round lobes, a scroll at its head and a drop at
+    its foot (side profile, top at v = 0; the Valcour)."""
+    r = min(0.24 * h, 0.3 * d)
+    body = poly([(0.0, 0.0), (d, 0.0), (d, -r), (0.6, -h + 0.5), (0.0, -h + 0.5)])
+    lobes = [circle((d - r - (d - r - 0.9) * f, -r - (h - r - 1.0) * f), r * 0.8, 14) for f in (0.15, 0.5, 0.85)]
+    prof = cs_union([body, circle((d - r, -r), r, 16), circle((0.35, -h + 0.4), 0.4, 12)] + lobes)
+    return prof - circle((d - r, -r), r * 0.4, 12)
+
+
+# ------------------------------------------------------------------ the mansards' window add-ins
+def addin_valcour_oculus(r=3.0, A=1.1):
+    """A Valcour add-in: a round oculus with a cross of bars in a wreathed frame (a ring of
+    leaves), a hood on two scrolls over it and a corbel under it."""
+    vc = r + A + 1.6
+    light = circle((0.0, vc), r, 40)
+    bars = cs_union([rect(-RIB / 2, vc - r - 1, RIB / 2, vc + r + 1), rect(-r - 1, vc - RIB / 2, r + 1, vc + RIB / 2)])
+    ring = circle((0.0, vc), r + A, 48)
+    parts = [ext(ring.offset(0.5, JoinType.Round) - light, 0.0, 0.6),
+             MD.band(light.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-20, -20, 20, 40) - light)]
+    leaves = cs_union([_lens(((r + A * 0.5) * math.cos(a), vc + (r + A * 0.5) * math.sin(a)), 1.2, 0.5, a + math.pi / 2)
+                       for a in np.linspace(math.pi * 0.05, math.pi * 0.95, 7)])
+    parts.append(ext(leaves - light.offset(0.2), 0.59, 1.1))
+    vh = vc + r + A + 0.2
+    hood = arch_cs(-r - A - 1.0, r + A + 1.0, vh - 0.6, vh, rise=1.4, seg=40)
+    parts.append(MD.band(hood, 0.9, MD.CROWN, clip=rect(-20, vh - 0.6, 20, 40)))
+    parts.append(ext(hood.offset(-0.7, JoinType.Round) ^ rect(-20, vh - 0.6, 20, 40), 0.0, 0.6))
+    for sg in (-1, 1):
+        c = (sg * (r + A + 0.5), vh - 0.9)
+        parts.append(ext(cs_union([circle(c, 0.75, 16) - circle(c, 0.3, 10), rect(c[0] - 0.4, c[1], c[0] + 0.4, vh - 0.5)]), 0.0, 1.0))
+    parts.append(chamfer_box(-1.6, 0.0, 1.6, vc - r - A + 0.4, 0.0, 1.2, c=0.3))
+    parts.append(MD.pendant(0.0, 0.2, 1.8, 0.0, 0.8))
+    parts = [p - ext(light, -1.0, 5.0) for p in parts]
+    outline = (circle((0.0, vc), r + A + 0.3, 48) + rect(-1.6, 0.6, 1.6, vc)) ^ rect(-50, 0.6, 50, 100)
+    return dict(light=light, bars=bars, frame=parts, outline=outline, top=vh + 1.4, bottom=-1.6)
+
+
+def addin_valcour_big(w=7.0, h=13.0, A=1.0):
+    """The Valcour pavilion's add-in: a round-headed two-over-two light between little scrolled
+    pilasters, under a broken scroll pediment with a ball in the break."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, spring * 0.55 - 0.3, w, spring * 0.55 + 0.3)])
+    half = r + A + 1.2
+    vt = spring + r + A
+    body = cs_union([rect(-half, -0.2, half, vt + 1.0)])
+    parts = [ext(body - op, 0.0, 0.6), MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-20, 0.0, 20, 40) - op)]
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * (r + A), sg * half))
+        parts.append(ext(rect(u0, 0.0, u1, spring), 0.0, 1.0))
+        c = ((u0 + u1) / 2, spring + 0.6)
+        parts.append(ext(circle(c, 0.8, 16) - circle(c, 0.3, 10), 0.0, 1.2))
+    parts.append(MD.run(-half - 0.4, half + 0.4, vt + 1.0, MD.CROWN, 1.0, up=False))
+    for sg in (-1, 1):
+        pts = [(sg * (half + 0.3), vt + 1.0), (sg * (half - 0.4), vt + 2.6), (sg * 1.4, vt + 3.4)]
+        parts.append(ext(stroke(pts, 0.8), 0.0, 1.1))
+        parts.append(ext(circle((sg * 1.3, vt + 3.0), 0.6, 14) - circle((sg * 1.3, vt + 3.0), 0.2, 8), 0.0, 1.2))
+    parts.append(ext(circle((0.0, vt + 2.6), 0.9, 18), 0.0, 1.2))
+    parts.append(ext(rect(-0.6, vt + 0.99, 0.6, vt + 2.0), 0.0, 1.0))
+    sw = half + 0.3
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts.append(chamfer_box(-1.6, -2.0, 1.6, -0.8, 0.0, 1.0, c=0.3))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.4, JoinType.Miter, 4.0) ^ rect(-50, 0.4, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=vt + 3.6, bottom=-2.0)
+
+
+# ------------------------------------------------------------------ walls, corners, foundation, chimney
+def rusticboard(region, datum=0.0, course=2.6, block=6.4, groove=0.45, d=0.32):
+    """Rusticated boarding: wide boards cut to look like stone, every course and every block
+    joint a bevelled V-groove, the blocks broken half a block course to course (the Valcour)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    cells = []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1:
+        v = datum + k * course
+        u = u0 - block * 2 + (k % 2) * block / 2
+        while u < u1 + block:
+            cells.append(rect(u + groove / 2, v + groove / 2, u + block - groove / 2, v + course - groove / 2))
+            u += block
+        k += 1
+    cs = cs_union(cells) ^ region
+    return ext(cs, 0.0, d - 0.15) + ext(cs.offset(-0.15, JoinType.Miter, 4.0), d - 0.16, d)
+
+
+def corner_rusticpier(L, at_start, qa, qb, w=2.4, t=0.65):
+    """Corner piers of rusticated boarding: a board 2.8 wide standing 0.7 proud, cut into
+    blocks by deep V-grooves, a plinth at its foot (the Valcour)."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    u0, u1 = span(-t - 0.1, 2.8)
+    parts = [box([u0, qa, 0.0], [u1, qb, t + 0.1])]
+    for v in np.arange(qa + 2.6, qb - 0.5, 2.6):
+        a, b = span(-t - 0.6, 3.4)
+        parts_cut = M.hull_points([(x, v - 0.3, t + 0.2) for x in (a, b)] + [(x, v + 0.3, t + 0.2) for x in (a, b)] +
+                                  [(x, v, t - 0.25) for x in (a, b)])
+        parts[0] = parts[0] - parts_cut
+    p0, p1 = span(-t - 0.4, 3.2)
+    parts.append(chamfer_box(p0, qa, p1, qa + 1.6, 0.0, t + 0.4, c=0.3, square=("u0",) if at_start else ("u1",)))
+    return union(parts)
+
+
+def foundation_brickpanel(reg, seed=0):
+    """A brick foundation laid in sunk panels between plain piers, a stone cap course along its
+    top (the Valcour)."""
+    from . import skins as SK
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.45)]
+    cap = rect(b[0] - 1, b[3] - 1.6, b[2] + 1, b[3] + 1) ^ reg
+    out.append(ext(cap, 0.44, 0.75))
+    for u in np.arange(b[0] + 1.0, b[2] - 6.0, 14.0):
+        pan = rect(u + 2.4, b[1] + 1.2, u + 12.6, b[3] - 2.4) ^ reg
+        if not pan.is_empty():
+            out[0] = out[0] - ext(pan, 0.25, 1.0)
+            out.append(SK.brick_bond(pan, "running", bl=2.0, bh=0.8, d=0.2).translate([0, 0, 0.2]))
+    return union(out)
+
+
+def chimney_valcour(w=9.6, d=12.0, h=24.0):
+    """The Valcour's stacks: brick with a recessed panel down each broad face, a stone band,
+    an oversailing cap of four courses and three square pots in a row."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 4.2
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for sx in (-1, 1):
+        T = np.array([[0, 0, sx * 1.0, sx * w / 2], [1.0, 0, 0, 0], [0, 1.0, 0, 0]])
+        pan = rect(-d / 2 + 1.6, 3.0, d / 2 - 1.6, sh - 4.0)
+        body = body - (ext(pan, -0.5, 1.0) if sx > 0 else ext(pan, -1.0, 0.5)).transform(T)
+    body = body + box([-w / 2 - 0.4, -d / 2 - 0.4, sh - 3.2], [w / 2 + 0.4, d / 2 + 0.4, sh - 2.2])
+    for k in range(4):
+        g = 0.25 * (k + 1)
+        body = body + box([-w / 2 - g, -d / 2 - g, sh + 0.5 * k - 0.01], [w / 2 + g, d / 2 + g, sh + 0.5 * (k + 1)])
+    zc = sh + 2.0
+    for y in (-d / 3, 0.0, d / 3):
+        body = body + box([-1.2, y - 1.2, zc - 0.01], [1.2, y + 1.2, zc + 2.0]) + box([-1.4, y - 1.4, zc + 1.6], [1.4, y + 1.4, zc + 2.2])
+    return body - union([box([-0.6, y - 0.6, sh - 3.0], [0.6, y + 0.6, zc + 3.0]) for y in (-d / 3, 0.0, d / 3)])
+
+
+def fence_valcour(L, h):
+    """Valcour cresting: lozenges standing on their points between spiked bars, a ball on each
+    lozenge."""
+    pitch = 3.0
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    cells = [rect(0.0, 0.0, L, 0.6)]
+    for j in range(n + 1):
+        u = p * j
+        cells.append(rect(u - 0.28, 0.0, u + 0.28, h - 0.8))
+        cells.append(poly([(u - 0.45, h - 0.9), (u + 0.45, h - 0.9), (u, h)]))
+        if j < n:
+            m = u + p / 2
+            hz = h * 0.42
+            loz = poly([(m, 0.55), (m + p / 2 - 0.35, hz), (m, 2 * hz - 0.55), (m - p / 2 + 0.35, hz)])
+            cells.append(loz - loz.offset(-0.45, JoinType.Miter, 4.0))
+            cells.append(circle((m, 2 * hz - 0.2), 0.42, 12))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def finial_urnspike(h=9.0):
+    """An iron finial: a little urn on a turned stem with a long spike (the Valcour's
+    pavilion)."""
+    prof = [(0.0, 0.0), (1.3, 0.0), (1.3, 0.7), (0.6, 1.2), (0.55, 2.4), (1.0, 2.8), (1.2, 3.6), (1.0, 4.4), (0.6, 4.8),
+            (0.8, 5.0), (0.0, 5.0)]
+    return PW._revolve(prof, 24) + M.cylinder(h - 4.8, 0.4, 0.1, 12).translate([0, 0, 4.8])
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_valcour_lower(w=9.6, h=22.0, rise=2.0, A=1.0):
+    """Valcour ground floor: a segmental-headed two-over-two sash in an architrave with a
+    keyed segmental head, a frieze of triglyph blocks, a cornice cap with a little crest of a
+    ball between scrolls, a sill on two blocks."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, rise, lites=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op),
+             MD.scroll_keystone(0.0, h - 0.3, A + 1.4, 1.3, 1.9, 0.0, 1.7)]
+    half = w / 2 + A + 0.8
+    vf = h + A + 0.2
+    parts.append(ext(rect(-half, h - rise, half, vf) - op.offset(A, JoinType.Miter, 4.0), 0.0, 0.6))
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.8), 0.0, 0.6))
+    for x in np.linspace(-half + 1.0, half - 1.0, 5):
+        if abs(x) < 1.2:
+            continue
+        parts.append(ext(rect(x - 0.45, vf + 0.2, x + 0.45, vf + 1.6), 0.59, 1.0))
+    vc = vf + 1.8 + 1.0
+    parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 1.2, up=False))
+    crest = [rect(-2.4, vc - 0.01, 2.4, vc + 0.4), circle((0.0, vc + 1.1), 0.7, 16)]
+    for sg in (-1, 1):
+        crest.append(stroke([(sg * 0.5, vc + 0.3), (sg * 1.6, vc + 1.0), (sg * 2.3, vc + 0.5)], 0.45))
+    parts.append(ext(cs_union(crest), 0.0, 0.9))
+    sw = w / 2 + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.7, -2.0, sg * (w / 2) + 0.7, -0.8, 0.0, 0.9, c=0.25))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + 1.8, -2.0)
+
+
+def window_valcour_upper(w=9.0, h=20.0, A=0.9):
+    """Valcour upper floor: a round-headed two-over-two sash in an architrave whose head
+    rises into an ogee point with a knob, label stops at the spring line."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, r, lites=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    R0 = r + A + 0.1
+    ts = np.linspace(0.0, 1.0, 14)
+    left = [(-R0 * math.cos(t * math.pi / 2), spring + R0 * math.sin(t * math.pi / 2) + 1.6 * t ** 3) for t in ts]
+    right = [(-x, y) for x, y in reversed(left)]
+    curve = left + [(0.0, spring + R0 + 2.4)] + right
+    parts.append(ext(stroke(curve, 1.0), 0.0, 1.2))
+    parts.append(ext(circle((0.0, spring + R0 + 2.6), 0.6, 14), 0.0, 1.3))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * R0 - 0.7, spring - 1.2, sg * R0 + 0.7, spring + 0.2, 0.0, 1.3, c=0.3))
+    sw = r + A + 0.5
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, spring + R0 + 3.2, -1.0)
+
+
+def door_valcour(w=12.4, h=27.0, A=1.2):
+    """The Valcour's entrance: a pair of leaves with long arched lights over square panels,
+    a transom with a ring of bars, in an architrave under a deep hood on two long scroll
+    brackets."""
+    transom = 4.4
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    mid = 0.5
+    lw = (w - 2 * O.CLR - 1.0 - mid) / 2
+    dh = h - transom
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    u = -w / 2 + O.CLR + 0.5
+    for i in range(2):
+        body.append(ext(rect(u, 0.5, u + lw, dh), -pl, -0.8))
+        gw = lw - 1.6
+        gv0 = dh * 0.4
+        lights.append(cs_union([rect(u + 0.8, gv0, u + 0.8 + gw, dh - 0.8 - gw / 2), circle((u + lw / 2, dh - 0.8 - gw / 2), gw / 2, 24)]))
+        body.append(_panel(rect(u + 0.8, 1.2, u + lw - 0.8, gv0 - 0.8)))
+        u += lw + mid
+    tr = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.4, w, h + 2)
+    tc = (0.0, (dh + 0.4 + h - 0.6) / 2)
+    ringbars = cs_union([circle(tc, 1.4, 20) - circle(tc, 0.95, 16), rect(-w, tc[1] - 0.22, w, tc[1] + 0.22)])
+    sash = _glazed(body, cs_union(lights) + tr, pl, ringbars, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.4) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 2.2
+    vf = h + A
+    for sg in (-1, 1):
+        parts.append(console(8.0, 3.0, 1.4, u=sg * (w / 2 + A + 1.0), v_top=vf + 1.6, w0=0.0))
+    parts.append(ext(rect(-half + 0.6, vf - 0.01, half - 0.6, vf + 1.6), 0.0, 0.6))
+    parts.append(MD.rosette(0.0, vf + 0.8, 0.6, 0.59, 0.5))
+    vc = vf + 1.6 + 1.6
+    parts.append(MD.run(-half - 1.0, half + 1.0, vc, MD.CROWN, 1.8, up=False))
+    parts.append(ext(rect(-half + 0.4, vc - 0.01, half - 0.4, vc + 0.8), 0.0, 1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + 0.8, 0.0)
+
+
+def door_valcour_side(w=10.0, h=24.0, A=1.0):
+    """The Valcour's side and back doors: one leaf with an arched light over a panel, a plain
+    transom, an architrave and a cornice cap."""
+    transom = 3.4
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    u0, u1 = -w / 2 + O.CLR + 0.5, w / 2 - O.CLR - 0.5
+    gw = u1 - u0 - 1.6
+    gv0 = dh * 0.42
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, dh), -pl, -0.8), _panel(rect(u0 + 0.8, 1.2, u1 - 0.8, gv0 - 0.8))]
+    light = cs_union([rect(u0 + 0.8, gv0, u1 - 0.8, dh - 0.8 - gw / 2), circle((0.0, dh - 0.8 - gw / 2), gw / 2, 24)])
+    g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.3, w, h + 2)
+    sash = _glazed(body, light + g, pl, None, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.3, w, dh + 0.3) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.4
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.6), 0.0, 0.6))
+    parts.append(MD.run(-half - 0.6, half + 0.6, vf + 1.6 + 1.0, MD.CROWN, 1.2, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vf + 2.6, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_spiralflute(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A round post with spiral flutes on its middle third between plain lengths and rings,
+    on a plinth, under a moulded capital (the Valcour's veranda)."""
+    z1 = h - 2.6
+    r = 1.05
+    za = round((2.0 + (z1 - 2.0) * 0.33) / 0.2) * 0.2
+    zb = round((2.0 + (z1 - 2.0) * 0.67) / 0.2) * 0.2
+    prof = [(0.0, 1.19), (1.55, 1.19), (1.55, 1.45), (1.3, 1.7), (r, 2.0), (r, za - 0.4), (1.25, za - 0.2), (1.25, za),
+            (r, za + 0.2), (r, zb - 0.2), (1.25, zb), (1.25, zb + 0.2), (r, zb + 0.4), (r * 0.94, z1), (1.2, z1 + 0.25),
+            (1.2, z1 + 0.5), (r * 0.94, z1 + 0.7)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    groove = M.extrude(circle((r, 0.0), 0.24, 10), zb - za - 0.6, int((zb - za) / 0.2), 180.0).translate([0, 0, za + 0.3])
+    grooves = union([groove.rotate([0, 0, a]) for a in np.linspace(0, 360, 6, endpoint=False)])
+    return body - grooves + PW._top(h, abacus / 2, z1 + 0.7, r * 0.94, slot, seg=32)
+
+
+def fill_lozengesplats(L, vb, vt):
+    """A railing of sawn splats: a lozenge ring between stiles in every bay (the Valcour)."""
+    H = vt - vb
+    n = max(1, int(round(L / 2.8)))
+    parts = []
+    for i in range(n + 1):
+        x = L * i / n
+        parts.append(rect(x - 0.3, vb, x + 0.3, vt))
+        if i < n:
+            m = x + L / n / 2
+            hw = L / n / 2 - 0.35
+            loz = poly([(m, vb + 0.1), (m + hw, vb + H / 2), (m, vt - 0.1), (m - hw, vb + H / 2)])
+            parts.append(loz - loz.offset(-0.55, JoinType.Miter, 4.0))
+    return parts
+
+
+def frieze_scallopvalance(u0, u1, v_bot, v_top):
+    """A porch frieze: a valance board cut below in scallops, each pierced with a round hole
+    (the Valcour)."""
+    v0 = v_top - 2.8
+    n = max(2, int((u1 - u0) / 2.6))
+    p = (u1 - u0) / n
+    board = rect(u0, v0 + 0.6, u1, v_top + 0.05)
+    scal = cs_union([circle((u0 + p * (k + 0.5), v0 + 0.8), p * 0.48, 18) for k in range(n)]) ^ rect(u0, v0 - 1.0, u1, v0 + 0.8)
+    holes = cs_union([circle((u0 + p * (k + 0.5), v0 + 1.4), 0.35, 10) for k in range(n)])
+    return (board + scal) - holes
+
+
+def skirt_crossbuck(reg, d=1.2):
+    """A porch skirt of crossbuck panels: an X of boards in every panel between plain stiles
+    (the Valcour)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = M.extrude(reg, d * 0.4)
+    n = max(1, int((u1 - u0) / 5.0))
+    xs = []
+    for j in range(n):
+        a, b_ = u0 + (u1 - u0) * j / n, u0 + (u1 - u0) * (j + 1) / n
+        xs += [rect(a, v0 - 1, a + 0.8, v1 + 1), stroke([(a + 0.6, v0 + 0.4), (b_ - 0.6, v1 - 0.4)], 0.6),
+               stroke([(a + 0.6, v1 - 0.4), (b_ - 0.6, v0 + 0.4)], 0.6)]
+    return out + M.extrude(cs_union(xs) ^ reg, d)
+
+
+def edge_bellcourse(L, z0, zc):
+    """Porch fascia (the Valcour): little bells hung under the crown."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for x in np.arange(1.2, L - 0.8, 2.4):
+        out.append(poly([(x - 0.25, zc - 0.4), (x + 0.25, zc - 0.4), (x + 0.55, zc - 1.3), (x - 0.55, zc - 1.3)]))
+        out.append(circle((x, zc - 1.45), 0.25, 8))
+    return cs_union(out), 0.6
+
+
+CO.FRIEZE_EXTRA.update(crossedpalms=frieze_crossedpalms, caducei=frieze_caducei)
+CO.COURSE_EXTRA.update(cusps=course_cusps, tribead=course_tribead)
+TW.BRACKET_EXTRA.update(trefoilconsole=bracket_trefoilconsole)
+TW.PIERCED = TW.PIERCED + ("trefoilconsole",)
+SH.CORNER_EXTRA.update(rusticpier=corner_rusticpier)
+TW.FOUNDATION_EXTRA.update(brickpanel=foundation_brickpanel)
+PW.POSTS.update(spiralflute=post_spiralflute)
+PW.FILLS.update(lozengesplats=fill_lozengesplats)
+PW.FRIEZES.update(scallopvalance=frieze_scallopvalance)
+PW.SKIRTS.update(crossbuck=skirt_crossbuck)
+FT.EDGE_EXTRA.update(bellcourse=edge_bellcourse)
