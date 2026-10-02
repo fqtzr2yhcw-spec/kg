@@ -2642,3 +2642,405 @@ PW.FILLS.update(lozengesplats=fill_lozengesplats)
 PW.FRIEZES.update(scallopvalance=frieze_scallopvalance)
 PW.SKIRTS.update(crossbuck=skirt_crossbuck)
 FT.EDGE_EXTRA.update(bellcourse=edge_bellcourse)
+
+
+# ================================================================== the Chevalier (house 86)
+# Fawn cove-lap siding over a vertical-board wainscot at the foot of each storey, chocolate trim
+# and teal accents; a straight mansard of red slate with a chevron band; ogee-capped add-ins;
+# two-storey canted bays under crested decks; a porch round the front-east corner.
+
+def slate_chevron(k, j):
+    """The Chevalier's slating: square slates with a chevron band of diamond-cut ones zigzagging
+    across the middle of the roof."""
+    r = k % 18 - 6
+    if 0 <= r <= 4:
+        x = (j + 0.5 * (k % 2)) % 8
+        if abs(min(x, 8 - x) - r * 0.5 - 0.5) < 0.3 or abs(min(x, 8 - x) - r * 0.5 - 1.5) < 0.3:
+            return "diamond"
+    return "square"
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def frieze_swallows(L, h, b, pitch, margin, pair, half):
+    """Swallows: in every bay two swallows in flight, swept wings and forked tails, a dot
+    between them (the Chevalier's storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 4.4:
+            continue
+        for sg, dv in ((-1, 0.2), (1, -0.2)):
+            x, y = uc + sg * wd * 0.22, v0 + hh / 2 + dv * hh
+            s = min(1.0, hh / 3.2)
+            body = _lens((x, y), 1.8 * s, 0.6 * s, 0.15 * sg)
+            wings = [_lens((x - 0.2 * s, y + 0.55 * s), 2.0 * s, 0.45 * s, 0.9), _lens((x + 0.2 * s, y + 0.5 * s), 2.0 * s, 0.45 * s, 2.25)]
+            tail = [_lens((x - sg * 0.95 * s, y - 0.25 * s), 1.0 * s, 0.3 * s, math.pi + sg * 0.5),
+                    _lens((x - sg * 0.95 * s, y + 0.1 * s), 1.0 * s, 0.3 * s, math.pi - sg * 0.2)]
+            out.append(_st(cs_union([body] + wings + tail), b, 0.4))
+        out.append(_st(circle((uc, v0 + hh / 2), 0.4, 10), b, 0.4))
+    return out, []
+
+
+def frieze_peltae(L, h, b, pitch, margin, pair, half):
+    """Peltae: a running band of crescent shields (each a crescent with a knob in its hollow)
+    joined horn to horn (the Chevalier's eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    R_ = min(hh * 0.42, 2.4)
+    pu = R_ * 2.4
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    out = []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        cres = circle((uc, vm), R_, 32) - circle((uc, vm + R_ * 0.55), R_ * 0.85, 32)
+        out.append(_st(cres, b, 0.45))
+        out.append(_st(circle((uc, vm + R_ * 0.25), R_ * 0.28, 12), b, 0.55))
+    out.append(_st(rect(u0, vm - 0.2, u0 + n * pu, vm + 0.2), b, 0.3))
+    return out, []
+
+
+def course_hexchain(L, h, b, pitch, margin, p):
+    """A chain of hexagon links along the course (the Chevalier)."""
+    pu = max(1.8, h * 1.15)
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    r = min(h / 2 - 0.05, pu * 0.55)
+    links = []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        hx = poly([(uc + r * math.cos(a), h / 2 + r * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)])
+        links.append(hx - hx.offset(-0.45, JoinType.Miter, 4.0))
+    return [_st(cs_union(links), b, 0.45)]
+
+
+def hexlinks(L, h):
+    """The Chevalier's crest course as CrossSections: a chain of hexagon links on a fillet."""
+    pu = max(1.8, h * 1.15)
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    r = min(h / 2 - 0.05, pu * 0.55)
+    links = [rect(0.2, h / 2 - 0.25, L - 0.2, h / 2 + 0.25)]
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        hx = poly([(uc + r * math.cos(a), h / 2 + r * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)])
+        links.append(hx - hx.offset(-0.45, JoinType.Miter, 4.0))
+    return [cs_union(links)]
+
+
+def bracket_fantail(h, d, t):
+    """A fan-tail bracket: a sawn console whose foot spreads in three round fingers, a sunk eye
+    in its head (side profile, top at v = 0; the Chevalier)."""
+    body = poly([(0.0, 0.0), (d, 0.0), (d, -0.8), (d * 0.45, -h * 0.55), (0.6, -h + 1.4), (0.0, -h + 1.4)])
+    fingers = [circle((0.5 + 0.55 * k, -h + 1.0 - 0.15 * k), 0.5, 12) for k in range(3)]
+    prof = cs_union([body] + fingers)
+    return prof - circle((d * 0.62, -h * 0.22), min(0.55, d * 0.15), 12)
+
+
+# ------------------------------------------------------------------ the mansard's window add-ins
+def addin_chevalier(w=5.4, h=10.6, A=0.9):
+    """A Chevalier add-in: a round-headed two-over-two light in an architrave under an ogee
+    (onion) hood rising to a knob, its plug's roof the same ogee, a sill on a corbel."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, spring * 0.55 - 0.3, w, spring * 0.55 + 0.3)])
+    half = r + A + 0.9
+    ts = np.linspace(0.0, 1.0, 16)
+    ogee = [(-half + (half) * t, spring + (h - spring + A + 2.6) * (3 * t * t - 2 * t ** 3) + 0.6 * math.sin(math.pi * t)) for t in ts]
+    shape = poly([(-half, -0.2)] + ogee + [(-x, y) for x, y in reversed(ogee[:-1])] + [(half, -0.2)])
+    parts = [ext(shape - op, 0.0, 0.6), MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-20, 0.0, 20, 40) - op)]
+    rim = shape - shape.offset(-0.7, JoinType.Round)
+    parts.append(ext(rim ^ rect(-20, spring - 0.5, 20, 40), 0.0, 1.1))
+    vt = ogee[-1][1]
+    parts.append(ext(circle((0.0, vt + 0.5), 0.6, 14), 0.0, 1.2))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * half - 0.55, spring - 1.2, sg * half + 0.55, spring, 0.0, 1.2, c=0.3))
+    sw = half + 0.3
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts.append(chamfer_box(-1.4, -2.0, 1.4, -0.8, 0.0, 1.0, c=0.3))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = shape.offset(-0.4, JoinType.Round) ^ rect(-50, 0.4, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=vt + 1.1, bottom=-2.0)
+
+
+# ------------------------------------------------------------------ walls, foundation, chimney
+def wainscotlap(region, datum=0.0, rail=11.0, pitch=1.3, d=0.32, bv=1.6):
+    """Siding of two kinds in every storey: a wainscot of vertical V-jointed boards up to a
+    capped rail ``rail`` above the storey's foot, rebated lap above it (each board a flat band
+    at its butt, then a bevel) (the Chevalier). ``datum`` is the storey's foot."""
+    from . import skins as SK
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    low = region ^ rect(u0 - 1, datum - 1, u1 + 1, datum + rail)
+    up = region ^ rect(u0 - 1, datum + rail + 0.8, u1 + 1, v1 + 1)
+    out = []
+    if not low.is_empty():
+        boards = cs_union([rect(u + 0.22, datum - 1, u + bv - 0.22, datum + rail) for u in np.arange(u0 - 1, u1 + 1, bv)])
+        out.append(ext(low, 0.0, 0.15) + ext(boards ^ low, 0.14, d))
+    capr = region ^ rect(u0 - 1, datum + rail - 0.01, u1 + 1, datum + rail + 0.8)
+    if not capr.is_empty():
+        out.append(ext(capr, 0.0, d + 0.3))
+    if not up.is_empty():
+        # rebated lap: each board a flat band at its butt, then a long bevel up to the next
+        out.append(SK._lap(up, pitch, [(0.0, d), (0.3, d), (0.42, d - 0.12), (pitch - 0.05, 0.06), (pitch, 0.06)],
+                           datum=datum + rail + 0.8))
+    return union(out)
+
+
+def foundation_herringstone(reg, seed=0):
+    """Thin stones laid in herringbone courses between plain bands, a dressed cap course (the
+    Chevalier)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.3)]
+    cap = rect(b[0] - 1, b[3] - 1.4, b[2] + 1, b[3] + 1) ^ reg
+    out.append(ext(cap, 0.29, 0.7))
+    v = b[1] + 0.4
+    k = 0
+    while v < b[3] - 3.0:
+        hh = min(3.2, b[3] - 1.6 - v)
+        band = rect(b[0] - 1, v, b[2] + 1, v + hh) ^ reg
+        st = []
+        for u in np.arange(b[0] - 4, b[2] + 4, 1.4):
+            ang = 0.785 if k % 2 == 0 else -0.785
+            c = (u, v + hh / 2)
+            st.append(stroke([(c[0] - 1.4 * math.cos(ang), c[1] - 1.4 * math.sin(ang)), (c[0] + 1.4 * math.cos(ang), c[1] + 1.4 * math.sin(ang))], 0.6))
+        out.append(ext(cs_union(st) ^ band.offset(-0.3, JoinType.Miter, 4.0), 0.29, 0.6))
+        v += hh + 0.6
+        k += 1
+    return union(out)
+
+
+def chimney_chevalier(w=12.0, d=8.0, h=24.0):
+    """The Chevalier's stacks: two square brick shafts on a common base, joined at the top by a
+    round arch under a shared corbelled cap."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 3.0
+    s = 4.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, 6.0])
+    for sx in (-1, 1):
+        body = body + box([sx * (w / 2 - s / 2) - s / 2, -s / 2, 5.99], [sx * (w / 2 - s / 2) + s / 2, s / 2, sh])
+    arch = (rect(-w / 2, sh - 4.0, w / 2, sh) - circle((0.0, sh - 4.0), w / 2 - s, 24))
+    body = body + ext(arch, -s / 2, s / 2).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+    for k, g in enumerate((0.3, 0.6)):
+        body = body + box([-w / 2 - g, -s / 2 - g, sh + 0.6 * k - 0.01], [w / 2 + g, s / 2 + g, sh + 0.6 * (k + 1)])
+    body = body + box([-w / 2 - 0.9, -s / 2 - 0.9, sh + 1.19], [w / 2 + 0.9, s / 2 + 0.9, sh + 1.8])
+    return body - union([M.cylinder(h, 0.7, 0.7, 12).translate([sx * (w / 2 - s / 2), 0, 2.0]) for sx in (-1, 1)])
+
+
+def fence_chevalier(L, h):
+    """Chevalier cresting: inverted hearts on the rail between spear-headed bars."""
+    pitch = 2.8
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    rail = h * 0.3
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, rail, L, rail + 0.45)]
+    for j in range(n + 1):
+        u = p * j
+        cells.append(rect(u - 0.28, 0.0, u + 0.28, h - 0.8))
+        cells.append(poly([(u - 0.45, h - 0.9), (u + 0.45, h - 0.9), (u, h)]))
+        if j < n:
+            m = u + p / 2
+            rr = min(0.5, p / 4 - 0.1)
+            vt = h - 1.0
+            heart = cs_union([circle((m - rr * 0.8, vt - rr), rr, 12), circle((m + rr * 0.8, vt - rr), rr, 12),
+                              poly([(m - rr * 1.7, vt - rr), (m + rr * 1.7, vt - rr), (m, rail + 0.4)])])
+            cells.append(heart - heart.offset(-0.4))
+            cells.append(rect(m - 0.2, rail + 0.3, m + 0.2, rail + 0.9))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_chevalier_lower(w=9.4, h=21.0, A=1.1):
+    """Chevalier ground floor: a flat-headed two-over-two sash in a casing with corner blocks
+    carrying roundels, a cornice cap on two little brackets with a sawn crest of lozenges."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    for sg in (-1, 1):
+        c = (sg * (w / 2 + A / 2), h + A / 2)
+        parts.append(chamfer_box(c[0] - A / 2 - 0.2, c[1] - A / 2 - 0.2, c[0] + A / 2 + 0.2, c[1] + A / 2 + 0.2, 0.0, 1.1, c=0.2))
+        parts.append(ext(circle(c, 0.5, 14) - circle(c, 0.2, 8), 1.09, 1.4))
+    half = w / 2 + A + 0.6
+    vf = h + A + 0.2
+    for sg in (-1, 1):
+        parts.append(console(2.0, 1.0, 0.9, u=sg * (half - 0.5), v_top=vf + 1.6, w0=0.0))
+    parts.append(ext(rect(-half + 0.9, vf - 0.01, half - 0.9, vf + 1.6), 0.0, 0.5))
+    vc = vf + 1.6 + 1.0
+    parts.append(MD.run(-half - 0.5, half + 0.5, vc, MD.CROWN, 1.2, up=False))
+    crest = rect(-half + 0.6, vc - 0.01, half - 0.6, vc + 1.6)
+    loz = cs_union([poly([(x - 0.6, vc + 0.8), (x, vc + 1.3), (x + 0.6, vc + 0.8), (x, vc + 0.3)]) for x in np.linspace(-half + 1.8, half - 1.8, 4)])
+    parts.append(ext(crest - loz, 0.0, 0.7))
+    sw = w / 2 + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + 1.6, -1.0)
+
+
+def window_chevalier_upper(w=8.6, h=19.0, rise=1.8, A=0.9):
+    """Chevalier upper floor: a segmental-headed one-over-one sash in an architrave, a hood
+    following the head and ending in teardrops, an apron cut in a scallop."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, rise, lites=(1, 1), bare=True)["insert"]
+    spring = h - rise
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    HB = 1.1
+    parts.append(MD.band(op.offset(A + HB - 0.1, JoinType.Miter, 4.0), HB, MD.CROWN, clip=rect(-w - 10, spring, w + 10, h + 40)))
+    for sg in (-1, 1):
+        x = sg * (w / 2 + A - 0.1 + HB / 2)
+        parts.append(ext(cs_union([rect(x - 0.4, spring - 1.0, x + 0.4, spring + 0.2), circle((x, spring - 1.3), 0.55, 14)]), 0.0, 1.1))
+    sw = w / 2 + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    aw = w / 2 + 0.2
+    ap = rect(-aw, -2.6, aw, -0.99) - cs_union([circle((x, -2.6), 0.6, 12) for x in np.linspace(-aw + 0.9, aw - 0.9, 4)])
+    parts.append(ext(ap, 0.0, 0.6))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A + HB + 0.2, -2.6)
+
+
+def door_chevalier(w=12.4, h=27.0, A=1.2):
+    """The Chevalier's entrance: a pair of leaves with oval lights over raised panels, a
+    transom with a scrolled bar, an architrave, and a hood on two big sawn brackets."""
+    transom = 4.2
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    mid = 0.5
+    lw = (w - 2 * O.CLR - 1.0 - mid) / 2
+    dh = h - transom
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    u = -w / 2 + O.CLR + 0.5
+    for i in range(2):
+        body.append(ext(rect(u, 0.5, u + lw, dh), -pl, -0.8))
+        gv0 = dh * 0.45
+        lights.append(oval((u + lw / 2, (gv0 + dh - 0.8) / 2), lw / 2 - 0.8, (dh - 0.8 - gv0) / 2, 28))
+        body.append(_panel(rect(u + 0.8, 1.2, u + lw - 0.8, gv0 - 0.8)))
+        u += lw + mid
+    tr = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.4, w, h + 2)
+    tv = (dh + 0.4 + h - 0.6) / 2
+    scroll = stroke([(-w / 2, tv), (-w * 0.25, tv + 0.9), (0.0, tv), (w * 0.25, tv - 0.9), (w / 2, tv)], 0.45)
+    sash = _glazed(body, cs_union(lights) + tr, pl, scroll, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.4) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 2.6
+    vf = h + A
+    for sg in (-1, 1):
+        x0 = sg * (w / 2 + A + 0.2)
+        br = poly([(x0, vf + 1.6), (x0 + sg * 3.2, vf + 1.6), (x0 + sg * 3.2, vf + 0.8), (x0 + sg * 0.8, vf - 4.0), (x0, vf - 4.0)])
+        br = br - circle((x0 + sg * 1.4, vf - 0.3), 0.6, 14)
+        parts.append(ext(br, 0.0, 1.4))
+    parts.append(ext(rect(-half + 0.6, vf - 0.01, half - 0.6, vf + 1.6), 0.0, 0.6))
+    vc = vf + 1.6 + 1.4
+    parts.append(MD.run(-half - 0.8, half + 0.8, vc, MD.CROWN, 1.6, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc, 0.0)
+
+
+def door_chevalier_back(w=10.0, h=24.0, A=1.0):
+    """The Chevalier's back door: one leaf with an oval light over a panel, a plain transom,
+    a casing and a cornice cap."""
+    transom = 3.4
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    u0, u1 = -w / 2 + O.CLR + 0.5, w / 2 - O.CLR - 0.5
+    gv0 = dh * 0.45
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, dh), -pl, -0.8), _panel(rect(u0 + 0.8, 1.2, u1 - 0.8, gv0 - 0.8))]
+    light = oval((0.0, (gv0 + dh - 0.8) / 2), (u1 - u0) / 2 - 0.8, (dh - 0.8 - gv0) / 2, 28)
+    g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.3, w, h + 2)
+    sash = _glazed(body, light + g, pl, None, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.3, w, dh + 0.3) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.4
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.6), 0.0, 0.6))
+    parts.append(MD.run(-half - 0.6, half + 0.6, vf + 1.6 + 1.0, MD.CROWN, 1.2, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vf + 2.6, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_bulbring(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A turned post: a bulb low on the shaft between rings, a long plain shaft, a ring and a
+    bell under the capital (the Chevalier's porch)."""
+    z1 = h - 2.6
+    r = 0.95
+    zb = round(min(5.6, h * 0.2) / 0.2) * 0.2
+    prof = [(0.0, 1.19), (1.5, 1.19), (1.5, 1.45), (1.15, 1.7), (1.15, 2.0), (r, 2.2), (1.4, 2.2 + zb * 0.45), (r, 2.2 + zb),
+            (1.2, 2.4 + zb), (1.2, 2.7 + zb), (r, 2.9 + zb), (r, z1 - 0.8), (1.15, z1 - 0.6), (1.15, z1 - 0.3), (r, z1),
+            (1.25, z1 + 0.7)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    return body + PW._top(h, abacus / 2, z1 + 0.7, 1.25, slot, seg=32)
+
+
+def fill_tulipsplats(L, vb, vt):
+    """A railing of sawn splats, each cut as a tulip (a cup of three petals on a stem) between
+    stiles (the Chevalier)."""
+    H = vt - vb
+    n = max(1, int(round(L / 2.6)))
+    parts = []
+    for i in range(n + 1):
+        x = L * i / n
+        parts.append(rect(x - 0.3, vb, x + 0.3, vt))
+        if i < n:
+            m = x + L / n / 2
+            hw = L / n / 2 - 0.35
+            cup = cs_union([_lens((m, vb + H * 0.62), H * 0.5, min(0.9, hw * 0.9), math.pi / 2),
+                            _lens((m - hw * 0.45, vb + H * 0.58), H * 0.4, 0.6, math.pi / 2 + 0.4),
+                            _lens((m + hw * 0.45, vb + H * 0.58), H * 0.4, 0.6, math.pi / 2 - 0.4),
+                            rect(m - 0.35, vb, m + 0.35, vt)])
+            parts.append(cup ^ rect(x + 0.2, vb, x + L / n - 0.2, vt))
+    return parts
+
+
+def frieze_keyholearcade(u0, u1, v_bot, v_top):
+    """A porch frieze: a board cut below into a row of keyhole arches (a round head over a
+    narrow slot) (the Chevalier)."""
+    v0 = v_top - 2.8
+    n = max(2, int((u1 - u0) / 3.0))
+    p = (u1 - u0) / n
+    board = rect(u0, v0 - 1.4, u1, v_top + 0.05)
+    cuts = cs_union([cs_union([circle((u0 + p * (k + 0.5), v0 - 0.1), p * 0.32, 18),
+                               rect(u0 + p * (k + 0.5) - p * 0.16, v0 - 2.0, u0 + p * (k + 0.5) + p * 0.16, v0 - 0.1)])
+                     for k in range(n)])
+    return board - cuts
+
+
+def skirt_diamondboards(reg, d=1.2):
+    """A porch skirt of upright boards with a diamond cut out of every other one (the
+    Chevalier)."""
+    u0, v0, u1, v1 = reg.bounds()
+    boards, holes = [], []
+    for k, u in enumerate(np.arange(u0 + 0.2, u1, 1.8)):
+        boards.append(rect(u, v0 - 1, u + 1.5, v1 + 1))
+        if k % 2 == 0 and v1 - v0 > 2.4:
+            vm = (v0 + v1) / 2
+            holes.append(poly([(u + 0.75, vm - 0.9), (u + 1.35, vm), (u + 0.75, vm + 0.9), (u + 0.15, vm)]))
+    out = M.extrude(reg, d * 0.4) + M.extrude(cs_union(boards) ^ reg, d)
+    return out - M.extrude(cs_union(holes), d + 1).translate([0, 0, d * 0.4 + 0.01]) if holes else out
+
+
+def edge_teardrops(L, z0, zc):
+    """Porch fascia (the Chevalier): teardrops hung under the crown."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for x in np.arange(1.0, L - 0.8, 1.8):
+        out += [poly([(x - 0.2, zc - 0.4), (x + 0.2, zc - 0.4), (x + 0.35, zc - 1.0), (x - 0.35, zc - 1.0)]), circle((x, zc - 1.15), 0.42, 12)]
+    return cs_union(out), 0.6
+
+
+CO.FRIEZE_EXTRA.update(swallows=frieze_swallows, peltae=frieze_peltae)
+CO.COURSE_EXTRA.update(hexchain=course_hexchain)
+TW.BRACKET_EXTRA.update(fantail=bracket_fantail)
+TW.PIERCED = TW.PIERCED + ("fantail",)
+TW.FOUNDATION_EXTRA.update(herringstone=foundation_herringstone)
+PW.POSTS.update(bulbring=post_bulbring)
+PW.FILLS.update(tulipsplats=fill_tulipsplats)
+PW.FRIEZES.update(keyholearcade=frieze_keyholearcade)
+PW.SKIRTS.update(diamondboards=skirt_diamondboards)
+FT.EDGE_EXTRA.update(teardrops=edge_teardrops)
