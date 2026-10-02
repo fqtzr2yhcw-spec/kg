@@ -306,15 +306,49 @@ small windows plugged into it. Our version (the Montclair and the Lafayette are 
 - **The pocket** runs right through the band at the add-in's foot and stops 0.8 mm into it at
   its head, leaving a back wall there. The slates are cleared 0.25 round each frame.
 - **The crest** sits on the band's flat top: a course ring and a crown, one part printed upside
-  down (crown first, one change), a lip inside the band to locate it, a 45 degree seat for the
-  deck. Its relief is stepped from the top (`_st_down`) because it prints upside down.
+  down (crown first, one change), a 45 degree seat for the deck. A key under it drops into a
+  groove cut in the band's top (`crest_ring(...)["groove"]`: cut it from the band) to locate
+  it. Not a lip inside the band: where a band is thick at its top (the Lafayette's pavilion)
+  a lip's profile crosses itself and the crest prints as loose pieces. Its relief is stepped
+  from the top (`_st_down`) because it prints upside down.
+- **Cresting** stands on `crest_ring(...)["rail"]`, not a fixed offset from the crown's edge:
+  its key slot (0.6 mm) must sit over solid crown. Under a cove (cavetto) or torus crown the
+  crown's top is a thin lip over a hollow, and a slot near its edge cuts the lip free (a loose
+  ring printed on the bed). `rail` is P - 1.4 for convex crowns and further in for those.
 - **Two mansards that meet** (the Lafayette's pavilion): each is cut back to the other's
   outer face grown 0.5 mm, past its slates. A pavilion flush with the house's wall does not
   work when its roof is the other shape: the two faces cross. Break it forward and out.
 - **Bell-cast faces** (`bell_profile`) are facets a whole even number of slate courses long, so
   the courses run on without a break and keep their half-slate stagger.
 - **Patterned slating**: `scallop_rows` takes a function of (course, slate) for patterns laid
-  slate by slate (the Montclair's lozenges of diamond-cut slate in a field of square slate).
+  slate by slate (the Montclair's lozenges of diamond-cut slate in a field of square slate). Keep the shapes angular: at HO a clipped ("hex") or pointed-arch slate reads as a fish
+  scale, which the owner does not want; diamond, arrow (a narrow V point) and square read crisp.
+- **Turrets and caps**: an octagonal turret (the Marchand) is a Block on `ngon`, engaged at a
+  corner; the eave wraps it and is parted by `tower_cuts` at the inside corners and once
+  through the far side. A bell cap (`bell_cap`) leans most at its two ends: keep
+  (1 + a)(d0 - d1)/h under 1 so it prints upside down. A convex dome (`bell_profile(...,
+  convex=True)`, the Fontaine) leans most at its top: the same limit there.
+- **Hoods and lower roofs meeting a higher one** (the Rochambeau's bays): the lower roof, its
+  crest, deck and cresting are each cut back to the higher roof's volume grown 0.5 mm.
+
+## One part, one piece
+
+Every part must come out of the slicer as one object. Check it (not just interference): build
+the kit and decompose every part; anything over 1 mm^3 that is not the main piece is a fault.
+What the scan of the mansard batch found:
+
+- **Faces that only touch do not fuse.** A union of two solids meeting on a shared plane can
+  stay two pieces (the Beauvais's veranda roof sat on its beams that way). Overlap them by 0.1.
+  A raised detail goes into the face it stands on, never just onto it.
+- **Thin members vanish in a one-piece porch top**: anything under about 0.6 mm in a railing
+  fill is dropped there, and what it held falls loose. Rings, bars and splats 0.7 mm wide, and
+  every member running into a stile or a rail.
+- **Mirrored frames**: when a face's frame is flipped for the opposite side, check which way
+  is in (the Montclair's chimney diamonds stood outside the wall on two faces).
+- **Style names are global.** A key registered in `CO.FRIEZE_EXTRA`, `COURSE_EXTRA`,
+  `PW.FILLS` and the rest is looked up before the built-in styles, so a key that matches a
+  built-in name (eggdart, rinceau, chippendale, ...) silently replaces another building's
+  ornament. Give every new style a name no module uses yet.
 
 ## Gabled roofs and gable walls (the Whitby onward)
 

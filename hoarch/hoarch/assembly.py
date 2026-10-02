@@ -294,6 +294,28 @@ def jointed(w1="", w2=""):
     return _rewrap(JOINTED.format(w1=w1, w2=w2))
 
 
+def addin_note(parts, frame, extra):
+    """The print note for a mansard house's roof windows (one-piece add-ins)."""
+    return f"""Roof windows ({parts}, on the Addins plates): each prints on its back with supports ON
+(tree, on the build plate only) under its frame, like the windows. Start in the slate colour and
+change once, at the height in the plate's name, to {frame}: the plug (the glass, and the cheeks
+and little roof that show behind the frame) prints slate, the frame above it {frame}.
+{extra}
+"""
+
+
+CREST_STEP = """CREST (upside down) onto the mansard's flat top, its key down into the groove along the
+     band's top; ROOF-deck into the crest's seat; the CREST-iron strips into the slots along
+     the crest; the CHIMNEYs in their deck pockets"""
+ADDIN_STEP = """Each ADDIN (the roof windows) pushes into its pocket from outside, plug first, until its
+     frame's foot meets the slates; a drop of glue on the plug"""
+
+
+def veranda(tag):
+    """The one-piece porch-top steps for a porch called ``tag``."""
+    return top_porch().replace("PORCH-", f"{tag}-")
+
+
 NOTES = {
     "beaumont": ("THE BEAUMONT - QUEEN ANNE", "  1. FOUNDATION (fieldstone).\n" + jointed(
         " (the first storey, the tower's lower storeys and the bay on the wing)",
@@ -1303,8 +1325,8 @@ finial).
   6. MANSARD (it prints upside down) down over the walls onto the eave's crown. Each ADDIN
      (the roof windows; ADDIN-twin over the front door) pushes into its pocket from outside,
      plug first, until its frame's foot meets the slates; a drop of glue on the plug.
-  7. CREST (upside down) onto the mansard's flat top, its lip inside the band; ROOF-deck into
-     the crest's seat; the CREST-iron strips into the grooves along the crest; the CHIMNEYs in
+  7. CREST (upside down) onto the mansard's flat top, its key down into the groove along the
+     band's top; ROOF-deck into the crest's seat; the CREST-iron strips into the grooves along the crest; the CHIMNEYs in
      their deck pockets.
   8. Veranda: """ + top_porch() + """; STOOP-back at the
      back door.
@@ -1323,10 +1345,11 @@ The CHIMNEYs change once to brownstone for their caps, the CREST once from brown
      cut away for the pavilion; then MANSARD-P (the pavilion's taller roof, also upside down)
      onto the pavilion's eave, its back faces meeting the main roof. The ADDINs and ADDIN-Ps
      (the roof windows) push into their pockets from outside, plug first.
-  7. CREST (upside down) onto the main mansard's flat top (it stops against the pavilion);
-     ROOF-deck into its seat; the CREST-iron strips into their grooves; the CHIMNEYs in their
+  7. CREST (upside down) onto the main mansard's flat top, its key in the groove (it stops
+     against the pavilion); ROOF-deck into its seat; the CREST-iron strips into their grooves; the CHIMNEYs in their
      deck pockets.
-  8. Pavilion: PAV-CREST onto its mansard's top, PAV-deck (its torch finial printed on it)
+  8. Pavilion: PAV-CREST onto its mansard's top, keyed the same way, PAV-deck (its torch
+     finial printed on it)
      into the seat, the PAV-iron strips into their grooves.
   9. Veranda: """ + top_porch() + """; STOOP-back at the
      back door.
@@ -1336,6 +1359,114 @@ and change once, at the height in the plate's name, to ivory: the plug (the glas
 cheeks and little roof that show behind the frame) prints slate, the frame above it ivory.
 The CHIMNEYs change once to ivory for their cornices, the CRESTs once from plum to ivory.
 """),
+    "delacroix": ("THE DELACROIX - SECOND EMPIRE WITH A CORNER TOWER", "  1. FOUNDATION (pick-dressed sandstone).\n" + jointed(
+        " (the first storey and the tower's)", " (the second storey and the tower's upper storeys)") + """
+  5. The CORNICE-E parts round the eave band of the house and the tower (the pieces round the
+     tower fit on from the side): -lower, then -upper on top.
+  6. MANSARD (it prints upside down) down over the walls onto the eave's crown, its corner
+     notched round the tower. """ + ADDIN_STEP + """.
+  7. """ + CREST_STEP + """.
+  8. Tower: the CORNICE-T parts round its top band; TOWER-CAP (upside down) onto the tower's
+     lip; the ADDIN-Ts into its two street faces; TOWER-CREST on top, keyed into the cap;
+     TOWER-deck (its crowned ball finial printed on it); the TOWER-iron strips.
+  9. Veranda: """ + top_porch() + """; STOOP-back at the
+     back door.
+""", addin_note("ADDIN and ADDIN-T", "sandstone",
+                "The CHIMNEYs change once to sandstone for their caps, the CRESTs once from green to sandstone.")),
+    "belcourt": ("THE BELCOURT - ITALIANATE WITH A BELVEDERE", "  1. FOUNDATION (frost-work rustication).\n" + jointed() + """
+  5. The CORNICE-A parts (the attic sill: the fluted band and its crown) round the top of the
+     second storey; the attic band's frieze windows push into their openings like the others.
+  6. The CORNICE-E parts round the eave: -lower first, then -upper, whose tall paired consoles
+     hang down over the attic band between its windows.
+  7. ROOF-deck (the tin roof, seams up) onto the walls inside the eave; the BALUSTRADE strips
+     into the slots along its edge; the CHIMNEYs in their pockets.
+  8. Belvedere: BELVEDERE onto its seat in the middle of the deck; its four windows; the
+     CORNICE-BV parts round its top; BELVEDERE-roof (its finial printed on it) on top.
+  9. Portico: """ + top_porch() + """; STOOP-back at the
+     back door.
+""", """Walls, roof, belvedere and chimneys print upright. Windows and doors (the attic band's
+frieze windows too) print face up with supports under their frames only.
+"""),
+    "valcour": ("THE VALCOUR - SECOND EMPIRE WITH A CENTRE PAVILION", "  1. FOUNDATION (brick with sunk panels).\n" + jointed(
+        " (the first storey and the pavilion's)", " (the second storey and the pavilion's)") + """
+  5. The CORNICE-E parts round the eave band of the house and the pavilion: -lower, then -upper.
+  6. MANSARD (upside down) over the house onto the eave's crown, its middle cut away for the
+     pavilion; then MANSARD-P (the pavilion's taller swelling roof, also upside down) onto the
+     pavilion's eave, its sides meeting the main roof. The ADDINs and ADDIN-Ps push into their
+     pockets from outside, plug first.
+  7. """ + CREST_STEP + """ (it stops against the pavilion).
+  8. Pavilion: PAV-CREST onto its mansard's top, keyed the same way; PAV-deck (its urn-and-spike
+     finial printed on it); the PAV-iron strips.
+  9. Veranda: """ + top_porch() + """; STOOP-front at the
+     pavilion's door, STOOP-back at the back door.
+""", addin_note("ADDIN and ADDIN-P", "white", "The CRESTs change once from navy to white.")),
+    "chevalier": ("THE CHEVALIER - SECOND EMPIRE WITH CANTED BAYS", "  1. FOUNDATION (herringbone stone).\n" + jointed(
+        " (the first storey and both bays')", " (the second storey and both bays')") + """
+  5. The CORNICE-E parts round the eave band of the house and the bays: -lower, then -upper.
+  6. The bays' roofs: BAYF-roof and BAYW-roof onto the eave's crown over each bay, their backs
+     against the house; the BAYF-crest and BAYW-crest strips into the slots along them.
+  7. MANSARD (upside down) down over the walls onto the eave's crown. """ + ADDIN_STEP + """.
+  8. """ + CREST_STEP + """.
+  9. Porch: """ + top_porch() + """; STOOP-back at the
+     back door.
+""", addin_note("ADDIN", "chocolate", "The CREST changes once from teal to chocolate.")),
+    "marchand": ("THE MARCHAND - SECOND EMPIRE WITH A CORNER TURRET", "  1. FOUNDATION (chamfered rustication).\n" + jointed(
+        " (the first storey and the turret's)", " (the second storey and the turret's upper storeys)") + """
+  5. The CORNICE-E parts round the eave band of the house and the turret (the pieces round the
+     turret fit on from the side): -lower, then -upper on top.
+  6. MANSARD (upside down) down over the walls onto the eave's crown, its corner notched round
+     the turret. """ + ADDIN_STEP + """.
+  7. """ + CREST_STEP + """.
+  8. Turret: the CORNICE-T parts round its top band; TOWER-CAP (the bell cap, upside down) onto
+     the turret's lip; the ADDIN-Ts into its three street faces; TOWER-CREST on top, keyed into
+     the cap; TOWER-deck (its artichoke finial printed on it); the TOWER-iron strips.
+  9. Veranda (round the turret): """ + top_porch() + """; STOOP-back at the
+     back door.
+""", addin_note("ADDIN and ADDIN-T", "limestone",
+                "The CHIMNEYs change once to limestone for their caps and pots, the CRESTs once from indigo to limestone.")),
+    "rochambeau": ("THE ROCHAMBEAU - SECOND EMPIRE VILLA", "  1. FOUNDATION (bluestone with a blind arcade).\n" + jointed(
+        " (the first storey and both bays')", " (the second storey and both bays')") + """
+  5. The CORNICE-E parts round the eave band of the house and the bays: -lower, then -upper.
+  6. MANSARD (upside down) over the house onto the eave's crown, cut back where the bays' hoods
+     meet it; then each bay's hood, BAYW-HOOD and BAYE-HOOD (upside down), onto its bay's eave,
+     its back running into the main roof. The ADDINs and ADDIN-Bs push into their pockets from
+     outside, plug first.
+  7. """ + CREST_STEP + """.
+  8. Bays: BAYW-CREST and BAYE-CREST onto their hoods, keyed the same way, BAYW-deck and
+     BAYE-deck into their seats, the BAYW-iron and BAYE-iron strips.
+  9. Portico before the door: """ + top_porch() + """; then the
+     PORCH-rail strips (the iron balustrade) into the slots round its roof.
+ 10. Veranda down the east side: """ + veranda("VERANDA") + """; STOOP-back at the back door.
+""", addin_note("ADDIN and ADDIN-B", "ivory", "The CRESTs change once from burgundy to ivory.")),
+    "beauvais": ("THE BEAUVAIS - SECOND EMPIRE COTTAGE", """  1. FOUNDATION (pebble-dashed).
+  2. WALLS onto the foundation's lip.
+  3. Windows and doors: clip off the supports and push each plug into its opening from
+     outside; the frame drops into the flat landing cut in the siding.
+  4. The CORNICE-E parts round the eave band: -lower, then -upper on top.
+  5. MANSARD (the bedroom storey, upside down) down over the walls onto the eave's crown. """ + ADDIN_STEP + """
+     (the twin one goes over the front door).
+  6. """ + CREST_STEP + """.
+  7. Veranda (front and both sides): """ + top_porch() + """; STOOP-back at the
+     back door.
+""", addin_note("ADDIN", "cream", "The CREST changes once from forest to cream.")),
+    "fontaine": ("THE FONTAINE - SECOND EMPIRE MANSION", "  1. FOUNDATION (battered granite).\n" + jointed(
+        " (the first storey of the centre, both pavilions and the tower)",
+        " (the second storey of all of them and the tower's top storey)") + """
+  5. The CORNICE-E parts round the eave band of the whole house (the piece round the front of
+     the tower slides on from the front): -lower, then -upper on top.
+  6. MANSARD (the centre range's, upside down) onto its eave's crown, notched round the tower;
+     then PAVW-MANSARD and PAVE-MANSARD (the pavilions' taller roofs, upside down) onto their
+     eaves, their inner faces meeting the centre roof. The ADDINs and ADDIN-Ps push into their
+     pockets from outside, plug first (the big ones on the pavilions' ends).
+  7. """ + CREST_STEP + """ (it stops against the pavilions and the tower).
+  8. Pavilions: PAVW-CREST and PAVE-CREST onto their mansards, keyed the same way, the decks,
+     the PAVW-iron and PAVE-iron strips.
+  9. Tower: the CORNICE-T parts round its top band; TOWER-DOME (upside down) onto the tower's
+     lip; the ADDIN-Ts (the wreathed oculi) into its three street faces; TOWER-CREST on top,
+     keyed in; TOWER-deck (its bannerette vane printed on it); the TOWER-iron strips.
+ 10. Verandas either side of the tower: """ + veranda("VERANDA-W") + """; the same
+     for VERANDA-E; STOOP-front at the tower door, STOOP-back at the back door.
+""", addin_note("ADDIN, ADDIN-P and ADDIN-T", "marble", "The CRESTs change once from verdigris to marble.")),
     "section4": ("SECTION HOUSE No. 4 - TOOL HOUSE AND SPEEDER SHED", """  1. TOOL-FOUNDATION on the layout, the door side toward the track; TOOL-WALLS onto it; the door and windows; TOOL-CORNICE-frieze, then TOOL-CORNICE-crown; TOOL-ROOF; STOVEPIPE down into the hole in the back slope.
   2. SPEEDER-FOUNDATION with its gable end to the speeder's spur; SPEEDER-WALLS onto it; the doors and window; SPEEDER-CORNICE-course, then SPEEDER-CORNICE-crown; SPEEDER-ROOF.
 """, """Walls and roofs print upright. Windows and doors print face up with supports under their frames only.
