@@ -46,14 +46,23 @@ def face_at(prof, z):
     return prof[-1][0]
 
 
-def bell_profile(d0, z0, d1, z1, kick=(1.4, 1.4), n=6, power=1.8):
+def bell_profile(d0, z0, d1, z1, kick=(1.2, 1.2), power=1.6, step=8.0):
     """A bell-cast (concave) mansard face: a short kick at the foot, then a curve leaning back
-    fast low down and slower toward the top, from (d0, z0) to (d1, z1)."""
-    pts = [(d0, z0), (d0 - kick[0], z0 + kick[1])]
-    da, za = pts[-1]
-    for k in range(1, n + 1):
-        s = k / n
-        pts.append((da + (d1 - da) * (1 - (1 - s) ** power), za + (z1 - za) * s))
+    fast low down and slower toward the top, from (d0, z0) to (d1, z1), as straight facets
+    ``step`` long up the slope (a whole even number of slate courses, so the courses run on
+    unbroken from facet to facet); the last facet takes what is left."""
+    da, za = d0 - kick[0], z0 + kick[1]
+    s = np.linspace(0.0, 1.0, 801)
+    d = da + (d1 - da) * (1 - (1 - s) ** power)
+    z = za + (z1 - za) * s
+    run = np.r_[0.0, np.cumsum(np.hypot(np.diff(d), np.diff(z)))]
+    pts = [(d0, z0), (da, za)]
+    target = step
+    for i in range(1, len(s)):
+        if run[i] >= target and run[-1] - run[i] > step * 0.5:
+            pts.append((float(d[i]), float(z[i])))
+            target += step
+    pts.append((d1, z1))
     return pts
 
 
@@ -747,3 +756,560 @@ PW.BALUSTERS.update(pear=(baluster_pear, 1.7))
 PW.FRIEZES.update(pairbrackets=frieze_pairbrackets)
 PW.SKIRTS.update(crossvent=skirt_crossvent)
 FT.EDGE_EXTRA.update(pairconsoles=edge_pairconsoles)
+
+
+# ================================================================== the Lafayette (house 82)
+# A Second Empire house of sage clapboard with ivory trim and plum accents: a corner pavilion
+# whose taller bell-cast mansard rises through the main roof, trefoil-cut purple slate, oval and
+# segmental add-ins, a veranda round the front and the east side.
+
+# ------------------------------------------------------------------ cornice ornaments
+def frieze_cockades(L, h, b, pitch, margin, pair, half):
+    """Cockades: in every bay a pleated round rosette (a ring of radial pleats round a boss)
+    with two ribbon tails hanging from it, a small bow knot at each station (the Lafayette's
+    storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 3.6:
+            continue
+        r = min(hh * 0.36, wd / 2 - 0.6, 1.7)
+        vc = v1 - r - 0.1
+        out.append(_st(circle((uc, vc), r, 32), b, 0.35))
+        pleats = cs_union([stroke([(uc + (r * 0.4) * math.cos(a), vc + (r * 0.4) * math.sin(a)),
+                                   (uc + (r - 0.15) * math.cos(a), vc + (r - 0.15) * math.sin(a))], 0.42)
+                           for a in np.linspace(0, 2 * math.pi, 12, endpoint=False)])
+        out.append(_st(pleats, b + 0.35, 0.25))
+        out.append(_st(circle((uc, vc), r * 0.36, 16), b + 0.35, 0.4))
+        for sg in (-1, 1):
+            tail = poly([(uc + sg * 0.15, vc - r * 0.6), (uc + sg * 0.75, vc - r * 0.5), (uc + sg * 1.3, v0 + 0.1),
+                         (uc + sg * 0.85, v0 + 0.55), (uc + sg * 0.6, v0 + 0.1)])
+            out.append(_st(tail, b, 0.35))
+    for u in CO._us(L, pitch, margin, 0.0):
+        vm = (v0 + v1) / 2
+        bow = cs_union([_lens((u - 0.65, vm), 1.3, 0.75, 0.25), _lens((u + 0.65, vm), 1.3, 0.75, -0.25), circle((u, vm), 0.38, 12)])
+        out.append(_st(bow, b, 0.4))
+    return out, []
+
+
+def frieze_candelabra(L, h, b, pitch, margin, pair, half):
+    """Candelabra: in every bay a Renaissance candelabrum standing on the foot (a footed base,
+    a vase, a stem with two scrolled branches and a flame), sunk panels either side (the
+    Lafayette's eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out, cuts = [], []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 4.0:
+            continue
+        s = hh / 5.0
+        c = [rect(uc - 0.8 * s, v0, uc + 0.8 * s, v0 + 0.35 * s),
+             poly([(uc - 0.3 * s, v0 + 0.35 * s), (uc + 0.3 * s, v0 + 0.35 * s), (uc + 0.75 * s, v0 + 1.4 * s), (uc + 0.45 * s, v0 + 1.9 * s),
+                   (uc - 0.45 * s, v0 + 1.9 * s), (uc - 0.75 * s, v0 + 1.4 * s)]),
+             rect(uc - 0.22, v0 + 1.9 * s, uc + 0.22, v0 + 3.9 * s),
+             oval((uc, v0 + 2.6 * s), 0.38 * s, 0.22 * s, 14),
+             _lens((uc, v0 + 4.45 * s), 1.1 * s, 0.55 * s, math.pi / 2)]
+        for sg in (-1, 1):
+            arc = [(uc + sg * 1.05 * s * math.sin(t), v0 + 2.9 * s + 0.9 * s * (1 - math.cos(t))) for t in np.linspace(0.0, math.pi * 0.8, 10)]
+            c.append(stroke([(uc, v0 + 2.9 * s)] + arc[1:], 0.4))
+            c.append(circle(arc[-1], 0.32, 10))
+        out.append(_st(cs_union(c), b, 0.45))
+        pw = wd / 2 - 1.6 * s - 0.8
+        if pw > 1.0:
+            for sg in (-1, 1):
+                x0 = uc + sg * (1.6 * s + 0.4)
+                pan = rect(min(x0, x0 + sg * pw), v0 + 0.5, max(x0, x0 + sg * pw), v1 - 0.5)
+                cuts.append(ext(pan.offset(-0.35, JoinType.Miter, 4.0), b - 0.25, b + 1.0))
+                out.append(_st(pan - pan.offset(-0.35, JoinType.Miter, 4.0), b, 0.3))
+    return out, cuts
+
+
+def course_ribbonstick(L, h, b, pitch, margin, p):
+    """Ribbon and stick: a round rod with a ribbon wound round it in slanting bands (the
+    Lafayette)."""
+    out = [_st(rect(0.2, h * 0.2, L - 0.2, h * 0.8), b, 0.35)]
+    sp = max(1.4, h * 1.1)
+    n = max(1, int((L - 0.8) / sp))
+    u0 = (L - n * sp) / 2
+    bands = [poly([(u0 + k * sp, 0.15), (u0 + k * sp + 0.6, 0.15), (u0 + k * sp + 0.6 + h * 0.55, h - 0.15),
+                   (u0 + k * sp + h * 0.55, h - 0.15)]) for k in range(n)]
+    out.append(_st(cs_union(bands) ^ rect(0.2, 0.0, L - 0.2, h), b + 0.3, 0.3))
+    return out
+
+
+def course_beaddentil(L, h, b, pitch, margin, p):
+    """Dentils hanging from a fillet, a round bead dropped in every gap (the Lafayette)."""
+    tooth, gap = 0.9, 0.7
+    n = int((L - 1.2) / (tooth + gap))
+    u0 = (L - (n * (tooth + gap) - gap)) / 2
+    out = [ext(rect(0.2, h - 0.5, L - 0.2, h), b - 0.05, b + 0.45)]
+    for k in range(n):
+        u = u0 + k * (tooth + gap)
+        out.append(ext(rect(u, 0.5, u + tooth, h - 0.45), b - 0.05, b + 0.75))
+        if k < n - 1:
+            out.append(_st(circle((u + tooth + gap / 2, 0.75), 0.42, 12), b, 0.45))
+    return out
+
+
+def course_lambstongue(L, h, b, pitch, margin, p):
+    """Lamb's tongues: round-ended tongues hanging from a fillet, close set (the Lafayette's
+    storey joint)."""
+    pu = 1.3
+    n = max(1, int((L - 0.8) / pu))
+    u0 = (L - n * pu) / 2
+    tongues = [rect(0.2, h - 0.45, L - 0.2, h)]
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        tongues += [rect(uc - 0.4, 0.6, uc + 0.4, h - 0.3), circle((uc, 0.6), 0.4, 12)]
+    return [_st(cs_union(tongues), b, 0.45)]
+
+
+def ribbonbands(L, h):
+    """The Lafayette's crest course as CrossSections: slanting ribbon bands over a rod."""
+    sp = max(1.6, h * 1.0)
+    n = max(1, int((L - 0.8) / sp))
+    u0 = (L - n * sp) / 2
+    rod = rect(0.2, h * 0.22, L - 0.2, h * 0.78)
+    bands = [poly([(u0 + k * sp, 0.1), (u0 + k * sp + 0.6, 0.1), (u0 + k * sp + 0.6 + h * 0.5, h - 0.1),
+                   (u0 + k * sp + h * 0.5, h - 0.1)]) for k in range(n)]
+    return [rod + (cs_union(bands) ^ rect(0.2, 0.0, L - 0.2, h))]
+
+
+def bracket_leafmod(h, d, t):
+    """A modillion with a leaf under it: a long horizontal block, its front end rolled into a
+    scroll and its back into a smaller one, the underside between them cut in the lobes of an
+    acanthus leaf (side profile, top at v = 0; the Lafayette)."""
+    r1 = min(0.45 * h, 0.22 * d)
+    r2 = min(0.32 * h, 0.15 * d)
+    body = rect(0.0, -h * 0.55, d, 0.0)
+    lobes = cs_union([circle((d * f, -h * 0.55), h * 0.2, 12) for f in np.linspace(0.3, 0.72, 4)])
+    prof = cs_union([body, lobes, circle((d - r1, -h + r1), r1, 18), circle((0.15 + r2, -h + r2 + 0.2), r2, 14),
+                     rect(d - 2 * r1, -h + r1, d, 0.0), rect(0.0, -h + r2 + 0.2, 0.3 + 2 * r2, 0.0)])
+    return prof - circle((d - r1, -h + r1), r1 * 0.4, 12)
+
+
+# ------------------------------------------------------------------ the mansard's window add-ins
+def addin_lafayette_oval(rx=2.6, ry=3.4):
+    """A Lafayette add-in: an oval light (oeil-de-boeuf) with a cross of bars in an oval frame
+    keyed at its four points, a scrolled crest with a fan over it, and a corbel under it."""
+    vc = ry + 2.2
+    light = oval((0.0, vc), rx, ry, 40)
+    bars = cs_union([rect(-RIB / 2, vc - ry - 1, RIB / 2, vc + ry + 1), rect(-rx - 1, vc - 0.25, rx + 1, vc + 0.25)])
+    A = 1.3
+    outer = oval((0.0, vc), rx + A, ry + A, 48)
+    parts = [ext(outer.offset(0.6, JoinType.Round) - light, 0.0, 0.6),
+             MD.band(light.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-20, -20, 20, 40) - light)]
+    for ang in (0.0, math.pi / 2, math.pi, 3 * math.pi / 2):
+        cx, cy = (rx + A * 0.5) * math.cos(ang), vc + (ry + A * 0.5) * math.sin(ang)
+        key = rect(-0.55, -(A * 0.5 + 0.5), 0.55, A * 0.5 + 0.5)
+        if abs(math.cos(ang)) > 0.5:
+            key = rect(-(A * 0.5 + 0.5), -0.55, A * 0.5 + 0.5, 0.55)
+        parts.append(ext(key.translate([cx, cy]), 0.0, 1.5))
+    vt = vc + ry + A + 0.2
+    crest = [rect(-2.6, vt - 0.6, 2.6, vt + 0.3)]
+    for sg in (-1, 1):
+        crest.append(stroke([(sg * 0.6, vt), (sg * 1.8, vt + 0.9), (sg * 2.6, vt + 0.4), (sg * 2.4, vt - 0.2)], 0.5))
+    parts.append(ext(cs_union(crest), 0.0, 1.0))
+    parts.append(fan_crest(0.0, vt + 0.2, 1.7, 0.0, 1.1, rays=3))
+    parts.append(chamfer_box(-2.2, 0.0, 2.2, vc - ry - A + 0.4, 0.0, 1.2, c=0.3))
+    parts.append(MD.pendant(0.0, 0.2, 1.8, 0.0, 0.8))
+    parts = [p - ext(light, -1.0, 5.0) for p in parts]
+    outline = (oval((0.0, vc), rx + A + 0.2, ry + A + 0.2, 48) + rect(-2.0, 0.6, 2.0, vc)) ^ rect(-50, 0.6, 50, 100)
+    return dict(light=light, bars=bars, frame=parts, outline=outline, top=vt + 2.1, bottom=-1.6)
+
+
+def addin_lafayette_seg(w=5.6, h=10.4, rise=1.4, A=1.0):
+    """A Lafayette add-in: a segmental-headed two-over-two light in an eared architrave, a
+    segmental pediment over it with a shell in the tympanum, a sill on a corbel block."""
+    op = O.opening_cs(w, h, rise)
+    spring = h - rise
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, spring * 0.5 - 0.3, w, spring * 0.5 + 0.3)])
+    half = w / 2 + A + 0.7
+    outer = cs_union([op.offset(A, JoinType.Miter, 4.0), rect(-half, spring - 2.0, half, spring + 0.6)])
+    parts = [ext(outer.offset(0.3) - op, 0.0, 0.6),
+             MD.band(outer, A + 0.7, MD.ARCHITRAVE, clip=rect(-20, 0.0, 20, 40) - op)]
+    vp = h + A + 0.2
+    parts.append(ext(rect(-half, vp - 0.6, half, vp + 0.2), 0.0, 1.0))
+    rp = 2.2
+    seg = arch_cs(-half - 0.4, half + 0.4, vp - 0.01, vp, rise=rp, seg=48)
+    parts.append(MD.band(seg, 1.0, MD.CROWN, clip=rect(-half - 2, vp, half + 2, vp + 10)))
+    tymp = seg.offset(-0.9, JoinType.Round) ^ rect(-half, vp, half, vp + 10)
+    parts.append(ext(tymp, 0.0, 0.6))
+    parts.append(fan_crest(0.0, vp + 0.1, min(1.6, rp - 0.5), 0.59, 0.5, rays=3))
+    sw = half + 0.3
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts.append(chamfer_box(-1.4, -2.0, 1.4, -0.8, 0.0, 1.0, c=0.3))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = (cs_union([rect(-half - 0.1, 0.4, half + 0.1, vp)]) + (seg.offset(-0.6, JoinType.Round) ^ rect(-20, vp - 1, 20, 40)))
+    outline = outline.offset(-0.4, JoinType.Round) ^ rect(-50, 0.4, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=vp + rp, bottom=-2.0)
+
+
+# ------------------------------------------------------------------ walls, corners, foundation
+def jointed_clapboard(region, datum=0.0, pitch=1.2, d=0.32, seed=82):
+    """Bevel clapboard laid in board lengths: every course broken by butt joints, staggered
+    from course to course (the Lafayette)."""
+    from .core import clapboard
+    if region.is_empty():
+        return M()
+    lap = clapboard(region, pitch=pitch, d=d, dmin=0.05, datum=datum)
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed + int(u1 * 10) % 97)
+    cuts = []
+    k = math.floor((v0 - datum) / pitch) - 1
+    while datum + k * pitch < v1:
+        v = datum + k * pitch
+        u = u0 + rng.uniform(1.0, 9.0)
+        while u < u1 - 1.0:
+            cuts.append(rect(u - 0.2, v + 0.05, u + 0.2, v + pitch - 0.05))
+            u += rng.uniform(9.0, 15.0)
+        k += 1
+    return lap - ext(cs_union(cuts), 0.12, d + 0.5) if cuts else lap
+
+
+def corner_woodquoin(L, at_start, qa, qb, w=2.4, t=0.65):
+    """Wooden quoins: a corner board carrying chamfered blocks, long and short in turn, so the
+    corner reads as dressed stone (the Lafayette)."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    u0, u1 = span(-t, w)
+    parts = [box([u0, qa, 0.0], [u1, qb, t])]
+    v = qa + 0.4
+    k = 0
+    while v < qb - 2.0:
+        leg = 3.6 if k % 2 == 0 else 2.4
+        a, b = span(-t - 0.4, leg)
+        top = min(v + 2.4, qb - 0.4)
+        parts.append(chamfer_box(a, v, b, top, 0.0, t + 0.45, c=0.3, bottom=0.45, square=("u0",) if at_start else ("u1",)))
+        v += 2.8
+        k += 1
+    return union(parts)
+
+
+def foundation_chequerstone(reg, seed=0):
+    """Stone laid in a chequer: smooth ashlar blocks and rock-faced ones in turn, in even
+    courses (the Lafayette)."""
+    b = reg.bounds()
+    rng = np.random.default_rng(seed + 82)
+    out = [M.extrude(reg, 0.2)]
+    v = b[1] + 0.2
+    j = 0
+    while v < b[3] - 1.0:
+        hh = min(3.0, b[3] - v - 0.2)
+        u = b[0] - (j % 2) * 2.5
+        i = 0
+        while u < b[2]:
+            blk = rect(u + 0.25, v + 0.25, u + 5.0 - 0.25, v + hh - 0.25) ^ reg
+            if not blk.is_empty():
+                if (i + j) % 2 == 0:
+                    out.append(ext(blk, 0.15, 0.5))
+                else:
+                    pts = blk.offset(-0.4, JoinType.Miter, 4.0)
+                    out.append(ext(blk, 0.15, 0.4))
+                    if not pts.is_empty():
+                        bb = pts.bounds()
+                        bumps = cs_union([circle((rng.uniform(bb[0], bb[2]), rng.uniform(bb[1], bb[3])), rng.uniform(0.5, 0.9), 8)
+                                          for _ in range(5)]) ^ pts
+                        out.append(ext(pts, 0.35, 0.6) + ext(bumps, 0.55, 0.85))
+            u += 5.0
+            i += 1
+        v += hh
+        j += 1
+    return union(out)
+
+
+def chimney_lafayette(w=10.0, d=10.0, h=24.0):
+    """The Lafayette's stacks: stucco scored as V-jointed rusticated blocks, a moulded stone
+    cornice under a coping, and two tall round pots with flared rims."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 3.6
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for z in np.arange(2.4, sh - 1.0, 2.4):                       # the rusticated courses' joints
+        ring = box([-w / 2 - 1, -d / 2 - 1, z], [w / 2 + 1, d / 2 + 1, z + 0.4]) - box([-w / 2 + 0.3, -d / 2 + 0.3, z - 1], [w / 2 - 0.3, d / 2 - 0.3, z + 1])
+        body = body - ring
+    for k, g in enumerate((0.3, 0.6, 0.9)):
+        body = body + M.hull_points([(x, y, sh + 0.6 * k - 0.01) for x in (-w / 2 - g + 0.3, w / 2 + g - 0.3) for y in (-d / 2 - g + 0.3, d / 2 + g - 0.3)] +
+                                    [(x, y, sh + 0.6 * (k + 1)) for x in (-w / 2 - g, w / 2 + g) for y in (-d / 2 - g, d / 2 + g)])
+    zc = sh + 1.8
+    body = body + box([-w / 2 - 1.1, -d / 2 - 1.1, zc - 0.01], [w / 2 + 1.1, d / 2 + 1.1, zc + 0.8])
+    pots = []
+    for sx in (-1, 1):
+        x = sx * w / 4
+        prof = [(0.0, 0.0), (1.1, 0.0), (0.95, 0.8), (0.8, 2.6), (1.15, 3.0), (1.15, 3.4), (0.0, 3.4)]
+        pots.append(M.revolve(poly(prof), 20).translate([x, 0, zc + 0.79]))
+    body = body + union(pots)
+    return body - union([M.cylinder(8.0, 0.55, 0.55, 12).translate([sx * w / 4, 0, zc - 3.0]) for sx in (-1, 1)])
+
+
+# ------------------------------------------------------------------ cresting and finial
+def fence_lafayette(L, h):
+    """Lafayette cresting: palmettes (a fan of five petals on a base) between spear-headed
+    bars, a ring on the rail under each palmette."""
+    pitch = 3.6
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    rail = h * 0.38
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, rail, L, rail + 0.45)]
+    for j in range(n + 1):
+        u = p * j
+        cells.append(rect(u - 0.3, 0.0, u + 0.3, h - 1.0))
+        cells.append(poly([(u - 0.5, h - 1.1), (u + 0.5, h - 1.1), (u, h - 0.1)]))
+        if j < n:
+            m = u + p / 2
+            base = rail + 0.4
+            for a in np.linspace(math.pi * 0.2, math.pi * 0.8, 5):
+                ln = (h - base - 0.3) * (1.0 if abs(a - math.pi / 2) < 0.1 else 0.8)
+                cells.append(_lens((m + ln / 2 * math.cos(a), base + ln / 2 * math.sin(a)), ln, 0.55, a))
+            cells.append(circle((m, base), 0.55, 14))
+            rr = min(0.75, rail / 2 - 0.1)
+            cells.append(circle((m, rail / 2 + 0.3), rr, 18) - circle((m, rail / 2 + 0.3), max(rr - 0.45, 0.15), 14))
+            cells.append(rect(m - 0.22, rail / 2 + 0.3 + rr - 0.1, m + 0.22, rail + 0.05))
+            cells.append(rect(m - 0.22, 0.55, m + 0.22, rail / 2 + 0.3 - rr + 0.1))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def finial_torch(h=9.0):
+    """An iron torch finial: a square plinth, a turned stem with two rings, a cup and a flame
+    (the Lafayette's pavilion)."""
+    prof = [(0.0, 0.0), (1.4, 0.0), (1.4, 0.8), (0.9, 1.2), (0.6, 1.6), (0.6, h * 0.35), (0.95, h * 0.38), (0.95, h * 0.43),
+            (0.6, h * 0.46), (0.55, h * 0.6), (0.9, h * 0.63), (0.9, h * 0.67), (0.55, h * 0.7), (1.1, h * 0.78),
+            (0.9, h * 0.82), (0.0, h * 0.82)]
+    body = PW._revolve(prof, 28)
+    flame = M.revolve(poly([(0.0, 0.0), (0.7, 0.0), (0.75, 0.5), (0.45, 1.0), (0.0, h * 0.18 + 0.2)]), 20).translate([0, 0, h * 0.82 - 0.01])
+    return body + flame
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_lafayette_lower(w=9.6, h=21.0, rise=1.6, A=1.0):
+    """Lafayette ground floor: a segmental-headed two-over-two sash in a moulded architrave, a
+    frieze carved with a garland between rosettes, a cornice hood on two long scroll consoles
+    with a sawn crest of C-scrolls round a fan, and a panelled apron under a moulded sill."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, rise, lites=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 1.8
+    vf = h + A - 0.2
+    parts.append(ext(rect(-half + 1.2, vf - 0.01, half - 1.2, vf + 2.4), 0.0, 0.6))
+    parts.append(ext(swag(-half + 2.6, half - 2.6, vf + 2.0, 1.3, width=0.6) + rect(-half + 2.4, vf + 1.8, half - 2.4, vf + 2.1), 0.59, 1.0))
+    for sg in (-1, 1):
+        parts.append(MD.rosette(sg * (half - 2.0), vf + 1.2, 0.6, 0.59, 0.5))
+        parts.append(console(5.0, 1.8, 1.2, u=sg * (half - 0.6), v_top=vf + 2.4, w0=0.0))
+    vc = vf + 2.4 + 1.2
+    parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 1.4, up=False))
+    crest = [rect(-half + 0.4, vc - 0.01, half - 0.4, vc + 0.5)]
+    for sg in (-1, 1):
+        crest.append(stroke([(sg * 1.4, vc + 0.4), (sg * 2.6, vc + 1.6), (sg * 3.8, vc + 1.2), (sg * 3.6, vc + 0.5)], 0.5))
+        crest.append(circle((sg * 3.7, vc + 0.75), 0.4, 12))
+    parts.append(ext(cs_union(crest), 0.0, 0.9))
+    parts.append(fan_crest(0.0, vc + 0.4, 1.8, 0.0, 1.0, rays=3))
+    sw = w / 2 + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    aw = w / 2 + A * 0.5
+    parts.append(ext(rect(-aw, -3.2, aw, -0.99), 0.0, 0.55))
+    parts.append(chamfer_box(-aw + 0.8, -2.7, aw - 0.8, -1.4, 0.54, 0.35, c=0.2))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + 2.3, -3.2)
+
+
+def window_lafayette_upper(w=8.4, h=20.0, A=0.9):
+    """Lafayette upper floor: a round-headed one-over-one sash in an architrave, a hood mould
+    following the arch whose ends curl into volutes at the spring line, a keystone carrying a
+    small shell, a sill on a corbel."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, r, lites=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    HB = 1.2
+    R0, R1 = r + A + 0.1, r + A + 0.1 + HB
+    up = rect(-R1 - 3, spring - 0.01, R1 + 3, spring + R1 + 2)
+    parts.append(ext((circle((0.0, spring), R1, 64) - circle((0.0, spring), R0, 64)) ^ up, 0.0, 1.2))
+    for sg in (-1, 1):
+        c = (sg * (R0 + HB / 2), spring - 0.9)
+        vol = cs_union([circle(c, 1.0, 20) - circle(c, 0.45, 14), rect(c[0] - HB / 2, spring - 0.9, c[0] + HB / 2, spring + 0.01)])
+        parts.append(ext(vol, 0.0, 1.2))
+        parts.append(ext(circle(c, 0.5, 12), 0.0, 1.0))
+    parts.append(MD.scroll_keystone(0.0, h - 0.3, R1 - r + 0.9, 1.3, 1.8, 0.0, 1.6))
+    parts.append(fan_crest(0.0, spring + R1 + 0.5, 1.4, 0.0, 1.0, rays=3))
+    sw = r + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts.append(chamfer_box(-1.6, -2.2, 1.6, -0.8, 0.0, 1.0, c=0.3))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, spring + R1 + 0.5 + 1.4, -2.2)
+
+
+def _leaf_lafayette(u0, lw, dh, pl):
+    """A Lafayette door leaf: a long light with an octagonal head over two raised panels, the
+    upper one round-headed."""
+    body = [ext(rect(u0, 0.5, u0 + lw, dh), -pl, -0.8)]
+    gw = lw - 1.6
+    gv0 = dh * 0.46
+    gv1 = dh - 0.8
+    c = 0.8
+    light = poly([(u0 + 0.8, gv0), (u0 + 0.8 + gw, gv0), (u0 + 0.8 + gw, gv1 - c), (u0 + 0.8 + gw - c, gv1), (u0 + 0.8 + c, gv1),
+                  (u0 + 0.8, gv1 - c)])
+    body.append(_panel(rect(u0 + 0.8, 1.2, u0 + lw - 0.8, gv0 * 0.45)))
+    pv0, pv1 = gv0 * 0.45 + 0.7, gv0 - 0.8
+    body.append(_panel(cs_union([rect(u0 + 0.8, pv0, u0 + lw - 0.8, pv1 - gw / 2), circle((u0 + lw / 2, pv1 - gw / 2), gw / 2, 24)])))
+    return body, light
+
+
+def door_lafayette(w=13.6, h=28.0, A=1.2):
+    """The Lafayette's entrance: a pair of leaves (octagon-headed lights over a square and a
+    round-headed panel) under a segmental transom with a star of bars, an architrave with
+    crossettes, a frieze with a cartouche, and a big segmental hood on two long consoles."""
+    transom = 5.0
+    rise = 1.6
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    mid = 0.5
+    lw = (w - 2 * O.CLR - 1.0 - mid) / 2
+    dh = h - transom - rise
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    u = -w / 2 + O.CLR + 0.5
+    for i in range(2):
+        b_, lt = _leaf_lafayette(u, lw, dh, pl)
+        body += b_
+        lights.append(lt)
+        u += lw + mid
+    tr = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.5, w, h + 2)
+    tc = ((0.0), (dh + 0.5 + h) / 2)
+    star = cs_union([stroke([(tc[0] - 3.2 * math.cos(a), tc[1] - 3.2 * math.sin(a)), (tc[0] + 3.2 * math.cos(a), tc[1] + 3.2 * math.sin(a))], 0.5)
+                     for a in (0.0, math.pi / 3, 2 * math.pi / 3)] + [circle(tc, 0.9, 16)])
+    g = cs_union(lights) + tr
+    sash = _glazed(body, g, pl, star, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.5) ^ plug_cs, -pl, -0.5))
+    outer = op.offset(A, JoinType.Miter, 4.0)
+    spring = h - rise
+    ears = cs_union([rect(-w / 2 - A - 0.8, spring - 2.4, -w / 2, spring + 0.8), rect(w / 2, spring - 2.4, w / 2 + A + 0.8, spring + 0.8)])
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(cs_union([outer, ears]), A + 0.8, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2 + A / 2) - 1.1, 0.0, sg * (w / 2 + A / 2) + 1.1, 2.4, 0.0, 1.4, c=0.35))
+    half = w / 2 + A + 2.4
+    vf = h + A
+    parts.append(ext(rect(-half + 0.6, vf - 0.2, half - 0.6, vf + 2.6), 0.0, 0.6))
+    parts.append(ext(oval((0.0, vf + 1.2), 2.4, 1.0, 28), 0.0, 0.5))
+    parts.append(MD.cartouche((0.0, vf + 1.2), 3.6, 2.0, 0.59, 0.6))
+    for sg in (-1, 1):
+        parts.append(console(6.4, 2.4, 1.4, u=sg * (half - 1.0), v_top=vf + 2.6, w0=0.0))
+    vc = vf + 2.6 + 1.4
+    parts.append(MD.run(-half - 0.8, half + 0.8, vc, MD.CROWN, 1.6, up=False))
+    rp = 2.6
+    seg = arch_cs(-half - 0.6, half + 0.6, vc - 0.01, vc, rise=rp, seg=64)
+    parts.append(MD.band(seg, 1.2, MD.CROWN, clip=rect(-half - 2, vc, half + 2, vc + 10)))
+    tymp = seg.offset(-1.1, JoinType.Round) ^ rect(-half, vc, half, vc + 10)
+    parts.append(ext(tymp, 0.0, 0.6))
+    parts.append(fan_crest(0.0, vc + 0.1, rp - 0.5, 0.59, 0.5, rays=5))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + rp, 0.0)
+
+
+def door_lafayette_back(w=10.0, h=25.0, A=1.0):
+    """The Lafayette's back door: one leaf with an octagon-headed light over panels, a
+    two-light transom, an architrave and a cornice hood on two consoles."""
+    transom = 3.6
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    lw = w - 2 * O.CLR - 1.0
+    body, light = _leaf_lafayette(-w / 2 + O.CLR + 0.5, lw, dh, pl)
+    body = [ext(plug_cs, -pl, -1.0)] + body
+    g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.3, w, h + 2)
+    sash = _glazed(body, light + g, pl, _muntins(g, 2, 1), plug_cs)
+    sash.append(ext(rect(-w, dh - 0.3, w, dh + 0.3) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.6
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.8), 0.0, 0.6))
+    for sg in (-1, 1):
+        parts.append(console(3.0, 1.4, 1.1, u=sg * (half - 0.6), v_top=vf + 1.8, w0=0.0))
+    parts.append(MD.run(-half - 0.6, half + 0.6, vf + 1.8 + 1.2, MD.CROWN, 1.2, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vf + 3.0, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_reededvase(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A turned post with a vase-shaped foot and a reeded shaft (eight round reeds), a ring
+    under a bell capital (the Lafayette's veranda)."""
+    z1 = h - 2.8
+    zv = round(min(6.0, h * 0.22) / 0.2) * 0.2
+    prof = [(0.0, 1.19), (1.5, 1.19), (1.5, 1.4), (1.1, 1.7), (1.35, zv * 0.55), (0.95, zv), (1.2, zv + 0.2), (1.2, zv + 0.45),
+            (0.85, zv + 0.65), (0.85, z1), (1.15, z1 + 0.2), (1.15, z1 + 0.4), (0.9, z1 + 0.6), (1.2, z1 + 1.0)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    reeds = union([M.cylinder(z1 - zv - 1.6, 0.25, 0.25, 10).translate([0.85 * math.cos(a), 0.85 * math.sin(a), zv + 1.0])
+                   for a in np.linspace(0, 2 * math.pi, 8, endpoint=False)])
+    return body + reeds + PW._top(h, abacus / 2, z1 + 1.0, 1.2, slot, seg=32)
+
+
+def fill_fleursplats(L, vb, vt):
+    """A railing of sawn splats, each cut as a fleur-de-lis between plain stiles (the
+    Lafayette)."""
+    H = vt - vb
+    n = max(1, int(round(L / 2.6)))
+    parts = []
+    for i in range(n + 1):
+        x = L * i / n
+        parts.append(rect(x - 0.3, vb, x + 0.3, vt))
+        if i < n:
+            m = x + L / n / 2
+            vm = vb + H * 0.5
+            fl = cs_union([_lens((m, vm + H * 0.12), H * 0.5, 0.75, math.pi / 2),
+                           _lens((m - 0.55, vm + H * 0.02), H * 0.35, 0.55, math.pi / 2 + 0.6),
+                           _lens((m + 0.55, vm + H * 0.02), H * 0.35, 0.55, math.pi / 2 - 0.6),
+                           rect(m - 0.85, vm - H * 0.12, m + 0.85, vm - H * 0.04),
+                           rect(m - 0.28, vb, m + 0.28, vt)])
+            parts.append(fl ^ rect(x + 0.2, vb, x + L / n - 0.2, vt))
+    return parts
+
+
+def frieze_festoons(u0, u1, v_bot, v_top):
+    """A porch frieze: a board with a rope festoon hung in shallow loops along its foot, a
+    tassel at every point (the Lafayette)."""
+    v0 = v_top - 2.6
+    board = rect(u0, v0, u1, v_top + 0.05)
+    n = max(2, int((u1 - u0) / 4.0))
+    pts = []
+    for j in range(n * 12 + 1):
+        t = j / (n * 12)
+        x = u0 + (u1 - u0) * t
+        pts.append((x, v0 - 0.9 * abs(math.sin(math.pi * n * t))))
+    rope = stroke(pts, 0.55)
+    tassels = [poly([(u0 + (u1 - u0) * k / n - 0.35, v0 + 0.01), (u0 + (u1 - u0) * k / n + 0.35, v0 + 0.01), (u0 + (u1 - u0) * k / n, v0 - 1.6)])
+               for k in range(1, n)]
+    return cs_union([board, rope] + tassels) ^ rect(u0, v0 - 2.0, u1, v_top + 0.05)
+
+
+def skirt_scallopboards(reg, d=1.2):
+    """A porch skirt of upright boards, their feet cut in rounded scallops (the Lafayette)."""
+    u0, v0, u1, v1 = reg.bounds()
+    boards = []
+    for u in np.arange(u0 + 0.2, u1, 1.6):
+        boards.append(cs_union([rect(u, v0 + 0.7, u + 1.2, v1 + 1), circle((u + 0.6, v0 + 0.7), 0.6, 14)]))
+    return M.extrude(reg, d * 0.4) + M.extrude(cs_union(boards) ^ reg, d)
+
+
+def edge_pendants(L, z0, zc):
+    """Porch fascia (the Lafayette): little turned pendants hung under the crown."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for x in np.arange(1.2, L - 0.8, 2.6):
+        out += [rect(x - 0.25, zc - 1.0, x + 0.25, zc - 0.4), circle((x, zc - 1.2), 0.4, 12)]
+    return cs_union(out), 0.6
+
+
+CO.FRIEZE_EXTRA.update(cockades=frieze_cockades, candelabra=frieze_candelabra)
+CO.COURSE_EXTRA.update(ribbonstick=course_ribbonstick, beaddentil=course_beaddentil, lambstongue=course_lambstongue)
+TW.BRACKET_EXTRA.update(leafmod=bracket_leafmod)
+TW.PIERCED = TW.PIERCED + ("leafmod",)
+SH.CORNER_EXTRA.update(woodquoin=corner_woodquoin)
+TW.FOUNDATION_EXTRA.update(chequerstone=foundation_chequerstone)
+PW.POSTS.update(reededvase=post_reededvase)
+PW.FILLS.update(fleursplats=fill_fleursplats)
+PW.FRIEZES.update(festoons=frieze_festoons)
+PW.SKIRTS.update(scallopboards=skirt_scallopboards)
+FT.EDGE_EXTRA.update(pendants=edge_pendants)
