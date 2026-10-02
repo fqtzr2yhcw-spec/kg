@@ -47,18 +47,18 @@ PALETTE = {"brick": ["#A85B42", 0.85, 0.0], "trim": ["#D9CDB0", 0.65, 0.0], "acc
 # ------------------------------------------------------------------ cornices (unique to the Marchand)
 LEDGE = 1.4
 JOINT = dict(pitch=12.0, margin=4.0, layers=[
-    dict(kind="course", h=1.8, b=1.0, orn="guilloche", role="Limestone"),
-    dict(kind="frieze", h=5.4, b=1.2, orn="rinceau", role="Indigo"),
+    dict(kind="course", h=1.8, b=1.0, orn="twinstrand", role="Limestone"),
+    dict(kind="frieze", h=5.4, b=1.2, orn="vinescroll", role="Indigo"),
     dict(kind="crown", h=2.2, b=1.4, P=3.8, orn="reverse", role="Limestone")])
 EAVE = dict(pitch=12.0, margin=4.0, layers=[
-    dict(kind="course", h=1.6, b=1.0, orn="eggdart", role="Limestone"),
-    dict(kind="frieze", h=6.4, b=1.2, orn="cartouches", role="Indigo"),
-    dict(kind="course", h=1.6, b=1.4, orn="guilloche", role="Limestone"),
+    dict(kind="course", h=1.6, b=1.0, orn="eggcup", role="Limestone"),
+    dict(kind="frieze", h=6.4, b=1.2, orn="garlandcartouche", role="Indigo"),
+    dict(kind="course", h=1.6, b=1.4, orn="twinstrand", role="Limestone"),
     dict(kind="bed", h=2.2, b=1.4, P=7.0, role="Limestone", brackets=dict(style="dropconsole", t=1.6, reach=0.6)),
     dict(kind="crown", h=2.8, b=1.4, P=7.8, orn="cavetto", role="Indigo")])
 TOWER_C = dict(pitch=11.0, margin=3.0, layers=[
-    dict(kind="course", h=1.6, b=1.0, orn="eggdart", role="Limestone"),
-    dict(kind="frieze", h=6.0, b=1.2, orn="cartouches", role="Indigo"),
+    dict(kind="course", h=1.6, b=1.0, orn="eggcup", role="Limestone"),
+    dict(kind="frieze", h=6.0, b=1.2, orn="garlandcartouche", role="Indigo"),
     dict(kind="bed", h=2.0, b=1.4, P=6.0, role="Limestone", brackets=dict(style="dropconsole", t=1.6, reach=0.6)),
     dict(kind="crown", h=2.4, b=1.4, P=6.8, orn="cavetto", role="Indigo")])
 CREST_COURSE = dict(h=2.0, b=0.6, orn=SE.guilloche, role="Limestone")
@@ -170,6 +170,11 @@ def _addins(kit, block, places, prof, z_sill, sp, tag):
     return union(keeps), union(flashes)
 
 
+def _whole(m, keep=100.0):
+    """The shell without the odd sliver of brick left standing free where two turret faces meet."""
+    return union([c for c in m.decompose() if c.volume() > keep])
+
+
 # ------------------------------------------------------------------ build
 def build(kit=None):
     kit = kit or Kit(NAME, COLORS, RENDER_MAT)
@@ -182,14 +187,14 @@ def build(kit=None):
     st = stacked_shells(BLOCKS, OPENINGS, [S1], t=3.0, corners="none", clear=[lip_keep(allcs, 3.0, ZF, 1.2)],
                         siding=_brick, prof=CO.joint_profile(RJ, LEDGE), belt_blocks=None, water_table=False,
                         undress=undress)
-    kit.add("WALLS-1", "Brick", st["shells"][0], group="walls")
+    kit.add("WALLS-1", "Brick", _whole(st["shells"][0]), group="walls")
     kit.add("JOINT", "Brick", st["rings"][0], group="walls")
     # inside the house the turret's walls rise from the joint so its top storey bears all round
     tring = slab((offset(TOWER.cs, -0.05) - offset(TOWER.cs, -3.0)) ^ offset(MAIN.cs, -3.05), S1 + RJ, ZW + 1.2)
     tring = tring - lip_keep(allcs, 3.0, S1 + RJ)
     ledges = CO.ledge(eave_path, ZE, LEDGE) + CO.ledge(TOWER.pts, ZT, LEDGE)
     tlip = _corbel(TOWER.cs, 3.0, ZTW) + lip_ring(TOWER.cs, 3.0, ZTW)
-    kit.add("WALLS-2", "Brick", st["shells"][1] + tring + ledges + tlip, group="walls")
+    kit.add("WALLS-2", "Brick", _whole(st["shells"][1] + tring + ledges + tlip), group="walls")
     rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT)
     CO.add_level(kit, rings, "CORNICE-J", "cornice")
     cut = CO.blades(CO.tower_cuts(eave_path, (0.0, 0.0), 34.0, wall=TA, away=(-1.0, -1.0)), ZE, ZW)

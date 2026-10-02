@@ -14,7 +14,7 @@ veranda down the east side.
 - Storey joint: an ivory running dog, a burgundy frieze of ribboned medallions, an ivory crown.
 - Eave: ivory triple dentils, a burgundy frieze of acanthus, a running dog, a soffit on cushion
   consoles and a burgundy crown.
-- Crests: an ivory running dog under a burgundy torus crown on block modillions.
+- Crests: an ivory running dog under a burgundy cyma reversa crown on block modillions.
 
 usage: python3 -m hoarch.buildings.rochambeau [check] [export]
 """
@@ -46,16 +46,16 @@ PALETTE = {"walls": ["#9DAA88", 0.85, 0.0], "trim": ["#EEE7D3", 0.65, 0.0], "acc
 LEDGE = 1.4
 JOINT = dict(pitch=12.0, margin=4.0, layers=[
     dict(kind="course", h=1.8, b=1.0, orn="runningdog", role="Ivory"),
-    dict(kind="frieze", h=5.4, b=1.2, orn="medallions", role="Burgundy"),
+    dict(kind="frieze", h=5.4, b=1.2, orn="ribbonmedallions", role="Burgundy"),
     dict(kind="crown", h=2.2, b=1.4, P=3.8, orn="stepped", role="Ivory")])
 EAVE = dict(pitch=12.0, margin=4.0, layers=[
     dict(kind="course", h=1.6, b=1.0, orn="tripledentil", role="Ivory"),
-    dict(kind="frieze", h=6.4, b=1.2, orn="acanthus", role="Burgundy"),
+    dict(kind="frieze", h=6.4, b=1.2, orn="acanthusfan", role="Burgundy"),
     dict(kind="course", h=1.6, b=1.4, orn="runningdog", role="Ivory"),
     dict(kind="bed", h=2.2, b=1.4, P=7.0, role="Ivory", brackets=dict(style="cushionconsole", t=1.6, reach=0.6)),
     dict(kind="crown", h=2.8, b=1.4, P=7.8, orn="ogee_fillet", role="Burgundy")])
 CREST_COURSE = dict(h=2.0, b=0.6, orn=SE.runningdog, role="Ivory")
-CREST_CROWN = dict(h=2.6, P=3.4, kind="torus", role="Burgundy", blocks=(0.9, 5.0))
+CREST_CROWN = dict(h=2.6, P=3.4, kind="reverse", role="Burgundy", blocks=(0.9, 5.0))
 RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2
 HE = CO.band_height(EAVE)
 

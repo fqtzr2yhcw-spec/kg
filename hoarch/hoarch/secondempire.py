@@ -109,7 +109,8 @@ def crest_ring(path, d_s, z_s, t_s, course, crown, deck_th=1.2, s_out=-0.6, key=
     it a key (``key`` = from, to inside the band's outer edge, depth) drops into a groove in
     the band top to locate it, whatever the band's thickness (``groove``: cut it from the band).
     Its inside steps in at 45 degrees from the seat to its foot, so nothing in print is a
-    ledge over air. Returns dict(solid, zones, change, z_top, deck, path, P, groove)."""
+    ledge over air. Returns dict(solid, zones, change, z_top, deck, path, P, groove, rail):
+    ``rail`` is where cresting strips stand (their offset), clear of a concave crown's lip."""
     top = R.offset_path(path, d_s)
     hA, hB = course["h"], crown["h"]
     H = hA + hB
@@ -142,7 +143,13 @@ def crest_ring(path, d_s, z_s, t_s, course, crown, deck_th=1.2, s_out=-0.6, key=
     bb = np.c_[P_ + (s_out - FCLR - deck_th) * Mi, np.full(len(P_), z_s + H - deck_th)]
     deck = M.hull_points(np.vstack([a, bb]).tolist())
     change = (round(hB / 0.2) * 0.2, course["role"]) if course["role"] != crown["role"] else None
-    return dict(solid=solid, zones=zones, change=change, z_top=z_s + H, deck=deck, path=top, P=P, groove=groove)
+    # where cresting may stand: its 0.6 key slot must lie over solid crown, or under a concave
+    # crown (a cove, a torus) it cuts the crown's top lip free
+    zq = hB - 0.8
+    dq = max(d0 + (d1 - d0) * (zq - z0) / (z1 - z0) for (d0, z0), (d1, z1) in zip(cpro[:-1], cpro[1:])
+             if min(z0, z1) <= zq <= max(z0, z1) and z1 != z0)
+    rail = min(P - 1.4, dq - 0.95)
+    return dict(solid=solid, zones=zones, change=change, z_top=z_s + H, deck=deck, path=top, P=P, groove=groove, rail=rail)
 
 
 def cresting_strips(path, z0, d_off, fence, h, e=0.4):
@@ -2590,10 +2597,10 @@ def fill_lozengesplats(L, vb, vt):
         parts.append(rect(x - 0.3, vb, x + 0.3, vt))
         if i < n:
             m = x + L / n / 2
-            hw = L / n / 2 - 0.35
-            loz = poly([(m, vb + 0.1), (m + hw, vb + H / 2), (m, vt - 0.1), (m - hw, vb + H / 2)])
-            parts.append(loz - loz.offset(-0.55, JoinType.Miter, 4.0))
-    return parts
+            hw = L / n / 2 - 0.2              # its points run into the stiles and the rails, its ring 0.7 wide:
+            loz = poly([(m, vb - 0.3), (m + hw, vb + H / 2), (m, vt + 0.3), (m - hw, vb + H / 2)])    # whole in a one-piece top
+            parts.append(loz - loz.offset(-0.7, JoinType.Miter, 4.0))
+    return [cs_union(parts) ^ rect(0.0, vb, L, vt)]
 
 
 def frieze_scallopvalance(u0, u1, v_bot, v_top):
@@ -3575,8 +3582,8 @@ def edge_dartbeads(L, z0, zc):
     return cs_union(out), 0.6
 
 
-CO.FRIEZE_EXTRA.update(rinceau=frieze_rinceau, cartouches=frieze_cartouches)
-CO.COURSE_EXTRA.update(guilloche=course_guilloche, eggdart=course_eggdart)
+CO.FRIEZE_EXTRA.update(vinescroll=frieze_rinceau, garlandcartouche=frieze_cartouches)
+CO.COURSE_EXTRA.update(twinstrand=course_guilloche, eggcup=course_eggdart)
 TW.BRACKET_EXTRA.update(dropconsole=bracket_dropconsole)
 TW.PIERCED = TW.PIERCED + ("dropconsole",)
 TW.FOUNDATION_EXTRA.update(chamferrustic=foundation_chamferrustic)
@@ -4083,7 +4090,7 @@ def edge_crescents(L, z0, zc):
     return cs_union(out), 0.6
 
 
-CO.FRIEZE_EXTRA.update(medallions=frieze_medallions, acanthus=frieze_acanthus)
+CO.FRIEZE_EXTRA.update(ribbonmedallions=frieze_medallions, acanthusfan=frieze_acanthus)
 CO.COURSE_EXTRA.update(runningdog=course_runningdog, tripledentil=course_tripledentil)
 TW.BRACKET_EXTRA.update(cushionconsole=bracket_cushionconsole)
 TW.PIERCED = TW.PIERCED + ("cushionconsole",)
@@ -4094,3 +4101,425 @@ PW.BALUSTERS.update(bellbase=(baluster_bellbase, 1.6))
 PW.FRIEZES.update(wreathpierced=frieze_wreathpierced)
 PW.SKIRTS.update(roundels=skirt_roundels)
 FT.EDGE_EXTRA.update(crescents=edge_crescents)
+
+
+# ================================================================== the Beauvais (house 89)
+# A cottage of one storey and a half: peach channel-and-bead siding, cream trim and forest
+# accents on a pebble-dashed base; the tall bell-cast mansard is the bedroom storey, chequered
+# in square and diamond-pointed slates, with big dormer add-ins and a twin one over the door; a veranda
+# wraps the front and both sides.
+
+def slate_chequer(k, j):
+    """The Beauvais's slating: a chequer of square slates and diamond-pointed ones, in blocks
+    four slates across and three courses up."""
+    x = j + 0.5 * (k % 2)
+    return "diamond" if (int(math.floor(x / 4.0)) + k // 3) % 2 else "square"
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def frieze_sunflowers(L, h, b, pitch, margin, pair, half):
+    """Sunflowers: in every bay between the bracket pairs a sunflower (a ring of petals round a
+    seeded disc) on a stem between two broad leaves (the Beauvais's eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 4.4:
+            continue
+        R_ = min(hh * 0.3, wd * 0.22, 1.5)
+        c = (uc, v1 - R_ - 0.2)
+        pet = cs_union([_lens((c[0] + R_ * 0.75 * math.cos(a), c[1] + R_ * 0.75 * math.sin(a)), R_ * 0.75, 0.42, a, seg=6)
+                        for a in np.linspace(0, 2 * math.pi, 10, endpoint=False)])
+        out.append(_st(pet ^ rect(-1e3, v0, 1e3, v1), b, 0.35))
+        out.append(_st(circle(c, R_ * 0.48, 16), b, 0.5))
+        stem = stroke([(uc, v0 + 0.1), (uc, c[1] - R_ * 0.5)], 0.42)
+        leaves = cs_union([_lens((uc - 0.75, v0 + hh * 0.3), 1.6, 0.6, 0.6), _lens((uc + 0.75, v0 + hh * 0.22), 1.6, 0.6, -0.6)])
+        out.append(_st((stem + leaves) ^ rect(-1e3, v0, 1e3, v1), b, 0.4))
+    return out, []
+
+
+def course_interlace(L, h, b, pitch, margin, p):
+    """Interlaced arcading: a row of little round arches on stilts, each springing from the
+    middle of the last, so they cross into pointed ones (the Beauvais)."""
+    pu = max(1.4, h * 0.85)
+    n = max(2, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    r = pu
+    arcs = []
+    for k in range(n - 1):
+        c = (u0 + pu * (k + 1), h * 0.25)
+        ring = circle(c, r, 24) - circle(c, r - 0.42, 24)
+        arcs.append(ring ^ rect(c[0] - r - 1, c[1], c[0] + r + 1, h))
+        arcs.append(rect(c[0] - r, 0.15, c[0] - r + 0.42, c[1] + 0.05))
+        arcs.append(rect(c[0] + r - 0.42, 0.15, c[0] + r, c[1] + 0.05))
+    out = [ext(rect(0.2, 0.0, L - 0.2, 0.3), b - 0.05, b + 0.45)]
+    out.append(_st(cs_union(arcs) ^ rect(0.2, 0.0, L - 0.2, h - 0.1), b, 0.4))
+    return out
+
+
+def ovalbar(L, h):
+    """Ovals and bars as CrossSections: upright ovals with a short bar between each two, on a
+    fillet."""
+    pu = max(1.6, h * 1.0)
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    out = [rect(0.2, 0.05, L - 0.2, 0.4)]
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        out.append(oval((uc, h * 0.55), pu * 0.27, h * 0.36, 16))
+        if k:
+            x = u0 + pu * k
+            out.append(rect(x - 0.2, 0.3, x + 0.2, h - 0.3))
+    return [cs_union(out) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def course_ovalbar(L, h, b, pitch, margin, p):
+    """Ovals and bars along the course (the Beauvais)."""
+    return [_st(cs, b, 0.45) for cs in ovalbar(L, h)]
+
+
+def bracket_lyreconsole(h, d, t):
+    """A lyre console: its front edge swelling out twice, like the arms of a lyre, from a block
+    under the soffit to a ball foot on the wall, a sunk eye between the swells (side profile,
+    top at v = 0; the Beauvais)."""
+    pts = [(0.0, 0.0), (d, 0.0), (d, -0.8)]
+    for s in np.linspace(0.0, 1.0, 20):
+        base = d - (d - 1.0) * s
+        bulge = 0.45 * math.sin(2 * math.pi * s) ** 2
+        pts.append((min(d, base + bulge), -0.8 - (h - 1.8) * s))
+    pts += [(0.0, -h + 1.0)]
+    prof = cs_union([poly(pts), circle((0.55, -h + 0.75), 0.55, 14)])
+    return prof - circle((d * 0.5, -h * 0.5), min(0.5, d * 0.14), 12)
+
+
+# ------------------------------------------------------------------ the mansard's window add-ins
+def addin_beauvais(w=6.4, h=13.0, rise=1.6, A=1.0, twin=False):
+    """A Beauvais add-in, big enough to light the bedroom storey: a segmental-headed two-over-two
+    light (``twin``: two of them, a mullion between) in a casing, a sunburst in a tympanum under a
+    segmental pediment on two brackets; a sill on brackets; its plug's roof a segment."""
+    gap = 1.6
+    lights = [O.opening_cs(w, h, rise).translate([(-(w + gap) / 2 if twin else 0.0) + k * (w + gap), 0.0])
+              for k in range(2 if twin else 1)]
+    op = cs_union(lights)
+    bars = cs_union([rect(x - RIB / 2, -1.0, x + RIB / 2, h + 1.0) for x in ((-(w + gap) / 2, (w + gap) / 2) if twin else (0.0,))]
+                    + [rect(-2 * w, h * 0.48 - 0.3, 2 * w, h * 0.48 + 0.3)])
+    half = (w + gap / 2 if twin else w / 2) + A + 1.0
+    vt = h + A + 0.4
+    rise_p = 2.4 if twin else 1.8
+    seg = arch_cs(-half - 0.3, half + 0.3, vt + 2.2, vt + 2.2, rise=rise_p, seg=40)
+    body = cs_union([rect(-half, -0.2, half, vt + 2.2), seg])
+    parts = [ext(body - op, 0.0, 0.6)]
+    for L_ in lights:
+        parts.append(MD.band(L_.offset(A, JoinType.Miter, 4.0), A, MD.CASING, clip=rect(-30, 0.0, 30, 40) - op))
+    tym = rect(-half + 0.8, vt - 0.2, half - 0.8, vt + 2.2)
+    rays = cs_union([stroke([(0.0, vt), (3.0 * math.cos(a), vt + 3.0 * math.sin(a))], 0.42) for a in np.linspace(0.25, math.pi - 0.25, 7)]
+                    + [circle((0.0, vt), 0.8, 16)]) ^ tym
+    parts.append(ext(tym, 0.0, 0.7) + ext(rays, 0.69, 1.0))
+    parts.append(MD.band(seg.offset(0.0, JoinType.Round), 1.0, MD.CROWN, clip=rect(-30, vt + 2.15, 30, 40)))
+    parts.append(MD.run(-half - 0.4, half + 0.4, vt + 2.2, MD.CROWN, 0.9, up=False))
+    for sg in (-1, 1):
+        parts.append(console(2.6, 1.1, 1.0, u=sg * (half - 0.4), v_top=vt + 1.4, w0=0.0))
+    sw = half + 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(console(1.8, 0.9, 0.8, u=sg * (half - 1.2), v_top=-0.99, w0=0.0))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.4, JoinType.Round) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=vt + 2.2 + rise_p + 1.0, bottom=-2.9)
+
+
+# ------------------------------------------------------------------ walls, corners, foundation, chimney
+def channelbead(region, datum=0.0, pitch=2.0, d=0.36):
+    """Channel-and-bead siding: wide flush boards, a deep channel at the foot of each and a
+    small bead run along its head (the Beauvais)."""
+    from . import skins as SK
+    course = [(0.0, 0.08), (0.35, 0.08), (0.45, d), (pitch - 0.55, d), (pitch - 0.45, d - 0.16), (pitch - 0.3, d - 0.02),
+              (pitch - 0.15, d - 0.16), (pitch - 0.05, 0.08), (pitch, 0.08)]
+    return SK._lap(region, pitch, course, datum=datum)
+
+
+def corner_bobbin(L, at_start, qa, qb, w=2.4, t=0.65):
+    """A corner board with a run of bobbins (raised blocks, long and short in turn) up its
+    middle (the Beauvais)."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    u0, u1 = span(-t, w)
+    parts = [box([u0, qa, 0.0], [u1, qb, t])]
+    uc = (u0 + u1) / 2
+    v = qa + 0.6
+    k = 0
+    while v < qb - 1.6:
+        ln = 1.6 if k % 2 == 0 else 0.8
+        top = min(v + ln, qb - 0.6)
+        parts.append(ext(rect(uc - 0.5, v, uc + 0.5, top), t - 0.01, t + 0.35))
+        v = top + 0.3
+        k += 1
+    return union(parts)
+
+
+def foundation_pebbledash(reg, seed=0):
+    """A pebble-dashed base: panels of rough-cast (a scatter of little pebbles) inside smooth
+    margins, a plinth and a cap (the Beauvais)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.3)]
+    out.append(ext(rect(b[0] - 1, b[3] - 1.2, b[2] + 1, b[3] + 1) ^ reg, 0.29, 0.75))
+    out.append(ext(rect(b[0] - 1, b[1] - 1, b[2] + 1, b[1] + 1.2) ^ reg, 0.29, 0.7))
+    rng = np.random.default_rng(seed + 89)
+    pan_w = 9.0
+    n = max(1, int((b[2] - b[0]) / pan_w))
+    p = (b[2] - b[0]) / n
+    for k in range(n):
+        x0, x1 = b[0] + p * k + 0.8, b[0] + p * (k + 1) - 0.8
+        y0, y1 = b[1] + 1.8, b[3] - 1.8
+        if x1 - x0 < 2.0 or y1 - y0 < 1.2:
+            continue
+        pan = rect(x0, y0, x1, y1) ^ reg
+        if pan.is_empty():
+            continue
+        pts = [(x, y) for x in np.arange(x0 + 0.4, x1 - 0.3, 0.75) for y in np.arange(y0 + 0.4, y1 - 0.3, 0.75)]
+        peb = cs_union([circle((x + rng.uniform(-0.15, 0.15), y + rng.uniform(-0.15, 0.15)), 0.3, 6) for x, y in pts]) ^ pan
+        out.append(ext(peb, 0.29, 0.6))
+    return union(out)
+
+
+def chimney_beauvais(w=10.0, d=8.4, h=24.0):
+    """The Beauvais's stacks: brick with a sunk diamond on every face, a corbelled necking, and an
+    arched hood over the flue (a vault on two end walls)."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 5.4
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        dm = min(L * 0.32, 3.0)
+        cs = poly([(0.0, sh * 0.5 - dm * 1.4), (dm, sh * 0.5), (0.0, sh * 0.5 + dm * 1.4), (-dm, sh * 0.5)])
+        cut = ext(cs, -0.4, 0.01).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])).translate([0, D / 2, 0])
+        body = body - cut.rotate([0, 0, rot])
+    for k, g in enumerate((0.3, 0.6, 0.9)):
+        body = body + box([-w / 2 - g, -d / 2 - g, sh - 1.8 + 0.6 * k], [w / 2 + g, d / 2 + g, sh - 1.2 + 0.6 * k + 0.01])
+    body = body + box([-w / 2 - 0.6, -d / 2 - 0.6, sh - 0.01], [w / 2 + 0.6, d / 2 + 0.6, sh + 0.6])
+    ends = [box([sx * (w / 2 - 0.6) - 0.6, -d / 2 + 0.6, sh + 0.59], [sx * (w / 2 - 0.6) + 0.6, d / 2 - 0.6, h - 2.0]) for sx in (-1, 1)]
+    vault = ext(rect(-d / 2 + 0.6, h - 4.0, d / 2 - 0.6, h - 0.01) - circle((0.0, h - 4.0), d / 2 - 1.6, 24) +
+                (circle((0.0, h - 4.0), d / 2 - 0.6, 32) - circle((0.0, h - 4.0), d / 2 - 1.6, 32)), -w / 2, w / 2)
+    vault = vault.transform(np.array([[0, 0, 1.0, 0], [1.0, 0, 0, 0], [0, 1.0, 0, 0]])) ^ box([-w, -d, h - 4.0], [w, d, h])
+    body = body + union(ends) + vault
+    return body - box([-w / 2 + 1.8, -d / 2 + 1.8, sh - 4.0], [w / 2 - 1.8, d / 2 - 1.8, sh + 0.61])
+
+
+def fence_beauvais(L, h):
+    """Beauvais cresting: bars ending in shepherd's crooks, turned alternately, and a daisy (a
+    ring of six round petals) between every two on the rail."""
+    pitch = 3.0
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    rail = h * 0.3
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, rail, L, rail + 0.45)]
+    for j in range(n + 1):
+        u = p * j
+        sg = 1 if j % 2 == 0 else -1
+        cells.append(rect(u - 0.28, 0.0, u + 0.28, h - 1.0))
+        hook = [(u + sg * 0.6 * (1 - math.cos(a)), h - 1.0 + 0.6 * math.sin(a)) for a in np.linspace(0.0, math.pi * 1.25, 10)]
+        cells.append(stroke([(u, h - 1.05)] + hook, 0.42))
+        if j < n:
+            m = u + p / 2
+            vc = (rail + 0.45 + h - 0.9) / 2
+            cells += [circle((m + 0.55 * math.cos(a), vc + 0.55 * math.sin(a)), 0.32, 10) for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)]
+            cells.append(circle((m, vc), 0.32, 10))
+            cells.append(rect(m - 0.2, rail + 0.4, m + 0.2, vc - 0.5))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_beauvais(w=9.6, h=26.0, A=1.1):
+    """Beauvais ground floor: a tall flat-headed two-over-two sash in a casing with corner
+    blocks, a frieze with a sunflower, and a shed hood on two sawn brackets; a sill on brackets."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.6
+    vf = h + A
+    parts.append(ext(rect(-half + 0.3, vf - 0.01, half - 0.3, vf + 2.6), 0.0, 0.55))
+    c = (0.0, vf + 1.3)
+    parts.append(ext(cs_union([_lens((c[0] + 0.7 * math.cos(a), c[1] + 0.7 * math.sin(a)), 0.7, 0.42, a, seg=6)
+                               for a in np.linspace(0, 2 * math.pi, 10, endpoint=False)]), 0.54, 0.85))
+    parts.append(ext(circle(c, 0.55, 14), 0.54, 1.05))
+    for sg in (-1, 1):
+        x0 = sg * (half - 0.3)
+        br = poly([(x0, vf + 2.6), (x0 + sg * 1.6, vf + 2.6), (x0 + sg * 1.6, vf + 2.0), (x0 + sg * 0.5, vf - 1.6), (x0, vf - 1.6)])
+        parts.append(ext(br - circle((x0 + sg * 0.75, vf + 1.2), 0.35, 10), 0.0, 1.2))
+    vh = vf + 2.6
+    parts.append(ext(rect(-half - 1.8, vh - 0.05, half + 1.8, vh + 0.7), 0.0, 1.6))
+    parts.append(ext(rect(-half - 1.8, vh + 0.69, half + 1.8, vh + 1.3), 0.0, 1.0))
+    sw = w / 2 + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(console(2.0, 0.9, 0.8, u=sg * (w / 2 - 0.3), v_top=-0.99, w0=0.0))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vh + 1.3, -3.0)
+
+
+def door_beauvais(w=19.0, h=27.0, A=1.1):
+    """The Beauvais's entrance: one leaf with a big segmental-headed light over two panels,
+    sidelights over panels either side, a transom across the whole of it barred in diamonds; a
+    casing, a frieze with a sunburst and a cornice with a sawn crest of sunflowers."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    transom = 4.0
+    dh = h - transom
+    lw = 8.6
+    sl = (w - 2 * O.CLR - lw - 2 * 0.7) / 2
+    body = [ext(plug_cs, -pl, -1.0)]
+    u0 = -lw / 2
+    body.append(ext(rect(u0, 0.5, u0 + lw, dh), -pl, -0.8))
+    gv0 = dh * 0.42
+    lights = [O.opening_cs(lw - 1.6, dh - 0.8 - gv0, 1.2).translate([0.0, gv0])]
+    for k in range(2):
+        body.append(_panel(rect(u0 + 0.8 + k * (lw - 1.6) / 2 + (0.2 if k else 0.0), 1.2, u0 + 0.8 + (k + 1) * (lw - 1.6) / 2 - (0.0 if k else 0.2), gv0 - 0.8)))
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * (lw / 2 + 0.7), sg * (lw / 2 + 0.7 + sl)))
+        lights.append(rect(x0 + 0.4, gv0, x1 - 0.4, dh - 0.8))
+        body.append(_panel(rect(x0 + 0.4, 1.2, x1 - 0.4, gv0 - 0.8)))
+    tr = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.4, w, h + 2)
+    tv0, tv1 = dh + 0.4, h - O.CLR - 0.5
+    dia = []
+    for x in np.arange(-w / 2 + 1.6, w / 2 - 1.0, 2.4):
+        dia.append(stroke([(x - 1.2, tv0), (x, tv1), (x + 1.2, tv0)], 0.42, caps=False))
+    bars = cs_union(dia) ^ tr
+    sash = _glazed(body, cs_union(lights) + tr, pl, bars, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.4) ^ plug_cs, -pl, -0.5))
+    sash.append(ext(cs_union([rect(sg * (lw / 2 + 0.35) - 0.35, 0.0, sg * (lw / 2 + 0.35) + 0.35, dh) for sg in (-1, 1)]) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.4
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 2.4), 0.0, 0.6))
+    rays = cs_union([stroke([(0.0, vf + 0.2), (2.6 * math.cos(a), vf + 0.2 + 2.6 * math.sin(a))], 0.42) for a in np.linspace(0.3, math.pi - 0.3, 7)])
+    parts.append(ext(rays ^ rect(-half, vf, half, vf + 2.3), 0.59, 0.9))
+    parts.append(ext(circle((0.0, vf + 0.2), 0.9, 16) ^ rect(-2, vf, 2, vf + 2), 0.59, 1.0))
+    vc = vf + 2.4 + 1.2
+    parts.append(MD.run(-half - 0.8, half + 0.8, vc, MD.CROWN, 1.2, up=False))
+    crest = rect(-half + 0.4, vc - 0.01, half - 0.4, vc + 0.6)
+    for x in np.linspace(-half + 2.0, half - 2.0, 5):
+        c = (x, vc + 1.5)
+        crest = crest + cs_union([circle((c[0] + 0.6 * math.cos(a), c[1] + 0.6 * math.sin(a)), 0.36, 10) for a in np.linspace(0, 2 * math.pi, 7, endpoint=False)]
+                                 + [circle(c, 0.4, 10), rect(x - 0.22, vc + 0.5, x + 0.22, vc + 1.1)])
+    parts.append(ext(crest, 0.0, 0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + 2.3, 0.0)
+
+
+def door_beauvais_back(w=10.0, h=25.0, A=1.0):
+    """The Beauvais's back door: one leaf with a segmental-headed light over two panels, a flat
+    transom, a casing and a shed hood on brackets."""
+    transom = 3.2
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    u0, u1 = -w / 2 + O.CLR + 0.5, w / 2 - O.CLR - 0.5
+    gv0 = dh * 0.45
+    mid = (u0 + u1) / 2
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, dh), -pl, -0.8),
+            _panel(rect(u0 + 0.8, 1.2, mid - 0.3, gv0 - 0.8)), _panel(rect(mid + 0.3, 1.2, u1 - 0.8, gv0 - 0.8))]
+    light = O.opening_cs(u1 - u0 - 1.8, dh - 0.8 - gv0, 1.0).translate([mid, gv0])
+    g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.3, w, h + 2)
+    sash = _glazed(body, light + g, pl, None, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.3, w, dh + 0.3) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.4
+    vf = h + A
+    for sg in (-1, 1):
+        x0 = sg * (half - 0.2)
+        parts.append(ext(poly([(x0, vf + 1.2), (x0 + sg * 1.4, vf + 1.2), (x0 + sg * 1.4, vf + 0.6), (x0 + sg * 0.4, vf - 1.6), (x0, vf - 1.6)]), 0.0, 1.1))
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.2), 0.0, 0.6))
+    parts.append(ext(rect(-half - 1.6, vf + 1.19, half + 1.6, vf + 1.9), 0.0, 1.5))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vf + 1.9, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_twinvase(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A post turned as two vases end to end: one swelling up from the plinth, one down from the
+    capital, their necks meeting at a ring half way up (the Beauvais's veranda)."""
+    z1 = h - 2.6
+    zm = round(z1 * 0.5 / 0.2) * 0.2
+    prof = [(0.0, 1.19), (1.5, 1.19), (1.5, 1.45), (1.2, 1.7), (1.0, 2.0),
+            (1.3, 2.0 + (zm - 2.0) * 0.3), (1.2, 2.0 + (zm - 2.0) * 0.55), (0.75, zm - 0.6), (1.15, zm - 0.3), (1.15, zm + 0.3),
+            (0.75, zm + 0.6), (1.2, zm + (z1 - zm) * 0.45), (1.3, zm + (z1 - zm) * 0.7), (1.0, z1 - 0.2), (1.3, z1 + 0.7)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    return body + PW._top(h, abacus / 2, z1 + 0.7, 1.3, slot, seg=32)
+
+
+def fill_ringstack(L, vb, vt):
+    """A railing of stacked rings: in every panel between stiles two rings one over the other,
+    touching the rails and each other, tied to the stiles by a bar through each; every member
+    0.7 wide, so it stands in a one-piece porch top (the Beauvais)."""
+    H = vt - vb
+    R_ = H / 4 + 0.1
+    n = max(1, int(round(L / max(2 * R_ + 1.6, 3.0))))
+    parts = []
+    for i in range(n + 1):
+        x = L * i / n
+        parts.append(rect(x - 0.35, vb, x + 0.35, vt))
+        if i < n:
+            m = x + L / n / 2
+            for vc in (vb + H / 4, vt - H / 4):
+                hole = circle((m, vc), max(R_ - 0.7, 0.3), 20)
+                parts.append(circle((m, vc), R_, 24) - hole)
+                parts.append(rect(x, vc - 0.35, x + L / n, vc + 0.35) - hole)
+    return [cs_union(parts) ^ rect(0.0, vb, L, vt)]
+
+
+def frieze_scrollarch(u0, u1, v_bot, v_top):
+    """A porch frieze: a valance board, and under it in every bay a shallow arch made of two
+    C-scrolls meeting at a drop (the Beauvais)."""
+    v0 = v_top - 2.0
+    out = [rect(u0, v0, u1, v_top + 0.05)]
+    n = max(1, int((u1 - u0) / 8.0))
+    p = (u1 - u0) / n
+    for k in range(n):
+        a, e = u0 + p * k + 0.4, u0 + p * (k + 1) - 0.4
+        m = (a + e) / 2
+        for sg, x0 in ((1, a), (-1, e)):
+            pts = bezier((x0, v0 + 0.1), (x0 + sg * p * 0.12, v0 - 2.4), (m - sg * p * 0.18, v0 - 1.4), (m, v0 - 0.9), 14)
+            out.append(stroke(pts, 0.5))
+        out.append(cs_union([rect(m - 0.25, v0 - 1.2, m + 0.25, v0 + 0.05), circle((m, v0 - 1.4), 0.42, 12)]))
+    return cs_union(out)
+
+
+def skirt_basketweave(reg, d=1.2):
+    """A porch skirt of slats in basket weave: little squares of three slats, laid alternately
+    across and up (the Beauvais)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, d * 0.35)]
+    s = 2.4
+    sl = []
+    for i, u in enumerate(np.arange(u0, u1, s)):
+        for j, v in enumerate(np.arange(v0, v1, s)):
+            if (i + j) % 2 == 0:
+                sl += [rect(u + 0.2, v + 0.2 + k * 0.7, u + s - 0.2, v + 0.2 + k * 0.7 + 0.5) for k in range(3)]
+            else:
+                sl += [rect(u + 0.2 + k * 0.7, v + 0.2, u + 0.2 + k * 0.7 + 0.5, v + s - 0.2) for k in range(3)]
+    out.append(M.extrude(cs_union(sl) ^ reg, d))
+    return union(out)
+
+
+def edge_icicles(L, z0, zc):
+    """Porch fascia (the Beauvais): icicle drops of three lengths in turn hung under the crown."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for i, x in enumerate(np.arange(0.9, L - 0.6, 0.9)):
+        ln = (0.9, 1.5, 1.2)[i % 3]
+        out.append(poly([(x - 0.3, zc - 0.4), (x + 0.3, zc - 0.4), (x, zc - 0.4 - ln)]))
+    return cs_union(out), 0.6
+
+
+CO.FRIEZE_EXTRA.update(sunflowers=frieze_sunflowers)
+CO.COURSE_EXTRA.update(interarcade=course_interlace, ovalbar=course_ovalbar)
+TW.BRACKET_EXTRA.update(lyreconsole=bracket_lyreconsole)
+TW.PIERCED = TW.PIERCED + ("lyreconsole",)
+TW.FOUNDATION_EXTRA.update(pebbledash=foundation_pebbledash)
+SH.CORNER_EXTRA.update(bobbinboard=corner_bobbin)
+PW.POSTS.update(twinvase=post_twinvase)
+PW.FILLS.update(ringstack=fill_ringstack)
+PW.FRIEZES.update(scrollarch=frieze_scrollarch)
+PW.SKIRTS.update(basketweave=skirt_basketweave)
+FT.EDGE_EXTRA.update(icicles=edge_icicles)
