@@ -25,7 +25,7 @@ import numpy as np
 from manifold3d import JoinType, Manifold as M
 
 from .core import RIB, Facade, arch_cs, box, ccw, circle, cs_union, poly, rect, sweep_ring, union
-from .ornament import bezier, chamfer_box, console, ext, fan_crest, keystone, oval, quatrefoil, stroke, swag
+from .ornament import bezier, chamfer_box, console, ext, fan_crest, keystone, oval, quatrefoil, stroke, swag, urn_cs
 from . import cornice as CO, features as FT, moulding as MD, openings as O, porchwork as PW, roof as R
 from . import shell as SH, trimwork as TW
 from .colonial import _lens, _st
@@ -465,8 +465,8 @@ def chimney_montclair(w=10.0, d=13.0, h=24.0):
         for sg in (-1, 1):
             T = np.array([[1.0, 0, 0, 0], [0, 0, sg * 1.0, sg * D_ / 2], [0, 1.0, 0, 0]]) if axis == 0 else \
                 np.array([[0, 0, sg * 1.0, sg * D_ / 2], [1.0, 0, 0, 0], [0, 1.0, 0, 0]])
-            cuts.append(ext(panel, -0.5, 1.0).transform(T) if sg > 0 else ext(panel, -1.0, 0.5).transform(T))
-            adds.append(ext(dia, -0.5, 0.0).transform(T) if sg > 0 else ext(dia, 0.0, 0.5).transform(T))
+            cuts.append(ext(panel, -0.5, 1.0).transform(T))       # w < 0 is inside the stack on every face
+            adds.append(ext(dia, -0.6, 0.0).transform(T))         # the diamond runs into the panel's floor
     return body - union(cuts) + union(adds)
 
 
@@ -4523,3 +4523,600 @@ PW.FILLS.update(ringstack=fill_ringstack)
 PW.FRIEZES.update(scrollarch=frieze_scrollarch)
 PW.SKIRTS.update(basketweave=skirt_basketweave)
 FT.EDGE_EXTRA.update(icicles=edge_icicles)
+
+
+# ================================================================== the Fontaine (house 90)
+# The batch's grand house, an H in plan: grey granite, the ground storey in banded rustication,
+# the upper one in fine ashlar, vermiculated quoins, marble dressings and verdigris accents. A
+# centre range with a straight mansard between two end pavilions that break forward and back
+# under taller mansards of their own; a square tower in the middle of the front rising over the
+# eave to a swelling dome with a bannerette vane; a veranda filling the recess between the
+# pavilions round the foot of the tower.
+
+def slate_pyramids(k, j):
+    """The Fontaine's slating: square slates, with a band of pyramids (filled triangles of
+    diamond-cut slates, seven slates wide at the foot, four courses tall) low on the roof, a
+    pyramid every ten slates."""
+    r = k % 22 - 2
+    if 0 <= r <= 3:
+        m = (j + 0.5 * (k % 2)) % 10 - 5.0
+        if abs(m) <= 3.0 - r + 0.01:
+            return "diamond"
+    return "square"
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def frieze_lozengerosettes(L, h, b, pitch, margin, pair, half):
+    """Lozenges and rosettes: a run of lozenge frames, each round a rosette, with a disc between
+    every two (the Fontaine's storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    pu = max(hh * 1.5, 5.0)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    out = []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        hw = pu * 0.38
+        loz = poly([(uc - hw, vm), (uc, v1), (uc + hw, vm), (uc, v0)])
+        out.append(_st(loz - loz.offset(-0.5, JoinType.Miter, 4.0), b, 0.45))
+        pet = cs_union([circle((uc + hh * 0.17 * math.cos(a), vm + hh * 0.17 * math.sin(a)), max(0.3, hh * 0.1), 10)
+                        for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)] + [circle((uc, vm), 0.35, 10)])
+        out.append(_st(pet, b, 0.4))
+        if k:
+            out.append(_st(circle((u0 + pu * k, vm), min(0.7, hh * 0.18), 14), b, 0.5))
+    return out, []
+
+
+def frieze_coronets(L, h, b, pitch, margin, pair, half):
+    """Coronets: in every bay between the bracket pairs a little crown (a band, five points
+    tipped with pearls, a jewelled rim) over crossed palm sprigs (the Fontaine's eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 4.4:
+            continue
+        cw = min(wd * 0.36, 2.6)
+        vb = v0 + hh * 0.35
+        band = rect(uc - cw, vb, uc + cw, vb + 0.6)
+        pts = []
+        for i in range(5):
+            x = uc - cw + 2 * cw * i / 4
+            pts.append(poly([(x - 0.35, vb + 0.55), (x + 0.35, vb + 0.55), (x, vb + 0.55 + hh * 0.32)]))
+        pearls = [circle((uc - cw + 2 * cw * i / 4, vb + 0.55 + hh * 0.32 + 0.2), 0.3, 10) for i in range(5)]
+        out.append(_st(cs_union([band] + pts) ^ rect(-1e3, v0, 1e3, v1), b, 0.45))
+        out.append(_st(cs_union(pearls) ^ rect(-1e3, v0, 1e3, v1), b, 0.55))
+        for sg in (-1, 1):
+            out.append(_st(_lens((uc + sg * cw * 0.5, v0 + hh * 0.18), cw * 1.3, 0.55, sg * 0.35) ^ rect(-1e3, v0, 1e3, v1), b, 0.35))
+    return out, []
+
+
+def loopknot(L, h):
+    """A loop knot as CrossSections: one strand running along in a row of open loops, each
+    crossing itself, on a fillet."""
+    pu = max(2.2, h * 1.3)
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    r = min(h * 0.3, 0.7)
+    pts = []
+    for t in np.linspace(0.0, n, n * 24 + 1):
+        a = 2 * math.pi * t
+        pts.append((u0 + pu * t + r * 1.1 * math.sin(a), h * 0.5 - r * math.cos(a)))
+    return [cs_union([stroke(pts, 0.42), rect(0.2, 0.05, L - 0.2, 0.4)]) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def course_loopknot(L, h, b, pitch, margin, p):
+    """A loop knot running along the course (the Fontaine)."""
+    return [_st(cs, b, 0.45) for cs in loopknot(L, h)]
+
+
+def course_bellchain(L, h, b, pitch, margin, p):
+    """A chain of little bells hung from a cord, a bead between every two (the Fontaine)."""
+    pu = max(1.8, h * 1.1)
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    out = [rect(0.2, h - 0.5, L - 0.2, h - 0.1)]
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        bh = h - 0.9
+        out.append(poly([(uc - 0.25, h - 0.3), (uc + 0.25, h - 0.3), (uc + pu * 0.3, 0.45), (uc - pu * 0.3, 0.45)]))
+        out.append(circle((uc, 0.35), 0.28, 8))
+        if k:
+            out.append(circle((u0 + pu * k, h - 0.55), 0.3, 8))
+    return [_st(cs_union(out) ^ rect(0.2, 0.05, L - 0.2, h), b, 0.45)]
+
+
+def bracket_ramshorn(h, d, t):
+    """A ram's-horn console: a body tapering from the wall up and out to a big spiral horn that
+    curls under the soffit's front edge, a sunk eye in the horn (side profile, top at v = 0; the
+    Fontaine)."""
+    r = min(0.3 * h, 0.4 * d, 1.2)
+    c = (d - r, -r)
+    pts = [(0.0, 0.0), (d - r, 0.0)]
+    for t_ in np.linspace(0.0, 1.0, 12):
+        a = math.pi / 2 - t_ * math.pi * 1.4
+        pts.append((c[0] + r * math.cos(a), c[1] + r * math.sin(a)))
+    pts += [(d * 0.45, -h * 0.55), (0.9, -h + 0.6), (0.0, -h + 0.6)]
+    prof = cs_union([poly(pts), circle(c, r, 20), circle((0.5, -h + 0.7), 0.5, 12)])
+    return prof - circle(c, min(0.5, r * 0.45), 12)
+
+
+# ------------------------------------------------------------------ the mansard's window add-ins
+def addin_fontaine(w=5.0, h=8.6, A=0.9, big=False):
+    """A Fontaine add-in: a two-tier dormer, a flat-headed two-light window and a round
+    oculus over it inside one eared frame, a segmental pediment over all with a ball finial;
+    ``big`` is a wider one for a pavilion's front. Its plug's roof is a segment."""
+    if big:
+        w, h = w + 1.6, h + 0.8
+    op = rect(-w / 2, 0.0, w / 2, h)
+    ro = min(1.6, w * 0.3)
+    oc = (0.0, h + 1.0 + ro)
+    ocul = circle(oc, ro, 28)
+    light = cs_union([op, ocul])
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, h * 0.55 - 0.3, w, h * 0.55 + 0.3),
+                     rect(-ro - 1, oc[1] - RIB / 2, ro + 1, oc[1] + RIB / 2)])
+    half = w / 2 + A + 0.7
+    vt = oc[1] + ro + A
+    seg = arch_cs(-half - 0.2, half + 0.2, vt - 0.2, vt - 0.2, rise=2.0, seg=40)
+    body = cs_union([rect(-half, -0.2, half, vt - 0.2), seg])
+    ears = rect(-half - 0.4, h - 1.2, half + 0.4, h + 0.4)
+    parts = [ext(body - light, 0.0, 0.6),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-20, 0.0, 20, 40) - light),
+             MD.band(ocul.offset(A * 0.8, JoinType.Round), A * 0.8, MD.CASING, clip=rect(-20, h + 0.2, 20, 40) - light),
+             ext(ears - light, 0.0, 1.0)]
+    parts.append(MD.band(seg, 1.0, MD.CROWN, clip=rect(-30, vt - 0.25, 30, 40)))
+    parts.append(MD.run(-half - 0.3, half + 0.3, vt - 0.2, MD.CROWN, 0.9, up=False))
+    parts.append(ext(cs_union([rect(-0.45, vt + 1.6, 0.45, vt + 2.4), circle((0.0, vt + 2.8), 0.7, 16)]), 0.0, 1.1))
+    sw = half + 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.6, -1.8, sg * (w / 2) + 0.6, -0.8, 0.0, 0.9, c=0.25))
+    parts = [p - ext(light, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.4, JoinType.Round) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=light, bars=bars, frame=parts, outline=outline, top=vt + 3.5, bottom=-1.8)
+
+
+def addin_fontaine_oculus(r=2.4, A=0.9):
+    """The Fontaine's dome add-in: a round oculus in a wreath of laurel tied with a bow at its
+    foot, a keyblock at its head (its plug round-topped)."""
+    c = (0.0, r + 0.6)
+    light = circle(c, r, 32)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, 2 * r + 2), rect(-r - 1, c[1] - RIB / 2, r + 1, c[1] + RIB / 2)])
+    R_ = r + A + 0.9
+    disc = circle(c, R_, 40)
+    body = cs_union([disc, rect(-R_, -0.2, R_, c[1])])
+    leaves = cs_union([_lens((c[0] + (r + A + 0.3) * math.cos(a), c[1] + (r + A + 0.3) * math.sin(a)), 1.3, 0.6, a + math.pi / 2)
+                       for a in list(np.linspace(-1.1, 1.25, 5)) + list(np.linspace(math.pi - 1.25, math.pi + 1.1, 5))])
+    parts = [ext(body - light, 0.0, 0.6), MD.band(light.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-20, -1, 20, 40) - light),
+             ext(leaves - light.offset(A - 0.1, JoinType.Round), 0.59, 1.0)]
+    parts.append(ext(cs_union([circle((c[0] - 0.6, c[1] - R_ + 0.5), 0.45, 10), circle((c[0] + 0.6, c[1] - R_ + 0.5), 0.45, 10),
+                               circle((c[0], c[1] - R_ + 0.5), 0.35, 10)]), 0.0, 1.1))
+    parts.append(chamfer_box(-0.8, c[1] + r - 0.2, 0.8, c[1] + R_ + 0.3, 0.0, 1.3, c=0.25))
+    parts = [p - ext(light, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.4, JoinType.Round) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=light, bars=bars, frame=parts, outline=outline, top=c[1] + R_ + 0.3, bottom=-0.2)
+
+
+# ------------------------------------------------------------------ walls, corners, foundation, chimney
+def bandedrustic(region, datum=0.0, course=3.0, joint=0.5, d=0.45, v=0.25):
+    """Banded rustication: courses of stone with only their beds cut, as deep V channels (the
+    edges chamfered), no upright joints (the Fontaine's ground storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = [M.extrude(region, d - v)]
+    k = math.floor((v0 - datum) / course) - 1
+    bands = []
+    while datum + k * course < v1:
+        vb = datum + k * course
+        bands.append(chamfer_box(u0 - 2, vb + joint / 2, u1 + 2, vb + course - joint / 2, d - v - 0.01, v + 0.01, c=v))
+        k += 1
+    return union(out) + (union(bands) ^ ext(region, 0.0, d + 1.0))
+
+
+def ashlarfine(region, datum=0.0, course=3.0, block=7.2, joint=0.4, d=0.4, g=0.2):
+    """Fine ashlar: smooth blocks in regular courses, broken joint, with fine sunk joints (the
+    Fontaine's upper storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    cuts = []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1:
+        vb = datum + k * course
+        cuts.append(rect(u0 - 1, vb - joint / 2, u1 + 1, vb + joint / 2))
+        u = u0 - block + (k % 2) * block / 2 + (k % 3) * 0.3
+        while u < u1 + block:
+            cuts.append(rect(u - joint / 2, vb, u + joint / 2, vb + course))
+            u += block
+        k += 1
+    return M.extrude(region, d) - ext(cs_union(cuts), d - g, d + 0.5)
+
+
+def corner_vermiquoin(L, at_start, qa, qb, w=2.4, t=0.65):
+    """Vermiculated quoins: blocks long and short in turn, their faces worked all over with
+    worm-tracks (short wandering raised strokes) inside a smooth margin (the Fontaine)."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    rng = np.random.default_rng(90 + int(L))
+    parts = []
+    v = qa + 0.2
+    k = 0
+    while v < qb - 2.0:
+        leg = 5.0 if k % 2 == 0 else 3.2
+        a, b = span(-t - 0.3, leg)
+        top = min(v + 2.6, qb - 0.2)
+        parts.append(chamfer_box(a, v, b, top, 0.0, t + 0.45, c=0.25, bottom=0.45, square=("u0",) if at_start else ("u1",)))
+        fa, fb = span(0.5, leg - 0.6)
+        worms = []
+        for _ in range(int((fb - fa) * (top - v) / 1.4)):
+            x0, y0 = rng.uniform(fa, fb), rng.uniform(v + 0.6, top - 0.6)
+            ang = rng.uniform(0, math.pi)
+            pts = [(x0, y0)]
+            for _s in range(3):
+                ang += rng.uniform(-1.2, 1.2)
+                pts.append((pts[-1][0] + 0.45 * math.cos(ang), pts[-1][1] + 0.45 * math.sin(ang)))
+            worms.append(stroke(pts, 0.4))
+        if worms:
+            parts.append(ext(cs_union(worms) ^ rect(min(fa, fb), v + 0.5, max(fa, fb), top - 0.5), t + 0.44, t + 0.65))
+        v += 3.0
+        k += 1
+    return union(parts) if parts else M()
+
+
+def foundation_batteredgranite(reg, seed=0):
+    """A battered granite plinth: courses of long blocks whose faces slope back as they rise,
+    under a torus-and-fillet cap (the Fontaine)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.2)]
+    hh = b[3] - b[1]
+    v = b[1] + 0.2
+    j = 0
+    while v < b[3] - 1.6:
+        ch = min(2.8, b[3] - 1.4 - v)
+        u = b[0] - (j % 2) * 4.0
+        dep = 0.85 - 0.5 * (v - b[1]) / max(hh, 1.0)
+        while u < b[2]:
+            blk = rect(u + 0.2, v + 0.2, u + 8.0 - 0.2, v + ch - 0.2) ^ reg
+            if not blk.is_empty():
+                bb = blk.bounds()
+                if bb[2] - bb[0] > 0.8 and bb[3] - bb[1] > 0.8:
+                    out.append(M.hull_points([(bb[0], bb[1], 0.19), (bb[2], bb[1], 0.19), (bb[0], bb[3], 0.19), (bb[2], bb[3], 0.19),
+                                              (bb[0], bb[1], dep), (bb[2], bb[1], dep), (bb[0], bb[3], dep - 0.2), (bb[2], bb[3], dep - 0.2)]))
+            u += 8.0
+        v += ch
+        j += 1
+    cap = rect(b[0] - 1, b[3] - 1.4, b[2] + 1, b[3] + 1) ^ reg
+    if not cap.is_empty():
+        cb = cap.bounds()
+        out.append(ext(cap, 0.19, 0.6))
+        out.append(ext(rect(cb[0], cb[1] + 0.3, cb[2], cb[1] + 1.0) ^ reg, 0.59, 0.85))
+    return union(out)
+
+
+def chimney_fontaine(w=11.0, d=9.0, h=25.0):
+    """The Fontaine's stacks: granite, a sunk panel on every face, a corbelled cap with a
+    blocking course and a ball on each corner of it."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 4.6
+    body = box([-w / 2 - 0.5, -d / 2 - 0.5, 0.0], [w / 2 + 0.5, d / 2 + 0.5, 2.0])
+    body = body + M.hull_points([(x, y, 1.99) for x in (-w / 2 - 0.5, w / 2 + 0.5) for y in (-d / 2 - 0.5, d / 2 + 0.5)] +
+                                [(x, y, 2.5) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)])
+    body = body + box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        pan = box([-L / 2 + 1.6, D / 2 - 0.45, 4.0], [L / 2 - 1.6, D / 2 + 0.1, sh - 2.0])
+        body = body - pan.rotate([0, 0, rot])
+    body = body + M.hull_points([(x, y, sh - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                                [(x, y, sh + 0.8) for x in (-w / 2 - 0.8, w / 2 + 0.8) for y in (-d / 2 - 0.8, d / 2 + 0.8)])
+    body = body + box([-w / 2 - 0.8, -d / 2 - 0.8, sh + 0.79], [w / 2 + 0.8, d / 2 + 0.8, sh + 1.6])
+    body = body + box([-w / 2 - 0.2, -d / 2 - 0.2, sh + 1.59], [w / 2 + 0.2, d / 2 + 0.2, sh + 2.8])
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            body = body + M.sphere(0.85, 16).translate([sx * (w / 2 - 0.4), sy * (d / 2 - 0.4), sh + 2.79 + 0.6])
+            body = body + M.cylinder(0.5, 0.6, 0.6, 12).translate([sx * (w / 2 - 0.4), sy * (d / 2 - 0.4), sh + 2.75])
+    flue = box([-w / 2 + 2.2, -d / 2 + 2.2, sh - 4.0], [w / 2 - 2.2, d / 2 - 2.2, sh + 2.81])
+    return body - flue
+
+
+def fence_fontaine(L, h):
+    """Fontaine cresting: tridents (bars ending in three prongs) and between every two a ring on
+    the rail holding a little cross."""
+    pitch = 3.0
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    rail = h * 0.3
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, rail, L, rail + 0.45)]
+    for j in range(n + 1):
+        u = p * j
+        cells.append(rect(u - 0.28, 0.0, u + 0.28, h - 0.3))
+        cells.append(rect(u - 0.8, h - 1.4, u + 0.8, h - 1.0))
+        for x in (u - 0.62, u + 0.62):
+            cells.append(rect(x - 0.2, h - 1.1, x + 0.2, h - 0.5))
+            cells.append(poly([(x - 0.3, h - 0.6), (x + 0.3, h - 0.6), (x, h - 0.15)]))
+        cells.append(poly([(u - 0.38, h - 0.4), (u + 0.38, h - 0.4), (u, h + 0.2)]))
+        if j < n:
+            m = u + p / 2
+            vc = (rail + 0.45 + h - 1.4) / 2
+            rr = min((h - 1.4 - rail - 0.45) / 2 + 0.05, p / 2 - 0.4)
+            cells.append(circle((m, vc), rr, 18) - circle((m, vc), max(rr - 0.42, 0.2), 14))
+            cells += [rect(m - 0.2, vc - rr + 0.2, m + 0.2, vc + rr - 0.2), rect(m - rr + 0.2, vc - 0.2, m + rr - 0.2, vc + 0.2)]
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def finial_bannerette(h=13.0):
+    """A finial of a bannerette vane: a turned base, an orb, a crown of four leaves, and a rod
+    flying a swallow-tailed pennant (a flat plate 0.8 thick, printed upright with the rest)."""
+    prof = [(0.0, 0.0), (1.5, 0.0), (1.5, 0.7), (1.0, 1.2), (0.6, 1.8), (0.6, h * 0.25), (0.95, h * 0.28), (0.55, h * 0.31),
+            (0.0, h * 0.31)]
+    body = PW._revolve(prof, 28)
+    zo = h * 0.31 + 1.2
+    body = body + M.sphere(1.25, 28).translate([0, 0, zo])
+    zc = zo + 1.1
+    for a in np.linspace(0, 2 * math.pi, 4, endpoint=False):
+        body = body + M.hull_points([(0.5 * math.cos(a) + dx, 0.5 * math.sin(a) + dy, zc) for dx in (-0.2, 0.2) for dy in (-0.2, 0.2)] +
+                                    [(0.8 * math.cos(a), 0.8 * math.sin(a), zc + 1.1)])
+    body = body + M.cylinder(h - zc + 0.01, 0.32, 0.3, 12).translate([0, 0, zc - 0.01])
+    zp = h - 3.6
+    pennant = poly([(0.2, zp), (4.2, zp + 0.6), (3.2, zp + 1.3), (4.2, zp + 2.0), (0.2, zp + 2.6)])
+    flag = M.extrude(pennant, 0.8).translate([0, 0, -0.4]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+    return body + flag
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_fontaine_lower(w=9.4, h=22.0, A=1.0):
+    """Fontaine ground floor: a round-headed two-over-two sash in an architrave with a shield
+    keystone, between engaged round columns on blocks carrying a short entablature; a sill."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, r, lites=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    rc = 0.85
+    xc = r + A + 0.2 + rc
+    vcap = h + A + 0.4
+    half = xc + rc + 0.4
+    for sg in (-1, 1):
+        x = sg * xc
+        parts.append(ext(rect(x - rc - 0.2, 0.0, x + rc + 0.2, vcap), 0.0, 0.5))
+        parts.append(chamfer_box(x - rc - 0.3, -0.4, x + rc + 0.3, 2.4, 0.0, 1.4, c=0.25))
+        prof = [(0.0, 0.0), (rc + 0.15, 0.0), (rc, 0.4), (rc * 0.9, vcap - 2.4 - 1.2), (rc + 0.15, vcap - 2.4 - 0.9),
+                (rc * 0.9, vcap - 2.4 - 0.7), (rc + 0.35, vcap - 2.4), (0.0, vcap - 2.4)]
+        col = PW._revolve(prof, 24).rotate([-90, 0, 0]).translate([x, 2.39, 0.0]) ^ box([x - 3, 0.0, 0.0], [x + 3, vcap + 1, 5.0])
+        parts.append(col)
+    parts.append(ext(rect(-xc, spring, xc, vcap) - op.offset(A, JoinType.Round), 0.0, 0.5))
+    shield = cs_union([rect(-0.9, h - 0.2, 0.9, h + 1.0), circle((0.0, h - 0.2), 0.9, 16)]) ^ rect(-1, h - 1.1, 1, h + 1.0)
+    parts.append(ext(shield, 0.0, 1.3))
+    parts.append(ext(rect(-half, vcap - 0.01, half, vcap + 1.6), 0.0, 0.8))
+    parts.append(MD.run(-half - 0.6, half + 0.6, vcap + 1.6 + 1.0, MD.CROWN, 1.2, up=False))
+    sw = r + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vcap + 2.6, -0.4)
+
+
+def window_fontaine_upper(w=9.0, h=20.0, A=0.9):
+    """Fontaine upper floor: a flat-headed two-over-two sash in an eared architrave, a plain
+    frieze, a cornice, and over it a broken triangular pediment with an urn in the break; a sill
+    on two blocks."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(2, 2), bare=True)["insert"]
+    half = w / 2 + A + 0.6
+    outer = cs_union([op.offset(A, JoinType.Miter, 4.0), rect(-half, h - 1.8, half, h + A), rect(-half, 0.0, half, 1.6)])
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(outer, A + 0.6, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.6), 0.0, 0.5))
+    vc = vf + 1.6 + 1.0
+    parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 1.2, up=False))
+    hp = 2.6
+    tri = poly([(-half - 0.6, vc - 0.01), (half + 0.6, vc - 0.01), (0.0, vc + hp)])
+    rim = (tri - tri.offset(-0.8, JoinType.Miter, 4.0)) - rect(-1.4, vc - 1, 1.4, vc + 10)
+    parts.append(ext(rim, 0.0, 1.1))
+    parts.append(ext(tri.offset(-0.8, JoinType.Miter, 4.0) ^ rect(-50, vc, 50, 50), 0.0, 0.5))
+    parts.append(ext(urn_cs(0.0, vc - 0.01, 3.4, 1.8), 0.0, 1.0))
+    sw = half + 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.7, -2.0, sg * (w / 2) + 0.7, -0.8, 0.0, 0.9, c=0.25))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + 3.4, -2.0)
+
+
+def window_fontaine_tower(w=8.4, h=20.0, A=0.9):
+    """The Fontaine tower's top storey: a round-headed one-over-one sash under an archivolt
+    with a keystone, on a sill with a balustered apron."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, r, lites=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts.append(MD.band(op.offset(A + 0.9, JoinType.Round), 1.0, MD.CROWN, clip=rect(-w - 10, spring - 0.6, w + 10, h + 40)))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (r + A + 0.45) - 0.8, spring - 1.4, sg * (r + A + 0.45) + 0.8, spring - 0.5, 0.0, 1.2, c=0.2))
+    parts.append(keystone(0.0, h - 0.3, A + 1.6, 1.2, 1.8, 0.0, 1.4))
+    sw = r + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    out = [rect(-sw + 0.4, -3.0, sw - 0.4, -2.5), rect(-sw + 0.4, -1.5, sw - 0.4, -0.99)]
+    for x in np.linspace(-sw + 1.2, sw - 1.2, 5):
+        out.append(cs_union([rect(x - 0.25, -2.6, x + 0.25, -1.4), oval((x, -2.0), 0.42, 0.42, 12)]))
+    parts.append(ext(cs_union(out), 0.0, 0.7))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A + 1.6 + 0.2, -3.0)
+
+
+def door_fontaine(w=13.4, h=28.0, A=1.2):
+    """The Fontaine's entrance: a pair of leaves, each a tall light over two raised panels,
+    under a round fanlight of three circles; an architrave with a scrolled keystone between
+    paired engaged columns on pedestals carrying an entablature with a balustered blocking
+    course."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    mid = 0.5
+    lw = (w - 2 * O.CLR - 1.0 - mid) / 2
+    dh = spring - 0.4
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    u = -w / 2 + O.CLR + 0.5
+    for i in range(2):
+        body.append(ext(rect(u, 0.5, u + lw, dh), -pl, -0.8))
+        gv0 = dh * 0.46
+        lights.append(rect(u + 0.8, gv0, u + lw - 0.8, dh - 0.8))
+        gp = (gv0 - 0.8 - 1.2) / 2
+        body.append(_panel(rect(u + 0.8, 1.2, u + lw - 0.8, 1.2 + gp - 0.2)))
+        body.append(_panel(rect(u + 0.8, 1.2 + gp + 0.2, u + lw - 0.8, gv0 - 0.8)))
+        u += lw + mid
+    fan = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, spring + 0.2, w, h + 2)
+    rr = r * 0.32
+    tracery = cs_union([circle((x, y), rr, 20) - circle((x, y), rr - 0.42, 20)
+                        for x, y in ((-r * 0.42, spring + 0.2 + rr + 0.2), (r * 0.42, spring + 0.2 + rr + 0.2), (0.0, spring + 0.2 + r * 0.62))])
+    tracery = tracery + rect(-w, spring + 0.2, w, spring + 0.65)
+    sash = _glazed(body, cs_union(lights) + fan, pl, tracery, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, spring + 0.2) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    rc = 0.95
+    vcap = h + A + 1.0
+    xs = [r + A + 0.3 + rc, r + A + 0.3 + 3 * rc + 0.6]
+    half = xs[-1] + rc + 0.5
+    for sg in (-1, 1):
+        parts.append(ext(rect(sg * (r + A), 0.0, sg * half, vcap) if sg > 0 else rect(-half, 0.0, -(r + A), vcap), 0.0, 0.5))
+        parts.append(chamfer_box(min(sg * (xs[0] - rc - 0.4), sg * (xs[1] + rc + 0.4)), 0.0,
+                                 max(sg * (xs[0] - rc - 0.4), sg * (xs[1] + rc + 0.4)), 4.0, 0.0, 1.9, c=0.3))
+        for xc in xs:
+            x = sg * xc
+            prof = [(0.0, 0.0), (rc + 0.2, 0.0), (rc, 0.4), (rc * 0.9, vcap - 4.0 - 1.4), (rc + 0.15, vcap - 4.0 - 1.1),
+                    (rc * 0.9, vcap - 4.0 - 0.9), (rc + 0.45, vcap - 4.0), (0.0, vcap - 4.0)]
+            col = PW._revolve(prof, 24).rotate([-90, 0, 0]).translate([x, 3.99, 0.0]) ^ box([x - 3, 0.0, 0.0], [x + 3, vcap + 1, 5.0])
+            parts.append(col)
+    parts.append(ext(rect(-(r + A), spring, r + A, vcap) - op.offset(A, JoinType.Round), 0.0, 0.6))
+    parts.append(MD.scroll_keystone(0.0, h - 0.4, vcap - h + 0.4, 1.8, 2.6, 0.0, 1.9))
+    parts.append(ext(rect(-half, vcap - 0.01, half, vcap + 0.9), 0.0, 1.1))
+    parts.append(ext(rect(-half + 0.3, vcap + 0.89, half - 0.3, vcap + 2.8), 0.0, 0.7))
+    vk = vcap + 2.8 + 1.4
+    parts.append(MD.run(-half - 0.8, half + 0.8, vk, MD.CROWN, 1.4, up=False))
+    bl = [rect(-half + 0.2, vk - 0.01, half - 0.2, vk + 0.5), rect(-half + 0.2, vk + 2.0, half - 0.2, vk + 2.6)]
+    for x in np.linspace(-half + 1.4, half - 1.4, 9):
+        bl.append(cs_union([rect(x - 0.25, vk + 0.4, x + 0.25, vk + 2.1), oval((x, vk + 1.0), 0.45, 0.5, 12)]))
+    for sg in (-1, 1):
+        bl.append(rect(sg * (half - 0.2) - 0.6 if sg > 0 else -half + 0.2, vk - 0.01, sg * (half - 0.2) if sg > 0 else -half + 0.8, vk + 2.6))
+    parts.append(ext(cs_union(bl), 0.0, 0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vk + 2.6, 0.0)
+
+
+def door_fontaine_back(w=10.4, h=25.0, A=1.0):
+    """The Fontaine's back door: one leaf with a tall light over two panels, a round fanlight
+    with a circle, an architrave with a keystone and a cornice cap."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = spring - 0.4
+    u0, u1 = -w / 2 + O.CLR + 0.5, w / 2 - O.CLR - 0.5
+    gv0 = dh * 0.46
+    gp = (gv0 - 0.8 - 1.2) / 2
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, dh), -pl, -0.8),
+            _panel(rect(u0 + 0.8, 1.2, u1 - 0.8, 1.2 + gp - 0.2)), _panel(rect(u0 + 0.8, 1.2 + gp + 0.2, u1 - 0.8, gv0 - 0.8))]
+    light = rect(u0 + 0.9, gv0, u1 - 0.9, dh - 0.8)
+    fan = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, spring + 0.2, w, h + 2)
+    tr = cs_union([circle((0.0, spring + 0.2 + r * 0.45), r * 0.3, 20) - circle((0.0, spring + 0.2 + r * 0.45), r * 0.3 - 0.42, 20),
+                   rect(-w, spring + 0.2, w, spring + 0.65)])
+    sash = _glazed(body, light + fan, pl, tr, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, spring + 0.2) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts.append(keystone(0.0, h - 0.3, A + 0.8, 1.3, 1.9, 0.0, 1.5))
+    half = r + A + 0.5
+    vf = h + A + 0.4
+    parts.append(ext(rect(-half, spring, half, vf + 1.0) - op.offset(A, JoinType.Round), 0.0, 0.5))
+    parts.append(MD.run(-half - 0.6, half + 0.6, vf + 2.0, MD.CROWN, 1.2, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vf + 2.0, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_bellcapital(h, collar=None, abacus=3.4, slot=(1.2, 1.0)):
+    """A column with a bell capital: a plain round shaft with entasis on an Attic base (two tori
+    and a scotia), a necking ring, and a capital flaring like a bell to a square abacus (the
+    Fontaine's veranda)."""
+    z1 = h - 3.2
+    r = 1.0
+    prof = [(0.0, 1.19), (1.5, 1.19), (1.5, 1.4), (1.3, 1.6), (1.18, 1.8), (1.3, 2.0), (1.12, 2.3), (r, 2.6),
+            (r * 1.04, (2.6 + z1) * 0.4), (r * 0.9, z1 - 0.4), (1.1, z1 - 0.2), (1.1, z1 + 0.05), (r * 0.9, z1 + 0.25),
+            (1.15, z1 + 0.9), (1.55, z1 + 1.5)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    return body + PW._top(h, abacus / 2, z1 + 1.5, 1.55, slot, seg=32)
+
+
+def baluster_tulipbell(h, seg=18):
+    """A baluster swelling to a tulip bell above the middle, on a slender stem, a ring at its
+    foot (the Fontaine)."""
+    prof = [(0.0, 0.8), (0.3, 0.8), (0.42, h * 0.16), (0.27, h * 0.24), (0.27, h * 0.42), (0.5, h * 0.62), (0.52, h * 0.7),
+            (0.3, h * 0.82), (0.3, h - 0.8)]
+    return PW._revolve(prof, seg) + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_lunettearcade(u0, u1, v_bot, v_top):
+    """A porch frieze: an entablature board cut below into a row of lunettes (half-round
+    openings), a keyblock over each (the Fontaine)."""
+    v0 = v_top - 3.2
+    n = max(1, int((u1 - u0) / 4.0))
+    p = (u1 - u0) / n
+    board = rect(u0, v0 - 1.0, u1, v_top + 0.05)
+    cuts, keys = [], []
+    for k in range(n):
+        m = u0 + p * (k + 0.5)
+        rr = p * 0.36
+        cuts.append(cs_union([circle((m, v0 - 1.0), rr, 20), rect(m - rr, v0 - 3.0, m + rr, v0 - 1.0)]))
+        keys.append(poly([(m - 0.4, v0 - 1.0 + rr - 0.1), (m + 0.4, v0 - 1.0 + rr - 0.1), (m + 0.6, v0 + 0.9), (m - 0.6, v0 + 0.9)]))
+    return (board - cs_union(cuts)) + cs_union(keys)
+
+
+def skirt_rusticblocks(reg, d=1.2):
+    """A porch skirt built like a plinth of rusticated blocks, every edge chamfered, in broken
+    courses under a cap (the Fontaine)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, d * 0.45)]
+    v = v0
+    k = 0
+    while v < v1 - 1.2:
+        ch = min(2.2, v1 - 0.9 - v)
+        u = u0 - (k % 2) * 2.6
+        while u < u1:
+            out.append(chamfer_box(u + 0.15, v + 0.15, u + 5.2 - 0.15, v + ch - 0.15, d * 0.45 - 0.01, d * 0.55, c=0.3))
+            u += 5.2
+        v += ch
+        k += 1
+    out.append(ext(rect(u0 - 1, v1 - 0.9, u1 + 1, v1 + 1), d * 0.45 - 0.01, d * 0.55))
+    return union(out) ^ M.extrude(reg, d + 0.5)
+
+
+def edge_belldrops(L, z0, zc):
+    """Porch fascia (the Fontaine): little bells on short cords hung under the crown, a bead
+    between every two."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for i, x in enumerate(np.arange(1.2, L - 1.0, 1.4)):
+        if i % 2 == 0:
+            out.append(rect(x - 0.2, zc - 0.8, x + 0.2, zc - 0.4))
+            out.append(poly([(x - 0.25, zc - 0.75), (x + 0.25, zc - 0.75), (x + 0.5, zc - 1.6), (x - 0.5, zc - 1.6)]))
+        else:
+            out.append(circle((x, zc - 0.75), 0.36, 10))
+    return cs_union(out), 0.6
+
+
+CO.FRIEZE_EXTRA.update(lozengerosettes=frieze_lozengerosettes, coronets=frieze_coronets)
+CO.COURSE_EXTRA.update(loopknot=course_loopknot, bellchain=course_bellchain)
+TW.BRACKET_EXTRA.update(ramshorn=bracket_ramshorn)
+TW.PIERCED = TW.PIERCED + ("ramshorn",)
+TW.FOUNDATION_EXTRA.update(batteredgranite=foundation_batteredgranite)
+SH.CORNER_EXTRA.update(vermiquoin=corner_vermiquoin)
+PW.POSTS.update(bellcapital=post_bellcapital)
+PW.BALUSTERS.update(tulipbell=(baluster_tulipbell, 1.6))
+PW.FRIEZES.update(lunettearcade=frieze_lunettearcade)
+PW.SKIRTS.update(rusticblocks=skirt_rusticblocks)
+FT.EDGE_EXTRA.update(belldrops=edge_belldrops)
