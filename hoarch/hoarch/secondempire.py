@@ -2464,7 +2464,7 @@ def window_valcour_lower(w=9.6, h=22.0, rise=2.0, A=1.0):
         parts.append(ext(rect(x - 0.45, vf + 0.2, x + 0.45, vf + 1.6), 0.59, 1.0))
     vc = vf + 1.8 + 1.0
     parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 1.2, up=False))
-    crest = [rect(-2.4, vc - 0.01, 2.4, vc + 0.4), circle((0.0, vc + 1.1), 0.7, 16)]
+    crest = [rect(-2.4, vc - 0.01, 2.4, vc + 0.4), circle((0.0, vc + 0.95), 0.7, 16)]
     for sg in (-1, 1):
         crest.append(stroke([(sg * 0.5, vc + 0.3), (sg * 1.6, vc + 1.0), (sg * 2.3, vc + 0.5)], 0.45))
     parts.append(ext(cs_union(crest), 0.0, 0.9))
