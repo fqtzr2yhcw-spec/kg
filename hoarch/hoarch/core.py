@@ -352,7 +352,10 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
     """Fish-scale, diamond or square shingle rows over a flat (u, v) region; v = up-slope.
 
     ``gap`` is the joint between neighbours in a course: at least one nozzle width, or it
-    fuses shut and the course prints as a lumpy band."""
+    fuses shut and the course prints as a lumpy band. ``shape``: one shape, a list (banded
+    courses, one shape per course in turn) or a function (course k, slate j) -> shape, for
+    patterns laid in the slating (j counts from the region's left edge, half a slate on in
+    alternate courses)."""
     if region.is_empty():
         return M()
     u0, v0, u1, v1 = region.bounds()
@@ -367,8 +370,11 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
             continue
         tabs = []
         u = u0 - wtab * 1.5 + (k % 2) * wtab * 0.5
-        shp = shape[k % len(shape)] if isinstance(shape, (list, tuple)) else shape   # banded courses
+        shp0 = shape[k % len(shape)] if isinstance(shape, (list, tuple)) else shape   # banded courses
+        j = 0
         while u < u1 + wtab:
+            shp = shape(k, j) if callable(shape) else shp0
+            j += 1
             r = (wtab - gap) / 2
             if shp == "fish":
                 tabs.append(circle((u + wtab / 2, vk + r), r, seg))
@@ -525,6 +531,11 @@ def scallop_rows(region, pitch, wtab, d=0.4, gap=SLOT, datum=0.0, lap=1.5, seg=1
                     tab = tab - rect(c - 0.25, vk - 0.1, c + 0.25, vk + min(0.9, (top - vk) * 0.5))
                 tabs.append(tab)
                 u += wv - wtab
+            elif shp == "trefoil":        # each butt cut in three round lobes (the Lafayette)
+                a_, b_ = u + gap / 2, u + wtab - gap / 2
+                r3 = (b_ - a_) / 6
+                tabs.append(cs_union([rect(a_, vk + r3, b_, top)] +
+                                     [circle((a_ + r3 * (2 * k + 1), vk + r3), r3, 14) for k in range(3)]))
             else:
                 tabs.append(rect(u + gap / 2, vk, u + wtab - gap / 2, top))
             u += wtab

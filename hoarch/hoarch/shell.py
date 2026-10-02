@@ -108,8 +108,8 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     bands a built-up cornice wraps (hoarch.cornice)."""
     corners = corners or ("quoin" if quoins else "none")
     belts = [] if belt is None else ([belt] if isinstance(belt[0], (int, float)) else list(belt))
-    quoins = corners in ("quoin", "quoin_even")
-    boards = corners in CORNER_BOARDS
+    quoins = corners in ("quoin", "quoin_even", "quoin_vee")
+    boards = corners in CORNER_BOARDS or corners in CORNER_EXTRA
     CBW, CBT = 2.4, 0.65
     solids = [b.solid() for b in blocks]
     outer_all = union(solids)
@@ -138,6 +138,8 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     QB = 0.5                                                  # the underside bevel (leaves a 0.4 ledge)
     if corners == "quoin_even":                               # equal blocks in tighter courses
         QL, QS, QH = 3.2, 3.2, 2.4
+    if corners == "quoin_vee":                                # long and short, every edge chamfered into a deep V joint
+        QL, QS, QH, QG, QC = 4.8, 3.0, 3.2, 0.6, 0.45
     for b in blocks:
         facs = b.facades()
         conv = b.convex_corners(min_turn=70.0)
@@ -249,6 +251,9 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
     return shell + dress
 
 
+# more corner styles, registered by other modules (hoarch.secondempire):
+# CORNER_EXTRA[style](L, at_start, qa, qb, w, t) -> solid in the facade's (u, v, w) frame
+CORNER_EXTRA = {}
 CORNER_BOARDS = ("board", "pilaster", "chamfer", "stepped", "capital", "panel", "beaded", "reeded", "rope",
                  "notched", "banded", "cabled", "reveal", "rosette", "lozenge", "blocked", "incised", "dentilled")
 
@@ -278,6 +283,9 @@ def _corner_board(style, L, at_start, qa, qb, w=2.4, t=0.65):
       blocked   a board with small raised blocks at alternate edges every 2.4 mm (the Wisteria)
       incised   an Eastlake board incised with a groove ending in drilled roundels (the Hawthorn)
       dentilled a plain board edged with a row of small dentils (the Magnolia)"""
+    if style in CORNER_EXTRA:
+        return CORNER_EXTRA[style](L, at_start, qa, qb, w, t)
+
     def span(a, b):                      # u from the corner: a..b (a < b), mirrored at the end
         return (a, b) if at_start else (L - b, L - a)
     u0, u1 = span(0.0, w)
