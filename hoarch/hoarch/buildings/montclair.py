@@ -25,6 +25,7 @@ import sys
 import time
 
 import numpy as np
+from manifold3d import Manifold as M
 
 from hoarch.core import box, compose, cs_union, inv34, offset, poly, rect, slab, union
 from hoarch import cornice as CO, features as FT, openings as O, roof as R, secondempire as SE
@@ -186,7 +187,9 @@ def build(kit=None):
     cs = poly(dpath)
     x0, y0, x1, y1 = cs.bounds()
     seams = cs_union([rect(x - 0.25, y0, x + 0.25, y1) for x in np.arange(x0 + 2.6, x1, 5.2)]) ^ cs
-    hatch = box([110.0, 92.0, zdeck - 0.01], [124.0, 104.0, zdeck + 1.6]) + box([109.4, 91.4, zdeck + 1.59], [124.6, 104.6, zdeck + 2.2])
+    hatch = box([110.0, 92.0, zdeck - 0.01], [124.0, 104.0, zdeck + 1.6]) + \
+        M.hull_points([(x, y, zdeck + 1.59) for x in (110.0, 124.0) for y in (92.0, 104.0)] +
+                      [(x, y, zdeck + 2.2) for x in (109.4, 124.6) for y in (91.4, 104.6)])      # the lid flares at 45 degrees
     chims = [(14.0, 74.0), (182.0, 74.0)]
     pads = union([box([x - 6.4, y - 7.9, zdeck - 0.6], [x + 6.4, y + 7.9, zdeck + 1]) for x, y in chims])
     deck = deck + slab(seams - cs_union([rect(108.8, 90.8, 125.2, 105.2)]), zdeck - 0.01, zdeck + 0.4) + hatch

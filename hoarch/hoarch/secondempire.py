@@ -112,7 +112,8 @@ def crest_ring(path, d_s, z_s, t_s, course, crown, deck_th=1.2, s_out=-0.6, lip=
     di = -t_s - FCLR
     cpro = CO.crown_profile(crown["kind"], b, P, hB)
     prof = [(di - lip, -1.2), (di, -1.2), (di, 0.0), (b, 0.0), (b, hA)] + [(d, hA + z) for d, z in cpro[1:]] + \
-           [(P, H), (s_out, H), (s_out - deck_th, H - deck_th), (di - lip, H - deck_th)]
+           [(P, H), (s_out, H), (s_out - deck_th, H - deck_th),
+            (di - lip, H - deck_th - ((s_out - deck_th) - (di - lip)))]     # 45 degrees in to the lip: no ledge in print
     ring = sweep_ring(top, [(d, z_s + z) for d, z in prof])
     orn = []
     for f in CO._edges(top):
@@ -1313,3 +1314,470 @@ PW.FILLS.update(fleursplats=fill_fleursplats)
 PW.FRIEZES.update(festoons=frieze_festoons)
 PW.SKIRTS.update(scallopboards=skirt_scallopboards)
 FT.EDGE_EXTRA.update(pendants=edge_pendants)
+
+
+# ================================================================== the Delacroix (house 83)
+# Deep red brick in rat-trap bond with buff sandstone dressings and bottle-green accents; a
+# tall square corner tower under a concave cap; a straight mansard of square slate with a
+# diaper of hexagon-cut slates; pedimented add-ins; a veranda along the front to the tower.
+
+def slate_diaper(k, j):
+    """The Delacroix's slating: square slates with a diaper of hexagon-cut ones, diagonal
+    lines of them crossing every eight slates."""
+    x = j + 0.5 * (k % 2)
+    a, b = (x + 0.5 * k) % 8, (x - 0.5 * k) % 8
+    return "hex" if min(a, 8 - a) < 0.3 or min(b, 8 - b) < 0.3 else "square"
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def frieze_thistles(L, h, b, pitch, margin, pair, half):
+    """Thistles: in every bay a thistle head (a bulb under a fan of spikes) on a stem between
+    two spiny leaves; a boss at each station (the Delacroix's storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    s = hh / 4.0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 3.8:
+            continue
+        stem = rect(uc - 0.22, v0, uc + 0.22, v0 + 2.2 * s)
+        leaves = [_lens((uc + sg * 0.85 * s, v0 + 1.1 * s), 1.9 * s, 0.6 * s, sg * 0.55) for sg in (-1, 1)]
+        out.append(_st(cs_union([stem] + leaves), b, 0.35))
+        head = oval((uc, v0 + 2.55 * s), 0.7 * s, 0.6 * s, 18)
+        spikes = [poly([(uc + dx - 0.2, v0 + 2.9 * s), (uc + dx + 0.2, v0 + 2.9 * s), (uc + dx * 1.6, v0 + 3.95 * s)])
+                  for dx in (-0.5 * s, -0.17 * s, 0.17 * s, 0.5 * s)]
+        out.append(_st(cs_union([head] + spikes), b, 0.55))
+        out.append(_st(rect(uc - 0.75 * s, v0 + 2.3 * s, uc + 0.75 * s, v0 + 2.45 * s) ^ head.offset(-0.1), b + 0.55, 0.2))
+    for u in CO._us(L, pitch, margin, 0.0):
+        out.append(_st(circle((u, (v0 + v1) / 2), 0.6, 14), b, 0.45))
+    return out, []
+
+
+def frieze_ferns(L, h, b, pitch, margin, pair, half):
+    """Ferns: in every bay two fronds arching out from a tuft, each a curved rib with leaflets
+    along it, shrinking to the tip (the Delacroix's eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 4.4:
+            continue
+        W, H = wd / 2 - 0.6, hh * 0.72
+        parts = [circle((uc, v0 + 0.45), 0.55, 14)]
+        for sg in (-1, 1):
+            ts = np.linspace(0.0, 1.0, 14)
+            pts = [(uc + sg * W * t, v0 + 0.4 + H * math.sin(math.pi * 0.9 * t)) for t in ts]
+            parts.append(stroke(pts, 0.4))
+            for t in np.linspace(0.15, 0.85, 6):
+                i = int(t * 13)
+                p0, p1 = np.array(pts[i]), np.array(pts[min(i + 1, 13)])
+                tg = (p1 - p0) / max(np.linalg.norm(p1 - p0), 1e-6)
+                ang = math.atan2(tg[1], tg[0])
+                ln = 1.2 * (1 - 0.55 * t)
+                for side in (1, -1):
+                    a = ang + side * 1.0
+                    c = p0 + np.array([math.cos(a), math.sin(a)]) * ln * 0.5
+                    parts.append(_lens((c[0], c[1]), ln, 0.45, a))
+        out.append(_st(cs_union(parts) ^ rect(uc - wd / 2 + 0.2, v0, uc + wd / 2 - 0.2, v1), b, 0.4))
+    return out, []
+
+
+def course_knurl(L, h, b, pitch, margin, p):
+    """Knurling: close-set upright ribs, like a milled edge, between two fillets (the
+    Delacroix)."""
+    out = [ext(rect(0.2, 0.0, L - 0.2, 0.4), b - 0.05, b + 0.5), ext(rect(0.2, h - 0.4, L - 0.2, h), b - 0.05, b + 0.5)]
+    out += [_st(rect(u - 0.25, 0.35, u + 0.25, h - 0.35), b, 0.4) for u in np.arange(0.7, L - 0.5, 0.95)]
+    return out
+
+
+def plait(L, h):
+    """A plait as CrossSections: two strands crossing in a run of overlapping tilted ovals."""
+    pu = max(1.4, h * 0.9)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    return [cs_union([_lens((u0 + pu * (k + 0.5), h / 2), pu * 1.35, min(h * 0.5, 0.8), 0.45 if k % 2 else -0.45)
+                      for k in range(n)]) ^ rect(0.2, 0.1, L - 0.2, h - 0.1)]
+
+
+def course_plait(L, h, b, pitch, margin, p):
+    """A plait: two strands crossing in a run of overlapping tilted ovals (the Delacroix)."""
+    return [_st(cs, b, 0.45) for cs in plait(L, h)]
+
+
+def bracket_swanneck(h, d, t):
+    """A swan-neck bracket: a broad tail on the wall sweeping out in an S that curls into a
+    round head under the soffit's front edge, a sunk eye in the neck (side profile, top at
+    v = 0; the Delacroix)."""
+    r = min(0.24 * h, 0.3 * d, 0.85)
+    pts = [(0.0, 0.0), (d, 0.0), (d, -r)]
+    for s in np.linspace(0.0, 1.0, 12):
+        pts.append((d - r - (d - r - 0.7) * (3 * s * s - 2 * s ** 3), -r - (h - r - 0.3) * s))
+    pts += [(0.0, -h + 0.3)]
+    prof = cs_union([poly(pts), circle((d - r, -r), r, 16), circle((0.35, -h + 0.4), 0.4, 12)])
+    return prof - circle((d - 2.3 * r, -1.9 * r), min(0.55, r * 0.6), 14)
+
+
+# ------------------------------------------------------------------ the mansard's window add-ins
+def addin_delacroix(w=5.4, h=10.4, A=0.9):
+    """A Delacroix add-in: a flat-headed two-over-two light in an architrave with crossettes, a
+    frieze with a rosette, a triangular pediment with acroteria, a sill on two blocks."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, h * 0.5 - 0.3, w, h * 0.5 + 0.3)])
+    half = w / 2 + A + 0.6
+    ears = cs_union([rect(-half, h - 1.8, half, h + A)])
+    outer = cs_union([op.offset(A, JoinType.Miter, 4.0), ears])
+    vf = h + A
+    vp = vf + 1.8 + 1.0
+    hp = 2.6
+    tri = poly([(-half - 0.4, vp - 0.4), (half + 0.4, vp - 0.4), (0.0, vp + hp)])
+    body = cs_union([rect(-half, -0.2, half, vp), tri])
+    parts = [ext(body - op, 0.0, 0.6), MD.band(outer, A + 0.6, MD.ARCHITRAVE, clip=rect(-20, 0.0, 20, 40) - op),
+             ext(rect(-half, vf - 0.01, half, vf + 1.8), 0.0, 0.7), MD.rosette(0.0, vf + 0.9, 0.6, 0.69, 0.5),
+             MD.run(-half - 0.4, half + 0.4, vp, MD.CROWN, 1.0, up=False)]
+    inner = tri.offset(-0.9, JoinType.Miter, 4.0)
+    parts.append(ext(tri - inner, 0.0, 1.1))
+    for x, v in ((-half - 0.1, vp - 0.4), (half + 0.1, vp - 0.4), (0.0, vp + hp - 0.6)):
+        parts.append(chamfer_box(x - 0.55, v - 0.1, x + 0.55, v + 0.9, 0.0, 1.2, c=0.3))
+    sw = half + 0.3
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.6, -1.8, sg * (w / 2) + 0.6, -0.8, 0.0, 0.9, c=0.25))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.4, JoinType.Miter, 4.0) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=vp + hp + 0.4, bottom=-1.8)
+
+
+# ------------------------------------------------------------------ walls, foundation, chimney
+def brick_rattrap(region, datum=0.0, bl=2.4, bh=1.2, mortar=0.5, bed=0.25, d=0.25):
+    """Rat-trap bond: every brick laid on edge, shiners (stretchers on edge) and rowlocks
+    (headers on edge) in turn along each course, so the courses are tall and the wall reads
+    as a lattice (the Delacroix)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    hl = bl / 2
+    unit = bl + hl
+    cells, proud = [], []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        top = v + bh - bed
+        u = u0 - 2 * unit + (k % 2) * unit / 2
+        while u < u1 + unit:
+            cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, top))
+            proud.append(rect(u + bl + mortar / 2, v, u + unit - mortar / 2, top))
+            u += unit
+        k += 1
+    return M.extrude(cs_union(cells) ^ region, d) + M.extrude(cs_union(proud) ^ region, d + 0.1)
+
+
+def foundation_pickdressed(reg, seed=0):
+    """Pick-dressed sandstone: long blocks in two course heights, each face covered in rows of
+    little pyramids left by the pick, inside a smooth chiselled margin (the Delacroix)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.2)]
+    v = b[1] + 0.2
+    j = 0
+    while v < b[3] - 1.0:
+        hh = min(3.2 if j % 2 == 0 else 2.2, b[3] - v - 0.2)
+        u = b[0] - (j % 2) * 3.5
+        while u < b[2]:
+            blk = rect(u + 0.25, v + 0.25, u + 7.0 - 0.25, v + hh - 0.25) ^ reg
+            if not blk.is_empty():
+                out.append(ext(blk, 0.15, 0.45))
+                fld = blk.offset(-0.5, JoinType.Miter, 4.0)
+                if not fld.is_empty():
+                    fb = fld.bounds()
+                    pts = []
+                    for y_ in np.arange(fb[1] + 0.4, fb[3] - 0.2, 0.8):
+                        for x_ in np.arange(fb[0] + 0.4, fb[2] - 0.2, 0.8):
+                            pts += [(x_, y_, 0.44), ]
+                    if pts:
+                        pyr = union([M.hull_points([(x_ - 0.35, y_ - 0.35, z), (x_ + 0.35, y_ - 0.35, z), (x_ + 0.35, y_ + 0.35, z),
+                                                    (x_ - 0.35, y_ + 0.35, z), (x_, y_, z + 0.3)]) for x_, y_, z in pts])
+                        out.append(pyr)
+            u += 7.0
+        v += hh
+        j += 1
+    return union(out)
+
+
+def chimney_delacroix(w=10.0, d=10.0, h=26.0):
+    """The Delacroix's stacks: red brick with a sandstone band, the top an open stone cap on
+    four corner piers under a little gabled coping (the smoke leaves under the gables)."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 6.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    zb = sh - 6.0
+    body = body + box([-w / 2 - 0.5, -d / 2 - 0.5, zb], [w / 2 + 0.5, d / 2 + 0.5, zb + 1.2])
+    body = body + M.hull_points([(x, y, sh - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                                [(x, y, sh + 0.6) for x in (-w / 2 - 0.6, w / 2 + 0.6) for y in (-d / 2 - 0.6, d / 2 + 0.6)])
+    body = body + box([-w / 2 - 0.6, -d / 2 - 0.6, sh + 0.59], [w / 2 + 0.6, d / 2 + 0.6, sh + 1.2])
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            body = body + box([sx * (w / 2 - 1.0) - 1.0, sy * (d / 2 - 1.0) - 1.0, sh + 1.19], [sx * (w / 2 - 1.0) + 1.0, sy * (d / 2 - 1.0) + 1.0, sh + 3.4])
+    zc = sh + 3.39
+    body = body + box([-w / 2 - 0.4, -d / 2 - 0.4, zc], [w / 2 + 0.4, d / 2 + 0.4, zc + 0.6])
+    gable = M.hull_points([(x, y, zc + 0.59) for x in (-w / 2 - 0.4, w / 2 + 0.4) for y in (-d / 2 - 0.4, d / 2 + 0.4)] +
+                          [(x, 0.0, zc + 0.6 + d / 2 * 0.45) for x in (-w / 2 - 0.4, w / 2 + 0.4)])
+    flue = box([-w / 2 + 2.0, -d / 2 + 2.0, sh - 4.0], [w / 2 - 2.0, d / 2 - 2.0, sh + 3.4])
+    return body + gable - flue
+
+
+def fence_delacroix(L, h):
+    """Delacroix cresting: bars with trefoil heads, a row of quatrefoil rings between the
+    rails."""
+    pitch = 2.8
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    r0, r1 = h * 0.18, h * 0.58
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, r0, L, r0 + 0.45), rect(0.0, r1, L, r1 + 0.45)]
+    for j in range(n + 1):
+        u = p * j
+        cells.append(rect(u - 0.28, 0.0, u + 0.28, h - 0.9))
+        cells += [circle((u, h - 0.55), 0.42, 12), circle((u - 0.45, h - 0.95), 0.36, 12), circle((u + 0.45, h - 0.95), 0.36, 12)]
+        if j < n:
+            m = u + p / 2
+            vc = (r0 + 0.45 + r1) / 2
+            rr = min((r1 - r0 - 0.45) / 2 + 0.05, p / 2 - 0.35)
+            ring = circle((m, vc), rr, 20) - circle((m, vc), max(rr - 0.45, 0.15), 16)
+            cells.append(ring)
+            cells.append(rect(m - 0.22, vc + rr - 0.15, m + 0.22, r1 + 0.05))
+            cells.append(rect(m - 0.22, r0 + 0.4, m + 0.22, vc - rr + 0.15))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def finial_crownball(h=9.0):
+    """A finial of a ball on a turned stem carrying a little crown of four points (the
+    Delacroix's tower)."""
+    prof = [(0.0, 0.0), (1.4, 0.0), (1.4, 0.8), (0.8, 1.3), (0.55, 2.0), (0.55, h * 0.4), (0.9, h * 0.44), (0.55, h * 0.48),
+            (0.0, h * 0.48)]
+    body = PW._revolve(prof, 28) + M.sphere(1.3, 28).translate([0, 0, h * 0.48 + 1.1])
+    zc = h * 0.48 + 2.2
+    crown = M.cylinder(0.6, 0.9, 0.9, 20).translate([0, 0, zc - 0.2])
+    for a in np.linspace(0, 2 * math.pi, 4, endpoint=False):
+        crown = crown + M.hull_points([(0.7 * math.cos(a) + dx, 0.7 * math.sin(a) + dy, zc + 0.3) for dx in (-0.25, 0.25) for dy in (-0.25, 0.25)] +
+                                      [(0.85 * math.cos(a), 0.85 * math.sin(a), zc + 1.5)])
+    return body + crown + M.cylinder(h - zc - 0.2, 0.3, 0.12, 12).translate([0, 0, zc + 0.2])
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_delacroix_lower(w=9.6, h=22.0, A=1.0):
+    """Delacroix ground floor: a round-headed two-over-two sash in a beaded architrave, under a
+    segmental pediment on two consoles that is broken at its apex by a scrolled keystone rising
+    from the arch; a panelled apron with a lozenge under the sill."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, r, lites=(2, 2), bare=True)["insert"]
+    band = op.offset(A, JoinType.Round)
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(band, A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    beads = []
+    for t in np.linspace(0.04, 0.96, 23):
+        if t < 0.33:
+            x, v = -r - A * 0.5, spring * t / 0.33
+        elif t > 0.67:
+            x, v = r + A * 0.5, spring * (1 - t) / 0.33
+        else:
+            a = math.pi * (1 - (t - 0.33) / 0.34)
+            x, v = (r + A * 0.5) * math.cos(a), spring + (r + A * 0.5) * math.sin(a)
+        beads.append(circle((x, v), 0.32, 10))
+    parts.append(ext(cs_union(beads) ^ rect(-w, 0.3, w, h + 5), 0.6, 1.3))
+    half = r + A + 1.6
+    vc = spring + r + A + 1.0
+    for sg in (-1, 1):
+        parts.append(console(4.0, 1.6, 1.2, u=sg * (half - 0.8), v_top=vc - 1.0, w0=0.0))
+    parts.append(ext(rect(-half, spring + 0.5, half, vc - 1.0) - band, 0.0, 0.6))
+    parts.append(MD.run(-half - 0.5, half + 0.5, vc, MD.CROWN, 1.2, up=False))
+    rp = 2.4
+    seg = arch_cs(-half - 0.4, half + 0.4, vc - 0.01, vc, rise=rp, seg=48)
+    ped = MD.band(seg, 1.0, MD.CROWN, clip=rect(-half - 2, vc, half + 2, vc + 10) - rect(-1.4, vc - 1, 1.4, vc + 10))
+    parts.append(ped)
+    parts.append(ext(seg.offset(-0.9, JoinType.Round) ^ rect(-half, vc, half, vc + 10), 0.0, 0.6))
+    parts.append(MD.scroll_keystone(0.0, h - 0.3, vc + rp - h + 0.6, 1.4, 2.2, 0.0, 1.8))
+    sw = r + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    aw = r + A * 0.5
+    parts.append(ext(rect(-aw, -3.2, aw, -0.99), 0.0, 0.55))
+    parts.append(ext(poly([(-aw + 1.2, -2.1), (0.0, -2.9), (aw - 1.2, -2.1), (0.0, -1.3)]), 0.54, 0.95))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + rp + 0.6, -3.2)
+
+
+def window_delacroix_upper(w=9.0, h=20.0, A=0.9):
+    """Delacroix upper floor: a flat-headed two-over-two sash in an eared architrave, a
+    pulvinated (cushioned) frieze, a cornice cap and a blocking course with a raised tablet;
+    a sill on two blocks."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(2, 2), bare=True)["insert"]
+    half = w / 2 + A + 0.7
+    outer = cs_union([op.offset(A, JoinType.Miter, 4.0), rect(-half, h - 2.0, half, h + A)])
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(outer, A + 0.7, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 2.0), 0.0, 0.5))
+    cushion = M.cylinder(2 * half, 1.0, 1.0, 24).rotate([0, 90, 0]).translate([-half, vf + 1.0, 0.0]) ^ box([-half, vf, 0.0], [half, vf + 2.0, 1.0])
+    parts.append(cushion)
+    vc = vf + 2.0 + 1.0
+    parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 1.2, up=False))
+    parts.append(ext(rect(-half + 0.4, vc - 0.01, half - 0.4, vc + 1.4), 0.0, 0.8))
+    parts.append(ext(rect(-2.2, vc + 0.3, 2.2, vc + 1.1), 0.79, 1.1))
+    sw = half + 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.7, -2.0, sg * (w / 2) + 0.7, -0.8, 0.0, 0.9, c=0.25))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + 1.4, -2.0)
+
+
+def door_delacroix(w=13.0, h=27.0, A=1.2):
+    """The Delacroix's entrance: a pair of leaves, each with a long oval light over a raised
+    panel, under a round fanlight with a sunk shell of bars, in a sandstone architrave with a
+    keystone, between rusticated pilasters under a cornice on two consoles."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    mid = 0.5
+    lw = (w - 2 * O.CLR - 1.0 - mid) / 2
+    dh = spring - 0.4
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    u = -w / 2 + O.CLR + 0.5
+    for i in range(2):
+        body.append(ext(rect(u, 0.5, u + lw, dh), -pl, -0.8))
+        gv0 = dh * 0.42
+        lights.append(oval((u + lw / 2, (gv0 + dh - 0.8) / 2), lw / 2 - 0.8, (dh - 0.8 - gv0) / 2, 28))
+        body.append(_panel(rect(u + 0.8, 1.2, u + lw - 0.8, gv0 - 0.8)))
+        u += lw + mid
+    fan = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, spring + 0.2, w, h + 2)
+    shell = cs_union([stroke([(0.0, spring + 0.2), (r * 1.2 * math.cos(a), spring + 0.2 + r * 1.2 * math.sin(a))], 0.45)
+                      for a in np.linspace(0.2, math.pi - 0.2, 9)] + [circle((0.0, spring + 0.2), 1.6, 20)])
+    g = cs_union(lights) + fan
+    sash = _glazed(body, g, pl, shell, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, spring + 0.2) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Round), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    pw = 2.4
+    ui = r + A + 0.2
+    vcap = h + A + 0.6
+    for sg in (-1, 1):
+        u0, u1 = sorted((sg * ui, sg * (ui + pw)))
+        parts.append(ext(rect(u0, 0.0, u1, vcap), 0.0, 0.7))
+        for vb in np.arange(0.0, vcap - 1.0, 2.0):
+            parts.append(chamfer_box(u0 - 0.1, vb + 0.2, u1 + 0.1, min(vb + 1.8, vcap - 0.2), 0.0, 1.1, c=0.35))
+    half = ui + pw + 0.3
+    parts.append(ext(rect(-half, spring, half, vcap) - op.offset(A, JoinType.Round), 0.0, 0.6))
+    parts.append(MD.scroll_keystone(0.0, h - 0.2, vcap - h + 1.0, 1.8, 2.6, 0.0, 2.0))
+    parts.append(ext(rect(-half, vcap - 0.01, half, vcap + 2.0), 0.0, 0.7))
+    for sg in (-1, 1):
+        parts.append(console(3.2, 1.8, 1.4, u=sg * (ui + pw / 2), v_top=vcap + 2.0, w0=0.0))
+    vs = vcap + 1.8 + 1.4
+    parts.append(MD.run(-half - 0.8, half + 0.8, vs, MD.CROWN, 1.4, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vs, 0.0)
+
+
+def door_delacroix_back(w=10.0, h=25.0, A=1.0):
+    """The Delacroix's back door: one leaf of a long oval light over a panel, a flat transom,
+    an architrave and a cornice cap."""
+    transom = 3.4
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, JoinType.Miter, 4.0)
+    pl = O.PLUG
+    dh = h - transom
+    lw = w - 2 * O.CLR - 1.0
+    u = -w / 2 + O.CLR + 0.5
+    gv0 = dh * 0.42
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u, 0.5, u + lw, dh), -pl, -0.8), _panel(rect(u + 0.8, 1.2, u + lw - 0.8, gv0 - 0.8))]
+    light = oval((0.0, (gv0 + dh - 0.8) / 2), lw / 2 - 0.9, (dh - 0.8 - gv0) / 2, 28)
+    g = plug_cs.offset(-0.5, JoinType.Miter, 4.0) ^ rect(-w, dh + 0.3, w, h + 2)
+    sash = _glazed(body, light + g, pl, None, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.3, w, dh + 0.3) ^ plug_cs, -pl, -0.4))
+    parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, JoinType.Miter, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.4
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.6), 0.0, 0.6))
+    parts.append(MD.run(-half - 0.6, half + 0.6, vf + 1.6 + 1.0, MD.CROWN, 1.2, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vf + 2.6, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_beadcollar(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A round tapering post with a necking of beads under its capital and a bead-and-reel
+    collar at a third of its height (the Delacroix's veranda)."""
+    z1 = h - 2.6
+    r0, r1 = 1.15, 0.92
+    zc = round(z1 * 0.33 / 0.2) * 0.2
+    prof = [(0.0, 1.19), (1.55, 1.19), (1.55, 1.45), (1.3, 1.7), (r0, 2.0), (r0 - (r0 - r1) * 0.3, zc - 0.6), (1.25, zc - 0.4),
+            (1.25, zc + 0.4), (r0 - (r0 - r1) * 0.3, zc + 0.6), (r1, z1), (1.2, z1 + 0.25), (1.2, z1 + 0.5), (r1, z1 + 0.7)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    beads = union([M.sphere(0.32, 10).translate([1.1 * math.cos(a), 1.1 * math.sin(a), z1 - 0.5]) for a in np.linspace(0, 2 * math.pi, 10, endpoint=False)])
+    return body + beads + PW._top(h, abacus / 2, z1 + 0.7, r1, slot, seg=32)
+
+
+def baluster_beadstack(h, seg=18):
+    """A bobbin-turned baluster: a stack of beads and reels between square ends (the
+    Delacroix)."""
+    prof = [(0.0, 0.8), (0.32, 0.8)]
+    n = 5
+    span = h - 1.6
+    for k in range(n):
+        z = 0.8 + span * k / n
+        prof += [(0.32, z + 0.05), (0.52, z + span / n * 0.5), (0.32, z + span / n - 0.05)]
+    prof += [(0.32, h - 0.8)]
+    return PW._revolve(prof, seg) + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_ogeearcade(u0, u1, v_bot, v_top):
+    """A porch frieze: a board cut below into a row of small ogee arches, a drop at every
+    meeting (the Delacroix)."""
+    v0 = v_top - 2.8
+    n = max(2, int((u1 - u0) / 3.2))
+    p = (u1 - u0) / n
+    board = rect(u0, v0, u1, v_top + 0.05)
+    cuts, drops = [], []
+    for k in range(n):
+        a = u0 + p * k + 0.3
+        e = u0 + p * (k + 1) - 0.3
+        m = (a + e) / 2
+        ts = np.linspace(0.0, 1.0, 9)
+        left = [(a + (m - a) * t, v0 + 1.6 * (0.5 - 0.5 * math.cos(math.pi * t))) for t in ts]
+        right = [(m + (e - m) * t, v0 + 1.6 * (0.5 + 0.5 * math.cos(math.pi * t))) for t in ts[1:]]
+        cuts.append(poly([(a, v0 - 1.0)] + left + right + [(e, v0 - 1.0)]))
+        if k:
+            x = u0 + p * k
+            drops.append(cs_union([rect(x - 0.3, v0 - 0.6, x + 0.3, v0 + 0.2), circle((x, v0 - 0.8), 0.4, 12)]))
+    return (board - cs_union(cuts)) + cs_union(drops) + rect(u0, v0 + 1.7, u1, v_top + 0.05)
+
+
+def skirt_archslats(reg, d=1.2):
+    """A porch skirt of upright slats whose tops are cut in round arches under a rail (the
+    Delacroix)."""
+    u0, v0, u1, v1 = reg.bounds()
+    slats = []
+    for u in np.arange(u0 + 0.3, u1, 1.6):
+        top = v1 - 1.2
+        slats.append(cs_union([rect(u, v0 - 1, u + 1.0, top - 0.5), circle((u + 0.5, top - 0.5), 0.5, 12)]))
+    return M.extrude(reg, d * 0.4) + M.extrude((cs_union(slats) + rect(u0, v1 - 0.8, u1, v1 + 1)) ^ reg, d)
+
+
+def edge_acorndrops(L, z0, zc):
+    """Porch fascia (the Delacroix): acorns hung under the crown."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for x in np.arange(1.4, L - 1.0, 3.0):
+        out += [rect(x - 0.4, zc - 0.85, x + 0.4, zc - 0.4), oval((x, zc - 1.35), 0.42, 0.55, 14)]
+    return cs_union(out), 0.6
+
+
+CO.FRIEZE_EXTRA.update(thistles=frieze_thistles, ferns=frieze_ferns)
+CO.COURSE_EXTRA.update(knurl=course_knurl, plait=course_plait)
+TW.BRACKET_EXTRA.update(swanneck=bracket_swanneck)
+TW.PIERCED = TW.PIERCED + ("swanneck",)
+TW.FOUNDATION_EXTRA.update(pickdressed=foundation_pickdressed)
+PW.POSTS.update(beadcollar=post_beadcollar)
+PW.BALUSTERS.update(beadstack=(baluster_beadstack, 1.6))
+PW.FRIEZES.update(ogeearcade=frieze_ogeearcade)
+PW.SKIRTS.update(archslats=skirt_archslats)
+FT.EDGE_EXTRA.update(acorndrops=edge_acorndrops)
