@@ -109,6 +109,13 @@ HISTORY = {
     "enginehouse": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "yardoffice": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "shanty": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "fontaine": [("1.1", "2026-10-03", "An open terrace (no roof over it) joins the two verandas in front of the "
+                  "tower door: PORCH-deck is now one deck under both verandas and the terrace (it replaces "
+                  "VERANDA-W-deck and VERANDA-E-deck); two TERRACE-rail pieces (tulip balusters between "
+                  "ball-capped newels, printed upright) drop into sockets round its open edges; TERRACE-steps "
+                  "come down at the door in place of STOOP-front, and the verandas' own steps are gone. "
+                  "TOWER-DOME no longer carries the loose square the crest groove cut off its top. Reprint "
+                  "PORCH-deck, TERRACE-rail-0 and -1, TERRACE-steps and TOWER-DOME; the rest is unchanged.")],
 }
 
 
