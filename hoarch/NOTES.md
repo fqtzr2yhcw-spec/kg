@@ -88,9 +88,12 @@ Rich HO detail comes from a few devices repeated at every scale, each shaped to 
   - **An open terrace's railing** (no roof to hang it from, the Fontaine's): newels and
     railings joined, printed upright on their own, the railings standing on one
     continuous plinth instead of feet (`rail_plinth=True`), keyed 0.4 mm into a groove in
-    the deck. On feet alone a long upright railing stood on a few square millimetres and
-    PrusaSlicer flagged "low bed adhesion, loose extrusions"; the plinth puts its whole
-    length on the bed, and a stone terrace's balustrade has one anyway.
+    the deck. On feet alone a long upright railing stood on a few square millimetres; the
+    plinth puts its whole length on the bed, and a stone terrace's balustrade has one
+    anyway. PrusaSlicer's stability check still says "low bed adhesion, loose extrusions"
+    for any upright baluster railing (tested: turned or tulip balusters, 1.1 or 1.4 mm hand
+    rail, 1.2 or 2.0 mm plinth, with or without newels); it is the heuristic, not the part.
+    The Bambu projects' auto brim covers it.
   - **The arcade** (beam, a square rosette block over each post, sawn-work spandrels with
     an elliptical arch, roundels, teardrops and a crown drop) **prints on its top edge**,
     so front and back come out alike. Flat panels printed face-down were glossy on the
