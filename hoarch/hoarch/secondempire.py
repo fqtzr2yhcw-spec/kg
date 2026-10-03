@@ -5056,6 +5056,19 @@ def post_bellcapital(h, collar=None, abacus=3.4, slot=(1.2, 1.0)):
     return body + PW._top(h, abacus / 2, z1 + 1.5, 1.55, slot, seg=32)
 
 
+def post_bellnewel(h, collar=None):
+    """The terrace's newel: the veranda column cut short, its Attic base and shaft, a necking
+    ring level with the hand rail, a bell flaring to a round cap, and a ball (the Fontaine).
+    ``collar``: the hand rail's top; the post is ``h`` tall and stops there."""
+    zn = (collar if collar else h - 3.3) - 0.2
+    zc = zn + 2.85
+    prof = [(0.0, 1.19), (1.5, 1.19), (1.5, 1.4), (1.3, 1.6), (1.18, 1.8), (1.3, 2.0), (1.12, 2.3), (1.0, 2.6),
+            (1.05, (2.6 + zn) * 0.45), (0.95, zn - 0.3), (1.12, zn - 0.1), (1.12, zn + 0.2), (0.95, zn + 0.35),
+            (1.3, zn + 0.8), (1.65, zn + 1.2), (1.65, zn + 1.6), (1.2, zn + 1.8), (0.55, zn + 2.0),
+            (0.6, zc - 0.6), (0.85, zc), (0.6, zc + 0.6), (0.0, min(h, zc + 0.85))]
+    return PW._revolve(prof, 32) + PW._plinth(3.0)
+
+
 def baluster_tulipbell(h, seg=18):
     """A baluster swelling to a tulip bell above the middle, on a slender stem, a ring at its
     foot (the Fontaine)."""
@@ -5118,7 +5131,7 @@ TW.BRACKET_EXTRA.update(ramshorn=bracket_ramshorn)
 TW.PIERCED = TW.PIERCED + ("ramshorn",)
 TW.FOUNDATION_EXTRA.update(batteredgranite=foundation_batteredgranite)
 SH.CORNER_EXTRA.update(vermiquoin=corner_vermiquoin)
-PW.POSTS.update(bellcapital=post_bellcapital)
+PW.POSTS.update(bellcapital=post_bellcapital, bellnewel=post_bellnewel)
 PW.BALUSTERS.update(tulipbell=(baluster_tulipbell, 1.6))
 PW.FRIEZES.update(lunettearcade=frieze_lunettearcade)
 PW.SKIRTS.update(rusticblocks=skirt_rusticblocks)

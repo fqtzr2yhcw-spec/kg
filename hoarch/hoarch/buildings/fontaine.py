@@ -8,7 +8,9 @@ forward and back under taller mansards of their own; a square tower in the middl
 flush with the pavilions, carrying the entrance and rising a storey over the eave to a swelling
 dome with three wreathed oculi, a crest and a bannerette vane. The slating is square with a band
 of diamond-slate pyramids. Verandas fill the two recesses either side of the tower on
-bell-capital columns, tulip balusters, a lunette frieze and a fascia of bells.
+bell-capital columns, tulip balusters, a lunette frieze and a fascia of bells; their deck runs on
+in front of them as an open terrace that meets before the tower door, railed with tulip balusters
+between ball-capped newels, the steps coming down at the door.
 
 - Ground-floor windows round-headed between engaged columns under a short entablature, a shield
   keystone; upper windows in eared architraves under broken pediments with urns; the tower's top
@@ -36,7 +38,7 @@ from hoarch.kit import Kit, print_flip
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
 NAME = "Fontaine"
-COLORS = {"PorchDeck": "#E9E5DA", "Planks": "#6F5034",       # the planked veranda floors: two colours, one change
+COLORS = {"PorchDeck": "#E9E5DA", "Planks": "#6F5034",       # the planked porch floor: two colours, one change
           "Granite": "#A29E95", "Marble": "#E9E5DA", "Verdigris": "#4F7F6E", "Slate": "#343B47", "Iron": "#232528",
           "Plinth": "#6F6B66", "Windows_Doors": "#E9E5DA", "Addins": "#343B47"}
 RENDER_MAT = {"PorchDeck": "trim", "Planks": "planks", "Granite": "walls", "Marble": "trim", "Verdigris": "accent",
@@ -96,6 +98,8 @@ PAVE = Block("pav-east", [(X1 - PW_, PY0), (X1, PY0), (X1, PY1), (X1 - PW_, PY1)
 MAIN = Block("centre", [(PW_ - 12.0, 0), (X1 - PW_ + 12.0, 0), (X1 - PW_ + 12.0, 104.0), (PW_ - 12.0, 104.0)], ZF, ZW)
 TX0, TX1, TY0, TY1 = 94.0, 130.0, -20.0, 16.0
 TOWER = Block("tower", [(TX0, TY0), (TX1, TY0), (TX1, TY1), (TX0, TY1)], ZF, ZTW)
+TERR = 14.0               # the open terrace's depth before the verandas and the tower
+NEWEL_H = 14.3            # (the porch builder's post height that makes its newels 12.5 tall)
 BLOCKS = [MAIN, PAVW, PAVE, TOWER]
 PAVS = [(PAVW, "PAVW"), (PAVE, "PAVE")]
 CX = X1 / 2
@@ -295,7 +299,9 @@ def build(kit=None):
     oc = SE.addin_fontaine_oculus()
     tk, tf = _addins(kit, [(TOWER, x, y, oc, "oculus") for x, y in TOWER_ADDINS], dprof, ZTW + 4.0, "ADDIN-T")
     TC = SE.crest_ring(TOWER.pts, dprof[-1][0], ZTW + DOME_H, dprof[-1][0] - din(ZTW + DOME_H), CREST_COURSE, CREST_CROWN)
-    kit.add("TOWER-DOME", "Slate", (dome + (dtex - tf)) - tk - lip_keep(TOWER.cs, 3.0, ZTW) - TC["groove"], P=print_flip(),
+    dm = (dome + (dtex - tf)) - tk - lip_keep(TOWER.cs, 3.0, ZTW) - TC["groove"]
+    dm = union([c for c in dm.decompose() if c.volume() > 50.0])       # not the loose middle the groove cuts off
+    kit.add("TOWER-DOME", "Slate", dm, P=print_flip(),
             group="tower")
     kit.add("TOWER-CREST", "Verdigris", TC["solid"], P=print_flip(), change=TC["change"], group="tower", render=TC["zones"])
     tz = TC["z_top"]
@@ -305,7 +311,8 @@ def build(kit=None):
     kit.add("TOWER-finial", "Iron", SE.finial_bannerette(14.0).translate([tcen[0], tcen[1], tz - 0.01]), group="tower")
     print("tower", round(time.time() - t0, 1))
 
-    # --- verandas in the two recesses either side of the tower; a stoop before the door
+    # --- verandas in the two recesses either side of the tower, on one deck that runs on in
+    #     front of them as an open terrace, meeting before the tower door; the steps at the door
     H_floor = ZF - 1.4
     post_h = S1 - 2.0 - 5.6 - H_floor
     w_, yf = -1.4, PY0
@@ -314,26 +321,46 @@ def build(kit=None):
                           [b[3] + 0.2, b[4] + 0.2, math.ceil((b[5] + 0.2) / 0.2) * 0.2])
                       for b in (p.solid.bounding_box() for p in inserts if p is not None)])
     bld_keep = union([b.solid(grow=1.45, dz0=-20, dz1=300) for b in BLOCKS])
+    socks, vposts = [], []
     for tag, xa, xb in (("VERANDA-W", PW_ + 1.4, TX0 - 1.4), ("VERANDA-E", TX1 + 1.4, X1 - PW_ - 1.4)):
         Lf = xb - xa
         pts = [(xa, w_), (xa, yf), (xb, yf), (xb, w_)]
         runs = [dict(a=(xa, yf), b=(xb, yf), posts=[1.7, Lf - 1.7])]       # clear of the walls' plinths
+        # (the steps' gap in the railing is the way out onto the terrace; the steps themselves go)
         P = FT.porch_turned(pts, runs, H_floor, post_h, steps_at=[(0, Lf / 2, 14.0)], planks=dict(pitch=1.4, border=1.6),
                             joined=True, post="bellcapital", rail="tulipbell", arcade="lunettearcade", skirt="rusticblocks",
                             pier_tex="stone", roof_edge="belldrops", top=True)
         P["top"] = P["top"] + P["roof"].translate([0.0, 0.0, -0.1])      # fuse the roof to the beams it sits on
-        deck_ = P["deck"] - fkeep
-        kit.add(f"{tag}-deck", "PorchDeck", deck_, P=print_flip(), group="porch",
-                render=FT.plank_zones(deck_, H_floor, "Planks", "PorchDeck"))
         FT.add_porch_top(kit, tag, P, bld_keep + ins_keep, "Marble", "Marble", tin_col="Slate", tin="flat")
-        for k, (sm, A) in enumerate(P["steps"]):
-            kit.add(f"{tag}-steps-{k}", "Plinth", sm.transform(A) - fkeep, group="porch")
-    for y, nm in ((TY0, "STOOP-front"), (104.0, "STOOP-back")):
-        e, u = (TOWER if y == TY0 else MAIN).locate(CX, y)
-        f = (TOWER if y == TY0 else MAIN).facades()[e]
-        A = f.A.copy()
-        A[:, 3] = f.world(u, -ZF, 2.4 if y == TY0 else 1.6)          # the front one clear of the door's pedestals
-        kit.add(nm, "Plinth", FT.steps(22.0 if y == TY0 else 15.0, ZF - 0.6, 6 if y == TY0 else 5).transform(A), group="porch")
+        socks += [box([x - 1.0, y - 1.0, H_floor - 2.0], [x + 1.0, y + 1.0, H_floor + 1.0]) for x, y in P["sockets"]]
+        vposts += [xa + 1.7, xb - 1.7]
+    # the deck under both: the verandas' floors, then the terrace strip TERR deep across the front,
+    # stepped back past the tower's foundation; newels and tulip-bell railings round its open edges,
+    # one at each veranda's front post, and either side of the steps
+    XA, XB, YT, yt = PW_ + 1.4, X1 - PW_ - 1.4, PY0 - TERR, TY0 + w_
+    pts = [(XA, w_), (XA, yf), (XA, YT), (XB, YT), (XB, yf), (XB, w_), (TX1 + 1.4, w_), (TX1 + 1.4, yt),
+           (TX0 - 1.4, yt), (TX0 - 1.4, w_)]
+    LT = XB - XA
+    truns = [dict(a=(XA, yf), b=(XA, YT), posts=[2.4, TERR - 1.6]),            # clear of the pavilion's foundation
+             dict(a=(XA, YT), b=(XB, YT), posts=[1.6, vposts[1] - XA, CX - 12.6 - XA, CX + 12.6 - XA, vposts[2] - XA,
+                                                LT - 1.6]),
+             dict(a=(XB, YT), b=(XB, yf), posts=[1.6, TERR - 2.4])]
+    T = FT.porch_turned(pts, truns, H_floor, NEWEL_H, steps_at=[(1, CX - XA, 22.0)], planks=dict(pitch=1.4, border=1.6),
+                        joined=True, post="bellnewel", rail="tulipbell", arcade="lunettearcade", skirt="rusticblocks",
+                        pier_tex="stone", roof_edge="belldrops")
+    deck_ = T["deck"] - fkeep - union(socks)
+    kit.add("PORCH-deck", "PorchDeck", deck_, P=print_flip(), group="porch",
+            render=FT.plank_zones(deck_, H_floor, "Planks", "PorchDeck"))
+    for i, fr in enumerate(T["frames"]):
+        kit.add(f"TERRACE-rail-{i}", "Marble", fr, group="porch")
+    for k, (sm, A) in enumerate(T["steps"]):
+        kit.add(f"TERRACE-steps-{k}" if len(T["steps"]) > 1 else "TERRACE-steps", "Plinth", sm.transform(A) - fkeep,
+                group="porch")
+    e, u = MAIN.locate(CX, 104.0)
+    f = MAIN.facades()[e]
+    A = f.A.copy()
+    A[:, 3] = f.world(u, -ZF, 1.6)
+    kit.add("STOOP-back", "Plinth", FT.steps(15.0, ZF - 0.6, 5).transform(A), group="porch")
     print("porches", round(time.time() - t0, 1))
     for p_ in [p_ for p_ in kit.parts if p_.name.startswith("CREST-iron")]:
         FT.key_into(kit, p_.name, ["CREST"], (0, 0, -1), depth=0.6)

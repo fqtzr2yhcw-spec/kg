@@ -1454,18 +1454,26 @@ frieze windows too) print face up with supports under their frames only.
         " (the second storey of all of them and the tower's top storey)") + """
   5. The CORNICE-E parts round the eave band of the whole house (the piece round the front of
      the tower slides on from the front): -lower, then -upper on top.
-  6. MANSARD (the centre range's, upside down) onto its eave's crown, notched round the tower;
+  6. MANSARD (the centre range's, upside down; three pieces: the back, and one either side of
+     the tower) onto its eave's crown;
      then PAVW-MANSARD and PAVE-MANSARD (the pavilions' taller roofs, upside down) onto their
      eaves, their inner faces meeting the centre roof. The ADDINs and ADDIN-Ps push into their
      pockets from outside, plug first (the big ones on the pavilions' ends).
-  7. """ + CREST_STEP + """ (it stops against the pavilions and the tower).
+  7. """ + CREST_STEP + """ (three pieces like the mansard's; they stop against the pavilions and the
+     tower).
   8. Pavilions: PAVW-CREST and PAVE-CREST onto their mansards, keyed the same way, the decks,
      the PAVW-iron and PAVE-iron strips.
   9. Tower: the CORNICE-T parts round its top band; TOWER-DOME (upside down) onto the tower's
      lip; the ADDIN-Ts (the wreathed oculi) into its three street faces; TOWER-CREST on top,
      keyed in; TOWER-deck (its bannerette vane printed on it); the TOWER-iron strips.
- 10. Verandas either side of the tower: """ + veranda("VERANDA-W") + """; the same
-     for VERANDA-E; STOOP-front at the tower door, STOOP-back at the back door.
+ 10. The porch: PORCH-deck (one deck under both verandas and the open terrace in front of them,
+     meeting before the tower door) against the base; VERANDA-W-top and VERANDA-E-top (each
+     veranda's roof, beams, posts and railings in one piece, so no post is glued on its own)
+     lowered onto it: the square peg under each post drops into its socket in the planks (a drop
+     of glue in each socket, out of sight) and the back edge meets the wall under the eave; the
+     two TERRACE-rail pieces (newels and railings, printed upright) into their sockets round the
+     terrace's open edges, a drop of glue in each; TERRACE-steps at the tower door, STOOP-back at
+     the back door.
 """, addin_note("ADDIN, ADDIN-P and ADDIN-T", "marble", "The CRESTs change once from verdigris to marble.")),
     "section4": ("SECTION HOUSE No. 4 - TOOL HOUSE AND SPEEDER SHED", """  1. TOOL-FOUNDATION on the layout, the door side toward the track; TOOL-WALLS onto it; the door and windows; TOOL-CORNICE-frieze, then TOOL-CORNICE-crown; TOOL-ROOF; STOVEPIPE down into the hole in the back slope.
   2. SPEEDER-FOUNDATION with its gable end to the speeder's spur; SPEEDER-WALLS onto it; the doors and window; SPEEDER-CORNICE-course, then SPEEDER-CORNICE-crown; SPEEDER-ROOF.
