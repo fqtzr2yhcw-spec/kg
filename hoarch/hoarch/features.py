@@ -758,7 +758,7 @@ def baluster(h, rmax=0.55, rmin=0.36, seg=20):
 
 
 def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pitch=8.0, foot_margin=0.5,
-                    stiles=True, style="turned", flat_cap=False):
+                    stiles=True, style="turned", flat_cap=False, plinth=False):
     """Baluster railing between two posts, printed upright. Local frame: u along 0..L, v up
     from the porch floor (= print z), w across, centred. Feet carry the bottom rail
     ``foot`` above the floor; turned balusters; a hand rail with a rounded top.
@@ -767,9 +767,14 @@ def railing_section(L, h=8.6, pitch=1.8, rail_w=1.4, foot=0.8, sink=0.0, foot_pi
     stiles (``stiles=False``) and ``foot_margin`` keeps the end feet clear of the plinths: a
     foot half over a plinth leaves a sliver PrusaSlicer fails on ("negative spacing").
     ``flat_cap``: a hand rail with a flat top and chamfered underside, for a railing printed
-    upside down in one piece with its porch roof (the top is then a flat bridge)."""
+    upside down in one piece with its porch roof (the top is then a flat bridge).
+    ``plinth``: one continuous base under the bottom rail instead of the feet (a stone
+    balustrade's plinth), for a railing printed upright on its own: the whole length stands
+    on the bed and keys into a groove in the deck."""
     parts = []
-    nf = max(2, int((L - 2 * foot_margin + 1.0) / foot_pitch) + 1)
+    if plinth:
+        parts.append(box([foot_margin - 0.5, -0.6, -sink], [L - foot_margin + 0.5, 0.6, foot + 0.01]))
+    nf = 0 if plinth else max(2, int((L - 2 * foot_margin + 1.0) / foot_pitch) + 1)
     for j in range(nf):
         u = foot_margin + (L - 2 * foot_margin) * j / (nf - 1)
         parts.append(box([u - 0.5, -0.6, -sink], [u + 0.5, 0.6, foot + 0.01]))
@@ -997,7 +1002,7 @@ ARCADE_FLAT = np.array([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, 0]])
 def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1.6, rail_h=8.6,
                  boards=None, beam=2.2, pier=3.4, joined=False, ledger_off=0.0, arcade="sawn", post="turned",
                  rail="turned", skirt="lattice", pier_tex="brick", roof_edge="dentil", planks=None, drop=5.0,
-                 flat_arcades=False, top=False, peg=1.6):
+                 flat_arcades=False, top=False, peg=1.6, rail_plinth=False):
     """Porch with turned posts, upright railings and edge-printed arcades.
     ``planks`` = dict for porch_planks(): the floor is planks printed with the deck (one part,
     upside down, one filament change at the planks' thickness) instead of a separate floor.
@@ -1022,7 +1027,8 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
     under them, and nothing but the whole top is glued. A square ``peg`` under every post
     drops into a socket in the floor. ``flat_arcades`` then become flat pieces applied to
     the face of the beam and posts (``applied``, [(world solid, A)]), glued by their flat
-    backs."""
+    backs. ``rail_plinth``: joined railings stand on a continuous plinth, not feet (see
+    railing_section)."""
     pts = ccw(poly_pts)
     if top:                                     # the one-piece top replaces the upright frames
         joined = False
@@ -1101,7 +1107,7 @@ def porch_turned(poly_pts, runs, H_floor, post_h, steps_at=(), over=1.4, inset=1
             if joined or top:  # end feet clear of the square plinths (they reach further on a slant)
                 ext_ = 1.6 * (abs(f.u[0]) + abs(f.u[1]))
                 rs = railing_section(L, rail_h, sink=0.0 if top else 0.4, foot_margin=ext_ + 0.8 - clr, stiles=False,
-                                     style=rail, flat_cap=top)
+                                     style=rail, flat_cap=top, plinth=rail_plinth and not top)
             else:
                 rs = railing_section(L, rail_h, style=rail)
             rails.append(rs.translate([a_ + clr, 0, 0]).transform(Z_UP_TO_FACADE).transform(A))

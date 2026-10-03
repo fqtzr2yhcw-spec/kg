@@ -347,7 +347,7 @@ def build(kit=None):
              dict(a=(XB, YT), b=(XB, yf), posts=[1.6, TERR - 2.4])]
     T = FT.porch_turned(pts, truns, H_floor, NEWEL_H, steps_at=[(1, CX - XA, 22.0)], planks=dict(pitch=1.4, border=1.6),
                         joined=True, post="bellnewel", rail="tulipbell", arcade="lunettearcade", skirt="rusticblocks",
-                        pier_tex="stone", roof_edge="belldrops")
+                        pier_tex="stone", roof_edge="belldrops", rail_plinth=True)
     deck_ = T["deck"] - fkeep - union(socks)
     kit.add("PORCH-deck", "PorchDeck", deck_, P=print_flip(), group="porch",
             render=FT.plank_zones(deck_, H_floor, "Planks", "PorchDeck"))

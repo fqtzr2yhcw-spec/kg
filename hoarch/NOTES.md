@@ -85,6 +85,12 @@ Rich HO detail comes from a few devices repeated at every scale, each shaped to 
     than the thin shaft; PrusaSlicer flags "loose extrusions" on the frame otherwise. The arcade stays its own piece:
     printed upright with the posts its arches and drops would start in mid-air, and
     printed upside down with them the hand rails would.
+  - **An open terrace's railing** (no roof to hang it from, the Fontaine's): newels and
+    railings joined, printed upright on their own, the railings standing on one
+    continuous plinth instead of feet (`rail_plinth=True`), keyed 0.4 mm into a groove in
+    the deck. On feet alone a long upright railing stood on a few square millimetres and
+    PrusaSlicer flagged "low bed adhesion, loose extrusions"; the plinth puts its whole
+    length on the bed, and a stone terrace's balustrade has one anyway.
   - **The arcade** (beam, a square rosette block over each post, sawn-work spandrels with
     an elliptical arch, roundels, teardrops and a crown drop) **prints on its top edge**,
     so front and back come out alike. Flat panels printed face-down were glossy on the
