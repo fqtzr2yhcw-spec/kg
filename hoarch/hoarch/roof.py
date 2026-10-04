@@ -589,6 +589,8 @@ def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6, style="arch"):
     A bottom rail, spikes of two heights, and a middle rail carried on little pointed
     arches that spring from the spikes at 45 degrees, so the fence prints upright with no
     bridge anchored on a spike (PrusaSlicer flags those as loose extrusions)."""
+    if callable(style):                 # a building's own fence: style(L, h) -> its (u, v) outline
+        return M.extrude(style(L, h), t).translate([0, 0, -t / 2])
     k = max(1, int(L / pitch))
 
     def zq(v):                          # printed upright: every rail and tip on the 0.2 mm grid
@@ -632,7 +634,8 @@ def crest_fence(L, h=2.4, pitch=1.6, bar=0.5, t=0.6, style="arch"):
 def cresting(path, z0, h=2.4, pitch=1.6, bar=0.5, t=0.6, d_off=0.0, finials=True, style="arch"):
     """Iron roof cresting along a closed path: "arch" (spikes carrying a rail on pointed
     arches, prints upright), "spear" (spear-headed bars with balls on the rail, for strips
-    that print flat) or "fleur" (fleur-de-lis bars with rings under the rail, flat strips)."""
+    that print flat) or "fleur" (fleur-de-lis bars with rings under the rail, flat strips),
+    or a building's own fence(L, h) -> (u, v) outline, extruded ``t`` thick."""
     P, Mi = _edges(path)
     out = []
     n = len(P)
@@ -773,7 +776,7 @@ def cresting_strips(crest, path, z, d_off, t=0.6):
         a, b = P[i] + d_off * Mi[i], P[(i + 1) % n] + d_off * Mi[(i + 1) % n]
         f = Facade(a, b, z)
         e = t / 2 + 0.05
-        clip = f.place(box([e, -1, -t / 2 - 0.01], [f.L - e, 5, t / 2 + 0.01]))
+        clip = f.place(box([e, -1, -t / 2 - 0.01], [f.L - e, 50, t / 2 + 0.01]))
         seg = crest ^ clip
         if not seg.is_empty():
             out.append((i, seg, f.A.copy(), f.L))

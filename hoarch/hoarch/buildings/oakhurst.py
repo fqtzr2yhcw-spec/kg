@@ -234,7 +234,10 @@ def build(kit=None):
     # the cupola on the ridge, two stacks on the hips
     CS_ = 16.0
     zcu = round((zr - S_MAIN * CS_ / 2 - 2.0) / 0.2) * 0.2
-    roof = roof + G.chimney_seat(solid_env, XC, D / 2, CS_ / 2, zr + 1.0)
+    # its seat tops out just over the pocket's floor and is wider there than the pocket, so the
+    # floor is solid and joined to the shell (a seat topped at the ridge left only its loose tip
+    # under so deep a pocket)
+    roof = roof + G.chimney_seat(solid_env, XC, D / 2, CS_ / 2 + 1.0, zcu + 0.4)
     roof = roof - box([XC - CS_ / 2 - 1.0, D / 2 - CS_ / 2 - 1.0, zcu], [XC + CS_ / 2 + 1.0, D / 2 + CS_ / 2 + 1.0, zr + 40])
     CW, CD = 10.0, 12.0
     stacks = []

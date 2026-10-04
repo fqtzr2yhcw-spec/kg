@@ -27,7 +27,7 @@ import time
 import numpy as np
 from manifold3d import Manifold as M
 
-from hoarch.core import box, compose, cs_union, inv34, offset, poly, rect, slab, union
+from hoarch.core import box, circle, compose, cs_union, inv34, offset, poly, rect, slab, union
 from hoarch import cornice as CO, features as FT, openings as O, roof as R, skins as SK, trimwork as TW
 from hoarch.kit import Kit, print_flip
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
@@ -95,6 +95,32 @@ BAY = Block("bay", [(X1 - 3.0, 58.0), (X1, 58.0), (X1 + 12.0, 66.0), (X1 + 12.0,
 BLOCKS = [MAIN, TOWER, BAY]
 SLATE = ("square", "square", "square", "hex")    # banded courses
 TOWER_SLATE = ("square",)
+CREST_T = 1.0             # the cresting strips' thickness (5 layers; they print flat)
+
+
+def fence_harcourt(L, h, m=1.0, p_min=3.8):
+    """The Harcourt's iron cresting, sized for a 0.4 mm nozzle (it prints flat): a bottom rail
+    and a top rail, bars between them every p_min or a little more, each bar rising through the
+    top rail to a barbed spear or a ball in turn, and in each panel, when it is tall enough, a
+    ball hanging from the top rail on a short stem. Every member is at least 0.9 mm wide (two
+    lines), every opening at least 0.8 mm, and the spear tips end in a 0.6 mm flat, not a point."""
+    r1 = h - 1.5                       # top of the top rail: the heads stand 1.5 above it
+    r0 = r1 - 0.9
+    k = max(1, int((L - 2 * m) / p_min))
+    p = (L - 2 * m) / k
+    cells = [rect(0.0, 0.0, L, 1.0), rect(0.0, r0, L, r1)]
+    for j in range(k + 1):
+        u = m + p * j
+        cells.append(rect(u - 0.45, 0.0, u + 0.45, r1 + 0.1))
+        if j % 2 == 0:
+            cells.append(poly([(u - 0.45, r1 - 0.05), (u - 1.0, r1 + 0.35), (u - 1.0, r1 + 0.6), (u - 0.3, h), (u + 0.3, h),
+                               (u + 1.0, r1 + 0.6), (u + 1.0, r1 + 0.35), (u + 0.45, r1 - 0.05)]))
+        else:
+            cells.append(circle((u, r1 + 0.55), 0.7, 28))
+        if j < k and r0 - 1.0 >= 2.0:  # the hanging ball: 1.2 across, 0.8 clear of the bottom rail
+            mu, cy = u + p / 2, r0 - 0.6
+            cells += [circle((mu, cy), 0.6, 24), rect(mu - 0.45, cy, mu + 0.45, r0 + 0.05)]
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h)
 
 
 def _brick(f, b, reg):
@@ -249,8 +275,8 @@ def build(kit=None):
     kit.add("ROOF-curb", "Limestone", T["ring"] - tower_hug, P=print_flip(), group="roof")
     kit.add("ROOF-deck", "Slate", T["deck"] - tower_hug - pads, group="roof")
     top_path = T["path"]
-    crest = R.cresting(top_path, zdeck, h=2.8, pitch=2.0, d_off=-1.0, style="spear")
-    for i, seg, A, L in R.cresting_strips(crest, top_path, zdeck, -1.0):
+    crest = R.cresting(top_path, zdeck, h=5.4, t=CREST_T, d_off=-1.0, style=fence_harcourt)
+    for i, seg, A, L in R.cresting_strips(crest, top_path, zdeck, -1.0, t=CREST_T):
         for j, piece in enumerate((seg - tower_keep).decompose()):
             if piece.volume() > 1.0:
                 kit.add(f"CREST-{i}{'ab'[j] if j < 2 else j}", "Iron", piece, P=inv34(A), group="roof")
@@ -270,8 +296,8 @@ def build(kit=None):
     fpad = box([tc[0] - 1.8, tc[1] - 1.8, tdeck - 0.01], [tc[0] + 1.8, tc[1] + 1.8, tdeck + 1])
     kit.add("TOWER-curb", "Limestone", TT_["ring"], P=print_flip(), group="tower")
     kit.add("TOWER-deck", "Slate", TT_["deck"] - fpad, group="tower")
-    tcrest = R.cresting(ttop_path, tdeck, h=3.2, pitch=2.0, d_off=-1.0, style="spear")
-    for i, seg, A, L in R.cresting_strips(tcrest, ttop_path, tdeck, -1.0):
+    tcrest = R.cresting(ttop_path, tdeck, h=5.4, t=CREST_T, d_off=-1.0, style=fence_harcourt)
+    for i, seg, A, L in R.cresting_strips(tcrest, ttop_path, tdeck, -1.0, t=CREST_T):
         kit.add(f"TOWER-crest-{i}", "Iron", seg, P=inv34(A), key=f"TOWER-crest-{round(L, 1)}", group="tower")
     kit.add("TOWER-finial", "Iron", TW.finial("iron", 1.6, 11.0).translate([tc[0], tc[1], tdeck]), group="tower")
     print("tower", round(time.time() - t0, 1))
@@ -281,8 +307,8 @@ def build(kit=None):
     bdeck = max(bdeck.decompose(), key=lambda m: m.volume())
     kit.add("BAY-roof", "Slate", bdeck, group="bay")
     bz = BAY_TOP + 1.2
-    bcrest = R.cresting(BAY.pts, bz, h=2.8, pitch=2.0, d_off=3.2, style="spear") - MAIN.solid(grow=4.2, dz0=-1, dz1=300)
-    for i, seg, A, L in R.cresting_strips(bcrest, BAY.pts, bz, 3.2):
+    bcrest = R.cresting(BAY.pts, bz, h=4.4, t=CREST_T, d_off=3.2, style=fence_harcourt) - MAIN.solid(grow=4.2, dz0=-1, dz1=300)
+    for i, seg, A, L in R.cresting_strips(bcrest, BAY.pts, bz, 3.2, t=CREST_T):
         if not seg.is_empty() and seg.volume() > 1.0:
             kit.add(f"BAY-crest-{i}", "Iron", seg, P=inv34(A), group="bay")
 
