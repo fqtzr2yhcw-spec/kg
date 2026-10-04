@@ -1,0 +1,205 @@
+<title>Beaumont Kit Guide</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;1,6..96,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #eef0eb; --surface: #f8f9f6; --ink: #1d2320; --muted: #59615b; --rule: #cfd5cc;
+    --accent: #7a2433; --gold: #a77a26; --stage: #dde1da; --chip: #e4e8e0;
+    --display: "Bodoni Moda", "Didot", Georgia, serif;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; --ground: #141816; --surface: #1b201d; --ink: #e7eae4;
+      --muted: #a2aaa3; --rule: #313833; --accent: #d77483; --gold: #d8b062; --stage: #0f1210; --chip: #252b27; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; --ground: #141816; --surface: #1b201d; --ink: #e7eae4;
+      --muted: #a2aaa3; --rule: #313833; --accent: #d77483; --gold: #d8b062; --stage: #0f1210; --chip: #252b27; }
+  * { box-sizing: border-box; }
+  body { background: var(--ground); color: var(--ink); font: 15px/1.6 var(--sans); padding-inline: 16px; padding-block: 28px 64px; margin: 0; }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 44px; }
+  h1, h2 { font-family: var(--display); font-weight: 500; margin: 0; text-wrap: balance; }
+  h1 { font-size: clamp(32px, 5vw, 54px); line-height: 1.04; }
+  h1 em { color: var(--accent); }
+  h2 { font-size: clamp(24px, 3vw, 32px); }
+  h3 { font-size: 17px; margin: 0 0 6px; display: flex; gap: 10px; align-items: baseline; }
+  p { margin: 0; }
+  code { font: 12.5px/1.3 var(--mono); word-break: break-all; }
+  .lede { color: var(--muted); max-width: 70ch; margin-top: 10px; }
+  .tb { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); border: 1.5px solid var(--ink); background: var(--surface); margin: 0; }
+  .tb div { padding: 10px 14px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .tb dt { font: 500 10.5px/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .tb dd { margin: 4px 0 0; font: 500 15px/1.3 var(--mono); }
+  .stage { background: var(--stage); border: 1px solid var(--rule); aspect-ratio: 16/11; max-width: 100%; }
+  .stage img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .strip { display: flex; gap: 8px; overflow-x: auto; margin-top: 10px; }
+  .strip button { flex: 0 0 auto; width: 112px; border: 1.5px solid transparent; background: var(--surface); padding: 0; cursor: pointer; color: var(--ink); text-align: left; }
+  .strip button[aria-pressed="true"] { border-color: var(--accent); }
+  .strip button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .strip img { width: 100%; aspect-ratio: 16/11; object-fit: cover; display: block; }
+  .strip span { display: block; font: 500 11px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .06em; padding: 5px 8px; }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px 44px; align-items: start; }
+  .two figure { margin: 0; background: var(--stage); border: 1px solid var(--rule); }
+  .two figure img { width: 100%; display: block; }
+  .two figcaption { font: 12px/1.4 var(--mono); color: var(--muted); padding: 8px 10px; }
+  ul.set { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+  ul.fil { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 14px; }
+  .sw { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--rule); margin-right: 7px; vertical-align: -1px; }
+  .tw { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+  th { font: 500 11px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  td.num { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+  img.pv { width: 96px; height: 96px; object-fit: cover; display: block; border: 1px solid var(--rule); }
+  ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+  .step { display: grid; grid-template-columns: minmax(0, 420px) 1fr; gap: 20px; align-items: start; border-top: 1px solid var(--rule); padding-top: 18px; }
+  .step figure { margin: 0; background: var(--stage); border: 1px solid var(--rule); }
+  .step img { width: 100%; display: block; }
+  .n { font: 500 13px/1 var(--mono); color: var(--surface); background: var(--accent); padding: 5px 8px; }
+  @media (max-width: 720px) { .step { grid-template-columns: 1fr; } }
+  details { border-top: 1px solid var(--rule); padding: 10px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  .cnt { font: 12px var(--mono); color: var(--muted); margin-left: 8px; }
+  .note { border: 1.5px solid var(--ink); background: var(--surface); padding: 16px 18px; display: grid; gap: 8px; }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:18px">
+    <div>
+      <h1>The Beaumont, <em>print &amp; assembly</em></h1>
+      <p class="lede">Rev B: the Rev A design split into single-colour parts for premade production. Every plate is one colour and fits a 256 mm bed, so any printer can run any plate. Window glass is the first 0.2 mm layer of each sash insert.</p>
+    </div>
+    <dl class="tb">
+      <div><dt>Scale</dt><dd>HO 1:87.1</dd></div>
+      <div><dt>Parts</dt><dd>148</dd></div>
+      <div><dt>Plates</dt><dd>12, 1 colour each</dd></div>
+      <div><dt>Print time</dt><dd>≈19 h 54 m</dd></div>
+      <div><dt>Filament</dt><dd>≈262 g PLA</dd></div>
+      <div><dt>Material cost</dt><dd>≈$5.77 at $22/kg</dd></div>
+    </dl>
+  </header>
+
+  <section>
+    <div class="stage"><img id="shot" src="img/final_hero.jpg" alt="Assembled kit, front-left view"></div>
+    <div class="strip" id="strip"><button type='button' data-src='img/final_hero.jpg' id='g-hero'><img src='img/final_hero_t.jpg' alt='hero view'><span>hero</span></button><button type='button' data-src='img/final_front.jpg' id='g-front'><img src='img/final_front_t.jpg' alt='front view'><span>front</span></button><button type='button' data-src='img/final_rear.jpg' id='g-rear'><img src='img/final_rear_t.jpg' alt='rear view'><span>rear</span></button><button type='button' data-src='img/final_porch.jpg' id='g-porch'><img src='img/final_porch_t.jpg' alt='porch view'><span>porch</span></button></div>
+    <p class="lede">Renders of the kit parts assembled, glazing shown in the oxblood it will print in.</p>
+  </section>
+
+  <section class="two">
+    <figure><img src="img/exploded.jpg" alt="Exploded view of the kit"><figcaption>Exploded view: foundation, first floor, belt &amp; second floor, bay &amp; chimney, cornice, roofs, porch, back.</figcaption></figure>
+    <div style="display:grid;gap:14px">
+      <h2>Print settings</h2>
+      <ul class="set">
+        <li>0.4 mm nozzle, PLA, no supports anywhere.</li>
+        <li><b>First layer 0.2 mm</b> on every plate (the glass is exactly that layer).</li>
+        <li>0.12 mm layers after that for crisp shingles and clapboard.</li>
+        <li>2 walls, 5 top / 3 bottom layers, 15% infill.</li>
+        <li>Brim on the Sage, Gold, Slate and Brick plates (tall or thin standing parts).</li>
+        <li>Oxblood sash plate: a smooth plate gives clearer glass; textured gives frosted glass.</li>
+        <li>Fit clearance is 0.1 mm per side. Print W2-upper with its window first as a fit test.</li>
+      </ul>
+      <h2 style="margin-top:8px">Filament per house</h2>
+      <ul class="fil"><li><span class='sw' style='background:#43474d'></span>Slate <b>59 g</b></li><li><span class='sw' style='background:#c79a45'></span>Harvest Gold <b>54 g</b></li><li><span class='sw' style='background:#efe7d2'></span>Cream <b>42 g</b></li><li><span class='sw' style='background:#7f8f6a'></span>Sage <b>42 g</b></li><li><span class='sw' style='background:#8d877c'></span>Fieldstone <b>39 g</b></li><li><span class='sw' style='background:#8a3b2b'></span>Brick <b>12 g</b></li><li><span class='sw' style='background:#6b706f'></span>Porch Gray <b>8 g</b></li><li><span class='sw' style='background:#6a1f2b'></span>Oxblood <b>5 g</b></li><li><span class='sw' style='background:#4a2616'></span>Walnut <b>1 g</b></li><li><span class='sw' style='background:#2b2b2d'></span>Black Iron <b>1 g</b></li></ul>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:14px">
+    <h2>Plates</h2>
+    <p class="lede">Times and grams are PrusaSlicer estimates with a Bambu-like profile (0.12 mm layers, Bambu-class speeds). Bambu Studio's numbers will differ somewhat. The Slate plate is the long pole; run it on its own printer.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Preview</th><th>Plate</th><th>Parts</th><th>Time</th><th>Filament</th><th>Tallest</th><th>Notes</th></tr></thead>
+      <tbody><tr><td><img class="pv" src="img/01_Sage.jpg" alt="Plate preview 01_Sage.3mf"></td>
+<td><span class="sw" style="background:#7f8f6a"></span><b>Sage</b><br><code>01_Sage.3mf</code></td>
+<td class="num">8</td><td class="num">2h 3m 34s</td><td class="num">42.0 g</td>
+<td class="num">38 mm</td><td>Brim on</td></tr><tr><td><img class="pv" src="img/02_Harvest-Gold.jpg" alt="Plate preview 02_Harvest-Gold.3mf"></td>
+<td><span class="sw" style="background:#c79a45"></span><b>Harvest Gold</b><br><code>02_Harvest-Gold.3mf</code></td>
+<td class="num">8</td><td class="num">3h 58m 41s</td><td class="num">54.3 g</td>
+<td class="num">75 mm</td><td>Brim on</td></tr><tr><td><img class="pv" src="img/03_Cream_1of3.jpg" alt="Plate preview 03_Cream_1of3.3mf"></td>
+<td><span class="sw" style="background:#efe7d2"></span><b>Cream</b><br><code>03_Cream_1of3.3mf</code></td>
+<td class="num">15</td><td class="num">41m 5s</td><td class="num">12.2 g</td>
+<td class="num">7 mm</td><td></td></tr><tr><td><img class="pv" src="img/04_Cream_2of3.jpg" alt="Plate preview 04_Cream_2of3.3mf"></td>
+<td><span class="sw" style="background:#efe7d2"></span><b>Cream</b><br><code>04_Cream_2of3.3mf</code></td>
+<td class="num">28</td><td class="num">1h 30m 28s</td><td class="num">24.7 g</td>
+<td class="num">7 mm</td><td></td></tr><tr><td><img class="pv" src="img/05_Cream_3of3.jpg" alt="Plate preview 05_Cream_3of3.3mf"></td>
+<td><span class="sw" style="background:#efe7d2"></span><b>Cream</b><br><code>05_Cream_3of3.3mf</code></td>
+<td class="num">25</td><td class="num">22m 39s</td><td class="num">5.2 g</td>
+<td class="num">6 mm</td><td></td></tr><tr><td><img class="pv" src="img/06_Oxblood.jpg" alt="Plate preview 06_Oxblood.3mf"></td>
+<td><span class="sw" style="background:#6a1f2b"></span><b>Oxblood</b><br><code>06_Oxblood.3mf</code></td>
+<td class="num">38</td><td class="num">19m 49s</td><td class="num">5.0 g</td>
+<td class="num">1 mm</td><td>First layer = window glass. Smooth plate gives clearer glass.</td></tr><tr><td><img class="pv" src="img/07_Walnut.jpg" alt="Plate preview 07_Walnut.3mf"></td>
+<td><span class="sw" style="background:#4a2616"></span><b>Walnut</b><br><code>07_Walnut.3mf</code></td>
+<td class="num">2</td><td class="num">3m 5s</td><td class="num">0.8 g</td>
+<td class="num">2 mm</td><td></td></tr><tr><td><img class="pv" src="img/08_Slate.jpg" alt="Plate preview 08_Slate.3mf"></td>
+<td><span class="sw" style="background:#43474d"></span><b>Slate</b><br><code>08_Slate.3mf</code></td>
+<td class="num">6</td><td class="num">7h 36m 14s</td><td class="num">58.7 g</td>
+<td class="num">84 mm</td><td>Brim on</td></tr><tr><td><img class="pv" src="img/09_Fieldstone.jpg" alt="Plate preview 09_Fieldstone.3mf"></td>
+<td><span class="sw" style="background:#8d877c"></span><b>Fieldstone</b><br><code>09_Fieldstone.3mf</code></td>
+<td class="num">9</td><td class="num">1h 42m 41s</td><td class="num">38.9 g</td>
+<td class="num">12 mm</td><td></td></tr><tr><td><img class="pv" src="img/10_Brick.jpg" alt="Plate preview 10_Brick.3mf"></td>
+<td><span class="sw" style="background:#8a3b2b"></span><b>Brick</b><br><code>10_Brick.3mf</code></td>
+<td class="num">2</td><td class="num">1h 11m 57s</td><td class="num">12.0 g</td>
+<td class="num">39 mm</td><td>Brim on</td></tr><tr><td><img class="pv" src="img/11_Porch-Gray.jpg" alt="Plate preview 11_Porch-Gray.3mf"></td>
+<td><span class="sw" style="background:#6b706f"></span><b>Porch Gray</b><br><code>11_Porch-Gray.3mf</code></td>
+<td class="num">3</td><td class="num">20m 58s</td><td class="num">8.1 g</td>
+<td class="num">10 mm</td><td></td></tr><tr><td><img class="pv" src="img/12_Black-Iron.jpg" alt="Plate preview 12_Black-Iron.3mf"></td>
+<td><span class="sw" style="background:#2b2b2d"></span><b>Black Iron</b><br><code>12_Black-Iron.3mf</code></td>
+<td class="num">4</td><td class="num">1m 51s</td><td class="num">0.5 g</td>
+<td class="num">2 mm</td><td></td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section style="display:grid;gap:14px">
+    <h2>Assembly</h2>
+    <p class="lede">Medium CA for structure. For the sash inserts use canopy glue or PVA: CA fumes fog single-layer glass. Every trim piece has a pocket or landing, so dry-fit before gluing.</p>
+    <ol class="steps"><li class="step"><figure><img src="img/step1.jpg" alt="After step 1: Foundation &amp; water table"></figure>
+<div><h3><span class="n">1</span>Foundation &amp; water table</h3><p>Glue the base plate inside the bottom of the stone foundation ring, flush with the bottom edge. Set the cream water-table ring on the top ledge so its outer lip overhangs the stone face. The notch on the right side is for the chimney; the gaps at the front and back are the door thresholds.</p></div></li><li class="step"><figure><img src="img/step2.jpg" alt="After step 2: First floor"></figure>
+<div><h3><span class="n">2</span>First floor</h3><p><b>Before this step, fit every window and door while the panels are flat:</b> push each oxblood sash insert into its opening from the back (the flange sits on the inside face), then drop each cream casing into its pocket on the front. Do the same for the tower tube through its open ends. Then stand the Sage panels on the foundation against the inner lip: right wall (W4) first, then back (W5), left (W6), wing front (W3), wing side (W2) and front (W1). Set the tower tube at the front-left corner; W1 and W6 butt against the flat landings on the tower. Glue the four lower corner boards on the outside corners.</p></div></li><li class="step"><figure><img src="img/step3.jpg" alt="After step 3: Belt loops &amp; second floor"></figure>
+<div><h3><span class="n">3</span>Belt loops &amp; second floor</h3><p>Drop the two cream belt loops over the wall tops so they seat in the rabbets (the loop breaks at the chimney), and slide the octagonal belt ring onto the tower. Lower the Harvest Gold panels into the loops from above, then the upper tower tube onto its ring. The belt is the splice between floors: glue it to both. Add the four upper corner boards and the cream band across the gable.</p></div></li><li class="step"><figure><img src="img/step4.jpg" alt="After step 4: Bay window &amp; exterior chimney"></figure>
+<div><h3><span class="n">4</span>Bay window &amp; exterior chimney</h3><p>Glue the bay's cornice ring (soffit side up) to the top of the bay walls and the bay roof on the ring, then set the bay on the foundation's front lobe against the wing wall. The exterior chimney slides into the notches on the right wall; it spans the foundation, water table and belt.</p></div></li><li class="step"><figure><img src="img/step5.jpg" alt="After step 5: Cornice rings"></figure>
+<div><h3><span class="n">5</span>Cornice rings</h3><p>The main cornice ring prints upside down: flip it so the brackets hang down and lower it onto the wall tops. The tower passes through its octagonal hole. Slide the second tower belt ring down to the roof line and set the tower's cornice ring on top of the tower.</p></div></li><li class="step"><figure><img src="img/step6.jpg" alt="After step 6: Roofs, spire, dormer &amp; gable"></figure>
+<div><h3><span class="n">6</span>Roofs, spire, dormer &amp; gable</h3><p>Lower the main roof shell onto the cornice ring; the tower rises through the octagon hole and the chimney through its notch. Push the interior chimney stack up into its hole. Set the spire on the tower cornice. Glue the bargeboard-and-sunburst piece to the front edge of the wing roof, the dormer box and dormer roof on the left slope (with its bargeboards), and the iron cresting along the main ridge.</p></div></li><li class="step"><figure><img src="img/step7.jpg" alt="After step 7: Wraparound porch"></figure>
+<div><h3><span class="n">7</span>Wraparound porch</h3><p>Glue the stone piers onto the lattice base at the post positions, set the base against the foundation and lay the grey deck on it. Stand the three porch fronts on the deck edge (the short corner piece goes between the two long ones; the ends are mitred) and the return frame at the back. Rest the porch roof on the beams, snug against the belt band. Finish with the front steps and the two cheek walls with newel posts.</p></div></li><li class="step"><figure><img src="img/step8.jpg" alt="After step 8: Back stoop, hood &amp; downspouts"></figure>
+<div><h3><span class="n">8</span>Back stoop, hood &amp; downspouts</h3><p>Set the back stoop under the rear door, glue the two hood brackets beside the door and the hood on top. Glue the three iron downspouts at the back corners and the front-right corner of the wing, under the soffit.</p></div></li></ol>
+  </section>
+
+  <section style="display:grid;gap:6px">
+    <h2>Parts list</h2>
+    <details><summary><span class="sw" style="background:#8d877c"></span>Fieldstone
+<span class="cnt">9 pcs · 39 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>1×</td><td><code>Fieldstone__FOUNDATION-ring.stl</code></td><td class='num'>115×166×11.5</td></tr><tr><td class='num'>1×</td><td><code>Fieldstone__FOUNDATION-base-plate.stl</code></td><td class='num'>105×156×1.2</td></tr><tr><td class='num'>7×</td><td><code>Fieldstone__porch-pier.stl</code></td><td class='num'>3×6×0.6</td></tr></tbody></table></div></details><details><summary><span class="sw" style="background:#efe7d2"></span>Cream
+<span class="cnt">68 pcs · 42 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>1×</td><td><code>Cream__TRIM-water-table-ring.stl</code></td><td class='num'>115×166×1.4</td></tr><tr><td class='num'>1×</td><td><code>Cream__TRIM-belt-loop-1.stl</code></td><td class='num'>107×115×4.8</td></tr><tr><td class='num'>1×</td><td><code>Cream__TRIM-belt-loop-2.stl</code></td><td class='num'>73×99×4.8</td></tr><tr><td class='num'>4×</td><td><code>Cream__corner-board-lower.stl</code></td><td class='num'>36×3×3.4</td></tr><tr><td class='num'>4×</td><td><code>Cream__corner-board-upper.stl</code></td><td class='num'>27×3×3.4</td></tr><tr><td class='num'>1×</td><td><code>Cream__CORNICE-main-ring.stl</code></td><td class='num'>116×163×6.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__DOOR-W1-lower-casing.stl</code></td><td class='num'>21×34×2.1</td></tr><tr><td class='num'>9×</td><td><code>Cream__casing-2.6x5.2-cornice.stl</code></td><td class='num'>14×25×2.1</td></tr><tr><td class='num'>7×</td><td><code>Cream__casing-2.4x5.2-cornice.stl</code></td><td class='num'>13×25×2.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__casing-2.0x2.6-plain.stl</code></td><td class='num'>11×12×2.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__TRIM-gable-band.stl</code></td><td class='num'>43×2×1.6</td></tr><tr><td class='num'>8×</td><td><code>Cream__casing-2.8x6.2-cornice.stl</code></td><td class='num'>14×29×2.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__DOOR-W5-lower-casing.stl</code></td><td class='num'>17×33×2.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__casing-2.4x4.4-cornice.stl</code></td><td class='num'>13×22×2.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__TOWER-belt-ring-z2.stl</code></td><td class='num'>41×37×4.8</td></tr><tr><td class='num'>1×</td><td><code>Cream__TOWER-belt-ring-ze.stl</code></td><td class='num'>41×41×4.8</td></tr><tr><td class='num'>1×</td><td><code>Cream__TOWER-cornice-ring.stl</code></td><td class='num'>48×48×6.8</td></tr><tr><td class='num'>4×</td><td><code>Cream__casing-2.5x6.0-cornice.stl</code></td><td class='num'>13×28×2.1</td></tr><tr><td class='num'>4×</td><td><code>Cream__casing-2.2x4.0-cornice.stl</code></td><td class='num'>12×21×2.1</td></tr><tr><td class='num'>2×</td><td><code>Cream__casing-2.0x5.6-plain.stl</code></td><td class='num'>11×23×2.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__casing-3.2x5.6-plain.stl</code></td><td class='num'>15×23×2.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__BAY-cornice-ring.stl</code></td><td class='num'>40×11×6.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__GABLE-bargeboards-and-sunburst.stl</code></td><td class='num'>54×30×0.8</td></tr><tr><td class='num'>1×</td><td><code>Cream__casing-2.6x3.6-plain.stl</code></td><td class='num'>13×16×2.1</td></tr><tr><td class='num'>1×</td><td><code>Cream__DORMER-bargeboards.stl</code></td><td class='num'>26×18×0.8</td></tr><tr><td class='num'>1×</td><td><code>Cream__PORCH-base-lattice.stl</code></td><td class='num'>88×112×7.2</td></tr><tr><td class='num'>1×</td><td><code>Cream__PORCH-front-left-leg.stl</code></td><td class='num'>98×33×2.2</td></tr><tr><td class='num'>1×</td><td><code>Cream__PORCH-front-corner.stl</code></td><td class='num'>20×33×2.2</td></tr><tr><td class='num'>1×</td><td><code>Cream__PORCH-front-main.stl</code></td><td class='num'>74×33×2.2</td></tr><tr><td class='num'>1×</td><td><code>Cream__PORCH-end-return.stl</code></td><td class='num'>24×32×2.2</td></tr><tr><td class='num'>1×</td><td><code>Cream__PORCH-step-cheek-L.stl</code></td><td class='num'>13×12×2.4</td></tr><tr><td class='num'>1×</td><td><code>Cream__PORCH-step-cheek-R.stl</code></td><td class='num'>13×12×2.4</td></tr><tr><td class='num'>2×</td><td><code>Cream__back-hood-bracket.stl</code></td><td class='num'>8×9×0.8</td></tr></tbody></table></div></details><details><summary><span class="sw" style="background:#8a3b2b"></span>Brick
+<span class="cnt">2 pcs · 12 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>1×</td><td><code>Brick__CHIMNEY-exterior.stl</code></td><td class='num'>18×161×8.1</td></tr><tr><td class='num'>1×</td><td><code>Brick__CHIMNEY-interior-stack.stl</code></td><td class='num'>13×10×38.9</td></tr></tbody></table></div></details><details><summary><span class="sw" style="background:#4a2616"></span>Walnut
+<span class="cnt">2 pcs · 1 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>1×</td><td><code>Walnut__DOOR-W1-lower-door.stl</code></td><td class='num'>17×30×1.5</td></tr><tr><td class='num'>1×</td><td><code>Walnut__DOOR-W5-lower-door.stl</code></td><td class='num'>13×29×1.6</td></tr></tbody></table></div></details><details><summary><span class="sw" style="background:#7f8f6a"></span>Sage
+<span class="cnt">8 pcs · 42 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>1×</td><td><code>Sage__WALL-W1-lower.stl</code></td><td class='num'>30×38×2.3</td></tr><tr><td class='num'>1×</td><td><code>Sage__WALL-W2-lower.stl</code></td><td class='num'>19×38×2.3</td></tr><tr><td class='num'>1×</td><td><code>Sage__WALL-W3-lower.stl</code></td><td class='num'>44×38×2.3</td></tr><tr><td class='num'>1×</td><td><code>Sage__WALL-W4-lower.stl</code></td><td class='num'>152×38×2.3</td></tr><tr><td class='num'>1×</td><td><code>Sage__WALL-W5-lower.stl</code></td><td class='num'>103×38×2.3</td></tr><tr><td class='num'>1×</td><td><code>Sage__WALL-W6-lower.stl</code></td><td class='num'>114×38×2.3</td></tr><tr><td class='num'>1×</td><td><code>Sage__TOWER-lower.stl</code></td><td class='num'>39×39×38.5</td></tr><tr><td class='num'>1×</td><td><code>Sage__BAY-walls.stl</code></td><td class='num'>35×9×35.0</td></tr></tbody></table></div></details><details><summary><span class="sw" style="background:#6a1f2b"></span>Oxblood
+<span class="cnt">38 pcs · 5 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>9×</td><td><code>Oxblood__sash-2.6x5.2-2-over-2.stl</code></td><td class='num'>11×20×1.4</td></tr><tr><td class='num'>5×</td><td><code>Oxblood__sash-2.4x5.2-2-over-2.stl</code></td><td class='num'>10×20×1.4</td></tr><tr><td class='num'>2×</td><td><code>Oxblood__sash-2.4x5.2-qa.stl</code></td><td class='num'>10×20×1.4</td></tr><tr><td class='num'>1×</td><td><code>Oxblood__sash-2.0x2.6-2-over-2.stl</code></td><td class='num'>9×11×1.4</td></tr><tr><td class='num'>7×</td><td><code>Oxblood__sash-2.8x6.2-2-over-2.stl</code></td><td class='num'>11×23×1.4</td></tr><tr><td class='num'>1×</td><td><code>Oxblood__sash-2.4x4.4-2-over-2.stl</code></td><td class='num'>10×17×1.4</td></tr><tr><td class='num'>1×</td><td><code>Oxblood__sash-2.8x6.2-qa.stl</code></td><td class='num'>11×23×1.4</td></tr><tr><td class='num'>1×</td><td><code>Oxblood__sash-2.5x6.0-qa.stl</code></td><td class='num'>10×23×1.4</td></tr><tr><td class='num'>3×</td><td><code>Oxblood__sash-2.5x6.0-2-over-2.stl</code></td><td class='num'>10×23×1.4</td></tr><tr><td class='num'>4×</td><td><code>Oxblood__sash-2.2x4.0-2-over-2.stl</code></td><td class='num'>9×16×1.4</td></tr><tr><td class='num'>2×</td><td><code>Oxblood__sash-2.0x5.6-2-over-2.stl</code></td><td class='num'>8×21×1.4</td></tr><tr><td class='num'>1×</td><td><code>Oxblood__sash-3.2x5.6-qa.stl</code></td><td class='num'>13×21×1.4</td></tr><tr><td class='num'>1×</td><td><code>Oxblood__sash-2.6x3.6-qa.stl</code></td><td class='num'>11×14×1.4</td></tr></tbody></table></div></details><details><summary><span class="sw" style="background:#c79a45"></span>Harvest Gold
+<span class="cnt">8 pcs · 54 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>1×</td><td><code>Harvest-Gold__WALL-W1-upper.stl</code></td><td class='num'>30×36×2.4</td></tr><tr><td class='num'>1×</td><td><code>Harvest-Gold__WALL-W2-upper.stl</code></td><td class='num'>19×36×2.4</td></tr><tr><td class='num'>1×</td><td><code>Harvest-Gold__WALL-W3-upper.stl</code></td><td class='num'>44×65×2.4</td></tr><tr><td class='num'>1×</td><td><code>Harvest-Gold__WALL-W4-upper.stl</code></td><td class='num'>152×36×2.4</td></tr><tr><td class='num'>1×</td><td><code>Harvest-Gold__WALL-W5-upper.stl</code></td><td class='num'>103×36×2.4</td></tr><tr><td class='num'>1×</td><td><code>Harvest-Gold__WALL-W6-upper.stl</code></td><td class='num'>114×36×2.4</td></tr><tr><td class='num'>1×</td><td><code>Harvest-Gold__TOWER-upper.stl</code></td><td class='num'>39×39×74.9</td></tr><tr><td class='num'>1×</td><td><code>Harvest-Gold__DORMER-box.stl</code></td><td class='num'>21×21×34.5</td></tr></tbody></table></div></details><details><summary><span class="sw" style="background:#43474d"></span>Slate
+<span class="cnt">6 pcs · 59 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>1×</td><td><code>Slate__ROOF-tower-spire.stl</code></td><td class='num'>49×49×84.2</td></tr><tr><td class='num'>1×</td><td><code>Slate__ROOF-bay.stl</code></td><td class='num'>41×11×7.8</td></tr><tr><td class='num'>1×</td><td><code>Slate__ROOF-main.stl</code></td><td class='num'>117×163×68.6</td></tr><tr><td class='num'>1×</td><td><code>Slate__ROOF-dormer.stl</code></td><td class='num'>34×26×21.8</td></tr><tr><td class='num'>1×</td><td><code>Slate__ROOF-porch.stl</code></td><td class='num'>90×118×12.4</td></tr><tr><td class='num'>1×</td><td><code>Slate__ROOF-back-door-hood.stl</code></td><td class='num'>23×12×1.2</td></tr></tbody></table></div></details><details><summary><span class="sw" style="background:#2b2b2d"></span>Black Iron
+<span class="cnt">4 pcs · 1 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>1×</td><td><code>Black-Iron__ROOF-ridge-cresting.stl</code></td><td class='num'>30×9×0.7</td></tr><tr><td class='num'>3×</td><td><code>Black-Iron__downspout.stl</code></td><td class='num'>85×2×1.6</td></tr></tbody></table></div></details><details><summary><span class="sw" style="background:#6b706f"></span>Porch Gray
+<span class="cnt">3 pcs · 8 g</span></summary>
+<div class="tw"><table><thead><tr><th>Qty</th><th>File</th><th>Size mm (print)</th></tr></thead><tbody><tr><td class='num'>1×</td><td><code>Porch-Gray__PORCH-deck.stl</code></td><td class='num'>88×113×1.2</td></tr><tr><td class='num'>1×</td><td><code>Porch-Gray__PORCH-front-steps.stl</code></td><td class='num'>20×13×8.2</td></tr><tr><td class='num'>1×</td><td><code>Porch-Gray__BACK-stoop-and-steps.stl</code></td><td class='num'>22×22×10.2</td></tr></tbody></table></div></details>
+  </section>
+
+  <section class="note">
+    <h2 style="font-size:22px">Status</h2>
+    <p>The kit passes a computer fit check (zero part-to-part interference) and every plate slices cleanly, but it has not been printed yet. Print the fit test first and adjust clearance if the casings are tight or loose; the generator rebuilds every file in about 30 seconds.</p>
+  </section>
+</div>
+<script>
+  const shot = document.getElementById("shot");
+  const btns = [...document.querySelectorAll("#strip button")];
+  btns.forEach((b, i) => {
+    b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+    b.addEventListener("click", () => {
+      btns.forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+      shot.src = b.dataset.src;
+    });
+  });
+</script>
