@@ -389,6 +389,26 @@ facing and roof texture is now sunk 0.02-0.03 mm into its surface (`shell.wall_s
 `shell.foundation`, `roof.hip_texture`, `trimwork._skin`), and ornament keeps the 0.2 mm
 overlap rule. Mount shutters just proud of the deepest siding (Dutch lap butts stand 0.46).
 
+## Nothing may start in the air
+
+The slicer prints a feature whose underside has nothing under it as strands in mid-air.
+The owner saw this on the Oakhurst's pediment fan: its rays and hub started 0.6 mm above
+a sunk field, because the field was cut after the relief was added. Three habits caused
+every case found so far:
+- Cutting a recess after adding the relief that sits in it. Add the relief last, standing
+  on the recess floor.
+- A groove in a flat fill's (u, v) outline. It is extruded through the panel, so it
+  becomes a slot and each course hangs from the posts. A `porchwork.FILLS` style returns
+  `dict(cs=..., grooves=..., t=1.2, depth=0.15)` to sink its grooves into both faces.
+- A texture laid on a plane that its slab does not quite follow. The Van Tassel's dormer
+  roof had its corners 1 x slope off, so its shakes floated by up to 0.35 mm.
+
+`python3 -m hoarch.airstrands --building <key>` slices every plate except the
+supported window plates. It reports thin material over air and how far it reaches from
+support. A reach of 1 mm or less is a ledge that prints. A long reach on a member wider
+than a nozzle line is a bridge between two supports, and prints as one. A long reach on a
+thin strip is the fault.
+
 ## Size standard (houses 21 to 30, Rev C)
 
 The first cut of the second batch read as skinny next to the reference kits. Both references
