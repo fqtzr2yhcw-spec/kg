@@ -169,7 +169,7 @@ def build(kit=None):
     x0, y0, x1, y1 = dcs.bounds()
     seams = cs_union([rect(x - 0.25, y0, x + 0.25, y1) for x in np.arange(x0 + 2.6, x1, 5.2)]) ^ dcs
     kit.add("ROOF-deck", "Slate", C["deck"] + slab(seams, zdeck - 0.01, zdeck + 0.4) - pads, group="roof")
-    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.fence_beauvais, 3.6):
+    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.printable(SE.fence_beauvais), 7.2):
         kit.add(f"CREST-iron-{i}", "Iron", seg, P=inv34(A), key=f"CREST-iron-{round(L, 1)}", group="roof")
     for k, (x, y) in enumerate(chims):
         ch = SE.chimney_beauvais(w=10.0, d=8.4, h=24.0).translate([x, y, zdeck - 0.6])

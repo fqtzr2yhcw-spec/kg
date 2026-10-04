@@ -219,7 +219,7 @@ def build(kit=None):
     x0, y0, x1, y1 = dcs.bounds()
     seams = cs_union([rect(x - 0.25, y0, x + 0.25, y1) for x in np.arange(x0 + 2.6, x1, 5.2)]) ^ dcs
     kit.add("ROOF-deck", "Slate", C["deck"] + slab(seams, zdeck - 0.01, zdeck + 0.4) - pads - pav_vol, group="roof")
-    for i, seg_, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.fence_valcour, 3.4):
+    for i, seg_, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.printable(SE.fence_valcour), 6.8):
         for j, piece in enumerate((seg_ - pav_vol).decompose()):
             if piece.volume() > 3.0:
                 kit.add(f"CREST-iron-{i}{'abc'[j]}", "Iron", piece, P=inv34(A), group="roof")
@@ -232,7 +232,7 @@ def build(kit=None):
     px0_, py0_, px1_, py1_ = pcs.bounds()
     pseams = cs_union([rect(x - 0.25, py0_, x + 0.25, py1_) for x in np.arange(px0_ + 2.6, px1_, 5.2)]) ^ pcs
     kit.add("PAV-deck", "Slate", PC["deck"] + slab(pseams, pz - 0.01, pz + 0.4), group="pavilion")
-    for i, seg_, A, L in SE.cresting_strips(PC["path"], pz, PC["P"] - 1.4, SE.fence_valcour, 4.0):
+    for i, seg_, A, L in SE.cresting_strips(PC["path"], pz, PC["P"] - 1.4, SE.printable(SE.fence_valcour), 7.2):
         kit.add(f"PAV-iron-{i}", "Iron", seg_, P=inv34(A), key=f"PAV-iron-{round(L, 1)}", group="pavilion")
     tc = (PCX, (PY0 + PY1) / 2)
     kit.add("PAV-finial", "Iron", SE.finial_urnspike(10.0).translate([tc[0], tc[1], pz + 0.39]), group="pavilion")

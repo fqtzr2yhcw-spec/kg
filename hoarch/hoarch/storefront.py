@@ -1030,22 +1030,27 @@ def door_batwing(w, h, casing=0.8, bw=None, text=None):
     return _one_piece(sash, parts, op, plug_cs, PLUG, top + 4.0, 0.0)
 
 
-def iron_railing(L, h=7.6, t=0.8, rail=0.8, pitch=2.6):
+def iron_railing(L, h=7.6, t=0.8, rail=1.0, pitch=5.4):
     """A flat wrought-iron balcony railing ``L`` long: a bottom and a top rail, upright bars,
-    and a ring between each pair of bars. Local (u along, v up, w its thickness 0..t); prints
-    flat on its back and stands on the balcony edge."""
+    and a ring between each pair of bars on stems to both rails. Local (u along, v up, w its
+    thickness 0..t); prints flat on its back and stands on the balcony edge. Sized for a 0.4 mm
+    nozzle: rails 1.0, bars, rings and stems 0.9 wide, every opening 0.8 or more (at 0.5-0.6 mm
+    the first railing's bars and rings did not print)."""
     parts = [box([0, 0, 0], [L, rail, t]), box([0, h - rail, 0], [L, h, t])]
-    n = max(2, int(round(L / pitch)))
+    n = max(1, int(L / pitch))
     us = [L * k / n for k in range(n + 1)]
     for u in us:
-        a, b = max(0.0, u - 0.3), min(L, u + 0.3)
-        parts.append(box([a, rail - 0.01, 0], [b, h - rail + 0.01, t]))
-    r = min((L / n) / 2 - 0.5, (h - 2 * rail) / 2 - 0.3)
+        a = min(max(0.0, u - 0.45), L - 0.9)          # the end bars whole, inside the ends
+        parts.append(box([a, rail - 0.01, 0], [a + 0.9, h - rail + 0.01, t]))
+    r = min((L / n) / 2 - 0.45 - 0.8, (h - 2 * rail) / 2 - 0.8)
     for a, b in zip(us[:-1], us[1:]):
         c = ((a + b) / 2, h / 2)
-        ring = circle(c, r, 24) - circle(c, r - 0.5, 20)
-        parts.append(ext(ring + rect(c[0] - 0.25, rail - 0.01, c[0] + 0.25, c[1] - r + 0.2) +
-                         rect(c[0] - 0.25, c[1] + r - 0.2, c[0] + 0.25, h - rail + 0.01), 0.0, t))
+        if r >= 1.35:
+            ring = circle(c, r, 36) - circle(c, r - 0.9, 28)
+            parts.append(ext(ring + rect(c[0] - 0.45, rail - 0.01, c[0] + 0.45, c[1] - r + 0.2) +
+                             rect(c[0] - 0.45, c[1] + r - 0.2, c[0] + 0.45, h - rail + 0.01), 0.0, t))
+        elif b - a >= 4.4:                 # too short a bay for a ring: a middle bar
+            parts.append(box([c[0] - 0.45, rail - 0.01, 0], [c[0] + 0.45, h - rail + 0.01, t]))
     return union(parts)
 
 
@@ -1132,11 +1137,11 @@ def iron_shutter(w, h, t=0.8, straps=2):
     rim, ``straps`` horizontal straps with rivet heads, and a hinge pin. Local (u 0..w, v
     0..h, w 0..t+); prints flat on its back."""
     parts = [box([0, 0, 0], [w, h, t])]
-    parts.append(ext(rect(0, 0, w, h) - rect(0.5, 0.5, w - 0.5, h - 0.5), t - 0.01, t + 0.4))
+    parts.append(ext(rect(0, 0, w, h) - rect(0.8, 0.8, w - 0.8, h - 0.8), t - 0.01, t + 0.4))     # rim 0.8: two lines
     for k in range(straps):
         v = h * (k + 1) / (straps + 1)
-        parts.append(box([0.0, v - 0.4, t - 0.01], [w, v + 0.4, t + 0.4]))
-        parts.append(ext(cs_union([circle((x, v), 0.25, 10) for x in (0.8, w / 2, w - 0.8)]), t + 0.39, t + 0.6))
+        parts.append(box([0.0, v - 0.45, t - 0.01], [w, v + 0.45, t + 0.4]))
+        parts.append(ext(cs_union([circle((x, v), 0.4, 14) for x in (0.8, w / 2, w - 0.8)]), t + 0.39, t + 0.6))
     return union(parts)
 
 

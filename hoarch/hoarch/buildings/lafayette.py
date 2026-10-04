@@ -236,7 +236,7 @@ def build(kit=None):
         M.hull_points([(x, y, zdeck + 1.19) for x in (110.0, 126.0) for y in (60.0, 74.0)] + [(x, 67.0, zdeck + 3.4) for x in (110.6, 125.4)])
     deck = C["deck"] + slab(seams - rect(108.0, 58.0, 128.0, 76.0), zdeck - 0.01, zdeck + 0.4) + sky
     kit.add("ROOF-deck", "Slate", deck - pads - pav_vol, group="roof")
-    for i, seg_, A, L in SE.cresting_strips(C["path"], zdeck, C["rail"], SE.fence_lafayette, 3.6):
+    for i, seg_, A, L in SE.cresting_strips(C["path"], zdeck, C["rail"], SE.printable(SE.fence_lafayette), 7.2):
         for j, piece in enumerate((seg_ - pav_vol).decompose()):
             if piece.volume() > 3.0:
                 kit.add(f"CREST-iron-{i}{'abc'[j]}", "Iron", piece, P=inv34(A), group="roof")
@@ -252,7 +252,7 @@ def build(kit=None):
     px0, py0, px1, py1 = pcs.bounds()
     pseams = cs_union([rect(x - 0.25, py0, x + 0.25, py1) for x in np.arange(px0 + 2.6, px1, 5.2)]) ^ pcs
     kit.add("PAV-deck", "Slate", PC["deck"] + slab(pseams, pz - 0.01, pz + 0.4), group="pavilion")
-    for i, seg_, A, L in SE.cresting_strips(PC["path"], pz, PC["rail"], SE.fence_lafayette, 4.2):
+    for i, seg_, A, L in SE.cresting_strips(PC["path"], pz, PC["rail"], SE.printable(SE.fence_lafayette), 7.2):
         kit.add(f"PAV-iron-{i}", "Iron", seg_, P=inv34(A), key=f"PAV-iron-{round(L, 1)}", group="pavilion")
     tc = ((PX0 + PX1) / 2, (PY0 + PY1) / 2)
     kit.add("PAV-finial", "Iron", SE.finial_torch(10.0).translate([tc[0], tc[1], pz + 0.39]), group="pavilion")

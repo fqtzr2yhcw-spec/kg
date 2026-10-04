@@ -273,7 +273,7 @@ def build(kit=None):
     chims = [(70.0, 70.0), (X1 - 70.0, 70.0)]
     pads = union([box([x - 6.0, y - 5.0, zdeck - 0.6], [x + 6.0, y + 5.0, zdeck + 1]) for x, y in chims])
     kit.add("ROOF-deck", "Slate", _deck(C, zdeck) - pads - pav_vols - tower_hug, group="roof")
-    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["rail"], SE.fence_fontaine, 3.4):
+    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["rail"], SE.printable(SE.fence_fontaine), 6.8):
         for j, piece in enumerate((seg - pav_vols - tower_keep).decompose()):
             if piece.volume() > 3.0:
                 kit.add(f"CREST-iron-{i}{'abc'[j]}", "Iron", piece, P=inv34(A), group="roof")
@@ -288,7 +288,7 @@ def build(kit=None):
                 render=PC["zones"])
         pz = PC["z_top"]
         kit.add(f"{tag}-deck", "Slate", _deck(PC, pz), group="pavilions")
-        for i, seg, A, L in SE.cresting_strips(PC["path"], pz, PC["rail"], SE.fence_fontaine, 3.8):
+        for i, seg, A, L in SE.cresting_strips(PC["path"], pz, PC["rail"], SE.printable(SE.fence_fontaine), 7.2):
             kit.add(f"{tag}-iron-{i}", "Iron", seg, P=inv34(A), key=f"PAV-iron-{round(L, 1)}", group="pavilions")
     print("roofs", round(time.time() - t0, 1))
 
@@ -306,7 +306,7 @@ def build(kit=None):
     kit.add("TOWER-CREST", "Verdigris", TC["solid"], P=print_flip(), change=TC["change"], group="tower", render=TC["zones"])
     tz = TC["z_top"]
     kit.add("TOWER-deck", "Slate", TC["deck"], group="tower")
-    for i, seg, A, L in SE.cresting_strips(TC["path"], tz, TC["rail"], SE.fence_fontaine, 3.4):
+    for i, seg, A, L in SE.cresting_strips(TC["path"], tz, TC["rail"], SE.printable(SE.fence_fontaine), 6.8):
         kit.add(f"TOWER-iron-{i}", "Iron", seg, P=inv34(A), key=f"TOWER-iron-{round(L, 1)}", group="tower")
     kit.add("TOWER-finial", "Iron", SE.finial_bannerette(14.0).translate([tcen[0], tcen[1], tz - 0.01]), group="tower")
     print("tower", round(time.time() - t0, 1))

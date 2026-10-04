@@ -211,7 +211,7 @@ def build(kit=None):
     x0, y0, x1, y1 = dcs.bounds()
     seams = cs_union([rect(x - 0.25, y0, x + 0.25, y1) for x in np.arange(x0 + 2.6, x1, 5.2)]) ^ dcs
     kit.add("ROOF-deck", "Slate", C["deck"] + slab(seams, zdeck - 0.01, zdeck + 0.4) - pads, group="roof")
-    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.fence_chevalier, 3.6):
+    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.printable(SE.fence_chevalier), 7.2):
         kit.add(f"CREST-iron-{i}", "Iron", seg, P=inv34(A), key=f"CREST-iron-{round(L, 1)}", group="roof")
     for k, (x, y) in enumerate(chims):
         ch = SE.chimney_chevalier(w=12.0, d=8.0, h=24.0).translate([x, y, zdeck - 0.6])
@@ -225,8 +225,7 @@ def build(kit=None):
         bd = slab(offset(bay.cs, Pc + 0.2), ZW, ZW + 1.2) - main_vol
         bd = max(bd.decompose(), key=lambda m_: m_.volume())
         kit.add(f"{tag}-roof", "Slate", bd, group="bays")
-        bcrest = R.cresting(bay.pts, ZW + 1.2, h=2.8, pitch=2.0, d_off=Pc - 1.0, style="spear")
-        for i, seg, A, L in R.cresting_strips(bcrest, bay.pts, ZW + 1.2, Pc - 1.0):
+        for i, seg, A, L in SE.cresting_strips(bay.pts, ZW + 1.2, Pc - 1.0, SE.printable(SE.fence_chevalier), 5.6):
             seg = seg - main_vol
             if not seg.is_empty() and seg.volume() > 1.0:
                 kit.add(f"{tag}-crest-{i}", "Iron", seg, P=inv34(A), group="bays")

@@ -173,6 +173,16 @@ def cresting_strips(path, z0, d_off, fence, h, e=0.4):
     return out
 
 
+def printable(fence, s=2.0):
+    """A cresting fence drawn at 1/s and enlarged s times, so its bars, rails and ornaments
+    come out at least 0.9 mm wide (two lines of a 0.4 mm nozzle) and its openings stay open:
+    drawn at full size they were 0.4-0.6 mm wide and did not print. Call it with the finished
+    height (s times the old one)."""
+    def f(L, h):
+        return fence(L / s, h / s).scale((s, s))
+    return f
+
+
 # ================================================================== the Montclair (house 81)
 # A Second Empire cube of cream-city brick: brownstone trim, gilt accents, a straight mansard
 # of square slate banded with lozenges of diamond-cut slate, twelve add-ins, a full-width veranda.
@@ -1555,10 +1565,9 @@ def fence_delacroix(L, h):
             m = u + p / 2
             vc = (r0 + 0.45 + r1) / 2
             rr = min((r1 - r0 - 0.45) / 2 + 0.05, p / 2 - 0.35)
-            ring = circle((m, vc), rr, 20) - circle((m, vc), max(rr - 0.45, 0.15), 16)
-            cells.append(ring)
-            cells.append(rect(m - 0.22, vc + rr - 0.15, m + 0.22, r1 + 0.05))
-            cells.append(rect(m - 0.22, r0 + 0.4, m + 0.22, vc - rr + 0.15))
+            cells.append(circle((m, vc), rr, 20))               # a boss (a ring this small printed shut)
+            cells.append(rect(m - 0.23, vc + rr - 0.15, m + 0.23, r1 + 0.05))
+            cells.append(rect(m - 0.23, r0 + 0.4, m + 0.23, vc - rr + 0.15))
     return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
 
 
@@ -2858,8 +2867,8 @@ def fence_chevalier(L, h):
             vt = h - 1.0
             heart = cs_union([circle((m - rr * 0.8, vt - rr), rr, 12), circle((m + rr * 0.8, vt - rr), rr, 12),
                               poly([(m - rr * 1.7, vt - rr), (m + rr * 1.7, vt - rr), (m, rail + 0.4)])])
-            cells.append(heart - heart.offset(-0.4))
-            cells.append(rect(m - 0.2, rail + 0.3, m + 0.2, rail + 0.9))
+            cells.append(heart - heart.offset(-0.46))
+            cells.append(rect(m - 0.23, rail + 0.3, m + 0.23, rail + 0.9))
     return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
 
 
@@ -4834,17 +4843,17 @@ def fence_fontaine(L, h):
     for j in range(n + 1):
         u = p * j
         cells.append(rect(u - 0.28, 0.0, u + 0.28, h - 0.3))
-        cells.append(rect(u - 0.8, h - 1.4, u + 0.8, h - 1.0))
+        cells.append(rect(u - 0.85, h - 1.46, u + 0.85, h - 1.0))
         for x in (u - 0.62, u + 0.62):
-            cells.append(rect(x - 0.2, h - 1.1, x + 0.2, h - 0.5))
+            cells.append(rect(x - 0.23, h - 1.1, x + 0.23, h - 0.5))
             cells.append(poly([(x - 0.3, h - 0.6), (x + 0.3, h - 0.6), (x, h - 0.15)]))
         cells.append(poly([(u - 0.38, h - 0.4), (u + 0.38, h - 0.4), (u, h + 0.2)]))
         if j < n:
             m = u + p / 2
             vc = (rail + 0.45 + h - 1.4) / 2
             rr = min((h - 1.4 - rail - 0.45) / 2 + 0.05, p / 2 - 0.4)
-            cells.append(circle((m, vc), rr, 18) - circle((m, vc), max(rr - 0.42, 0.2), 14))
-            cells += [rect(m - 0.2, vc - rr + 0.2, m + 0.2, vc + rr - 0.2), rect(m - rr + 0.2, vc - 0.2, m + rr - 0.2, vc + 0.2)]
+            cells.append(circle((m, vc), rr, 18) - circle((m, vc), max(rr - 0.46, 0.2), 14))
+            cells += [rect(m - 0.23, vc - rr + 0.2, m + 0.23, vc + rr - 0.2), rect(m - rr + 0.2, vc - 0.23, m + rr - 0.2, vc + 0.23)]
     return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
 
 

@@ -193,7 +193,7 @@ def build(kit=None):
     pads = union([box([x - 6.4, y - 7.9, zdeck - 0.6], [x + 6.4, y + 7.9, zdeck + 1]) for x, y in chims])
     deck = deck + slab(seams - cs_union([rect(108.8, 90.8, 125.2, 105.2)]), zdeck - 0.01, zdeck + 0.4) + hatch
     kit.add("ROOF-deck", "Slate", deck - pads, group="roof")
-    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.fence_montclair, 3.2):
+    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.printable(SE.fence_montclair), 6.4):
         kit.add(f"CREST-iron-{i}", "Iron", seg, P=inv34(A), key=f"CREST-iron-{round(L, 1)}", group="roof")
     for k, (x, y) in enumerate(chims):
         ch = SE.chimney_montclair(w=10.4, d=13.4, h=24.0).translate([x, y, zdeck - 0.6])

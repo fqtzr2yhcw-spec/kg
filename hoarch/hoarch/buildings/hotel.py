@@ -179,7 +179,7 @@ def build(kit=None):
     Af = np.array([[1.0, 0, 0, -1.0], [0, 0, -1.0, yf], [0, 1.0, 0, z_deck]])
     kit.add("RAIL-front", "Iron", front.transform(Af), P=inv34(Af), group="balcony")
     Le = yf - BAL_Y - 0.2
-    endr = SF.iron_railing(-Le if Le < 0 else Le, h=9.0, pitch=2.4)
+    endr = SF.iron_railing(-Le if Le < 0 else Le, h=9.0)
     for k, x in enumerate((-1.0, W + 0.2)):
         Ae = np.array([[0.0, 0, 1.0, x], [1.0, 0, 0, yf], [0, 1.0, 0, z_deck]])
         kit.add(f"RAIL-end-{k}", "Iron", endr.transform(Ae), P=inv34(Ae), key="RAIL-end", group="balcony")

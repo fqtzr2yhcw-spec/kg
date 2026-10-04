@@ -441,7 +441,8 @@ def build(kit=None):
                     continue
                 n = np.array([tt[1], -tt[0]])
                 o = a + tt * 0.6
-                fence = R.crest_fence(L_, 3.6, 1.8, bar=0.6, t=0.8, style="fleur")
+                # drawn at half size and doubled: at full size its 0.4-0.6 mm members did not print
+                fence = R.crest_fence(L_ / 2.0, 3.6, 1.8, bar=0.6, t=0.8, style="fleur").scale([2.0, 2.0, 1.0])
                 A = np.array([[tt[0], 0.0, n[0], o[0]], [tt[1], 0.0, n[1], o[1]], [0.0, 1.0, 0.0, ztop]])
                 kit.add(f"M-CRESTING-{k}", "Iron", fence.transform(A), P=inv34(A), group="roof-M")
         kit.add(f"{tg}-WALLS-2", H["wall"], H["walls2"], group=f"walls-{tg}")

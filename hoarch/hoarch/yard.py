@@ -472,7 +472,7 @@ def stack_hoist(h=40.0, r=1.7):
         out.append(M.cylinder(0.8, r + 0.3, r + 0.25, 28).translate([0, 0, z]))
     out.append(M.cylinder(1.6, r * 0.92, r + 1.1, 28).translate([0, 0, h - 0.6]))
     out.append(M.cylinder(0.6, r + 1.1, r + 1.1, 28).translate([0, 0, h + 0.99]))
-    return union(out) - M.cylinder(h + 10, r - 0.7, r - 0.7, 20).translate([0, 0, 4.0])
+    return union(out) - M.cylinder(h + 10, r - 0.95, r - 0.95, 20).translate([0, 0, 4.0])     # a 0.95 wall: 0.7 printed as one line
 
 
 def sign_bin(text, L, H=7.0, t=1.0, cap=4.0):

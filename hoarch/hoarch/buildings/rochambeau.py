@@ -225,7 +225,7 @@ def build(kit=None):
     chims = [(40.0, 96.0), (X1 - 40.0, 96.0)]
     pads = union([box([x - 5.8, y - 5.8, zdeck - 0.6], [x + 5.8, y + 5.8, zdeck + 1]) for x, y in chims])
     kit.add("ROOF-deck", "Slate", _deck(C, zdeck, pads), group="roof")
-    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.fence_rochambeau, 3.6):
+    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.printable(SE.fence_rochambeau), 7.2):
         kit.add(f"CREST-iron-{i}", "Iron", seg, P=inv34(A), key=f"CREST-iron-{round(L, 1)}", group="roof")
     for k, (x, y) in enumerate(chims):
         ch = SE.chimney_rochambeau(w=10.4, d=10.4, h=25.0).translate([x, y, zdeck - 0.6])
@@ -238,7 +238,7 @@ def build(kit=None):
                 render=[(r, z - main_vol) for r, z in HC["zones"]])
         bz = HC["z_top"]
         kit.add(f"{tag}-deck", "Slate", _deck(HC, bz) - main_vol, group="bays")
-        for i, seg, A, L in SE.cresting_strips(HC["path"], bz, HC["P"] - 1.4, SE.fence_rochambeau, 3.2):
+        for i, seg, A, L in SE.cresting_strips(HC["path"], bz, HC["P"] - 1.4, SE.printable(SE.fence_rochambeau), 6.4):
             seg = seg - main_vol
             if not seg.is_empty() and seg.volume() > 3.0:
                 kit.add(f"{tag}-iron-{i}", "Iron", seg, P=inv34(A), key=f"{tag[:3]}-iron-{round(L, 1)}", group="bays")
@@ -276,7 +276,7 @@ def build(kit=None):
         if tag == "PORCH":                     # the iron balustrade round the portico's roof
             ptop = res["ptop"]
             path = [(xa - 1.4, yf - 1.4), (xb + 1.4, yf - 1.4), (xb + 1.4, w_), (xa - 1.4, w_)]
-            for i, seg, A, L in SE.cresting_strips(path, ptop, -1.0, SE.fence_rochambeau_balcony, 6.4):
+            for i, seg, A, L in SE.cresting_strips(path, ptop, -1.0, SE.printable(SE.fence_rochambeau_balcony), 6.4):
                 bb = seg.bounding_box()
                 if (bb[1] + bb[4]) / 2 > w_ - 2.5:             # not along the wall
                     continue

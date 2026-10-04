@@ -222,7 +222,7 @@ def build(kit=None):
     x0, y0, x1, y1 = dcs.bounds()
     seams = cs_union([rect(x - 0.25, y0, x + 0.25, y1) for x in np.arange(x0 + 2.6, x1, 5.2)]) ^ dcs
     kit.add("ROOF-deck", "Slate", C["deck"] + slab(seams, zdeck - 0.01, zdeck + 0.4) - pads - tower_hug, group="roof")
-    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.fence_delacroix, 3.4):
+    for i, seg, A, L in SE.cresting_strips(C["path"], zdeck, C["P"] - 1.4, SE.printable(SE.fence_delacroix), 6.8):
         for j, piece in enumerate((seg - tower_keep).decompose()):
             if piece.volume() > 3.0:
                 kit.add(f"CREST-iron-{i}{'abc'[j]}", "Iron", piece, P=inv34(A), group="roof")
@@ -244,7 +244,7 @@ def build(kit=None):
     kit.add("TOWER-CREST", "Green", TC["solid"], P=print_flip(), change=TC["change"], group="tower", render=TC["zones"])
     tz = TC["z_top"]
     kit.add("TOWER-deck", "Slate", TC["deck"], group="tower")
-    for i, seg, A, L in SE.cresting_strips(TC["path"], tz, TC["P"] - 1.4, SE.fence_delacroix, 3.6):
+    for i, seg, A, L in SE.cresting_strips(TC["path"], tz, TC["P"] - 1.4, SE.printable(SE.fence_delacroix), 7.2):
         kit.add(f"TOWER-iron-{i}", "Iron", seg, P=inv34(A), key=f"TOWER-iron-{round(L, 1)}", group="tower")
     tc = ((TX0 + TX1) / 2, (TY0 + TY1) / 2)
     kit.add("TOWER-finial", "Iron", SE.finial_crownball(10.0).translate([tc[0], tc[1], tz - 0.01]), group="tower")
