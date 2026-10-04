@@ -179,7 +179,7 @@ def build(kit=None):
     pockets, stacks = [], []
     for cx in (30.0, W - 30.0):
         z0 = round((Z_RIDGE - 8.0) / 0.2) * 0.2
-        roof = roof + G.chimney_seat(solid_env, cx, D / 2, S_CL / 2, Z_RIDGE + 1.0)
+        roof = roof + G.pocket_seat(solid_env, cx, D / 2, S_CL / 2 + 0.4, S_CL / 2 + 0.4, z0)
         pockets.append(box([cx - S_CL / 2 - 0.4, D / 2 - S_CL / 2 - 0.4, z0], [cx + S_CL / 2 + 0.4, D / 2 + S_CL / 2 + 0.4, Z_RIDGE + 40]))
         stacks.append(C4.chimney_cluster(S_CL, 5.4, Z_RIDGE + 17.0 - z0).translate([cx, D / 2, z0]))
     roof = roof - union(pockets)

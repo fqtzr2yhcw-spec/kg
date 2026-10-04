@@ -100,9 +100,13 @@ class Kit:
         return p
 
     # -------------------------------------------------------------- checks
-    def drop_specks(self, min_vol=2.0):
+    def drop_specks(self, min_vol=2.0, min_t=0.3, one_piece=("-deck", "-top")):
         """Remove detached fragments smaller than ``min_vol`` mm^3 from every part (offcuts
-        of texture or trim that a trim left floating). Returns [(part, volume dropped)]."""
+        of texture or trim that a trim left floating), and detached films thinner than
+        ``min_t`` (thickness taken as 2 x volume / surface: a skin left by a cut, far too thin
+        to print), never a part's main body. Parts named with one of ``one_piece`` (porch decks
+        and tops, made as one piece) also lose any detached scrap under 1% of their body.
+        Returns [(part, volume dropped)]."""
         out = []
         empty = [p for p in self.parts if p.solid.is_empty() or p.solid.volume() < 0.5]
         for p in empty:                 # a whole part that is only a sliver (an offcut of a join)
@@ -112,9 +116,12 @@ class Kit:
             comps = p.solid.decompose()
             if len(comps) < 2:
                 continue
-            small = [c for c in comps if c.volume() < min_vol]
+            main = max(comps, key=lambda c: c.volume())
+            scrap = 0.01 * main.volume() if any(k in p.name for k in one_piece) else 0.0
+            small = [c for c in comps if c is not main and (c.volume() < max(min_vol, scrap) or
+                                                              2.0 * c.volume() / max(c.surface_area(), 1e-9) < min_t)]
             if small:
-                big = [c for c in comps if c.volume() >= min_vol]
+                big = [c for c in comps if not any(c is q for q in small)]
                 p.solid = M.batch_boolean(big, OpType.Add) if len(big) > 1 else big[0]
                 out.append((p.name, round(sum(c.volume() for c in small), 3)))
         return out

@@ -46,7 +46,13 @@ HISTORY = {
     "rosecroft": [("1.1", "2026-09-27", "Fret brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
     "hawthorn": [("1.1", "2026-09-27", "Ladder brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
     "beaumont": [("1.1", "2026-09-30", INSERTS_DEEP)],
-    "harcourt": [("1.1", "2026-09-30", INSERTS_DEEP), ("1.2", "2026-10-01", QUOINS)],
+    "harcourt": [("1.1", "2026-09-30", INSERTS_DEEP), ("1.2", "2026-10-01", QUOINS),
+                 ("1.3", "2026-10-04", "Iron cresting redrawn so a 0.4 mm nozzle prints it: the old cresting's "
+                  "bars and rails were 0.4-0.5 mm wide with pointed spears and 0.8 mm balls, and most of it did "
+                  "not print. The new one (barbed spears and balls in turn over a top rail, a ball hanging in "
+                  "each panel) has every member at least 0.9 mm wide, every opening at least 0.8 mm, blunt spear "
+                  "tips and 1.0 mm strips; 5.4 mm tall on the roof and tower, 4.4 mm on the bay. Reprint the "
+                  "CREST, TOWER-crest and BAY-crest strips (the Iron plates).")],
     "whitby": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "delancey": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "ardmore": [("1.1", "2026-09-30", INSERTS_DEEP)],
@@ -69,7 +75,10 @@ HISTORY = {
     "magnolia": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "whitmore": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "pennock": [("1.1", "2026-09-30", INSERTS_DEEP)],
-    "oakhurst": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "oakhurst": [("1.1", "2026-09-30", INSERTS_DEEP),
+                 ("1.2", "2026-10-04", "ROOF: a loose wedge no longer floats inside the roof under the cupola "
+                  "(the tip of the support under its pocket, which was cut deeper than the support reached); the "
+                  "cupola's pocket now has a solid floor joined to the roof shell. Reprint ROOF.")],
     "vantassel": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "hathaway": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "chatham": [("1.1", "2026-09-30", INSERTS_DEEP)],

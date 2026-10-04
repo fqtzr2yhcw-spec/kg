@@ -161,6 +161,20 @@ def chimney_seat(roof_solid, x, y, half, z_top):
     return M.hull_points(pts) ^ roof_solid
 
 
+def pocket_seat(roof_solid, x, y, hx, hy, z_floor, over=1.6):
+    """The floor under a chimney's pocket in a hollow roof: a block whose top runs ``over``
+    past the pocket (half sizes hx, hy) at 0.4 above its floor ``z_floor``, so the floor is
+    solid and joined to the roof's shell, narrowing at 45 degrees below (it prints upright).
+    Use it where the pocket is cut deeper than chimney_seat's pyramid reaches: there only
+    that pyramid's loose tip was left in the hollow, and the chimney had no floor."""
+    zt = z_floor + 0.4
+    ax, ay = hx + over, hy + over
+    d = min(ax, ay)
+    pts = [(x + sx * ax, y + sy * ay, zt) for sx in (-1, 1) for sy in (-1, 1)]
+    pts += [(x + sx * (ax - d + 0.05), y + sy * (ay - d + 0.05), zt - d) for sx in (-1, 1) for sy in (-1, 1)]
+    return M.hull_points(pts) ^ roof_solid
+
+
 def hip_cap(a, b, half=1.0, up=0.7, drop=1.6):
     """A cap (roll) along a sloping hip line from 3D point a up to b: it covers the joint of
     the two slate faces meeting there, ``up`` proud of the hip and sunk ``drop`` at its edges."""

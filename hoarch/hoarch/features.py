@@ -1235,6 +1235,10 @@ def add_porch_top(kit, tag, P, keep, roof_col, frame_col, tin_col=None, arcade_c
     Returns dict(top=part, cap=the tin's solid or None)."""
     from .kit import print_flip
     top = P["top"] - keep
+    comps = top.decompose()             # the top is one piece: drop offcuts the trim cut loose
+    if len(comps) > 1:                  # (fascia ends between window cut-outs, say)
+        vmax = max(c.volume() for c in comps)
+        top = union([c for c in comps if c.volume() >= 0.01 * vmax])
     ptop = top.bounding_box()[5]
     cap = None
     if tin_col is not None and tin == "flat" and roof_col == frame_col:

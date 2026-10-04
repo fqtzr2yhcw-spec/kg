@@ -232,7 +232,7 @@ def build(kit=None):
     for (cx, cy) in chims:
         zroof = Z_EAVE + S_MAIN * (min(cx, W - cx, cy, D - cy) - CW / 2 + D_EAVE)
         z0 = round((min(zroof, zr - S_MAIN * CD / 2) - 3.0) / 0.2) * 0.2
-        roof = roof + G.chimney_seat(solid_env, cx, cy, CW / 2, zr + 1.0)
+        roof = roof + G.pocket_seat(solid_env, cx, cy, CW / 2 + 0.4, CD / 2 + 0.4, z0)
         pockets.append(box([cx - CW / 2 - 0.4, cy - CD / 2 - 0.4, z0], [cx + CW / 2 + 0.4, cy + CD / 2 + 0.4, zr + 40]))
         stacks.append(C.chimney_bridged(CW, CD, zr + 20.0 - z0).translate([cx, cy, z0]))
     roof = roof - union(pockets)

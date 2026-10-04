@@ -332,7 +332,14 @@ def build(kit=None):
 
     # --- the portico
     for k, p_ in enumerate(PO["pilasters"]):
-        kit.add(f"PORTICO-pilaster-{k}", "White", p_ - st["rings"][0], P=inv34(np.array([[1.0, 0, 0, 0], [0, 0, -1.0, PY], [0, 1.0, 0, 0]])),
+        pc = p_ - st["rings"][0]
+        comps = pc.decompose()
+        if len(comps) > 1:             # the storey's belt crosses it: it stops under the belt, its capital there
+            pc = max(comps, key=lambda c: c.volume())
+            bb = pc.bounding_box()
+            xm = (bb[0] + bb[3]) / 2
+            pc = pc + box([xm - 2.0, bb[4] - 1.0, bb[5] - 1.2], [xm + 2.0, bb[4], bb[5]])
+        kit.add(f"PORTICO-pilaster-{k}", "White", pc, P=inv34(np.array([[1.0, 0, 0, 0], [0, 0, -1.0, PY], [0, 1.0, 0, 0]])),
                 key="PORTICO-pilaster", group="portico")
     # the entablature and both columns in one piece, printed upside down on the flat deck: each
     # column's foot drops into a snug recess in the floor, so no column is glued on its own
