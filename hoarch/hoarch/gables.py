@@ -164,14 +164,18 @@ def chimney_seat(roof_solid, x, y, half, z_top):
 def pocket_seat(roof_solid, x, y, hx, hy, z_floor, over=1.6):
     """The floor under a chimney's pocket in a hollow roof: a block whose top runs ``over``
     past the pocket (half sizes hx, hy) at 0.4 above its floor ``z_floor``, so the floor is
-    solid and joined to the roof's shell, narrowing to a point below (it prints upright).
+    solid and joined to the roof's shell, narrowing to a point below on a 2 mm post down to the
+    bed (it prints upright, nothing starting in mid-air).
     Use it where the pocket is cut deeper than chimney_seat's pyramid reaches: there only
     that pyramid's loose tip was left in the hollow, and the chimney had no floor."""
     zt = z_floor + 0.4
     ax, ay = hx + over, hy + over
     pts = [(x + sx * ax, y + sy * ay, zt) for sx in (-1, 1) for sy in (-1, 1)]
-    pts.append((x, y, zt - max(ax, ay) - 1.0))      # down to a point: a strip there sliced as a floating start
-    return M.hull_points(pts) ^ roof_solid
+    za = zt - max(ax, ay) - 1.0
+    pts.append((x, y, za))                          # narrowing to a point...
+    z_bed = roof_solid.bounding_box()[2]
+    post = box([x - 1.0, y - 1.0, z_bed], [x + 1.0, y + 1.0, za + 1.0])   # ...on a post from the bed (a point or a
+    return (M.hull_points(pts) + post) ^ roof_solid                          # strip in mid-air slices as a floating start)
 
 
 def hip_cap(a, b, half=1.0, up=0.7, drop=1.6):
