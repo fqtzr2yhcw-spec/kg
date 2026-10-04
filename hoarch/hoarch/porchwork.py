@@ -347,7 +347,15 @@ def fill_flat(style, L, vb, vt):
     parts = []
     bar = 0.55
     if style in FILLS:                   # styles registered by other modules: FILLS[style](L, vb, vt) -> [cs]
-        parts = list(FILLS[style](L, vb, vt))
+        r = FILLS[style](L, vb, vt)
+        if isinstance(r, dict):
+            # a solid wall whose grooves are sunk ``depth`` into both faces: a groove in the (u, v)
+            # outline would cut straight through, leaving each course hanging from the posts
+            win = rect(0.0, vb - 0.05, L, vt + 0.05)
+            t, d = r.get("t", 1.2), r.get("depth", 0.15)
+            core = _flat(rect(-2.0, vb - 1.0, L + 2.0, vt + 1.0), t - 2 * d)
+            return _flat(cs_union(r["cs"]) ^ win, t) - (_flat(r["grooves"] ^ win, t + 1.0) - core)
+        parts = list(r)
     elif style == "chippendale":
         n = max(1, int(round(L / (H * 1.1))))
         for i in range(n):

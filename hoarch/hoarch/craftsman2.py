@@ -2171,7 +2171,7 @@ def fill_shakeparapet(L, vb, vt):
     capping rail."""
     board = rect(0.0, vb, L, vt)
     grooves = cs_union([rect(-1, v - 0.2, L + 1, v + 0.2) for v in np.arange(vb + 2.0, vt - 1.5, 2.0)])
-    return [board - grooves, rect(0.0, vt - 1.3, L, vt)]
+    return dict(cs=[board], grooves=grooves, t=1.2, depth=0.15)    # grooves sunk into the faces, not through
 
 
 def frieze_bolsterbeam(u0, u1, v_bot, v_top):

@@ -280,8 +280,12 @@ def fill_lapwall(L, vb, vt):
     """A solid porch wall faced in lap siding (grooves at every course) between the rails."""
     H = vt - vb
     board = rect(0.0, vb, L, vt)
-    grooves = cs_union([rect(-1, v - 0.25, L + 1, v + 0.25) for v in np.arange(vb + 1.9, vt - 0.8, 1.9)])
-    return [board - grooves + cs_union([rect(0.0, v - 0.3, L, v + 0.3) for v in np.arange(vb + 1.9, vt - 0.8, 1.9 * 3)])] if H > 2 else [board]
+    if H <= 2:
+        return [board]
+    # grooves at every course but every third; sunk into the faces (porchwork.fill_flat), 1.2 thick
+    vs = np.arange(vb + 1.9, vt - 0.8, 1.9)
+    grooves = cs_union([rect(-1, v - 0.25, L + 1, v + 0.25) for k, v in enumerate(vs) if k % 3])
+    return dict(cs=[board], grooves=grooves, t=1.2, depth=0.15)
 
 
 def frieze_cloudbeam(u0, u1, v_bot, v_top):

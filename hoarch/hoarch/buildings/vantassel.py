@@ -239,14 +239,17 @@ def build(kit=None):
     kit.add("DORMER", "Cream", dbody.transform(Ad), group="roof")
     kit.add("DORMER-core", "Cedar", dcore.transform(Ad), group="roof")
     # its shed roof: a slab over the dormer's sloping top, shakes on it, printed lying on its underside
+    # The slab lies in the dormer top's plane, v = DH - w * dslope, eave edge included: its front
+    # corners used to sit at v = DH, which tilted it against the shakes (laid at dslope) and left
+    # them up to 0.35 mm in the air over the slab.
     th = 1.4
-    slab_cs = poly([(1.0, DH), (-ddep - 4.0, DH + (ddep + 4.0) * dslope), (-ddep - 4.0, DH + (ddep + 4.0) * dslope + th),
-                    (1.0, DH + th)])                                           # (w, v)
+    slab_cs = poly([(1.0, DH - dslope), (-ddep - 4.0, DH + (ddep + 4.0) * dslope),
+                    (-ddep - 4.0, DH + (ddep + 4.0) * dslope + th), (1.0, DH - dslope + th)])   # (w, v)
     droof = M.extrude(slab_cs, DL + 2.4).transform(np.array([[0, 0, 1.0, -DL / 2 - 1.2], [0, 1.0, 0, 0], [1.0, 0, 0, 0]]))
     nn = math.hypot(1.0, dslope)
     Rl = np.array([[1.0, 0, 0, 0], [0, dslope / nn, -1.0 / nn, 0], [0, 1.0 / nn, dslope / nn, 0]])   # the slab's normal -> up
-    # shakes on its top face: from the front edge (w = 1, v = DH + th) up the slope
-    a_ = np.array([DH + th, 1.0])
+    # shakes on its top face: from the front edge (w = 1, v = DH + th - dslope) up the slope
+    a_ = np.array([DH + th - dslope, 1.0])
     ttex = scallop_rows(rect(-DL / 2 - 0.9, 0.0, DL / 2 + 0.9, (ddep + 5.0) * nn - 0.3), 1.6, 2.3, d=0.42, shape=SHAKES)
     tdir = np.array([0.0, dslope, -1.0]) / nn                                   # (u, v, w): up the slab, backward
     tnorm = np.array([0.0, 1.0, dslope]) / nn

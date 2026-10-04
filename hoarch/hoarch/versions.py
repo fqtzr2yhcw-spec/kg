@@ -87,7 +87,10 @@ HISTORY = {
                   "strands - they started 0.6 mm above the fan's sunk floor, held only at their tips. They now "
                   "stand on that floor, and the rays taper from 0.9 mm at the hub to 1.5 mm at the ring (they "
                   "were 0.5 mm, one nozzle line). Reprint PEDIMENT.")],
-    "vantassel": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "vantassel": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-05", "DORMER-roof: the shed dormer's shakes floated up to 0.35 mm above the roof slab "
+         "(the slab was laid at a slightly shallower pitch than the shakes), so their first layer printed in "
+         "the air; the slab now follows the dormer's pitch and the shakes sit on it. Reprint DORMER-roof.")],
     "hathaway": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "chatham": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "winthrop": [("1.1", "2026-09-30", INSERTS_DEEP)],
@@ -108,7 +111,10 @@ HISTORY = {
     "alvarado": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "brenton": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "ridgely": [("1.1", "2026-09-30", INSERTS_DEEP)],
-    "arroyo": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "arroyo": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-05", "PORCH-top: the porch's lap-sided walls had their siding grooves cut right through, "
+         "so each wall printed in two strips joined only at the piers, the upper one starting as a loose strand. "
+         "The grooves are now sunk 0.15 mm into each face of a 1.2 mm wall. Reprint PORCH-top.")],
     "hollister": [("1.1", "2026-09-30", INSERTS_DEEP),
         ("1.2", "2026-10-04", "ROOF: the pier under the chimney now runs up into the roof shell; it stopped just short of it and printed as a loose block. Reprint ROOF.")],
     "wrightwood": [("1.1", "2026-09-30", INSERTS_DEEP)],
@@ -120,7 +126,10 @@ HISTORY = {
     "lindenwald": [("1.1", "2026-09-30", INSERTS_DEEP),
         ("1.2", "2026-10-04", "ROOF: the chimney's pocket now has a solid floor joined to the roof shell; before, only the loose tip of the support under it floated inside the hollow roof. Reprint ROOF. PORCH-top: a 0.15 mm skin cut loose along its back edge (too thin to print) is gone; no need to reprint.")],
     "stickley": [("1.1", "2026-09-30", INSERTS_DEEP),
-        ("1.2", "2026-10-04", "PORCH-top: a 0.15 mm skin cut loose along its back edge (too thin to print) is gone; no need to reprint.")],
+        ("1.2", "2026-10-04", "PORCH-top: a 0.15 mm skin cut loose along its back edge (too thin to print) is gone; no need to reprint."),
+        ("1.3", "2026-10-05", "SLEEP-top: the sleeping porch's shingled parapet had its course grooves cut right "
+         "through, so it printed as strips joined only at the posts, each starting as a loose strand. The grooves "
+         "are now sunk 0.15 mm into each face of a 1.2 mm parapet. Reprint SLEEP-top.")],
     "sandoval": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "millbrook": [("1.1", "2026-09-30", INSERTS_DEEP),
         ("1.2", "2026-10-04", "ROOF: the piers under the two stove flues now run up into the roof shell; they stopped just short of it and printed as loose blocks. Reprint ROOF. PLATFORM-top: a loose offcut of its flat top (under the canopy, by the agent's bay) is gone; no need to reprint.")],
