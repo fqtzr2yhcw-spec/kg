@@ -82,7 +82,11 @@ HISTORY = {
     "oakhurst": [("1.1", "2026-09-30", INSERTS_DEEP),
                  ("1.2", "2026-10-04", "ROOF: a loose wedge no longer floats inside the roof under the cupola "
                   "(the tip of the support under its pocket, which was cut deeper than the support reached); the "
-                  "cupola's pocket now has a solid floor joined to the roof shell. Reprint ROOF.")],
+                  "cupola's pocket now has a solid floor joined to the roof shell. Reprint ROOF."),
+                 ("1.3", "2026-10-04", "PEDIMENT: the fan in the tympanum printed its rays and hub as loose "
+                  "strands - they started 0.6 mm above the fan's sunk floor, held only at their tips. They now "
+                  "stand on that floor, and the rays taper from 0.9 mm at the hub to 1.5 mm at the ring (they "
+                  "were 0.5 mm, one nozzle line). Reprint PEDIMENT.")],
     "vantassel": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "hathaway": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "chatham": [("1.1", "2026-09-30", INSERTS_DEEP)],

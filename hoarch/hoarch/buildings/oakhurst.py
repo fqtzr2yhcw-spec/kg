@@ -29,7 +29,7 @@ from manifold3d import JoinType, Manifold as M
 from hoarch.core import Facade, box, circle, cs_union, inv34, offset, poly, rect, slab, union
 from hoarch import colonial as C, cornice as CO, features as FT, gables as G, openings as O, roof as R
 from hoarch.kit import Kit, print_flip
-from hoarch.ornament import ext, stroke
+from hoarch.ornament import ext
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
 NAME = "The Oakhurst"
@@ -297,14 +297,25 @@ def build(kit=None):
     At = f.A
     apex_v = wf["apex"]
     tcs = wf["cs"] ^ rect(-1, -FASCIA + 0.02, 500, 500)
+    # The fan's field is sunk 0.4 inside its ring; the hub and the rays stand on that sunk floor
+    # (they used to start at the old face and printed as strands in the air over it). The rays
+    # taper from 0.9 mm at the hub to 1.5 at the ring, two nozzle lines at their thinnest.
     rl = min(11.0, apex_v * 0.9)
-    lun = cs_union([(circle((wf["L"] / 2, -FASCIA), rl, 48) - circle((wf["L"] / 2, -FASCIA), rl - 0.9, 48)),
-                    circle((wf["L"] / 2, -FASCIA), 1.6, 20)]) ^ rect(0, -FASCIA + 0.4, 500, 500)
-    rays = cs_union([stroke([(wf["L"] / 2 + 1.6 * np.cos(a), -FASCIA + 1.6 * np.sin(a)),
-                               (wf["L"] / 2 + (rl - 0.5) * np.cos(a), -FASCIA + (rl - 0.5) * np.sin(a))], 0.5)
-                     for a in np.linspace(0.35, np.pi - 0.35, 7)])
-    tym = M.extrude(tcs, 2.4).translate([0, 0, -2.4]) + M.extrude(lun, 0.6) + M.extrude(rays ^ tcs, 0.4)
-    tym = tym - M.extrude(circle((wf["L"] / 2, -FASCIA), rl - 0.9, 48) ^ tcs, 0.6).translate([0, 0, -0.4])
+    lc = (wf["L"] / 2, -FASCIA)
+    half = rect(0, -FASCIA + 0.4, 500, 500) ^ tcs
+    field = circle(lc, rl - 0.9, 64) ^ half
+    ring = (circle(lc, rl, 64) - circle(lc, rl - 0.9, 64)) ^ half
+
+    def ray(a, r0, r1, w0, w1):
+        u, n = np.array([np.cos(a), np.sin(a)]), np.array([-np.sin(a), np.cos(a)])
+        c = np.array(lc)
+        return poly([tuple(c + r0 * u + w0 / 2 * n), tuple(c + r1 * u + w1 / 2 * n),
+                     tuple(c + r1 * u - w1 / 2 * n), tuple(c + r0 * u - w0 / 2 * n)])
+    rays = cs_union([ray(a, 2.0, rl - 0.6, 0.9, 1.5) for a in np.linspace(0.35, np.pi - 0.35, 7)]) ^ field
+    hub = circle(lc, 2.4, 32) ^ half
+    tym = M.extrude(tcs, 2.4).translate([0, 0, -2.4]) - M.extrude(field, 0.6).translate([0, 0, -0.4])
+    tym = (tym + M.extrude(ring, 0.6) + M.extrude(rays, 0.6).translate([0, 0, -0.4])
+           + M.extrude(hub, 0.8).translate([0, 0, -0.4]))
     kit.add("PEDIMENT", "White", f.place(tym) - roof, P=inv34(At), group="portico")
     # the floor: a brick base with the arcaded facing, a planked deck on it, broad steps
     pbase = _faced_block(PX0 - 1.0, PX1 + 1.0, -PD - 1.0, 0.02, ZF - 2.0, "SEW", seed=5) - fnd
