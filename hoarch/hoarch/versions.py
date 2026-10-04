@@ -62,13 +62,16 @@ HISTORY = {
     "bank": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "general": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "drugstore": [("1.1", "2026-09-30", INSERTS_DEEP)],
-    "hotel": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "hotel": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "The balcony's iron railings redrawn so a 0.4 mm nozzle prints them: 1.0 mm rails, 0.9 mm bars, rings and stems, every opening 0.8 mm or more (the bars were 0.6 mm and the rings 0.5). Reprint RAIL-front and RAIL-end.")],
     "bakery": [("1.1", "2026-09-30", INSERTS_DEEP)],
-    "hardware": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "hardware": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "The iron shutters' rim, straps and rivets are two nozzle lines wide (the 0.5 mm rim printed as a hairline). Reprint the SHUTTER parts.")],
     "millinery": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "jeweler": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "primrose": [("1.1", "2026-09-30", INSERTS_DEEP)],
-    "twins": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "twins": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "Myrtle's fleur-de-lis cresting made printable with a 0.4 mm nozzle: drawn at half size and doubled, every member 0.9 mm or more (they were 0.4-0.6 mm), 7.2 mm tall (was 3.6). Reprint M-CRESTING.")],
     "larkspur": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "juniper": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "wisteria": [("1.1", "2026-09-30", INSERTS_DEEP)],
@@ -124,7 +127,8 @@ HISTORY = {
     "pleasant": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "thorne": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "mxtower": [("1.1", "2026-09-30", INSERTS_DEEP)],
-    "blackwater": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "blackwater": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "The hoist's smokestack has a 0.95 mm wall (at 0.7 mm it printed as a single line). Reprint STACK.")],
     "enginehouse": [("1.1", "2026-09-30", INSERTS_DEEP)],
     "yardoffice": [("1.1", "2026-09-30", INSERTS_DEEP),
         ("1.2", "2026-10-04", "ROOF: the pier under the chimney now runs up into the roof shell; it stopped just short of it and printed as a loose block. Reprint ROOF.")],
@@ -135,8 +139,17 @@ HISTORY = {
                   "ball-capped newels, printed upright) drop into sockets round its open edges; TERRACE-steps "
                   "come down at the door in place of STOOP-front, and the verandas' own steps are gone. "
                   "TOWER-DOME no longer carries the loose square the crest groove cut off its top. Reprint "
-                  "PORCH-deck, TERRACE-rail-0 and -1, TERRACE-steps and TOWER-DOME; the rest is unchanged.")],
+                  "PORCH-deck, TERRACE-rail-0 and -1, TERRACE-steps and TOWER-DOME; the rest is unchanged."),
+        ("1.2", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.8-7.2 mm tall, about twice before. The tridents' prongs are a touch heavier. Reprint the iron cresting strips (the Iron plates).")],
     "sandhouse": [("1.1", "2026-10-04", "ROOF: the pier under the chimney now runs up into the roof shell; it stopped just short of it and printed as a loose block. Reprint ROOF.")],
+    "montclair": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.4 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "lafayette": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "delacroix": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.8-7.2 mm tall, about twice before. Its small rings, which would have printed shut, are now solid bosses. Reprint the iron cresting strips (the Iron plates).")],
+    "valcour": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.8-7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "chevalier": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 7.2 mm (5.6 on the bays) tall, about twice before. The hearts are a touch heavier, and the bays now carry the house's own cresting instead of a plain spear pattern. Reprint the iron cresting strips (the Iron plates).")],
+    "marchand": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.8-7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "rochambeau": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.4-7.2 mm tall, about twice before. The portico's balcony railing is drawn the same way and stays 6.4 mm tall. Reprint the iron cresting strips (the Iron plates).")],
+    "beauvais": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
 }
 
 
