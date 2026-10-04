@@ -338,7 +338,7 @@ def build(kit=None):
             pc = max(comps, key=lambda c: c.volume())
             bb = pc.bounding_box()
             xm = (bb[0] + bb[3]) / 2
-            pc = pc + box([xm - 2.0, bb[4] - 1.0, bb[5] - 1.2], [xm + 2.0, bb[4], bb[5]])
+            pc = (pc + box([xm - 2.0, bb[4] - 1.0, bb[5] - 1.2], [xm + 2.0, bb[4], bb[5]])) - st["rings"][0]
         kit.add(f"PORTICO-pilaster-{k}", "White", pc, P=inv34(np.array([[1.0, 0, 0, 0], [0, 0, -1.0, PY], [0, 1.0, 0, 0]])),
                 key="PORTICO-pilaster", group="portico")
     # the entablature and both columns in one piece, printed upside down on the flat deck: each
