@@ -118,8 +118,10 @@ class Kit:
                 continue
             main = max(comps, key=lambda c: c.volume())
             scrap = 0.01 * main.volume() if any(k in p.name for k in one_piece) else 0.0
+            # (not on steps: the skin on their back, 0.05 mm off, is the face glued to the deck)
+            films = min_t if not ("steps" in p.name or "STOOP" in p.name or "STEPS" in p.name) else 0.0
             small = [c for c in comps if c is not main and (c.volume() < max(min_vol, scrap) or
-                                                              2.0 * c.volume() / max(c.surface_area(), 1e-9) < min_t)]
+                                                              2.0 * c.volume() / max(c.surface_area(), 1e-9) < films)]
             if small:
                 big = [c for c in comps if not any(c is q for q in small)]
                 p.solid = M.batch_boolean(big, OpType.Add) if len(big) > 1 else big[0]
