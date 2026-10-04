@@ -183,7 +183,7 @@ def build(kit=None):
     CW = 6.4
     zc = Z_EAVE + S_MAIN * (D + D_EAVE - cy - CW / 2 - 0.4)
     z0 = round((zc - 4.0) / 0.2) * 0.2
-    roof = roof + (box([cx - CW / 2 - 1.6, cy - CW / 2 - 1.6, ZW + 0.01], [cx + CW / 2 + 1.6, cy + CW / 2 + 1.6, z0 + 0.01]) ^ solid_env)
+    roof = roof + (box([cx - CW / 2 - 1.6, cy - CW / 2 - 1.6, ZW + 0.01], [cx + CW / 2 + 1.6, cy + CW / 2 + 1.6, ZR + 60]) ^ solid_env)   # up into the shell: joined to it
     roof = roof - box([cx - CW / 2 - 0.5, cy - CW / 2 - 0.5, z0], [cx + CW / 2 + 0.5, cy + CW / 2 + 0.5, ZR + 60])
     kit.add("ROOF", "Shingle", roof, group="roof")
     lk, lglass = YD.lookout_yard(LK, h0=3.0, hw=9.0)

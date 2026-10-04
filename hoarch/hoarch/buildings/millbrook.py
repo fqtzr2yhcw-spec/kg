@@ -201,7 +201,7 @@ def build(kit=None):
         CW = 7.0
         zc = Z_EAVE + S_MAIN * (D + D_EAVE - cy - CW / 2 - 0.4)
         z0 = round((zc - 6.0) / 0.2) * 0.2
-        roof = roof + (box([cx - CW / 2 - 1.8, cy - CW / 2 - 1.8, ZW + 0.01], [cx + CW / 2 + 1.8, cy + CW / 2 + 1.8, z0 + 0.01]) ^ solid_env)
+        roof = roof + (box([cx - CW / 2 - 1.8, cy - CW / 2 - 1.8, ZW + 0.01], [cx + CW / 2 + 1.8, cy + CW / 2 + 1.8, zr + 60]) ^ solid_env)   # up into the shell: joined to it
         roof = roof - box([cx - CW / 2 - 0.6, cy - CW / 2 - 0.6, z0], [cx + CW / 2 + 0.6, cy + CW / 2 + 0.6, zr + 60])
         flues.append(TN.chimney_depot(CW, CW, zr + 12.0 - z0).translate([cx, cy, z0]))
     # the dormer over the agent's bay, its face on the front slope
