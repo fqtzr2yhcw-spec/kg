@@ -525,8 +525,9 @@ TW.FOUNDATION_EXTRA.update(rockblock=foundation_rockblock)
 
 
 # ------------------------------------------------------------------ windows, the door, dormers
-def _border_bars(cs, m=0.9):
-    """Prairie border: bars cutting a narrow margin of lights round a big centre light."""
+def _border_bars(cs, m=1.95):
+    """Prairie border: bars cutting a margin of lights round a big centre light (1.7 mm lights:
+    at 0.65 mm they were too narrow to print)."""
     u0, v0, u1, v1 = cs.bounds()
     return cs_union([rect(u0 + m - RIB / 2, v0 - 1, u0 + m + RIB / 2, v1 + 1), rect(u1 - m - RIB / 2, v0 - 1, u1 - m + RIB / 2, v1 + 1),
                      rect(u0 - 1, v1 - m - RIB / 2, u1 + 1, v1 - m + RIB / 2)])
