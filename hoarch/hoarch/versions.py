@@ -233,9 +233,28 @@ _GLAZE2 = {
               "WIN- or DOOR- part you printed before.",
     "ashcombe": "Windows: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint the WIN- parts.",
 }
-GLAZE2_OTHERS = ()          # filled in once the scan of the exported plates says which other buildings change
-for _k in GLAZE2_OTHERS:
-    _GLAZE2.setdefault(_k, GLAZE2_SCRAPS)
+GLAZE2_PANES = ("Windows: the glazing bars of the narrower sashes were laid out over the whole opening, which left "
+                "the outer panes 0.8-1.2 mm wide, too narrow to print clean (a test print showed openings of about "
+                "1 mm print as rows of little loops). The panes are now equal and 1.6 mm or more, two across where "
+                "three would not fit. Reprint the WIN- parts.")
+GLAZE2_BOTH = ("Windows and doors: a test print showed glazing openings of about 1 mm print as rows of little loops, "
+               "where panes of 2 mm print clean. Sashes whose outer panes came out 0.8-1.2 mm wide (bars laid out "
+               "over the whole opening) now have equal panes of 1.6 mm or more, two across where three would not "
+               "fit, and the small lights, corner scraps and ray tips under 1.6 mm are filled. Reprint the WIN- and "
+               "DOOR- parts.")
+GLAZE2_PANES_ADD = (" Sash windows whose outer panes came out under 1.6 mm wide now have equal panes of 1.6 mm or "
+                    "more; reprint those WIN- parts too.")
+_GLAZE2["hollister"] = ("Windows: the Prairie border lights round the big upper lights were 0.65 mm wide, too narrow to "
+                        "print; they are 1.7 mm now. " + GLAZE2_SCRAPS.replace("Windows and doors: a", "A", 1))
+# which second-pass changes each re-exported building took (scan of the plates before and after):
+# S = small openings filled, P = sash panes evened out
+GLAZE2_OTHERS = {}
+for _k, _fl in GLAZE2_OTHERS.items():
+    if _k in _GLAZE2:
+        if "P" in _fl:
+            _GLAZE2[_k] += GLAZE2_PANES_ADD
+    else:
+        _GLAZE2[_k] = GLAZE2_BOTH if _fl == "SP" else GLAZE2_PANES if _fl == "P" else GLAZE2_SCRAPS
 for _k, _note in _GLAZE2.items():
     _h = HISTORY.setdefault(_k, [])
     _maj, _min = (_h[-1][0] if _h else "1.0").split(".")
