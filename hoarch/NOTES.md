@@ -409,15 +409,29 @@ support. A reach of 1 mm or less is a ledge that prints. A long reach on a membe
 than a nozzle line is a bridge between two supports, and prints as one. A long reach on a
 thin strip is the fault.
 
-## Glazing bars: 0.9 mm bars, 0.9 mm openings
+## Glazing: every opening 1.6 mm or more
 
-The Oakhurst's leaded lozenges (0.5 mm bars 1.8 mm apart, 0.77 mm openings) printed as a blur
-on the owner's print. A lattice over glass needs bars and openings of two nozzle lines each.
-`colonial._diamond_bars` now fits whole lozenges to each light and fills the corner scraps.
-`python3 -m hoarch.fineopen --building <key>` counts, per window or door part, the openings
-narrower than 0.9 mm on its worst layer. A dense count on a low layer (just above the glass)
-is a lattice that will blur. Low counts on higher layers are frame grooves; they only lose
-some crispness.
+The owner's prints set the rule. The sash windows' panes (1.6 to 3 mm wide, 0.5 mm bars) print
+clean. The Oakhurst's lozenges printed as a blur at 0.77 mm openings, and still as rows of
+little loops at about 1 mm (0.8-0.9 mm leads). So every glazing opening is at least 1.6 mm
+across:
+
+- `openings.muntins` fits square bars to a light, in panes of about 2 x 3 mm.
+- `openings.lozenges` fits whole lozenges (1.6 mm openings or more, 0.8 mm leads) and falls
+  back to `muntins` in a light too small for them.
+- `openings._fill_scraps`, run by `_one_piece` on every window and door, fills what is
+  narrower than 1.6 mm and shorter than 2.5 mm: small lights, corner scraps, the tips of fan
+  rays. Square pane corners and long narrow gaps (louvres, margin lights) are kept.
+- `window_insert` keeps its bars where every pane is 1.6 mm or wider. Otherwise it splits the
+  light inside the sash stiles into equal panes, fewer if it must. The old layout over the
+  whole opening left the outer panes 0.8-1.2 mm on the narrower sashes. A sidelight too narrow
+  for a 1.6 mm pane drops its stile line, then thins its frame.
+- `python3 -m hoarch.glazetest` writes a test plate: slots 0.8 to 2 mm wide and 2 to 6 mm
+  long, plus lozenge lattices with 1.0 to 2.0 mm openings. Long slots of 1.0-1.5 mm (several
+  door designs) wait on its print.
+- `python3 -m hoarch.fineopen --building <key>` counts, per window or door part, the openings
+  narrower than 1.5 mm on its worst layer. A dense count on a low layer (just above the glass)
+  is a lattice that will blur.
 
 ## Size standard (houses 21 to 30, Rev C)
 

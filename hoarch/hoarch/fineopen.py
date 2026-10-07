@@ -8,7 +8,7 @@ import json, os, re, sys, zipfile
 import numpy as np
 import manifold3d as m3
 
-WMIN, ZTOP = 0.9, 3.0
+WMIN, ZTOP = 1.5, 3.0          # glazing openings are 1.6 mm or more (NOTES.md); 1.5 allows for the slicing
 JT = m3.JoinType.Round
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out")
 
