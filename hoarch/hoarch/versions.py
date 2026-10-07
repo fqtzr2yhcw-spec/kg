@@ -90,7 +90,7 @@ HISTORY = {
                  ("1.4", "2026-10-07", "Doors: the leaded lozenge glazing in the front door's sidelights and "
                   "transom, the back door's transom and the two French doors had 0.5 mm bars 0.8 mm apart and "
                   "printed as a blur. Each light now holds bold lozenges fitted to it: 0.9 mm bars, openings of "
-                  "0.8 mm or more, one large lozenge in each French door pane; the French doors' rails and "
+                  "0.9 mm or more, one large lozenge in each French door pane; the French doors' rails and "
                   "stiles are 0.9 mm. Reprint DOOR-18.8x34.0, DOOR-11.0x28.0 (both) and DOOR-11.0x30.0.")],
     "vantassel": [("1.1", "2026-09-30", INSERTS_DEEP),
         ("1.2", "2026-10-05", "DORMER-roof: the shed dormer's shakes floated up to 0.35 mm above the roof slab "
