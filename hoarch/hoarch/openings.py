@@ -782,7 +782,8 @@ def _leaf(style, u, lw, dh, hinge_left):
         gl = rect(pu0, dh * 0.42, pu1, top - st)
         glass = gl
         parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
-        _GLASS_BARS.append(ext(lozenges(gl.offset(0.2), pitch=2.8, ang=45.0), _gt(), -0.6))   # iron grille, 0.9 mm bars
+        grille = lozenges(gl, pitch=2.8, ang=45.0) + (gl.offset(0.2, JoinType.Miter, 4.0) - gl)  # iron grille, 0.9 mm bars
+        _GLASS_BARS.append(ext(grille, _gt(), -0.6))
         panel(rect(pu0, 1.3, pu1, dh * 0.42 - 1.0))
     elif style == "six_light":            # six lights (two by three) over two short raised panels
         gl = rect(pu0, dh * 0.45, pu1, top - st)
