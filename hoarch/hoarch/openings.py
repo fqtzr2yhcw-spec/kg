@@ -211,6 +211,32 @@ def sash_frame(w):
     return min(0.9, max(0.55, 0.11 * w))
 
 
+PANE_MIN = 1.6     # narrowest glazing opening that prints clean (the owner's prints)
+
+
+def _fit_panes(n, span, bar=RIB):
+    """The number of panes, at most ``n``, that ``span`` mm holds with every pane PANE_MIN
+    wide or more between bars ``bar`` wide."""
+    while n > 1 and (span - (n - 1) * bar) / n < PANE_MIN:
+        n -= 1
+    return n
+
+
+def _bar_centres(n, a, b, bar=RIB):
+    """Centres of the n - 1 bars that split a to b into n equal panes."""
+    p = (b - a - (n - 1) * bar) / n
+    return [a + i * (p + bar) - bar / 2 for i in range(1, n)]
+
+
+def _bars_even(n, a, b, cs, bar=RIB):
+    """The bar centres ``cs`` across the light a to b if every pane between them is PANE_MIN or
+    wider, else the bars of the most equal panes, at most n, that are."""
+    edges = [a] + [e for c in cs for e in (c - bar / 2, c + bar / 2)] + [b]
+    if min(edges[2 * i + 1] - edges[2 * i] for i in range(len(cs) + 1)) >= PANE_MIN - 1e-6:
+        return cs
+    return _bar_centres(_fit_panes(n, b - a, bar), a, b, bar)
+
+
 def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare=False, ends=0.9, sill_ext=0.6,
                   clip=False, apron=False, consoles=None, qa=False, rows=(1, 1), upper=None):
     """Italianate window: segmental- or round-arched head, eared casing,
@@ -236,6 +262,13 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     # enough to read as a framed window from arm's length (the reference kits' look)
     frame_w = sash_frame(w)
     stile = min(0.7, max(RIB, 0.08 * w))
+    # a narrow light (a sidelight) gives up its stile line, then some of its frame, rather than
+    # glazing narrower than PANE_MIN
+    if w - 2 * CLR - 2 * frame_w - 2 * stile < PANE_MIN:
+        stile = max(0.0, (w - 2 * CLR - 2 * frame_w - PANE_MIN) / 2)
+        stile = stile if stile >= 0.3 else 0.0
+        if stile == 0.0:
+            frame_w = max(0.35, min(frame_w, (w - 2 * CLR - PANE_MIN) / 2))
     glass = ext(plug_cs, -pl, -pl + GLASS)
     ring = ext(plug_cs - plug_cs.offset(-frame_w, JoinType.Miter, 4.0), -pl, 0.0)
     parts += [glass, ring]
@@ -244,14 +277,18 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     lo, up = lites
     mr = h * 0.46                              # meeting rail height
     bars.append(rect(-w, mr - 0.4, w, mr + 0.4))
+    # glazing bars: kept where they were wherever every pane is PANE_MIN or wider; where the
+    # outer panes came out narrower (bars laid over the whole opening made them about half the
+    # middle one, 0.8-1.2 mm on the narrower sashes, too narrow to print) the light inside the
+    # sash stiles is split into equal panes instead, and fewer of them if it must
+    lb = inner.offset(-stile, JoinType.Miter, 4.0).bounds()
     for n, v0, v1 in ((lo, 0, mr), (up, mr, h)):
-        for i in range(1, n):
-            u = -w / 2 + w * i / n
+        for u in _bars_even(n, lb[0], lb[2], [-w / 2 + w * i / n for i in range(1, n)]):
             bars.append(rect(u - RIB / 2, v0, u + RIB / 2, v1))
     # ``rows``: horizontal muntins in each sash (6-over-6 is lites=(3, 3), rows=(2, 2))
-    for nr, v0, v1 in ((rows[0], 0.0, mr), (rows[1], mr, spring if rise > 0 else h)):
-        for j in range(1, nr):
-            v = v0 + (v1 - v0) * j / nr
+    for nr, v0, v1, a, b in ((rows[0], 0.0, mr, lb[1], mr - 0.4),
+                             (rows[1], mr, spring if rise > 0 else h, mr + 0.4, spring if rise > 0 else lb[3])):
+        for v in _bars_even(nr, a, b, [v0 + (v1 - v0) * j / nr for j in range(1, nr)]):
             bars.append(rect(-w, v - RIB / 2, w, v + RIB / 2))
     if upper == "cross":             # a cross of bars in the upper sash with a small ring at the crossing (the Magnolia)
         top_ = spring if rise > 0 else h
@@ -297,7 +334,8 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
     sash = cs_union(bars) ^ inner
     parts.append(ext(sash, -pl + GLASS, -rec))
     # upper sash frame (a second frame line just inside the ring reads as the sash stile)
-    parts.append(ext(inner - inner.offset(-stile, JoinType.Miter, 4.0), -pl + GLASS, -rec))
+    if stile > 0:
+        parts.append(ext(inner - inner.offset(-stile, JoinType.Miter, 4.0), -pl + GLASS, -rec))
     if bare:
         ins = union(parts)
         return dict(insert=ins, sash=ins, surround=None, cut=op, landing=op.offset(0.2, JoinType.Miter, 4.0),
