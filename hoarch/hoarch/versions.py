@@ -218,7 +218,9 @@ _GLAZE2 = {
     "oakhurst": "Doors: the lozenge glazing still printed as little loops (openings about 1 mm, the owner's print). "
                 "The sidelights, transoms and French door lights are now divided by square bars into panes of about "
                 "2 x 3 mm, which print as cleanly as the sash windows. Reprint DOOR-18.8x34.0, DOOR-11.0x28.0 (both) "
-                "and DOOR-11.0x30.0.",
+                "and DOOR-11.0x30.0. Middle cornice: it stopped 6 mm short of the wing at both inside corners, "
+                "leaving a gap (the owner's print); it now runs up to the wing's cornice, its ends coped to the "
+                "wing cornice's profile. Reprint CORNICE-J-lower and CORNICE-J-crown.",
     "bank": "Doors: the grille's lozenges are larger (openings 1.6 mm or more) and the transom's ring is an oval light "
             "tied to the frame at its ends, without the cross bars that cut it into 1 mm pieces; smaller scraps are "
             "filled. Reprint the DOOR- parts.",

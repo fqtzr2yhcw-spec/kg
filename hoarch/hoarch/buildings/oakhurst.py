@@ -147,12 +147,26 @@ def _faced_block(x0, x1, y0, y1, z1, faces, seed=0):
     return body
 
 
+def _wing_cope(rings_w, wing_ledge):
+    """What the joint cornice is cut back from round the wing: the wing itself, the joint's
+    run along the wing's walls, and at the two inside corners the wing's cornice, ledge and
+    terrace deck, 0.25 mm clear, so the joint's ends are coped to their profile and meet them."""
+    z0, z1 = S1 - 1.0, S1 + RJ + 12.0
+    cut = [box([W - 1.0, WY0 - 0.25, z0], [WX1 + 8.0, WY1 + 0.25, z1]),
+           box([W + 4.0, WY0 - 8.0, z0], [WX1 + 8.0, WY1 + 8.0, z1])]
+    deck = slab(offset(WING.cs, 4.4), WING_ZW - 0.01, WING_ZW + DECK_T + 0.3)   # the planks run to 4.35
+    near = union([box([W - 2.0, y0, z0], [W + 6.0, y1, z1]) for y0, y1 in ((WY0 - 8.0, WY0 + 1.0), (WY1 - 1.0, WY1 + 8.0))])
+    wc = (union([r["solid"] for r in rings_w]) + wing_ledge + deck) ^ near
+    cut += [wc.translate([dx, dy, 0.0]) for dx, dy in ((0.0, 0.0), (0.25, 0.0), (-0.25, 0.0), (0.0, 0.25), (0.0, -0.25),
+                                                      (-1.0, 0.0))]
+    return union(cut)
+
+
 def build(kit=None):
     kit = kit or Kit(NAME, COLORS, RENDER_MAT)
     kit.parts.clear()
     t0 = time.time()
     base = MAIN.cs
-    wing_zone = box([W - 1.0, WY0 - 6.0, ZF], [WX1 + 8.0, WY1 + 6.0, S1 + RJ + 12.0])
     undress = [slab(offset(base, 9.0), ZE - LEDGE - 0.6, ZW + 0.01),
                slab(offset(WING.cs, 8.0) - offset(base, 0.5), WING_ZE - LEDGE - 0.6, WING_ZW + 0.01),
                box([W - 1.0, WY0 - 1.0, WING_ZW - 0.5], [W + 2.0, WY1 + 1.0, S1 + RJ + 9.0]),     # behind the terrace
@@ -178,17 +192,19 @@ def build(kit=None):
     eave_ledge = CO.ledge(eave_path, ZE, LEDGE) - box([PX0 - 0.6, -5.0, ZE - 5.0], [PX1 + 0.6, -0.02, ZE + 5.0])
     kit.add("WALLS-2", "Buttermilk", st["shells"][1] + lip + eave_ledge, group="walls")
 
-    # --- cornices: the joint (stopped either side of the wing's terrace), the eave (stopped
-    # under the portico, whose own cornice takes over), round the portico, round the wing
-    rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT, cut=wing_zone)
+    # --- cornices: round the wing; the joint, run up to the wing's cornice either side of the
+    # terrace and coped to its profile (stopped 6 mm short, it left a gap at both inside corners,
+    # the owner's print); the eave (stopped under the portico, whose own cornice takes over);
+    # round the portico
+    rings_w, _ = CO.level(WING.pts, WING_ZE, WING_C, cut=MAIN.solid(grow=0.7, dz0=-2, dz1=2))
+    CO.add_level(kit, rings_w, "CORNICE-W", "cornice")
+    rings, _ = CO.level(st["outlines"][0], S1 + LEDGE + 0.4, JOINT, cut=_wing_cope(rings_w, wing_ledge))
     CO.add_level(kit, rings, "CORNICE-J", "cornice")
     port_in = box([PX0 - 0.2, -PD - 1.0, ZE - 3.0], [PX1 + 0.2, 1.0, ZW + 3.0])
     rings, _ = CO.level(eave_path, ZE, EAVE, cut=port_in)
     CO.add_level(kit, rings, "CORNICE-E", "cornice")
     rings, _ = CO.level(PORT_PTS, ZE, EAVE, cut=MAIN.solid(grow=7.4, dz0=-5, dz1=5))
     CO.add_level(kit, rings, "CORNICE-P", "portico")
-    rings, _ = CO.level(WING.pts, WING_ZE, WING_C, cut=MAIN.solid(grow=0.7, dz0=-2, dz1=2))
-    CO.add_level(kit, rings, "CORNICE-W", "cornice")
     fnd = foundation(BLOCKS, 0.0, ZF, style="arcaded")
     kit.add("FOUNDATION", "Brick", fnd, group="foundation")
 
