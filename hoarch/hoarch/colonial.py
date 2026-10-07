@@ -1438,16 +1438,26 @@ def window_greek(w, h, head="pediment", lites=(3, 3), rows=(2, 2), A=1.2):
     return O._one_piece([sash], parts, op, plug_cs, O.PLUG, top, -1.4)
 
 
-def _diamond_bars(cs, pitch=1.8):
-    """Lozenge glazing bars across a light (both diagonals every ``pitch``)."""
+def _diamond_bars(cs, pitch=2.4, bar=0.9, ang=60.0):
+    """Lozenge glazing bars across one light, fitted to it: the light is split into a whole
+    number of cells, about ``pitch`` wide and ``tan(ang)`` times as tall, and each cell holds a
+    lozenge whose points touch the middle of the cell's sides. 0.9 mm bars leave openings of
+    1.1 mm or more. The first lattice (0.5 mm bars 1.8 apart, 0.8 mm openings) printed as a
+    blur."""
     b = cs.bounds()
-    span = (b[2] - b[0]) + (b[3] - b[1])
+    w, h = b[2] - b[0], b[3] - b[1]
+    nx = max(1, int(round(w / pitch)))
+    p = w / nx
+    ny = max(1, int(round(h / (p * math.tan(math.radians(ang))))))
+    t = h / (ny * p)                                     # the lozenge's slope
     bars = []
-    for k in range(-int(span / pitch) - 2, int(span / pitch) + 3):
-        c = b[0] + k * pitch
-        bars.append(stroke([(c, b[1] - 1), (c + span + 2, b[1] + span + 1)], RIB, caps=False))
-        bars.append(stroke([(c, b[3] + 1), (c + span + 2, b[3] - span - 1)], RIB, caps=False))
-    return cs_union(bars) ^ cs
+    for k in range(-ny - 2, nx + ny + 3):
+        c = b[0] + (k + 0.5) * p                         # the bars cross mid-cell on the bottom edge
+        bars.append(stroke([(c - 1.0 / t, b[1] - 1.0), (c + (h + 1.0) / t, b[3] + 1.0)], bar, caps=False))
+        bars.append(stroke([(c + 1.0 / t, b[1] - 1.0), (c - (h + 1.0) / t, b[3] + 1.0)], bar, caps=False))
+    # openings narrower than 0.8 mm (corner scraps) are filled: a nozzle would only blob them
+    lights = (cs - cs_union(bars)).offset(-0.4, JoinType.Miter, 4.0).offset(0.4, JoinType.Miter, 4.0) ^ cs
+    return cs - lights
 
 
 def door_greek(w, h, side=3.4, transom=4.4, A=1.4, glazed=False):
@@ -1466,11 +1476,11 @@ def door_greek(w, h, side=3.4, transom=4.4, A=1.4, glazed=False):
     for i, ua in enumerate((-w / 2, SLOT / 2)):
         ub = ua + lw
         body.append(ext(rect(ua, 0.4, ub, dh - 0.3), -1.01, -0.8))
-        if glazed:
+        if glazed:                       # stiles and rails 0.9 mm, two nozzle lines
             for j in range(3):
                 va = 1.2 + (dh - 2.4) * j / 3
-                vb = 1.2 + (dh - 2.4) * (j + 1) / 3 - 0.5
-                lights.append(rect(ua + 0.7, va, ub - 0.7, vb))
+                vb = 1.2 + (dh - 2.4) * (j + 1) / 3 - 0.9
+                lights.append(rect(ua + 0.9, va, ub - 0.9, vb))
         else:
             mid = round(dh * 0.5 / 0.2) * 0.2
             for p0, p1 in ((1.2, mid - 0.4), (mid + 0.4, dh - 1.2)):
@@ -1486,7 +1496,8 @@ def door_greek(w, h, side=3.4, transom=4.4, A=1.4, glazed=False):
     g = cs_union(lights)
     body = [p - ext(g, -pl + O.GLASS, 0.5) for p in body]
     sash = body + [ext(g, -pl, -pl + O.GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
-    sash.append(ext(_diamond_bars(g) + (rect(-W, dh - 0.3, W, dh + 0.3) ^ plug_cs), -pl + O.GLASS - 0.01, -0.5))
+    bars = cs_union([_diamond_bars(l_) for l_ in lights])        # each light its own lozenges, centred
+    sash.append(ext(bars + (rect(-W, dh - 0.3, W, dh + 0.3) ^ plug_cs), -pl + O.GLASS - 0.01, -0.5))
     parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
     for sg in (-1, 1):
         u0, u1 = sorted((sg * W / 2, sg * (W / 2 + A + 0.4)))

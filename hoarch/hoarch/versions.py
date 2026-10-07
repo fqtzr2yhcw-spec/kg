@@ -86,7 +86,12 @@ HISTORY = {
                  ("1.3", "2026-10-04", "PEDIMENT: the fan in the tympanum printed its rays and hub as loose "
                   "strands - they started 0.6 mm above the fan's sunk floor, held only at their tips. They now "
                   "stand on that floor, and the rays taper from 0.9 mm at the hub to 1.5 mm at the ring (they "
-                  "were 0.5 mm, one nozzle line). Reprint PEDIMENT.")],
+                  "were 0.5 mm, one nozzle line). Reprint PEDIMENT."),
+                 ("1.4", "2026-10-07", "Doors: the leaded lozenge glazing in the front door's sidelights and "
+                  "transom, the back door's transom and the two French doors had 0.5 mm bars 0.8 mm apart and "
+                  "printed as a blur. Each light now holds bold lozenges fitted to it: 0.9 mm bars, openings of "
+                  "0.8 mm or more, one large lozenge in each French door pane; the French doors' rails and "
+                  "stiles are 0.9 mm. Reprint DOOR-18.8x34.0, DOOR-11.0x28.0 (both) and DOOR-11.0x30.0.")],
     "vantassel": [("1.1", "2026-09-30", INSERTS_DEEP),
         ("1.2", "2026-10-05", "DORMER-roof: the shed dormer's shakes floated up to 0.35 mm above the roof slab "
          "(the slab was laid at a slightly shallower pitch than the shakes), so their first layer printed in "
