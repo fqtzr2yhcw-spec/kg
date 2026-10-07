@@ -341,13 +341,8 @@ def window_lancet(w, h, A=1.4, r_frac=1.25, lattice=2.1):
     plug_cs = op.offset(-O.CLR, RND)
     pl = O.PLUG
     g = plug_cs.offset(-0.5, RND)
-    b = g.bounds()
-    run = (b[2] - b[0] + 4.0) * 1.7
-    lat = []
-    for k in np.arange(-run, b[3] - b[1] + run, lattice):
-        lat.append(stroke([(b[0] - 2, b[1] + k), (b[2] + 2, b[1] + k + run)], 0.4, caps=False))
-        lat.append(stroke([(b[0] - 2, b[1] + k + run), (b[2] + 2, b[1] + k)], 0.4, caps=False))
-    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, cs_union(lat), plug_cs)
+    lat = O.lozenges(g, pitch=max(lattice, 2.4))       # quarries fitted to the light, 0.9 mm leads
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, lat, plug_cs)
     parts = [ext(op - op.offset(-RIB, RND), 0.0, 0.7),
              ext((op.offset(A, RND) - op) ^ rect(-w, 0.0, w, 999), 0.0, 0.8),
              ext(_voussoirs(op, s, A), 0.79, 1.1)] + _hood(op, s, A, w)

@@ -1439,25 +1439,8 @@ def window_greek(w, h, head="pediment", lites=(3, 3), rows=(2, 2), A=1.2):
 
 
 def _diamond_bars(cs, pitch=2.4, bar=0.9, ang=60.0):
-    """Lozenge glazing bars across one light, fitted to it: the light is split into a whole
-    number of cells, about ``pitch`` wide and ``tan(ang)`` times as tall, and each cell holds a
-    lozenge whose points touch the middle of the cell's sides. 0.9 mm bars leave openings of
-    0.9 mm or more. The first lattice (0.5 mm bars 1.8 apart, 0.8 mm openings) printed as a
-    blur."""
-    b = cs.bounds()
-    w, h = b[2] - b[0], b[3] - b[1]
-    nx = max(1, int(round(w / pitch)))
-    p = w / nx
-    ny = max(1, int(round(h / (p * math.tan(math.radians(ang))))))
-    t = h / (ny * p)                                     # the lozenge's slope
-    bars = []
-    for k in range(-ny - 2, nx + ny + 3):
-        c = b[0] + (k + 0.5) * p                         # the bars cross mid-cell on the bottom edge
-        bars.append(stroke([(c - 1.0 / t, b[1] - 1.0), (c + (h + 1.0) / t, b[3] + 1.0)], bar, caps=False))
-        bars.append(stroke([(c + 1.0 / t, b[1] - 1.0), (c - (h + 1.0) / t, b[3] + 1.0)], bar, caps=False))
-    # openings narrower than 0.9 mm (corner scraps) are filled: a nozzle would only blob them
-    lights = (cs - cs_union(bars)).offset(-0.45, JoinType.Miter, 4.0).offset(0.45, JoinType.Miter, 4.0) ^ cs
-    return cs - lights
+    """Lozenge glazing bars fitted to one light (``openings.lozenges``)."""
+    return O.lozenges(cs, pitch, bar, ang)
 
 
 def door_greek(w, h, side=3.4, transom=4.4, A=1.4, glazed=False):

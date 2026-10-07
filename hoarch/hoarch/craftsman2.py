@@ -288,7 +288,7 @@ def window_stonemullion(w, h, n=3, A=1.4):
         a = u0 + j * (cw + mull)
         lights += [rect(a, v0, a + cw, vt - 0.6), rect(a, vt + 0.6, a + cw, v1)]
     g = cs_union(lights)
-    bars = cs_union([_stripes(g, math.radians(64), 1.6, 0.4), _stripes(g, math.radians(116), 1.6, 0.4)])
+    bars = cs_union([O.lozenges(l_, ang=64.0) for l_ in lights])      # quarries fitted to each light, 0.9 mm leads
     sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, bars, plug_cs)
     stone = [rect(u0 + j * (cw + mull) - mull, v0, u0 + j * (cw + mull), v1) for j in range(1, n)] + [rect(u0, vt - 0.6, u1, vt + 0.6)]
     sash.append(ext(cs_union(stone), -pl, 0.5))

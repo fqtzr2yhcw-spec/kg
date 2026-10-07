@@ -171,6 +171,40 @@ HISTORY = {
 }
 
 
+# 2026-10-07: glazing printable with a 0.4 mm nozzle (after the Oakhurst door lattice printed as a blur)
+GLAZE_SCRAPS = ("Windows and doors: the little openings in the glazing narrower than 0.9 mm (corner scraps, "
+                "fanlight tips, small roundels and lozenges) are filled, so a 0.4 mm nozzle no longer blobs them "
+                "the way it did the Oakhurst's door lattice; the larger lights are unchanged. Reprint the WIN- and "
+                "DOOR- parts.")
+GLAZE_LEADED = ("the leaded diamond glazing (0.4-0.5 mm leads 1.6-2.1 mm apart, openings under 0.9 mm) printed as "
+                "a blur. It is redrawn as bold lozenges fitted to each light, 0.9 mm leads and openings of 0.9 mm or "
+                "more, as on the Oakhurst's doors; little scraps elsewhere in the glazing are filled. ")
+_GLAZE = {
+    "brendan": "Lancet windows: " + GLAZE_LEADED + "Reprint every lancet WIN- part.",
+    "bank": "Doors: the iron grille over the leaves' glass (0.5 mm bars 1.6 mm apart) printed as a blur; it is "
+            "redrawn with 0.9 mm bars and openings of 0.9 mm or more, and little scraps in the glazing are "
+            "filled. Reprint the DOOR- parts.",
+    "ellsworth": "Doors: the sidelights' " + GLAZE_LEADED + "Reprint the DOOR- parts (and any WIN- part with "
+                 "a fanlight).",
+    "carrow": "Windows: the upper sashes' " + GLAZE_LEADED + "Reprint the WIN- parts.",
+    "hollis": "Doors: the transoms' " + GLAZE_LEADED + "Reprint the DOOR- parts.",
+    "whitby": "Windows: the diamond-paned lancet's " + GLAZE_LEADED + "Reprint WIN-8.0x21.0 and any other "
+              "WIN- or DOOR- part you printed before.",
+    "ashcombe": "Windows: the stone-mullioned windows' " + GLAZE_LEADED + "Reprint the WIN- parts.",
+    "porter": "WIN-7.0x10.0, the small gable window: its twelve-over-eight panes were too small to print "
+              "(under 0.8 mm); it is now six over six. Little scraps elsewhere in the glazing are filled. "
+              "Reprint WIN-7.0x10.0.",
+}
+for _k in ("pullman", "beaumont", "kittredge", "larkspur", "pingree", "hawthorn", "wrightwood", "pinckney",
+           "magnolia", "fairhaven", "juniper", "jeweler", "camellia", "vantassel", "twins", "winthrop",
+           "montclair", "belcourt", "ridgely", "hardware", "primrose", "valcour", "hollister", "delancey",
+           "hathaway", "hotel", "wisteria", "drugstore", "alvarado"):
+    _GLAZE[_k] = GLAZE_SCRAPS
+for _k, _note in _GLAZE.items():
+    _h = HISTORY.setdefault(_k, [])
+    _maj, _min = (_h[-1][0] if _h else "1.0").split(".")
+    _h.append((f"{_maj}.{int(_min) + 1}", "2026-10-07", _note))
+
 def version(key):
     h = HISTORY.get(key)
     return h[-1][0] if h else "1.0"

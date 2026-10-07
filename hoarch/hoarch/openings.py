@@ -59,11 +59,78 @@ def _drop_flat(m):
     return union(keep) if keep and len(keep) < len(pcs) else m
 
 
+def lozenges(cs, pitch=2.4, bar=0.9, ang=60.0, open_min=0.9):
+    """Lozenge (diamond) glazing bars fitted to one light ``cs``: the light is split into a
+    whole number of cells about ``pitch`` wide, each holding a lozenge whose points touch the
+    middle of its sides, ``ang`` degrees steep or steeper so every opening is at least
+    ``open_min`` across. Openings narrower than that (corner scraps) are filled. Returns the
+    bars (the light minus its openings). 0.9 mm bars and openings print with a 0.4 nozzle; the
+    first leaded lights (0.4-0.5 mm bars 1.6-2.1 mm apart) printed as a blur."""
+    b = cs.bounds()
+    w, h = b[2] - b[0], b[3] - b[1]
+    if w <= 0 or h <= 0:
+        return cs
+    nx = max(1, int(round(w / pitch)))
+    while nx > 1 and (w / nx) * math.sin(math.radians(ang)) - bar < open_min + 0.15:
+        nx -= 1
+    p = w / nx
+    a = ang
+    need = (bar + open_min + 0.15) / p
+    if need < 0.995:
+        a = max(a, math.degrees(math.asin(need)))
+    ny = max(1, int(h / (p * math.tan(math.radians(a)))))
+    t = h / (ny * p)                                     # the lozenge's slope
+    bars = []
+    for k in range(-ny - 2, nx + ny + 3):
+        c = b[0] + (k + 0.5) * p                         # the bars cross mid-cell on the bottom edge
+        bars.append(stroke([(c - 1.0 / t, b[1] - 1.0), (c + (h + 1.0) / t, b[3] + 1.0)], bar, caps=False))
+        bars.append(stroke([(c + 1.0 / t, b[1] - 1.0), (c - (h + 1.0) / t, b[3] + 1.0)], bar, caps=False))
+    r = open_min / 2
+    lights = (cs - cs_union(bars)).offset(-r, JoinType.Miter, 4.0).offset(r, JoinType.Miter, 4.0) ^ cs
+    return cs - lights
+
+
+def _fill_scraps(sash, pl, plug_cs, wmin=0.9, amax=2.5, lmax=2.5):
+    """Fill the small openings in the glazing narrower than ``wmin`` mm, under ``amax`` mm2 and
+    ``lmax`` mm long: lattice scraps, fanlight tips, little rosettes. A 0.4 nozzle only blobs
+    them, the way the Oakhurst's first door lattice printed. Openings are found on the layers
+    just over the glass and filled, layer by layer, as high as they stay small; long narrow
+    gaps between solid slats (louvres, margin lights) print and are left alone."""
+    r = wmin / 2
+    rnd = JoinType.Round
+    z0 = -pl + GLASS
+    top = sash.bounding_box()[5]
+    keep = plug_cs.offset(-0.02, JoinType.Miter, 4.0)
+
+    def fine_holes(z):
+        cs = sash.slice(z)
+        if cs.is_empty():
+            return []
+        holes = (cs.offset(3.0, rnd).offset(-3.0, rnd) - cs) ^ keep
+        out = []
+        for c in holes.decompose():
+            bb = c.bounds()
+            if 0.05 < c.area() < amax and max(bb[2] - bb[0], bb[3] - bb[1]) < lmax and c.offset(-r, rnd).is_empty():
+                out.append(c)
+        return out
+    base = cs_union([c for dz in (0.1, 0.3, 0.5) for c in fine_holes(z0 + dz)])
+    if base.is_empty():
+        return sash
+    fills, z = [], z0
+    while z < top - 1e-6:
+        f = cs_union(fine_holes(z + 0.1)) ^ base.offset(0.02, JoinType.Miter, 4.0)
+        f = cs_union([c for c in f.decompose() if c.area() > 0.01])
+        if not f.is_empty():
+            fills.append(ext(f, z - 0.001, z + 0.201))
+        z += 0.2
+    return _drop_flat(sash + union(fills)) if fills else sash
+
+
 def _one_piece(sash_parts, sur_parts, op, plug_cs, pl, top, bottom, land_extra=None):
     """Join the plug (glass and sash) and the surround into one part (see the module notes).
     Returns the insert dict; ``glass``/``sash``/``frame`` are its colour zones for renders."""
     sur = _drop_flat(union(sur_parts))
-    sash = _drop_flat(union(sash_parts))
+    sash = _fill_scraps(_drop_flat(union(sash_parts)), pl, plug_cs)
     loose = [round(c.volume(), 2) for c in (sur + sash).decompose()]
     if len(loose) > 1:
         print("  WARNING: one-piece insert falls into", len(loose), "pieces", sorted(loose)[:6])
@@ -175,12 +242,8 @@ def window_insert(w, h, rise=None, style="crest", lites=(1, 1), casing=1.1, bare
             pts = [((2 * (1 - t) * t) * 0.0 + t * t * sgn * w / 2, (1 - t) ** 2 * vf + 2 * (1 - t) * t * top_ + t * t * top_)
                    for t in np.linspace(0.0, 1.0, 13)]
             bars.append(stroke(pts, RIB, caps=False) ^ rect(-w, mr, w, top_ + 5))
-    if upper == "diamond":           # leaded diamond panes in the upper sash
-        for sgn in (-1, 1):
-            for k in range(-14, 15):
-                x0 = k * 1.6
-                bars.append(stroke([(x0 - sgn * 12, mr - 12 * 1.6), (x0 + sgn * 12, mr + 12 * 1.6)], RIB, caps=False)
-                            ^ rect(-w, mr, w, h + 5))
+    if upper == "diamond":           # leaded diamond panes in the upper sash, fitted, 0.9 mm leads
+        bars.append(lozenges(inner ^ rect(-w, mr, w, h + 5)))
     if qa:   # border lights: an inner frame line and short bars across the border
         top = inner ^ rect(-w, mr + 0.3, w, h + 5)
         b = 1.2 if w >= 8 else 1.0
@@ -719,13 +782,7 @@ def _leaf(style, u, lw, dh, hinge_left):
         gl = rect(pu0, dh * 0.42, pu1, top - st)
         glass = gl
         parts.append(ext(gl.offset(0.45, JoinType.Miter, 4.0) - gl, -0.8, -0.6))
-        b = gl.bounds()
-        bars = []
-        for sgn in (-1, 1):
-            for k in range(-10, 11):
-                x0 = (b[0] + b[2]) / 2 + k * 1.6
-                bars.append(stroke([(x0 - sgn * 12, b[1] - 12), (x0 + sgn * 12, b[1] + 12)], 0.5, caps=False))
-        _GLASS_BARS.append(ext(cs_union(bars) ^ gl.offset(0.2), _gt(), -0.6))              # iron grille
+        _GLASS_BARS.append(ext(lozenges(gl.offset(0.2), pitch=2.8, ang=45.0), _gt(), -0.6))   # iron grille, 0.9 mm bars
         panel(rect(pu0, 1.3, pu1, dh * 0.42 - 1.0))
     elif style == "six_light":            # six lights (two by three) over two short raised panels
         gl = rect(pu0, dh * 0.45, pu1, top - st)
@@ -1014,12 +1071,7 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
             pat = cs_union([rect(tb[0] + (tb[2] - tb[0]) * k / n - 0.25, tb[1] - 1, tb[0] + (tb[2] - tb[0]) * k / n + 0.25,
                                  tb[3] + 1) for k in range(1, n)])
         elif tstyle == "diamond":
-            bars = []
-            for sgn in (-1, 1):
-                for k in range(-12, 13):
-                    x0 = k * 1.8
-                    bars.append(stroke([(x0 - sgn * 8, tb[1] - 8), (x0 + sgn * 8, tb[1] + 8)], RIB, caps=False))
-            pat = cs_union(bars)
+            pat = lozenges(tcs, ang=45.0)            # fitted lozenges, 0.9 mm leads
         elif tstyle.startswith("number") or tstyle.startswith("text"):
             from .storefront import text_cs
             digits = tstyle.split(":", 1)[1] if ":" in tstyle else "12"
@@ -1432,21 +1484,10 @@ def _gothic_bars(inner, w, h, spring, k, lights, mr):
             if r >= 1.3:                                        # cusp it into a quatrefoil
                 q = quatrefoil((cx, cy), r * 0.42, 20)
                 bars.append(circle((cx, cy), r + 0.1, 32) - q.offset(0.0))
-    elif lights == "diamond":
-        ang = math.radians(58.0)
-        pitch = 1.9
-        L = h + w + 10
-        for sgn in (-1, 1):
-            du, dv = math.cos(ang) * sgn, math.sin(ang)
-            for i in range(-int(L / pitch) - 2, int(L / pitch) + 3):
-                u0 = i * pitch
-                a = (u0 - du * L, -dv * L)
-                c = (u0 + du * L, dv * L)
-                nx, ny = -dv * (b / 2) / 1.0, du * (b / 2)
-                bars.append(poly([(a[0] + nx, a[1] + ny), (c[0] + nx, c[1] + ny), (c[0] - nx, c[1] - ny),
-                                  (a[0] - nx, a[1] - ny)]) if sgn > 0 else
-                            poly([(a[0] - nx, a[1] - ny), (c[0] - nx, c[1] - ny), (c[0] + nx, c[1] + ny),
-                                  (a[0] + nx, a[1] + ny)]))
+    elif lights == "diamond":                                  # quarries fitted below and above the rail
+        for reg in (inner ^ rect(-w, -5.0, w, mr - b / 2), inner ^ rect(-w, mr + b / 2, w, h + 5)):
+            if not reg.is_empty():
+                bars.append(lozenges(reg, ang=58.0))
         bars.append(rect(-w, mr - b / 2, w, mr + b / 2))
     elif lights == "cross":
         bars += [rect(-b / 2, -1, b / 2, h + 5), rect(-w, mr - b / 2, w, mr + b / 2)]

@@ -1591,7 +1591,8 @@ def window_aedicule(w, h, A=0.8):
 def window_bullseyecap(w, h, A=0.9):
     """A Connecticut Valley upper window: a twelve-over-eight sash in an architrave under a cap
     whose frieze carries three bull's-eyes (turned roundels) and a moulded cornice."""
-    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=(4, 3))
+    rows = (4, 3) if h >= 16 else (2, 2)                 # a small gable window keeps lights of 1.4 mm or more
+    sash, op, plug_cs = _sash_pair(w, h, cols=3, rows=rows)
     parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS),
              ext((op.offset(A, JoinType.Miter, 4.0) - op) ^ rect(-w, 0.0, w, h + A), 0.0, 0.7)]
     hw = w / 2 + A + 0.3

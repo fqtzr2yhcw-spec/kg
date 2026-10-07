@@ -331,10 +331,7 @@ def door_leaded(w=12.0, h=24.0, side=4.0, fan=6.0):
         sl = rect(s0, 5.0, s1, h - 0.8)
         glass_cs.append(sl)
         panels.append(rect(s0 + 0.4, 1.3, s1 - 0.4, 3.9))
-        for k in range(-10, 12):
-            for dirn in (-1, 1):
-                x0 = s0 + k * 1.8
-                leads.append(stroke([(x0, 5.0), (x0 + dirn * 18.0, 5.0 + 18.0 * 1.7)], 0.45, caps=False) ^ sl)
+        leads.append(O.lozenges(sl))                        # lozenge panes, 0.9 mm leads
     fan_cs = (poly(ell) ^ rect(-W2, h + 0.6, W2, h + fan + 1)).offset(-0.7, JoinType.Miter, 4.0)
     glass_cs.append(fan_cs)
     for a in np.linspace(0.0, math.pi, 9)[1:-1]:
