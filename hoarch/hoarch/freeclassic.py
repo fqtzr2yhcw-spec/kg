@@ -319,10 +319,9 @@ def door_leaded(w=12.0, h=24.0, side=4.0, fan=6.0):
     oc, orx, ory = (0.0, h * 0.64), w * 0.3, h * 0.2
     lite = oval(oc, orx, ory, 40)
     glass_cs.append(lite)
-    leads.append(oval(oc, orx * 0.55, ory * 0.55, 32) - oval(oc, orx * 0.55 - 0.45, ory * 0.55 - 0.45, 32))
-    for a in np.linspace(0.0, math.pi, 4, endpoint=False):
+    for a in (0.0, math.pi / 2):                       # a leaded cross: four lights of 2 mm and more
         leads.append(stroke([(oc[0] + orx * 1.2 * math.cos(a), oc[1] + ory * 1.2 * math.sin(a)),
-                             (oc[0] - orx * 1.2 * math.cos(a), oc[1] - ory * 1.2 * math.sin(a))], 0.45))
+                             (oc[0] - orx * 1.2 * math.cos(a), oc[1] - ory * 1.2 * math.sin(a))], 0.6))
     panels = [rect(-w / 2 + 1.3, 1.3, -0.5, h * 0.36), rect(0.5, 1.3, w / 2 - 1.3, h * 0.36)]
     # the leaves' frame: a groove round the door and one between door and sidelights
     grooves = [rect(-w / 2 - 0.3, 0.0, -w / 2 + 0.2, h), rect(w / 2 - 0.2, 0.0, w / 2 + 0.3, h), rect(-W2, h - 0.2, W2, h + 0.3)]
@@ -334,9 +333,9 @@ def door_leaded(w=12.0, h=24.0, side=4.0, fan=6.0):
         leads.append(O.lozenges(sl))                        # lozenge panes, 0.9 mm leads
     fan_cs = (poly(ell) ^ rect(-W2, h + 0.6, W2, h + fan + 1)).offset(-0.7, JoinType.Miter, 4.0)
     glass_cs.append(fan_cs)
-    for a in np.linspace(0.0, math.pi, 9)[1:-1]:
-        leads.append(stroke([(0.0, h + 0.6), (W2 * 1.2 * math.cos(a), h + 0.6 + fan * 1.2 * math.sin(a))], 0.45, caps=False))
-    leads.append(oval((0.0, h + 0.6), W2 * 0.35, fan * 0.4, 32) - oval((0.0, h + 0.6), W2 * 0.35 - 0.45, fan * 0.4 - 0.45, 32))
+    for a in np.linspace(0.0, math.pi, 5)[1:-1]:     # three rays from a solid hub: no lights under 1.6 mm
+        leads.append(stroke([(0.0, h + 0.6), (W2 * 1.2 * math.cos(a), h + 0.6 + fan * 1.2 * math.sin(a))], 0.6, caps=False))
+    leads.append(oval((0.0, h + 0.6), W2 * 0.3, fan * 0.36, 32))
     gl = cs_union(glass_cs)
     body = body - ext(gl, -pl + O.GLASS, 0.5) - ext(cs_union(grooves) - gl, face - 0.25, 0.5)
     sash = [body, ext(gl, -pl, -pl + O.GLASS), ext(cs_union(leads) ^ gl, -pl + O.GLASS - 0.01, face),

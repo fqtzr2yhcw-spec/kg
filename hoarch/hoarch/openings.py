@@ -59,27 +59,55 @@ def _drop_flat(m):
     return union(keep) if keep and len(keep) < len(pcs) else m
 
 
-def lozenges(cs, pitch=2.4, bar=0.9, ang=60.0, open_min=0.9):
+def muntins(cs, bar=0.7, cw=2.6, ch=3.0, pane_min=1.8):
+    """Square glazing bars fitted to one light: a grid of panes about ``cw`` by ``ch`` mm, none
+    narrower than ``pane_min``; scraps under ``pane_min`` along a curved head are filled.
+    Panes of 2 mm or so print as cleanly as the sash windows do (the owner's prints), where
+    openings of 1 mm came out as rows of little loops. Returns the bars."""
+    b = cs.bounds()
+    w, h = b[2] - b[0], b[3] - b[1]
+    nx = max(1, int(round(w / cw)))
+    while nx > 1 and (w - (nx - 1) * bar) / nx < pane_min:
+        nx -= 1
+    ny = max(1, int(round(h / ch)))
+    while ny > 1 and (h - (ny - 1) * bar) / ny < pane_min:
+        ny -= 1
+    bars = [rect(b[0] + w * i / nx - bar / 2, b[1] - 1.0, b[0] + w * i / nx + bar / 2, b[3] + 1.0) for i in range(1, nx)]
+    bars += [rect(b[0] - 1.0, b[1] + h * j / ny - bar / 2, b[2] + 1.0, b[1] + h * j / ny + bar / 2) for j in range(1, ny)]
+    r = pane_min / 2
+    lights = (cs - cs_union(bars)).offset(-r, JoinType.Miter, 4.0).offset(r, JoinType.Miter, 4.0) ^ cs
+    return cs - lights
+
+
+def lozenges(cs, pitch=3.2, bar=0.8, ang=60.0, open_min=1.6):
     """Lozenge (diamond) glazing bars fitted to one light ``cs``: the light is split into a
     whole number of cells about ``pitch`` wide, each holding a lozenge whose points touch the
-    middle of its sides, ``ang`` degrees steep or steeper so every opening is at least
-    ``open_min`` across. Openings narrower than that (corner scraps) are filled. Returns the
-    bars (the light minus its openings). 0.9 mm bars and openings print with a 0.4 nozzle; the
-    first leaded lights (0.4-0.5 mm bars 1.6-2.1 mm apart) printed as a blur."""
+    middle of its sides, steep enough that every opening is at least ``open_min`` across;
+    smaller corner scraps are filled. A light too small for that gets square bars
+    (``muntins``) instead. Returns the bars. Openings of 1 mm (0.4-0.9 mm leads 1.6-2.4 mm
+    apart) printed as rows of little loops; 1.6 mm and more print clean."""
     b = cs.bounds()
     w, h = b[2] - b[0], b[3] - b[1]
     if w <= 0 or h <= 0:
         return cs
+
+    def fit(nx):
+        p = w / nx
+        a = ang
+        need = (bar + open_min + 0.1) / p
+        if need < 0.995:
+            a = max(a, math.degrees(math.asin(need)))
+        ny = max(1, int(h / (p * math.tan(math.radians(a)))))
+        t = h / (ny * p)
+        return p, t, p * math.sin(math.atan(t)) - bar
     nx = max(1, int(round(w / pitch)))
-    while nx > 1 and (w / nx) * math.sin(math.radians(ang)) - bar < open_min + 0.15:
+    p, t, opening = fit(nx)
+    while nx > 1 and opening < open_min + 0.1:
         nx -= 1
-    p = w / nx
-    a = ang
-    need = (bar + open_min + 0.15) / p
-    if need < 0.995:
-        a = max(a, math.degrees(math.asin(need)))
-    ny = max(1, int(h / (p * math.tan(math.radians(a)))))
-    t = h / (ny * p)                                     # the lozenge's slope
+        p, t, opening = fit(nx)
+    if opening < open_min:
+        return muntins(cs, bar=min(bar, 0.7), pane_min=open_min + 0.2)
+    ny = max(1, int(round(h / (p * t))))
     bars = []
     for k in range(-ny - 2, nx + ny + 3):
         c = b[0] + (k + 0.5) * p                         # the bars cross mid-cell on the bottom edge
@@ -90,35 +118,37 @@ def lozenges(cs, pitch=2.4, bar=0.9, ang=60.0, open_min=0.9):
     return cs - lights
 
 
-def _fill_scraps(sash, pl, plug_cs, wmin=0.9, amax=2.5, lmax=2.5):
-    """Fill the small openings in the glazing narrower than ``wmin`` mm, under ``amax`` mm2 and
-    ``lmax`` mm long: lattice scraps, fanlight tips, little rosettes. A 0.4 nozzle only blobs
-    them, the way the Oakhurst's first door lattice printed. Openings are found on the layers
-    just over the glass and filled, layer by layer, as high as they stay small; long narrow
-    gaps between solid slats (louvres, margin lights) print and are left alone."""
+def _fill_scraps(sash, pl, plug_cs, wmin=1.6, lmax=2.5):
+    """Fill the parts of the glazing narrower than ``wmin`` mm and under ``lmax`` mm long: small
+    lights, corner scraps, the tips of fanlight rays. Openings of about 1 mm printed as rows
+    of little loops (the owner's print of the Oakhurst's doors) where panes of 2 mm print
+    clean. Square pane corners are kept; long narrow gaps between solid slats (louvres,
+    margin lights) print and are left alone. Found on the layers just over the glass and
+    filled layer by layer as high as they stay narrow."""
     r = wmin / 2
-    rnd = JoinType.Round
+    mit = JoinType.Miter
     z0 = -pl + GLASS
     top = sash.bounding_box()[5]
-    keep = plug_cs.offset(-0.02, JoinType.Miter, 4.0)
+    keep = plug_cs.offset(-0.02, mit, 4.0)
 
-    def fine_holes(z):
+    def narrow(z):
         cs = sash.slice(z)
         if cs.is_empty():
             return []
-        holes = (cs.offset(3.0, rnd).offset(-3.0, rnd) - cs) ^ keep
+        holes = keep - cs
+        thin = holes - holes.offset(-r, mit, 4.0).offset(r, mit, 4.0)
         out = []
-        for c in holes.decompose():
+        for c in thin.decompose():
             bb = c.bounds()
-            if 0.05 < c.area() < amax and max(bb[2] - bb[0], bb[3] - bb[1]) < lmax and c.offset(-r, rnd).is_empty():
+            if c.area() > 0.05 and max(bb[2] - bb[0], bb[3] - bb[1]) < lmax:
                 out.append(c)
         return out
-    base = cs_union([c for dz in (0.1, 0.3, 0.5) for c in fine_holes(z0 + dz)])
+    base = cs_union([c for dz in (0.1, 0.3, 0.5) for c in narrow(z0 + dz)])
     if base.is_empty():
         return sash
     fills, z = [], z0
     while z < top - 1e-6:
-        f = cs_union(fine_holes(z + 0.1)) ^ base.offset(0.02, JoinType.Miter, 4.0)
+        f = cs_union(narrow(z + 0.1)) ^ base.offset(0.02, mit, 4.0)
         f = cs_union([c for c in f.decompose() if c.area() > 0.01])
         if not f.is_empty():
             fills.append(ext(f, z - 0.001, z + 0.201))
@@ -1078,11 +1108,13 @@ def _ornate_door_sash(w, h, leaves, transom, leaf="arched", tstyle="sunburst"):
             digits = tstyle.split(":", 1)[1] if ":" in tstyle else "12"
             cap = min(2.6, (tb[3] - tb[1]) - 0.6)
             pat = text_cs(digits, cap, "serif", grow=0.1).translate((0.0, (tb[1] + tb[3]) / 2 - cap / 2))
-        elif tstyle == "ring":
+        elif tstyle == "ring":                   # an oval light tied to the frame at its ends (one big light inside)
             cy = (tb[1] + tb[3]) / 2
-            r = min((tb[3] - tb[1]) / 2 - 0.2, (tb[2] - tb[0]) / 2 - 0.4)
-            pat = (circle((0.0, cy), r + RIB / 2, 32) - circle((0.0, cy), r - RIB / 2, 32)) + \
-                rect(tb[0] - 1, cy - RIB / 2, tb[2] + 1, cy + RIB / 2) + rect(-RIB / 2, tb[1] - 1, RIB / 2, tb[3] + 1)
+            rx, ry = (tb[2] - tb[0]) / 2 - 0.7, (tb[3] - tb[1]) / 2 - 0.15
+            pat = (oval((0.0, cy), rx + 0.35, ry + 0.35, 40) - oval((0.0, cy), rx - 0.35, ry - 0.35, 40)) + \
+                rect(tb[0] - 1, cy - 0.35, -rx, cy + 0.35) + rect(rx, cy - 0.35, tb[2] + 1, cy + 0.35)
+            rest = tcs - pat - oval((0.0, cy), rx - 0.35, ry - 0.35, 40)
+            pat = pat + (rest - rest.offset(-0.8, JoinType.Miter, 4.0).offset(0.8, JoinType.Miter, 4.0))   # no corner under 1.6
         elif tstyle == "arch":                   # a round arch bar springing from the transom's foot
             cx, r = 0.0, min((tb[2] - tb[0]) / 2 - 0.5, (tb[3] - tb[1]) - 0.5)
             pat = (circle((cx, tb[1]), r + RIB / 2, 40) - circle((cx, tb[1]), r - RIB / 2, 40))

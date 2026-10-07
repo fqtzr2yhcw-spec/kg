@@ -1438,15 +1438,11 @@ def window_greek(w, h, head="pediment", lites=(3, 3), rows=(2, 2), A=1.2):
     return O._one_piece([sash], parts, op, plug_cs, O.PLUG, top, -1.4)
 
 
-def _diamond_bars(cs, pitch=2.4, bar=0.9, ang=60.0):
-    """Lozenge glazing bars fitted to one light (``openings.lozenges``)."""
-    return O.lozenges(cs, pitch, bar, ang)
-
-
 def door_greek(w, h, side=3.4, transom=4.4, A=1.4, glazed=False):
     """A Greek Revival entrance: a pair of leaves (two tall raised panels each, or glazed in
     three lights each for a French door) between sidelights, under a transom, the lights
-    leaded in lozenges; square pilasters with sunk panels either side, a lintel entablature
+    divided by square bars into panes of about 2 x 3 mm (leaded lozenges printed as loops);
+    square pilasters with sunk panels either side, a lintel entablature
     with a raised tablet over it. ``side`` = 0 leaves out the sidelights."""
     W = w + 2 * side
     op = rect(-W / 2, 0, W / 2, h)
@@ -1479,7 +1475,7 @@ def door_greek(w, h, side=3.4, transom=4.4, A=1.4, glazed=False):
     g = cs_union(lights)
     body = [p - ext(g, -pl + O.GLASS, 0.5) for p in body]
     sash = body + [ext(g, -pl, -pl + O.GLASS), ext(plug_cs - plug_cs.offset(-0.5, JoinType.Miter, 4.0), -pl, 0.0)]
-    bars = cs_union([_diamond_bars(l_) for l_ in lights])        # each light its own lozenges, centred
+    bars = cs_union([O.muntins(l_) for l_ in lights])            # square bars, panes of about 2 x 3 mm
     sash.append(ext(bars + (rect(-W, dh - 0.3, W, dh + 0.3) ^ plug_cs), -pl + O.GLASS - 0.01, -0.5))
     parts = [ext(op - op.offset(-RIB, JoinType.Miter, 4.0), 0.0, O.CAS)]
     for sg in (-1, 1):

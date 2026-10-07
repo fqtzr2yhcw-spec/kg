@@ -205,6 +205,40 @@ for _k, _note in _GLAZE.items():
     _maj, _min = (_h[-1][0] if _h else "1.0").split(".")
     _h.append((f"{_maj}.{int(_min) + 1}", "2026-10-07", _note))
 
+# 2026-10-07, second pass: the owner's test print of the Oakhurst's doors showed openings of about 1 mm
+# printing as rows of little loops, where the sash windows' 2 mm panes print clean
+GLAZE2_SCRAPS = ("Windows and doors: a test print showed glazing openings of about 1 mm print as rows of little "
+                 "loops, where panes of 2 mm print clean. The small lights, corner scraps and fanlight-ray tips under "
+                 "1.6 mm are now filled (square pane corners and long margin lights are kept). Reprint the WIN- and "
+                 "DOOR- parts.")
+GLAZE2_LEADED = ("a test print showed the 1 mm openings between the lozenges print as rows of little loops. The "
+                 "lozenges are larger now, every opening 1.6 mm or more (a light too narrow for that gets square bars), "
+                 "and smaller scraps are filled. ")
+_GLAZE2 = {
+    "oakhurst": "Doors: the lozenge glazing still printed as little loops (openings about 1 mm, the owner's print). "
+                "The sidelights, transoms and French door lights are now divided by square bars into panes of about "
+                "2 x 3 mm, which print as cleanly as the sash windows. Reprint DOOR-18.8x34.0, DOOR-11.0x28.0 (both) "
+                "and DOOR-11.0x30.0.",
+    "bank": "Doors: the grille's lozenges are larger (openings 1.6 mm or more) and the transom's ring is an oval light "
+            "tied to the frame at its ends, without the cross bars that cut it into 1 mm pieces; smaller scraps are "
+            "filled. Reprint the DOOR- parts.",
+    "ellsworth": "Doors: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "The oval light is leaded in a "
+                 "simple cross and the fanlight has three rays from a solid hub. Reprint the DOOR- parts.",
+    "brendan": "Lancet windows: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint every lancet WIN- part.",
+    "carrow": "Windows: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint the WIN- parts.",
+    "hollis": "Doors: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint the DOOR- parts.",
+    "whitby": "Windows: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint WIN-8.0x21.0 and any other "
+              "WIN- or DOOR- part you printed before.",
+    "ashcombe": "Windows: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint the WIN- parts.",
+}
+GLAZE2_OTHERS = ()          # filled in once the scan of the exported plates says which other buildings change
+for _k in GLAZE2_OTHERS:
+    _GLAZE2.setdefault(_k, GLAZE2_SCRAPS)
+for _k, _note in _GLAZE2.items():
+    _h = HISTORY.setdefault(_k, [])
+    _maj, _min = (_h[-1][0] if _h else "1.0").split(".")
+    _h.append((f"{_maj}.{int(_min) + 1}", "2026-10-07", _note))
+
 def version(key):
     h = HISTORY.get(key)
     return h[-1][0] if h else "1.0"

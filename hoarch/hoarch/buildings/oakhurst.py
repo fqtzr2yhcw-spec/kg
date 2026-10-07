@@ -6,7 +6,7 @@ a raised basement of red brick with arched vents under a stone water table. Acro
 of the front a giant portico: four fluted Greek Doric columns on a planked floor up a broad
 flight of steps, an architrave of two fasciae, and a pediment with a fanned lunette in its
 tympanum; its ceiling coffered and painted haint blue. Under it a Greek Revival entrance (a
-pair of panelled leaves between sidelights, the lights leaded in lozenges, pilasters and a
+pair of panelled leaves between sidelights, the lights in square-barred panes, pilasters and a
 lintel with a tablet) and, above it, a French door onto a balcony railed in wrought-iron
 scrolls. Six-over-nine windows below under pedimented lintels, six-over-six above under
 tabled lintels, charleston-green plantation shutters. Between the storeys a haint-blue frieze
