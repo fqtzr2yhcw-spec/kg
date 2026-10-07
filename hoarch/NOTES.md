@@ -409,6 +409,16 @@ support. A reach of 1 mm or less is a ledge that prints. A long reach on a membe
 than a nozzle line is a bridge between two supports, and prints as one. A long reach on a
 thin strip is the fault.
 
+## Glazing bars: 0.9 mm bars, 0.9 mm openings
+
+The Oakhurst's leaded lozenges (0.5 mm bars 1.8 mm apart, 0.77 mm openings) printed as a blur
+on the owner's print. A lattice over glass needs bars and openings of two nozzle lines each.
+`colonial._diamond_bars` now fits whole lozenges to each light and fills the corner scraps.
+`python3 -m hoarch.fineopen --building <key>` counts, per window or door part, the openings
+narrower than 0.9 mm on its worst layer. A dense count on a low layer (just above the glass)
+is a lattice that will blur. Low counts on higher layers are frame grooves; they only lose
+some crispness.
+
 ## Size standard (houses 21 to 30, Rev C)
 
 The first cut of the second batch read as skinny next to the reference kits. Both references
