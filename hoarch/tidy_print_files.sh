@@ -1,17 +1,17 @@
 #!/bin/bash
 # Tidy the HO model print files in your Downloads folder (or another folder you name).
 #
-# Keeps the current zip and Bambu Studio project (..._P2S_v1.x.3mf) of each building and moves the
-# rest to the Trash (a zip sent in parts, ..._v1.2_part1of2.zip, keeps all its parts):
+# Keeps the newest zip and Bambu Studio project (..._P2S_v1.x.3mf) you have of each building and
+# moves the rest to the Trash (a zip sent in parts, ..._v1.2_part1of2.zip, keeps all its parts):
 #   - older versions (Fowler v1.1 when you have Fowler v1.2, or the old zips with no version),
-#   - outdated ones: a zip or project older than the current version, even when it is the only one
-#     you have of that building (Fowler v1.2 when v1.3 is out); the list at the end says which
-#     buildings to download again from our chat,
 #   - extra copies your browser saved as "(1)", " 2" or "-1",
 #   - the old combined zip of the first 40 buildings (and its .001, .002 pieces), which holds old
 #     versions.
+# It never removes the only copy you have of a building. When that copy is outdated it says so,
+# and once you have downloaded the current one, the next run clears the old one.
 # It shows you the list first and moves nothing until you type y. Everything goes to the
-# Trash, so you can put anything back from there. Other files are not touched.
+# Trash, so you can put anything back from there, and the list of what it moved is added to
+# tidy_print_files_log.txt in the same folder. Other files are not touched.
 #
 # Run it from Terminal:
 #   bash ~/Downloads/tidy_print_files.sh
@@ -102,34 +102,29 @@ sort -t "$TAB" -k1,1 -k2,2nr -k3,3nr "$LIST" | awk -F'\t' -v OFS='\t' -v beau=$H
                            { seen[g SUBSEP $5] = 1; print "KEEP", $0 }' > "$PLAN"
 
 # 3. Show the plan.
-DROP=(); KEEP=0; KB=0; NEED=""
+DROP=(); KEEP=0; KB=0; NEED=""; HAVE=" "
 echo
 echo "Looking in $PWD"
 echo
 while IFS="$TAB" read -r act grp ver mt f clean; do
   case $act in
-    KEEP)
-      why=""
+    KEEP)                         # the newest you have is always kept; is it the current version?
+      KEEP=$((KEEP + 1))
       case $grp in
-        "P "*|"S "*)              # the newest you have: is it the current version?
+        "P "*|"S "*)
           name=${grp#? }
+          [ "${grp%% *}" = P ] && HAVE="$HAVE$name "
           want=$(printf '%s\n' $LATEST | awk -v n="$name" 'p == n { print; exit } { p = $0 }')
           if [ -n "$want" ]; then
             w=$(( ${want%%.*} * 1000 + ${want#*.} ))
             if [ "$ver" -lt "$w" ]; then
-              why="outdated: v$want is in our chat"
-              case "$NEED" in *" $name,"*) ;; *) NEED="$NEED $name," ;; esac
+              have="v$((ver / 1000)).$((ver % 1000))"; [ "$ver" -eq 0 ] && have="the zip with no version"
+              kind="zip"; [ "${grp%% *}" = S ] && kind="P2S project"
+              NEED="$NEED  $name $kind: you have $have, the current one is v$want
+"
             fi
           fi ;;
-      esac
-      if [ -z "$why" ]; then
-        KEEP=$((KEEP + 1))
-      else
-        [ ${#DROP[@]} -eq 0 ] && echo "Moving to the Trash:"
-        printf '  %-52s %s\n' "$f" "$why"
-        DROP+=("$PWD/$f")
-        KB=$((KB + $(du -sk "$f" | cut -f1)))
-      fi ;;
+      esac ;;
     *)
       case $act in
         OLD)   why="older version" ;;
@@ -145,13 +140,23 @@ while IFS="$TAB" read -r act grp ver mt f clean; do
 done < "$PLAN"
 
 [ ${#DROP[@]} -gt 0 ] && echo
-echo "Keeping $KEEP file(s): the current version of each building, and one copy of each certificate, guide and listing file."
+echo "Keeping $KEEP file(s): the newest you have of each building, and one copy of each certificate, guide and listing file."
 
 if [ -n "$NEED" ]; then
   echo
-  echo "After this you'll have no copy of these buildings, only outdated ones are here. Download the"
-  echo "current zip (and P2S project) of each from our chat:"
-  printf '%s\n' "${NEED%,}" | fold -s -w 96 | sed 's/^/ /'
+  echo "Outdated, but kept because it's the only copy you have. Download the current one from our"
+  echo "chat; the next run then clears the old one:"
+  printf '%s' "$NEED"
+fi
+
+MISSING=""
+for n in $(printf '%s\n' $LATEST | awk 'NR % 2 == 1'); do
+  case "$HAVE" in *" $n "*) ;; *) MISSING="$MISSING $n," ;; esac
+done
+if [ -n "$MISSING" ] && [ "$HAVE" != " " ]; then
+  echo
+  echo "No zip at all in this folder for (download from our chat if you want them here):"
+  printf '%s\n' "${MISSING%,}" | fold -s -w 96 | sed 's/^ */  /'
 fi
 
 PKG=""
@@ -185,6 +190,8 @@ osascript -e 'on run argv' \
           -e 'end run' "${DROP[@]}" > /dev/null
 LEFT=0
 for p in "${DROP[@]}"; do [ -e "$p" ] && LEFT=$((LEFT + 1)); done
+{ echo "$(date '+%Y-%m-%d %H:%M')  moved to the Trash:"
+  for p in "${DROP[@]}"; do [ -e "$p" ] || echo "  ${p##*/}"; done; echo; } >> "$PWD/tidy_print_files_log.txt"
 if [ $LEFT -gt 0 ]; then
   echo "$LEFT file(s) couldn't be moved to the Trash. If macOS asked to let Terminal control Finder,"
   echo "click OK (or allow it in System Settings > Privacy & Security > Automation) and run this again."
