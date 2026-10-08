@@ -247,8 +247,18 @@ GLAZE2_PANES_ADD = (" Sash windows whose outer panes came out under 1.6 mm wide 
 _GLAZE2["hollister"] = ("Windows: the Prairie border lights round the big upper lights were 0.65 mm wide, too narrow to "
                         "print; they are 1.7 mm now. " + GLAZE2_SCRAPS.replace("Windows and doors: a", "A", 1))
 # which second-pass changes each re-exported building took (scan of the plates before and after):
-# S = small openings filled, P = sash panes evened out
-GLAZE2_OTHERS = {}
+# S = small openings filled, P = sash panes evened out (the leaded windows redesigned above count as S)
+GLAZE2_OTHERS = {"ashcombe": "S", "bakery": "SP", "bank": "S", "beauvais": "S", "bellerive": "SP",
+                 "brendan": "S", "brenton": "S", "camellia": "SP", "carrow": "P", "chatham": "SP",
+                 "drugstore": "S", "ellsworth": "SP", "enginehouse": "S", "fairhaven": "S", "fowler": "P",
+                 "general": "P", "hardware": "P", "hathaway": "SP", "hawthorn": "S", "hollis": "S",
+                 "hollister": "S", "hotel": "SP", "jeweler": "S", "juniper": "SP", "lafayette": "S",
+                 "larkspur": "SP", "lindenwald": "S", "magnolia": "SP", "marchand": "S", "marigold": "S",
+                 "millinery": "SP", "montclair": "S", "oakhurst": "S", "pemberton": "S", "pennock": "SP",
+                 "pinckney": "S", "pingree": "S", "porter": "SP", "prescott": "SP", "primrose": "S",
+                 "pullman": "S", "randolph": "SP", "ridgely": "S", "rosecroft": "S", "stickley": "SP",
+                 "twins": "S", "vantassel": "SP", "westbrook": "P", "whitby": "S", "whitmore": "SP",
+                 "winthrop": "SP", "wisteria": "SP"}
 for _k, _fl in GLAZE2_OTHERS.items():
     if _k in _GLAZE2:
         if "P" in _fl:
