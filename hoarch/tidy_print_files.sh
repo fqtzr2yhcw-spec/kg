@@ -1,11 +1,15 @@
 #!/bin/bash
 # Tidy the HO model print files in your Downloads folder (or another folder you name).
 #
-# Keeps the newest zip and the newest Bambu Studio project (..._P2S_v1.x.3mf) of each building and
-# moves the rest to the Trash (a zip sent in parts, ..._v1.2_part1of2.zip, keeps all its parts):
+# Keeps the current zip and Bambu Studio project (..._P2S_v1.x.3mf) of each building and moves the
+# rest to the Trash (a zip sent in parts, ..._v1.2_part1of2.zip, keeps all its parts):
 #   - older versions (Fowler v1.1 when you have Fowler v1.2, or the old zips with no version),
+#   - outdated ones: a zip or project older than the current version, even when it is the only one
+#     you have of that building (Fowler v1.2 when v1.3 is out); the list at the end says which
+#     buildings to download again from our chat,
 #   - extra copies your browser saved as "(1)", " 2" or "-1",
-#   - the old combined zip of the first 40 buildings, which holds old versions.
+#   - the old combined zip of the first 40 buildings (and its .001, .002 pieces), which holds old
+#     versions.
 # It shows you the list first and moves nothing until you type y. Everything goes to the
 # Trash, so you can put anything back from there. Other files are not touched.
 #
@@ -45,6 +49,7 @@ LATEST="
 DUP='( ?\([0-9]+\)| [0-9]+|-[0-9]+)?'      # a browser's extra-copy mark: " (1)", "(1)", " 2", "-1"
 PRINT_RE="^(.+)_Print_Files(_v([0-9]+)\.([0-9]+))?(_part[0-9]+of[0-9]+)?${DUP}\.zip\$"
 HO_RE="^(HO_[A-Za-z0-9_]+)${DUP}\.(zip|pdf|md)\$"
+ALL40_RE="^(HO_Victorian_Collection_All_40[A-Za-z0-9_]*|HO_Collection)${DUP}\.zip(\.[0-9]+)?\$"
 KIT_RE="^Beaumont_HO_Kit_RevB${DUP}\.zip\$"
 P2S_RE="^(.+)_P2S_v([0-9]+)\.([0-9]+)${DUP}\.3mf\$"
 
@@ -73,6 +78,8 @@ for f in *; do
     row "S $name" $((maj * 1000 + min)) "${name}_P2S_v${maj}.${min}.3mf" "$f"
   elif [[ $f =~ $KIT_RE ]]; then
     row "KIT" 0 "Beaumont_HO_Kit_RevB.zip" "$f"
+  elif [[ $f =~ $ALL40_RE ]]; then
+    row "ALL40" 0 "$f" "$f"
   elif [[ $f =~ $HO_RE ]]; then
     clean="${BASH_REMATCH[1]}.${BASH_REMATCH[3]}"
     if [ "${BASH_REMATCH[1]}" = "HO_Victorian_Collection_All_40" ]; then
@@ -95,27 +102,34 @@ sort -t "$TAB" -k1,1 -k2,2nr -k3,3nr "$LIST" | awk -F'\t' -v OFS='\t' -v beau=$H
                            { seen[g SUBSEP $5] = 1; print "KEEP", $0 }' > "$PLAN"
 
 # 3. Show the plan.
-DROP=(); KEEP=0; KB=0; OUTDATED=""
+DROP=(); KEEP=0; KB=0; NEED=""
 echo
 echo "Looking in $PWD"
 echo
 while IFS="$TAB" read -r act grp ver mt f clean; do
   case $act in
     KEEP)
-      KEEP=$((KEEP + 1))
+      why=""
       case $grp in
-        "P "*)
-          name=${grp#P }
+        "P "*|"S "*)              # the newest you have: is it the current version?
+          name=${grp#? }
           want=$(printf '%s\n' $LATEST | awk -v n="$name" 'p == n { print; exit } { p = $0 }')
           if [ -n "$want" ]; then
             w=$(( ${want%%.*} * 1000 + ${want#*.} ))
             if [ "$ver" -lt "$w" ]; then
-              have="v$((ver / 1000)).$((ver % 1000))"; [ "$ver" -eq 0 ] && have="the zip with no version"
-              OUTDATED="$OUTDATED  $name: you have $have, the latest is v$want
-"
+              why="outdated: v$want is in our chat"
+              case "$NEED" in *" $name,"*) ;; *) NEED="$NEED $name," ;; esac
             fi
           fi ;;
-      esac ;;
+      esac
+      if [ -z "$why" ]; then
+        KEEP=$((KEEP + 1))
+      else
+        [ ${#DROP[@]} -eq 0 ] && echo "Moving to the Trash:"
+        printf '  %-52s %s\n' "$f" "$why"
+        DROP+=("$PWD/$f")
+        KB=$((KB + $(du -sk "$f" | cut -f1)))
+      fi ;;
     *)
       case $act in
         OLD)   why="older version" ;;
@@ -131,12 +145,13 @@ while IFS="$TAB" read -r act grp ver mt f clean; do
 done < "$PLAN"
 
 [ ${#DROP[@]} -gt 0 ] && echo
-echo "Keeping $KEEP file(s): the newest of each building, and one copy of each certificate, guide and listing file."
+echo "Keeping $KEEP file(s): the current version of each building, and one copy of each certificate, guide and listing file."
 
-if [ -n "$OUTDATED" ]; then
+if [ -n "$NEED" ]; then
   echo
-  echo "Not the latest version (download the newer zip from our chat):"
-  printf '%s' "$OUTDATED"
+  echo "After this you'll have no copy of these buildings, only outdated ones are here. Download the"
+  echo "current zip (and P2S project) of each from our chat:"
+  printf '%s\n' "${NEED%,}" | fold -s -w 96 | sed 's/^/ /'
 fi
 
 PKG=""
@@ -178,6 +193,6 @@ fi
 
 # 5. A kept copy saved as "... (1).zip" gets its plain name back once the plain name is free.
 while IFS="$TAB" read -r act grp ver mt f clean; do
-  [ "$act" = KEEP ] && [ "$f" != "$clean" ] && [ ! -e "$clean" ] && mv -n "$f" "$clean" && echo "Renamed $f to $clean"
+  [ "$act" = KEEP ] && [ -e "$f" ] && [ "$f" != "$clean" ] && [ ! -e "$clean" ] && mv -n "$f" "$clean" && echo "Renamed $f to $clean"
 done < "$PLAN"
 echo "Done: moved ${#DROP[@]} file(s) to the Trash."
