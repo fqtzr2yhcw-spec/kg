@@ -4,11 +4,12 @@ Every plate of the kit becomes a plate of the project, laid out as Bambu Studio 
 (a grid, 1.2 bed widths apart). Each plate prints from the owner's spool nearest the design colour
 (CIEDE2000 colour difference; matte PLA preferred, then PLA Basic, generic PLA, and wood, metal
 or silk last; a spool without enough left for the plate's share is passed over if another is
-close). A two-colour plate changes filament on the first layer above its height, the way the
-slider's "Change Filament" does; the windows and doors start in black for their two layers of
-glass and change to the frame colour above it; plank-floored parts (porch decks, boardwalks,
-galleries, docks) start in the plank colour for their first 1.2 mm. A change between two colours
-that come out as the same spool is left out. Supports are on for the windows and
+close). The pieces of a two-colour plate are cut at the change height into two parts, each with
+its own filament, so the colours show in Bambu Studio and the AMS changes filament by itself, with
+nothing to add on the layer slider (the owner had been painting the changes in by hand); the
+windows and doors are black for their two layers of glass and the frame colour above; plank-floored
+parts (porch decks, boardwalks, galleries, docks) are the plank colour for their first 1.2 mm.
+When both colours come out as the same spool the piece stays whole. Supports are on for the windows and
 doors only (tree, on the build plate only). The prime tower is off: the P2S purges into its chute
 at the one change a plate has.
 
@@ -208,7 +209,7 @@ def _plan(key):
         if change:
             nm, g = roles.get(change[1], (names[1], 0.0))
             roles[change[1]] = (nm, g + grams * (1 - split))
-        plates.append({"base": base, "colour": col, "parts": parts, "start": start, "change": change,
+        plates.append({"base": base, "colour": col, "parts": parts, "start": start, "change": change, "names": names,
                        "grams": grams, "roles": roles, "supports": col in SUPPORTED,
                        "file": os.path.join(kit, p["file"]), "preview": os.path.join(kit, p["preview"])})
     return man, plates
@@ -334,6 +335,39 @@ def _mesh_xml(oid, v, t):
             ' </resources>\n <build/>\n</model>\n')
 
 
+def _volumes_xml(ids, meshes):
+    """One object file holding several meshes (a piece's colour parts), ids[k] for meshes[k] = (v, t)."""
+    objs = []
+    for oid, (v, t) in zip(ids, meshes):
+        vs = "\n".join(f'     <vertex x="{x:.4f}" y="{y:.4f}" z="{z:.4f}"/>' for x, y, z in v)
+        ts = "\n".join(f'     <triangle v1="{a}" v2="{b}" v3="{c}"/>' for a, b, c in t)
+        objs.append(f'  <object id="{oid}" p:UUID="{oid:08x}-81cb-4c03-9d28-80fed5dfa1dc" type="model">\n   <mesh>\n'
+                    f'    <vertices>\n{vs}\n    </vertices>\n    <triangles>\n{ts}\n    </triangles>\n   </mesh>\n  </object>')
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" '
+            'xmlns:BambuStudio="http://schemas.bambulab.com/package/2021" '
+            'xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06" requiredextensions="p">\n'
+            ' <metadata name="BambuStudio:3mfVersion">1</metadata>\n <resources>\n' + "\n".join(objs) + '\n'
+            ' </resources>\n <build/>\n</model>\n')
+
+
+def _split(v, t, h):
+    """A piece's mesh cut at height h: [(v, t) below, (v, t) above], the empty halves left out."""
+    import manifold3d as m3
+    man = m3.Manifold(m3.Mesh(vert_properties=np.asarray(v, np.float32), tri_verts=np.asarray(t, np.uint32)))
+    if man.is_empty() or man.status() != m3.Error.NoError:
+        return None
+    above, below = man.split_by_plane((0.0, 0.0, 1.0), h)
+    out = []
+    for part in (below, above):
+        if part.is_empty() or part.volume() < 1e-3:
+            out.append(None)
+            continue
+        mesh = part.to_mesh()
+        out.append((np.asarray(mesh.vert_properties)[:, :3].astype(float), np.asarray(mesh.tri_verts, np.int64)))
+    return out
+
+
 def _esc(s):
     return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;"))
 
@@ -359,37 +393,58 @@ def write_project(key, path=None, verbose=True):
     now = datetime.date.today().isoformat()
     cols = _cols(len(plates))
     files, rels, comps, items, settings, plate_xml, gcodes = {}, [], [], [], [], [], []
-    oid, ident = 0, 100
+    oid, ident, nid = 0, 100, 0
     for i, p in enumerate(plates):
         ox, oy = (i % cols) * STRIDE, -(i // cols) * STRIDE
         insts = []
+        two = bool(p["change"]) and sid(p["start"]) != sid(p["change"][1])
+        whole = False                     # a piece that would not cut: the plate keeps a slider change
         for (name, v, t) in _read_plate(p["file"]):
             oid += 1
-            mesh_id, obj_id = 2 * oid - 1, 2 * oid
+            label = name.split("__", 1)[-1]
             lo, hi = v.min(0), v.max(0)
             c = np.array([(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, lo[2]])
-            files[f"3D/Objects/object_{oid}.model"] = _mesh_xml(mesh_id, v - c, t)
+            # the piece's parts: (mesh, filament slot, name); a two-colour piece is cut at the change
+            vols = None
+            if two:
+                cut = _split(v, t, lo[2] + p["change"][0] - LAYER)
+                if cut is not None:
+                    names = (p["names"][0] or p["colour"], p["names"][1] or "")
+                    vols = [(m, sid(h), f"{label} - {nm}") for m, h, nm in
+                            zip(cut, (p["start"], p["change"][1]), names) if m is not None]
+            if not vols:
+                vols = [((v, t), sid(p["start"]), label)]
+                whole = whole or two
+            ids = [nid + k + 1 for k in range(len(vols))]
+            obj_id = nid + len(vols) + 1
+            nid = obj_id
+            files[f"3D/Objects/object_{oid}.model"] = _volumes_xml(ids, [(m[0] - c, m[1]) for m, _, _ in vols])
             rels.append(f' <Relationship Target="/3D/Objects/object_{oid}.model" Id="rel-{oid}" '
                         'Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>')
             comps.append(f'  <object id="{obj_id}" p:UUID="{oid:08x}-61cb-4c03-9d28-80fed5dfa1dc" type="model">\n'
-                         f'   <components>\n    <component p:path="/3D/Objects/object_{oid}.model" objectid="{mesh_id}" '
-                         f'p:UUID="{oid << 16:08x}-b206-40ff-9872-83e8017abed1" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>\n'
-                         '   </components>\n  </object>')
+                         '   <components>\n'
+                         + "\n".join(f'    <component p:path="/3D/Objects/object_{oid}.model" objectid="{mid}" '
+                                     f'p:UUID="{(oid << 16) + k:08x}-b206-40ff-9872-83e8017abed1" '
+                                     'transform="1 0 0 0 1 0 0 0 1 0 0 0"/>' for k, mid in enumerate(ids))
+                         + '\n   </components>\n  </object>')
             tx, ty = ox + c[0], oy + c[1]
             items.append(f'  <item objectid="{obj_id}" p:UUID="{oid:08x}-b1ec-4553-aec9-835e5b724bb4" '
                          f'transform="1 0 0 0 1 0 0 0 1 {tx:.4f} {ty:.4f} {c[2]:.4f}" printable="1"/>')
-            label = name.split("__", 1)[-1]
             sup = ("".join(f'    <metadata key="{k}" value="{v_}"/>\n' for k, v_ in
                            (("enable_support", "1"), ("support_type", "tree(auto)"),
                             ("support_on_build_plate_only", "1"))) if p["supports"] else "")
+            nfaces = sum(len(m[1]) for m, _, _ in vols)
+            parts_xml = "".join(
+                f'    <part id="{mid}" subtype="normal_part">\n'
+                f'      <metadata key="name" value="{_esc(pn)}"/>\n'
+                '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n'
+                f'      <metadata key="extruder" value="{slot}"/>\n'
+                f'      <mesh_stat face_count="{len(m[1])}" edges_fixed="0" degenerate_facets="0" '
+                'facets_removed="0" facets_reversed="0" backwards_edges="0"/>\n    </part>\n'
+                for mid, (m, slot, pn) in zip(ids, vols))
             settings.append(f'  <object id="{obj_id}">\n    <metadata key="name" value="{_esc(label)}"/>\n'
-                            f'    <metadata key="extruder" value="{sid(p["start"])}"/>\n{sup}'
-                            f'    <metadata face_count="{len(t)}"/>\n'
-                            f'    <part id="{mesh_id}" subtype="normal_part">\n'
-                            f'      <metadata key="name" value="{_esc(label)}"/>\n'
-                            '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n'
-                            f'      <mesh_stat face_count="{len(t)}" edges_fixed="0" degenerate_facets="0" '
-                            'facets_removed="0" facets_reversed="0" backwards_edges="0"/>\n    </part>\n  </object>')
+                            f'    <metadata key="extruder" value="{vols[0][1]}"/>\n{sup}'
+                            f'    <metadata face_count="{nfaces}"/>\n' + parts_xml + '  </object>')
             ident += 1
             insts.append(f'    <model_instance>\n      <metadata key="object_id" value="{obj_id}"/>\n'
                          '      <metadata key="instance_id" value="0"/>\n'
@@ -398,10 +453,11 @@ def write_project(key, path=None, verbose=True):
         pname = f'{p["base"].split("_", 1)[0]} {p["colour"].replace("_", " ")} - {s0["name"]}'
         if p["change"]:
             s1 = chosen[p["change"][1]]["spool"]
-            pname += f' -> {s1["name"]} at {p["change"][0]:.1f}'
-            gcodes.append(f'<plate>\n<plate_info id="{i + 1}"/>\n'
-                          f'<layer top_z="{p["change"][0]:.2f}" type="2" extruder="{sid(p["change"][1])}" '
-                          f'color="{s1["hex"]}" extra="" gcode="tool_change"/>\n<mode value="MultiAsSingle"/>\n</plate>')
+            pname += f' + {s1["name"]} above {p["change"][0] - LAYER:.1f} mm'
+            if whole:
+                gcodes.append(f'<plate>\n<plate_info id="{i + 1}"/>\n'
+                              f'<layer top_z="{p["change"][0]:.2f}" type="2" extruder="{sid(p["change"][1])}" '
+                              f'color="{s1["hex"]}" extra="" gcode="tool_change"/>\n<mode value="MultiAsSingle"/>\n</plate>')
         thumb = f"Metadata/plate_{i + 1}.png"
         if os.path.exists(p["preview"]):
             files[thumb] = open(p["preview"], "rb").read()
@@ -491,7 +547,8 @@ def colour_report(key, man, plates, chosen, slots, path):
     lines += ["", "Plates:"]
     for i, p in enumerate(plates, 1):
         s0 = chosen[p["start"]]["spool"]["name"]
-        ch = f", change to {chosen[p['change'][1]]['spool']['name']} on the {p['change'][0]:.1f} mm layer" if p["change"] else ""
+        ch = (f", {chosen[p['change'][1]]['spool']['name']} above {p['change'][0] - LAYER:.1f} mm (the pieces are cut "
+              "into their two colours; the AMS changes filament by itself)" if p["change"] else "")
         sup = ", supports (tree, build plate only)" if p["supports"] else ""
         lines.append(f"  {i:>2}. {p['base']}: {s0}{ch}{sup}")
     return "\n".join(lines) + "\n"
