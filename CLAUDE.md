@@ -96,8 +96,11 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
   three-sided cornice, say) have a picture to match against.
 - Provide finished print files as zips, and each building as a Bambu Studio project for the P2S too
   (`python3 -m hoarch.bambu <key>` after packaging): every plate laid out, coloured from the owner's
-  spools (hoarch/bambu/filament_library.json, pasted from Bambu Studio's Filament Manager), the
-  filament changes set. Rebuild it with every release.
+  spools (hoarch/bambu/filament_library.json, pasted from Bambu Studio's Filament Manager). Rebuild
+  it with every release.
+  - Two-colour pieces are cut into coloured parts, each with its own filament, so the AMS changes
+    colour by itself. The owner must not have to paint changes in by hand.
+  - The windows' glass colour runs two layers into the frame, so the glass bonds to the frame.
 - Once a new version is sent, delete the old version, so only the current zip for each
   building is kept (a combined zip holding superseded versions goes too).
 - Get a few pilot buildings right before rolling a change across the collection. Don't pile

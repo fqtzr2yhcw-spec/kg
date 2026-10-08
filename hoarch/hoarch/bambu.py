@@ -46,6 +46,9 @@ BED = 256.0
 STRIDE = BED * 1.2          # Bambu Studio's plate pitch (LOGICAL_PART_PLATE_GAP = 1/5)
 LAYER = 0.2
 GLASS_TOP = 0.4             # openings.GLASS: the windows' glass is their first two layers
+GLASS_BOND = 0.4            # the glass colour runs two layers on into the frame, so the sash bars start
+                            # on their own filament and the colour change is in the frame's body
+                            # (the owner painted it so: bars that start in a new colour on the glass bond poorly)
 PLANK_TOP = 1.2             # the planked parts' boards are their first six layers
 GLASS_HEX = "#1E2226"       # aim for the glass: near black
 SUPPORTED = ("Windows_Doors", "Addins")       # plates with supports under their frames (windows, doors, mansard add-ins)
@@ -180,8 +183,8 @@ def _read_plate(path):
 
 
 def _plan(key):
-    """The kit's plates with their colour roles: [{base, parts, objs, start, change (z, hex) or None,
-    grams, roles {hex: (colour name, grams)}}]."""
+    """The kit's plates with their colour roles: [{base, parts, bands [(z from, hex, name)] from the bed
+    up, grams, roles {hex: (colour name, grams)}}]."""
     kit = os.path.join(OUT, key, "kit")
     man = json.load(open(os.path.join(kit, "manifest.json")))
     pal = json.load(open(os.path.join(OUT, key, "palette.json")))
@@ -193,23 +196,24 @@ def _plan(key):
         hmax = max(p.get("max_height_mm") or 1.0, 0.4)
         parts = [n.split("__", 1)[-1] for n in p["parts"]]
         col, hexc = p["colour"], p["hex"].upper()
-        if col == "Windows_Doors":
-            start, change, names = GLASS_HEX, (GLASS_TOP + LAYER, hexc), ("Glass", "Windows and doors")
-            split = 0.12
-        elif p.get("change"):                      # the kit's own two-colour plates (planks included)
-            c = p["change"]
-            start, change, names = hexc, (round(c["at_mm"], 2) + LAYER, c["to_hex"].upper()), (col, c["to"])
-            split = min(c["at_mm"] / hmax, 0.9)
+        c = p.get("change")
+        if col == "Windows_Doors":                # glass, the frames over it, and a surround above (if any)
+            bands = [(0.0, GLASS_HEX, "Glass"), (GLASS_TOP + GLASS_BOND, hexc, "Windows and doors")]
+            if c:
+                bands.append((round(c["at_mm"], 2), c["to_hex"].upper(), c["to"]))
+        elif c:                                   # the kit's own two-colour plates (planks included)
+            bands = [(0.0, hexc, col), (round(c["at_mm"], 2), c["to_hex"].upper(), c["to"])]
         elif col in DECKS:
-            start, change, names = planks.upper(), (PLANK_TOP + LAYER, hexc), ("Planks", col)
-            split = min(PLANK_TOP / hmax, 0.9)
+            bands = [(0.0, planks.upper(), "Planks"), (PLANK_TOP, hexc, col)]
         else:
-            start, change, names, split = hexc, None, (col, None), 1.0
-        roles = {start: (names[0], grams * split)}
-        if change:
-            nm, g = roles.get(change[1], (names[1], 0.0))
-            roles[change[1]] = (nm, g + grams * (1 - split))
-        plates.append({"base": base, "colour": col, "parts": parts, "start": start, "change": change, "names": names,
+            bands = [(0.0, hexc, col)]
+        roles = {}
+        for k, (z0, h, nm) in enumerate(bands):
+            z1 = bands[k + 1][0] if k + 1 < len(bands) else hmax
+            share = grams * max(min(z1, hmax) - z0, 0.0) / hmax
+            n0, g0 = roles.get(h, (nm, 0.0))
+            roles[h] = (n0, g0 + share)
+        plates.append({"base": base, "colour": col, "parts": parts, "bands": bands,
                        "grams": grams, "roles": roles, "supports": col in SUPPORTED,
                        "file": os.path.join(kit, p["file"]), "preview": os.path.join(kit, p["preview"])})
     return man, plates
@@ -235,8 +239,11 @@ def match(plates, spools):
         f, de = pick(h, need[h], spools)
         chosen[h] = {"spool": f, "de": de, "need": need[h], "name": " / ".join(n.replace("_", " ") for n in names[h])}
     for p in plates:                               # no change where both colours are the same spool
-        if p["change"] and chosen[p["start"]]["spool"] is chosen[p["change"][1]]["spool"]:
-            p["change"] = None
+        merged = [p["bands"][0]]
+        for b in p["bands"][1:]:
+            if chosen[b[1]]["spool"] is not chosen[merged[-1][1]]["spool"]:
+                merged.append(b)
+        p["bands"] = merged
     return chosen
 
 
@@ -351,21 +358,27 @@ def _volumes_xml(ids, meshes):
             ' </resources>\n <build/>\n</model>\n')
 
 
-def _split(v, t, h):
-    """A piece's mesh cut at height h: [(v, t) below, (v, t) above], the empty halves left out."""
+def _bands(v, t, zs):
+    """A piece's mesh cut at the heights zs (rising): its parts from the bed up, None where a band
+    holds nothing of it; None if the mesh can't be read as a solid."""
     import manifold3d as m3
     man = m3.Manifold(m3.Mesh(vert_properties=np.asarray(v, np.float32), tri_verts=np.asarray(t, np.uint32)))
     if man.is_empty() or man.status() != m3.Error.NoError:
         return None
-    above, below = man.split_by_plane((0.0, 0.0, 1.0), h)
-    out = []
-    for part in (below, above):
+    out, rest = [], man
+    for z in zs:
+        above, below = rest.split_by_plane((0.0, 0.0, 1.0), z)
+        out.append(below)
+        rest = above
+    out.append(rest)
+    res = []
+    for part in out:
         if part.is_empty() or part.volume() < 1e-3:
-            out.append(None)
+            res.append(None)
             continue
         mesh = part.to_mesh()
-        out.append((np.asarray(mesh.vert_properties)[:, :3].astype(float), np.asarray(mesh.tri_verts, np.int64)))
-    return out
+        res.append((np.asarray(mesh.vert_properties)[:, :3].astype(float), np.asarray(mesh.tri_verts, np.int64)))
+    return res
 
 
 def _esc(s):
@@ -380,7 +393,7 @@ def write_project(key, path=None, verbose=True):
     # filament slots: one per spool, in the order the plates first use them
     slots, slot_of = [], {}
     for p in plates:
-        for h in [p["start"]] + ([p["change"][1]] if p["change"] else []):
+        for _, h, _ in p["bands"]:
             f = chosen[h]["spool"]
             if f["name"] not in slot_of:
                 slot_of[f["name"]] = len(slots) + 1
@@ -397,8 +410,8 @@ def write_project(key, path=None, verbose=True):
     for i, p in enumerate(plates):
         ox, oy = (i % cols) * STRIDE, -(i // cols) * STRIDE
         insts = []
-        two = bool(p["change"]) and sid(p["start"]) != sid(p["change"][1])
-        whole = False                     # a piece that would not cut: the plate keeps a slider change
+        bands = p["bands"]
+        whole = False                     # a piece that would not cut: the plate keeps slider changes
         for (name, v, t) in _read_plate(p["file"]):
             oid += 1
             label = name.split("__", 1)[-1]
@@ -406,15 +419,14 @@ def write_project(key, path=None, verbose=True):
             c = np.array([(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, lo[2]])
             # the piece's parts: (mesh, filament slot, name); a two-colour piece is cut at the change
             vols = None
-            if two:
-                cut = _split(v, t, lo[2] + p["change"][0] - LAYER)
+            if len(bands) > 1:
+                cut = _bands(v, t, [lo[2] + z for z, _, _ in bands[1:]])
                 if cut is not None:
-                    names = (p["names"][0] or p["colour"], p["names"][1] or "")
-                    vols = [(m, sid(h), f"{label} - {nm}") for m, h, nm in
-                            zip(cut, (p["start"], p["change"][1]), names) if m is not None]
+                    vols = [(m, sid(h), f"{label} - {nm.replace('_', ' ')}") for m, (_, h, nm) in zip(cut, bands)
+                            if m is not None]
             if not vols:
-                vols = [((v, t), sid(p["start"]), label)]
-                whole = whole or two
+                vols = [((v, t), sid(bands[0][1]), label)]
+                whole = whole or len(bands) > 1
             ids = [nid + k + 1 for k in range(len(vols))]
             obj_id = nid + len(vols) + 1
             nid = obj_id
@@ -449,15 +461,15 @@ def write_project(key, path=None, verbose=True):
             insts.append(f'    <model_instance>\n      <metadata key="object_id" value="{obj_id}"/>\n'
                          '      <metadata key="instance_id" value="0"/>\n'
                          f'      <metadata key="identify_id" value="{ident}"/>\n    </model_instance>')
-        s0 = chosen[p["start"]]["spool"]
+        s0 = chosen[bands[0][1]]["spool"]
         pname = f'{p["base"].split("_", 1)[0]} {p["colour"].replace("_", " ")} - {s0["name"]}'
-        if p["change"]:
-            s1 = chosen[p["change"][1]]["spool"]
-            pname += f' + {s1["name"]} above {p["change"][0] - LAYER:.1f} mm'
-            if whole:
-                gcodes.append(f'<plate>\n<plate_info id="{i + 1}"/>\n'
-                              f'<layer top_z="{p["change"][0]:.2f}" type="2" extruder="{sid(p["change"][1])}" '
-                              f'color="{s1["hex"]}" extra="" gcode="tool_change"/>\n<mode value="MultiAsSingle"/>\n</plate>')
+        for z, h, _ in bands[1:]:
+            s1 = chosen[h]["spool"]
+            pname += f' + {s1["name"]} above {z:.1f} mm'
+        if whole:
+            gcodes.append(f'<plate>\n<plate_info id="{i + 1}"/>\n' + "".join(
+                f'<layer top_z="{z + LAYER:.2f}" type="2" extruder="{sid(h)}" color="{chosen[h]["spool"]["hex"]}" '
+                'extra="" gcode="tool_change"/>\n' for z, h, _ in bands[1:]) + '<mode value="MultiAsSingle"/>\n</plate>')
         thumb = f"Metadata/plate_{i + 1}.png"
         if os.path.exists(p["preview"]):
             files[thumb] = open(p["preview"], "rb").read()
@@ -546,9 +558,10 @@ def colour_report(key, man, plates, chosen, slots, path):
         lines += ["", "No close spool in your library (worth buying, or use the slot's spool as set):"] + buy
     lines += ["", "Plates:"]
     for i, p in enumerate(plates, 1):
-        s0 = chosen[p["start"]]["spool"]["name"]
-        ch = (f", {chosen[p['change'][1]]['spool']['name']} above {p['change'][0] - LAYER:.1f} mm (the pieces are cut "
-              "into their two colours; the AMS changes filament by itself)" if p["change"] else "")
+        s0 = chosen[p["bands"][0][1]]["spool"]["name"]
+        ch = "".join(f", {chosen[h]['spool']['name']} above {z:.1f} mm" for z, h, _ in p["bands"][1:])
+        if ch:
+            ch += " (the pieces are cut into their colours; the AMS changes filament by itself)"
         sup = ", supports (tree, build plate only)" if p["supports"] else ""
         lines.append(f"  {i:>2}. {p['base']}: {s0}{ch}{sup}")
     return "\n".join(lines) + "\n"
@@ -576,9 +589,8 @@ def plates_sheet(key, path=None):
     rgb = lambda h: np.array([int(h.lstrip("#")[i:i + 2], 16) / 255 for i in (0, 2, 4)])
     for ax, (i, p) in zip(axs, enumerate(plates, 1)):
         ax.add_patch(plt.Rectangle((0, 0), BED, BED, fc="#23272b", ec="#555"))
-        c0 = rgb(chosen[p["start"]]["spool"]["hex"])
-        c1 = rgb(chosen[p["change"][1]]["spool"]["hex"]) if p["change"] else c0
-        zc = p["change"][0] - LAYER if p["change"] else 1e9
+        zb = np.array([z for z, _, _ in p["bands"]])
+        cb = np.array([rgb(chosen[h]["spool"]["hex"]) for _, h, _ in p["bands"]])
         for (_, v, t) in _read_plate(p["file"]):
             tri = v[t]
             nz = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])[:, 2]
@@ -588,13 +600,13 @@ def plates_sheet(key, path=None):
             z = tri[up][:, :, 2].mean(1)
             order = np.argsort(z)
             shade = 0.6 + 0.4 * (z[order] / max(z.max(), 1e-3))
-            base = np.where((z[order] > zc)[:, None], c1[None, :], c0[None, :])
+            base = cb[np.searchsorted(zb, z[order], side="right") - 1]
             ax.add_collection(PolyCollection(tri[up][order][:, :, :2], facecolors=np.clip(base * shade[:, None] + 0.05, 0, 1),
                                              edgecolors="none"))
-        s0 = chosen[p["start"]]["spool"]["name"].replace("Bambu Lab ", "")
+        s0 = chosen[p["bands"][0][1]]["spool"]["name"].replace("Bambu Lab ", "")
         cap = f"{i}. {p['colour'].replace('_', ' ')}\n{s0}"
-        if p["change"]:
-            cap += f"\n-> {chosen[p['change'][1]]['spool']['name'].replace('Bambu Lab ', '')} at {p['change'][0]:.1f}"
+        for z, h, _ in p["bands"][1:]:
+            cap += f"\n+ {chosen[h]['spool']['name'].replace('Bambu Lab ', '')} above {z:.1f}"
         ax.set_title(cap, fontsize=6.5)
         ax.set_xlim(-2, BED + 2)
         ax.set_ylim(-2, BED + 2)

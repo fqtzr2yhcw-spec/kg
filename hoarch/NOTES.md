@@ -433,6 +433,22 @@ across:
   narrower than 1.5 mm on its worst layer. A dense count on a low layer (just above the glass)
   is a lattice that will blur.
 
+## Colour changes in the Bambu projects
+
+The P2S projects carry the colours in the pieces themselves. Each piece of a two- or three-colour
+plate is cut at its change heights into parts, each with its own filament. The AMS (P2S, H2C)
+then switches filament by itself, and the colours show on screen. The owner had been reading the
+change heights off the zip and painting them in by hand. Single-colour plates stay whole, for
+the P1S, which has no AMS.
+
+A colour change is a weak plane: the first layer of a new filament bonds less well. Thin features
+that start exactly at a change hold on by one fresh layer, like sash bars over the glass or raised
+letters on a sign. So the glass colour runs two layers on into the frame
+(`bambu.GLASS_BOND`, the owner's own practice). The bars then start on their own filament, and
+the change falls inside the frame's body, behind the wall face. Design with this in mind: put a
+change where the part is broad (a ring on a ring, a frame over its plug), not at the foot of thin
+work.
+
 ## Size standard (houses 21 to 30, Rev C)
 
 The first cut of the second batch read as skinny next to the reference kits. Both references
