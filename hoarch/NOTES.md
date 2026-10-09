@@ -449,6 +449,16 @@ the change falls inside the frame's body, behind the wall face. Design with this
 change where the part is broad (a ring on a ring, a frame over its plug), not at the foot of thin
 work.
 
+Write the parts the way Bambu Studio writes its own projects. Each part's mesh is centred on itself
+and moved into place by its component transform; the part's `matrix` in model_settings is the same
+move, and `source_*` names the project file. A one-part piece is centred and placed by its build
+item. Bambu centres every mesh it loads. The v1.2 projects wrote the parts uncentred in one shared
+frame, and on the owner's Mac the Fontaine deck's white frame loaded about 6 mm above its brown
+boards. The Bambu Studio command line and the Linux app loaded the same file correctly, so a check
+there proves little. Compare against a project Bambu saved itself (`--export-3mf`): its components
+must match ours. Bambu re-multiplies a part's `matrix` into itself on every save, its own files
+included; only the components carry the position.
+
 ## Size standard (houses 21 to 30, Rev C)
 
 The first cut of the second batch read as skinny next to the reference kits. Both references

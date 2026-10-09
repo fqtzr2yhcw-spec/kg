@@ -430,14 +430,26 @@ def write_project(key, path=None, verbose=True):
             ids = [nid + k + 1 for k in range(len(vols))]
             obj_id = nid + len(vols) + 1
             nid = obj_id
-            files[f"3D/Objects/object_{oid}.model"] = _volumes_xml(ids, [(m[0] - c, m[1]) for m, _, _ in vols])
+            # Bambu Studio's own layout: each part's mesh centred on itself, the component and the
+            # part's matrix carrying it to its place in the piece, and a one-part piece placed by its
+            # build item alone. Bambu centres every mesh it loads; parts written uncentred in one
+            # shared frame came apart in the owner's Bambu Studio (the Fontaine deck in v1.2).
+            if len(vols) == 1:
+                c = np.round((lo + hi) / 2, 4)
+            at = []
+            for m, _, _ in vols:
+                pv = m[0] - c
+                at.append(np.zeros(3) if len(vols) == 1 else np.round((pv.min(0) + pv.max(0)) / 2, 4))
+            files[f"3D/Objects/object_{oid}.model"] = _volumes_xml(
+                ids, [(m[0] - c - a, m[1]) for (m, _, _), a in zip(vols, at)])
             rels.append(f' <Relationship Target="/3D/Objects/object_{oid}.model" Id="rel-{oid}" '
                         'Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>')
             comps.append(f'  <object id="{obj_id}" p:UUID="{oid:08x}-61cb-4c03-9d28-80fed5dfa1dc" type="model">\n'
                          '   <components>\n'
                          + "\n".join(f'    <component p:path="/3D/Objects/object_{oid}.model" objectid="{mid}" '
                                      f'p:UUID="{(oid << 16) + k:08x}-b206-40ff-9872-83e8017abed1" '
-                                     'transform="1 0 0 0 1 0 0 0 1 0 0 0"/>' for k, mid in enumerate(ids))
+                                     f'transform="1 0 0 0 1 0 0 0 1 {a[0]:.4f} {a[1]:.4f} {a[2]:.4f}"/>'
+                                     for k, (mid, a) in enumerate(zip(ids, at)))
                          + '\n   </components>\n  </object>')
             tx, ty = ox + c[0], oy + c[1]
             items.append(f'  <item objectid="{obj_id}" p:UUID="{oid:08x}-b1ec-4553-aec9-835e5b724bb4" '
@@ -447,13 +459,17 @@ def write_project(key, path=None, verbose=True):
                             ("support_on_build_plate_only", "1"))) if p["supports"] else "")
             nfaces = sum(len(m[1]) for m, _, _ in vols)
             parts_xml = "".join(
-                f'    <part id="{mid}" subtype="normal_part">\n'
+                f'    <part id="{mid}" subtype="normal_part" uuid="{oid:08x}-{k:04x}-4c7e-8a5d-{mid:012x}">\n'
                 f'      <metadata key="name" value="{_esc(pn)}"/>\n'
-                '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n'
-                f'      <metadata key="extruder" value="{slot}"/>\n'
-                f'      <mesh_stat face_count="{len(m[1])}" edges_fixed="0" degenerate_facets="0" '
+                f'      <metadata key="matrix" value="1 0 0 {a[0]:.4f} 0 1 0 {a[1]:.4f} 0 0 1 {a[2]:.4f} 0 0 0 1"/>\n'
+                f'      <metadata key="source_file" value="{_esc(os.path.basename(path))}"/>\n'
+                f'      <metadata key="source_object_id" value="{len(settings)}"/>\n'
+                f'      <metadata key="source_volume_id" value="{k}"/>\n'
+                + "".join(f'      <metadata key="source_offset_{ax}" value="{a[j]:.4f}"/>\n' for j, ax in enumerate("xyz"))
+                + (f'      <metadata key="extruder" value="{slot}"/>\n' if len(vols) > 1 else "")
+                + f'      <mesh_stat face_count="{len(m[1])}" edges_fixed="0" degenerate_facets="0" '
                 'facets_removed="0" facets_reversed="0" backwards_edges="0"/>\n    </part>\n'
-                for mid, (m, slot, pn) in zip(ids, vols))
+                for k, (mid, (m, slot, pn), a) in enumerate(zip(ids, vols, at)))
             settings.append(f'  <object id="{obj_id}">\n    <metadata key="name" value="{_esc(label)}"/>\n'
                             f'    <metadata key="extruder" value="{vols[0][1]}"/>\n{sup}'
                             f'    <metadata face_count="{nfaces}"/>\n' + parts_xml + '  </object>')
@@ -526,7 +542,8 @@ def write_project(key, path=None, verbose=True):
             data = files[k]
             z.writestr(k, data if isinstance(data, bytes) else data.encode())
     os.replace(tmp, path)
-    for old in os.listdir(OUT):                    # only the current version is kept
+    # only the current version is kept (when writing to out/)
+    for old in os.listdir(OUT) if os.path.dirname(os.path.abspath(path)) == os.path.abspath(OUT) else []:
         if old.startswith(f"{title}_P2S_v") and old.endswith(".3mf") and os.path.join(OUT, old) != path:
             os.remove(os.path.join(OUT, old))
     report = colour_report(key, man, plates, chosen, slots, path)
