@@ -267,7 +267,7 @@ def speed_board(n=25):
     post = rect(-0.75, 0.0, 0.75, 12.5)
     board = rect(-3.0, 11.5, 3.0, 17.5)
     rim = board - rect(-2.55, 11.95, 2.55, 17.05)
-    s = _sign(cs_union([post, board, _spike(1.5, 0.0)]), [(str(n), 3.4, 0.0, 12.9)])
+    s = _sign(cs_union([post, board, _spike(1.5, 0.0)]), [(str(n), 2.9, 0.0, 13.15)])
     return s + ext(rim, ZS - 0.01, ZS + LETTER)
 
 
