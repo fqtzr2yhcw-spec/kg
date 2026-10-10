@@ -367,7 +367,9 @@ def _bands(v, t, zs):
         return None
     out, rest = [], man
     for z in zs:
-        above, below = rest.split_by_plane((0.0, 0.0, 1.0), z)
+        # cut a hair above the change: a face lying exactly on the cut plane would otherwise
+        # leave a zero-thickness skin on the part above (the slicer ignores it, the viewer shows it)
+        above, below = rest.split_by_plane((0.0, 0.0, 1.0), z + 1e-3)
         out.append(below)
         rest = above
     out.append(rest)
