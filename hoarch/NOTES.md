@@ -575,3 +575,20 @@ Small pieces that sell by the pack. The rules:
 - A pack's plates hold `per_run` packs. The README gives grams per pack, and LISTING.txt is the
   draft listing.
 
+
+## Flatcar loads (`flatloads.py`, pilot)
+
+Freight for HO flatcars, under the pack rules above. What is particular to loads:
+
+- Size a load to the cars buyers own. Deck about 34 mm wide (9 ft 8 in); keep a load
+  within 37 mm (10 ft 8 in) unless it is a real dimensional load, like a tower section. Lengths
+  are matched to common cars: 40-42 ft (140-147 mm), 53 ft bulkhead (187 mm), 60 ft (210 mm),
+  89 ft (312 mm), and the well of a 52 ft depressed-centre flat (about 105 mm).
+- A load stands on its own blocking, cribbing or dunnage, so it sits flat on any deck. The
+  timber prints in brown up to the change height, and the load starts above it. The end
+  timbers carry the load's ends. The spans between timbers are bridges, kept under 30 mm.
+- Round loads lying down (pipe) stand on 45 degree keels and valley webs inside the stack.
+  These stop 0.4 mm short of the ends, so the ends read round, and the ledge left is under 1 mm.
+- A long round load stands up instead. The tower section prints upright (245 mm, inside a
+  256 mm build height), and its transport frames print flat and glue to its end faces.
+- The stand-in cars are drawn for the renders only. Listings say the car is not included.
