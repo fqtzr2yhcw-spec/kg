@@ -273,7 +273,8 @@ def speed_board(n=25):
 
 def station_sign(name="FAIRVIEW", cap=2.8):
     """A station name board on two posts, with a raised border and the name centred."""
-    w = max(20.0, 0.78 * cap * len(name) + 5.0)
+    tb = text_cs(name, cap, "sans", grow=0.1).bounds()          # the board fits the lettering's real width
+    w = max(20.0, (tb[2] - tb[0]) + 4.0)
     board = rect(-w / 2, 14.0, w / 2, 14.0 + cap + 2.4)
     rim = board - rect(-w / 2 + 0.5, 14.5, w / 2 - 0.5, 13.5 + cap + 2.4)
     posts = [rect(x - 0.8, 0.0, x + 0.8, 14.5) for x in (-w / 2 + 2.5, w / 2 - 2.5)]
@@ -284,7 +285,8 @@ def station_sign(name="FAIRVIEW", cap=2.8):
 
 def yard_limit(cap=2.4):
     """A yard-limit board on two posts: "YARD LIMIT" in raised letters inside a border."""
-    w = 0.78 * cap * 10 + 4.0
+    tb = text_cs("YARD LIMIT", cap, "sans", grow=0.1).bounds()
+    w = (tb[2] - tb[0]) + 3.6
     board = rect(-w / 2, 12.0, w / 2, 12.0 + cap + 2.0)
     rim = board - rect(-w / 2 + 0.45, 12.45, w / 2 - 0.45, 11.55 + cap + 2.0)
     posts = [rect(x - 0.75, 0.0, x + 0.75, 12.5) for x in (-w / 2 + 2.0, w / 2 - 2.0)]
