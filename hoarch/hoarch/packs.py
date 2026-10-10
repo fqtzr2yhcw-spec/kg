@@ -310,8 +310,8 @@ def scene(key):
             h = m.bounding_box()[5] - 1.4
             if i < len(arms):
                 apc, am = arms[i]
-                for c, s in coloured(apc, am):
-                    put(c, s.translate([x, 0, h - 0.01]))
+                for c, s in coloured(apc, am):                  # crossarms stand across the line of poles
+                    put(c, s.rotate([0, 0, 90]).translate([x, 0, h - 0.01]))
             if i < len(xf):
                 xpc, xm = xf[i]
                 for c, s in coloured(xpc, xm):
