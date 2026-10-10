@@ -147,7 +147,7 @@ def concrete_wall(L=50.0, H=20.0, seed=51):
     form-tie dimples in a grid, and a coping along the top edge, on lapped ends like tie_wall
     (installed, y is up)."""
     lap = 1.5
-    back = box([-lap, 0.0, 0.0], [L - lap, H, 1.0])
+    back = box([-lap, 0.0, 0.0], [L, H, 1.0])
     face = box([0.0, 0.0, 0.99], [L, H - 1.4, 1.8])
     rng = np.random.default_rng(seed)
     lines = [box([-1, y - 0.06, 1.66], [L + 1, y + 0.06, 1.9]) for y in np.arange(inch(6.0), H - 1.5, inch(6.0))]
@@ -158,7 +158,8 @@ def concrete_wall(L=50.0, H=20.0, seed=51):
             ends.append(box([x - 0.06, y, 1.66], [x + 0.06, min(y + inch(6.0), H - 1.4), 1.9]))
     ties = [M.sphere(0.22, 10).translate([x, y, 1.8]) for x in np.arange(3.5, L - 1, 7.0) for y in np.arange(3.0, H - 2.5, 7.0)]
     coping = _rbox(0.0, H - 1.4, 0.99, L, H, 2.2, 0.25)
-    return back + (face - union(lines + ends + ties)) + coping
+    from .details import scarf
+    return scarf(back + (face - union(lines + ends + ties)) + coping, L, lap, H)
 
 
 # ================================================================== trench works
@@ -504,7 +505,7 @@ def xmas_tree(h=21.0, seed=91):
     for k in range(n):
         R = R0 * (1 - k / (n + 0.6))
         th = (h - (z - TREE_STAND)) / (n - k) * 1.35
-        prof = [(0.0, z), (R * 0.35, z), (R, z + R * 0.65), (R * 0.25, z + th), (0.0, z + th)]
+        prof = [(0.0, z), (0.55, z), (R, z + R - 0.55), (R * 0.25, z + max(th, R - 0.3)), (0.0, z + max(th, R - 0.3))]
         tier = M.revolve(poly([(r, zz) for r, zz in prof]), 24)
         notch = union([box([R * 0.55, -0.22, z - 1], [R + 1, 0.22, z + R * 0.62]).rotate([0, 0, 360 * j / 9 + rng.uniform(-8, 8)]) for j in range(9)])
         tiers.append(tier - notch)
@@ -527,13 +528,11 @@ def lot_shack():
     roof = M.hull_points([(x, y, z) for x in (-1.2, L + 1.2) for (y, z) in ((-1.4, SHACK_EAVE - 0.01), (-1.4, SHACK_EAVE + 0.5),
                                                                            (W + 1.4, SHACK_EAVE - 0.01), (W + 1.4, SHACK_EAVE + 0.5))] +
                          [(x, W / 2, SHACK_EAVE + 4.8) for x in (-1.2, L + 1.2)])
-    # eaves undercut at 45 degrees so they print without support
-    under = union([M.hull_points([(x, y, z) for x in (-2, L + 2) for (y, z) in ((s * -1.41 + (W if s < 0 else 0), SHACK_EAVE - 0.02),
-                                                                            (s * -1.41 + (W if s < 0 else 0), SHACK_EAVE - 1.5),
-                                                                            (s * 0.0 + (W if s < 0 else 0), SHACK_EAVE - 0.02))])
-                   for s in (1, -1)])
-    roof = roof - (under - box([0.0, 0.0, 0.0], [L, W, SHACK_EAVE]))
-    return (walls + battens - hatch - door) + shelf + gable + roof
+    # a coved soffit under the eaves, flaring from the walls at 45 degrees, so the roof's
+    # overhang prints without support; it stays below the colour change (red)
+    cove = M.hull_points([(x, y, SHACK_EAVE - 1.45) for x in (0.0, L) for y in (0.0, W)] +
+                         [(x, y, SHACK_EAVE) for x in (-1.2, L + 1.2) for y in (-1.4, W + 1.4)])
+    return (walls + battens - hatch - door) + shelf + cove + gable + roof
 
 
 def lot_fence(L=36.0):

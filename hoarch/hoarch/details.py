@@ -298,7 +298,7 @@ def tie_wall(L=50.0, H=20.0, seed=11):
     lap = 1.5
     tl = ft(8.5)
     tw = inch(8.0) + 0.06
-    back = box([-lap, 0.0, 0.0], [L - lap, H, 1.0])
+    back = box([-lap, 0.0, 0.0], [L, H, 1.0])
     ties = []
     for c in range(int(H // tw)):
         y0 = c * tw
@@ -317,7 +317,21 @@ def tie_wall(L=50.0, H=20.0, seed=11):
         posts.append(box([xp - 0.9, -0.0, z0 - 0.3], [xp + 0.9, H + 0.6, z0 + 0.25]) +
                      box([xp - 0.12, -0.0, z0 + 0.2], [xp + 0.12, H + 0.6, z0 + 1.2]) +
                      box([xp - 0.9, -0.0, z0 + 1.15], [xp + 0.9, H + 0.6, z0 + 1.5]))
-    return back + union(ties) + union(posts)
+    return scarf(back + union(ties) + union(posts), L, lap, H)
+
+
+def scarf(panel, L, lap, H):
+    """Cut a face-up wall panel's lapped ends on a 45 degree plane so both print clean: the right
+    end keeps what lies above the plane (its face lip rests on a 45 degree underside), the left end
+    keeps what lies below it (the backing's lap, its top sloping), and two panels set L apart meet
+    on the same plane."""
+    big = 50.0
+    right = M.hull_points([(L - lap, y, 0.0) for y in (-5, H + 5)] + [(L - lap + big, y, big) for y in (-5, H + 5)] +
+                          [(L - lap + big, y, -1.0) for y in (-5, H + 5)] + [(L - lap, y, -1.0) for y in (-5, H + 5)])
+    left = M.hull_points([(-lap, y, 0.0) for y in (-5, H + 5)] + [(-lap + big, y, big) for y in (-5, H + 5)] +
+                         [(-lap - 1.0, y, big) for y in (-5, H + 5)] + [(-lap - 1.0, y, 0.0) for y in (-5, H + 5)])
+    left = left ^ box([-lap - 2, -10, -1], [0.0, H + 10, big])
+    return panel - right - left
 
 
 def crib_wall(L=50.0, H=24.0):
@@ -361,10 +375,15 @@ def culvert_headwall(W=30.0, H=14.0, d=ft(3.0)):
     r = d / 2
     zc = r + 0.8
     collar = M.cylinder(0.8, r + 0.9, r + 0.9, 48).rotate([90, 0, 0]).translate([0, 0.0, zc])
-    hole = M.cylinder(t + 22, r, r, 48).rotate([90, 0, 0]).translate([0, t + 11, zc])
+    # the bore: round where it shows at the face, pointed (45 degree roof) behind it, so its top
+    # needs no bridge
+    roof = M.hull_points([(x, y, zc) for x in (-r * 0.7071, r * 0.7071) for y in (0.6, t + 22)] +
+                         [(0.0, y, zc + r * 1.414) for y in (0.6, t + 22)])
+    hole = M.cylinder(t + 22, r, r, 48).rotate([90, 0, 0]).translate([0, t + 11, zc]) + roof
     pipe = union([M.cylinder(0.5, r + 0.35, r + 0.35, 48).rotate([90, 0, 0]).translate([0, t + 0.5 + k * 0.9, zc])
                   for k in range(11)]) + M.cylinder(10.0, r + 0.2, r + 0.2, 48).rotate([90, 0, 0]).translate([0, t + 10.0, zc])
-    pipe = pipe ^ box([-W, t - 0.01, 0.0], [W, t + 10.0, H])
+    cradle = box([-r - 0.9, t - 0.01, 0.0], [r + 0.9, t + 10.0, zc])      # the pipe beds in a concrete cradle
+    pipe = (pipe + cradle) ^ box([-W, t - 0.01, 0.0], [W, t + 10.0, H])
     wings = []
     for s in (-1, 1):
         wl = 12.0

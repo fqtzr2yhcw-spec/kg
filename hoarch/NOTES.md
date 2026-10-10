@@ -561,10 +561,13 @@ Small pieces that sell by the pack. The rules:
   slim piece gets a brim note.
 - Nothing hangs in the air. Lying pipe is cut flat 0.3 r above its bottom, so no overhang
   passes 45 degrees. A tree's tiers flare at 45 degrees and slope back up. Branches climb at
-  45 degrees or steeper. Eaves are undercut at 45 degrees.
+  45 degrees or steeper. Eaves sit on a 45 degree undercut or a coved soffit (the tree-lot
+  shack's cove stays below its colour change). A culvert pipe lies in a concrete cradle, and its
+  bore has a 45 degree pointed top behind the face.
 - Every piece is one solid. Check `len(m.decompose()) == 1`: loose ties, floating panels and
   unattached ornament all came up in the first build.
-- Joins glue on full faces. Wall panels lap at their ends. The cable reel's top flange covers
+- Joins glue on full faces. Wall panels lap at their ends on a 45 degree scarf
+  (`details.scarf`), so neither end's lip prints in the air. The cable reel's top flange covers
   the whole cable end. Crossarms drop over a spigot on the pole. The transformer has a saddle
   shaped to the pole.
 - Colours are the owner's spools, exactly (`packs.SPOOL`), so the Bambu project's slots match
