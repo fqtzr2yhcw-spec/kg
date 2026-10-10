@@ -543,3 +543,32 @@ fall. A flat face exactly on a slicing plane (0.1 + 0.2k above the bed) slices t
 zero-thickness slivers. `Part.printed()` now runs `unmid`, which lifts every vertex within
 0.012 mm of a slicing plane by 0.06 mm. Nothing visible moves, and the print checks no
 longer report mid-layer faces.
+
+## Scenery and detail packs (`packs.py`, `details.py`, `packparts.py`, `scenery.py`)
+
+Small pieces that sell by the pack. The rules:
+
+- No painting. Every piece prints in its colours off the plate: one colour, or one filament
+  change at a height every piece on its plate shares. Use a height on the layer grid: the
+  pallet's top, a curb's top, the base of a lamp's globe, a sign's face.
+- Two-colour shapes are drawn around the change: the lower colour wholly below it, the upper
+  wholly above it. Keep loose texture under the line (the crib wall's pebbles sit below the fill
+  height, so none print in concrete).
+- Faced pieces print face-up: retaining walls, revetments, signs. Signs and wall faces carry
+  their colour in the raised top layers. Lettering 2.4 mm or taller, raised 0.4 mm; smaller
+  text (a crossbuck's RAILROAD CROSSING at 1.75 mm) is for the resin printer.
+- Round things print upright so they stay round: poles, lamp shafts, drums, barrels. A tall
+  slim piece gets a brim note.
+- Nothing hangs in the air. Lying pipe is cut flat 0.3 r above its bottom, so no overhang
+  passes 45 degrees. A tree's tiers flare at 45 degrees and slope back up. Branches climb at
+  45 degrees or steeper. Eaves are undercut at 45 degrees.
+- Every piece is one solid. Check `len(m.decompose()) == 1`: loose ties, floating panels and
+  unattached ornament all came up in the first build.
+- Joins glue on full faces. Wall panels lap at their ends. The cable reel's top flange covers
+  the whole cable end. Crossarms drop over a spigot on the pole. The transformer has a saddle
+  shaped to the pole.
+- Colours are the owner's spools, exactly (`packs.SPOOL`), so the Bambu project's slots match
+  with no colour difference.
+- A pack's plates hold `per_run` packs. The README gives grams per pack, and LISTING.txt is the
+  draft listing.
+

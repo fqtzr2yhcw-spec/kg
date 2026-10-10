@@ -44,6 +44,10 @@ LATEST="
   Stauffer 1.1 Stickley 1.4 Stonehaven_Tunnel_Portals 1.0 Thorne_Livery 1.1 Twins 1.4 Valcour 1.2
   Vantassel 1.4 Water_Tank_No12 1.0 Westbrook 1.3 Whitby 1.3 Whitmore 1.3 Winthrop 1.3 Wisteria 1.3
   Wrightwood 1.2
+  Loaded_Pallets_Pack 1.0 Oil_Drums_and_Barrels_Pack 1.0 Retaining_Walls_Pack 1.0 Industrial_Clutter_Pack 1.0
+  HO_Military_Defences_Pack 1.0 Track_Crew_Stock_Pack 1.0 EV_Chargers_and_Solar_Pack 1.0 Old_Cemetery_Pack 1.0
+  Christmas_Tree_Lot_Pack 1.0 Trackside_Signs_Pack 1.0 Telephone_Poles_Pack 1.0 Victorian_Street_Lamps_Pack 1.0
+  Wrought_Iron_Fence_Pack 1.0
 "
 
 DUP='( ?\([0-9]+\)| [0-9]+|-[0-9]+)?'      # a browser's extra-copy mark: " (1)", "(1)", " 2", "-1"

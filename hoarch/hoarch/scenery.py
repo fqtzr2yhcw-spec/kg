@@ -233,7 +233,7 @@ def _sign(outline, words):
     letters = []
     for text, cap, x, y in words:
         letters.append(text_cs(text, cap, "sans", grow=0.1).translate((x, y)))
-    return body + ext(cs_union(letters), ZS - 0.01, ZS + LETTER)
+    return body + ext(cs_union(letters), ZS - 0.01, ZS + LETTER) if letters else body
 
 
 def _spike(w, y0, depth=2.6):
@@ -280,6 +280,27 @@ def station_sign(name="FAIRVIEW", cap=2.8):
     spikes = [_spike(1.6, 0.0).translate((x, 0.0)) for x in (-w / 2 + 2.5, w / 2 - 2.5)]
     s = _sign(cs_union([board] + posts + spikes), [(name, cap, 0.0, 15.2)])
     return s + ext(rim, ZS - 0.01, ZS + LETTER)
+
+
+def yard_limit(cap=2.4):
+    """A yard-limit board on two posts: "YARD LIMIT" in raised letters inside a border."""
+    w = 0.78 * cap * 10 + 4.0
+    board = rect(-w / 2, 12.0, w / 2, 12.0 + cap + 2.0)
+    rim = board - rect(-w / 2 + 0.45, 12.45, w / 2 - 0.45, 11.55 + cap + 2.0)
+    posts = [rect(x - 0.75, 0.0, x + 0.75, 12.5) for x in (-w / 2 + 2.0, w / 2 - 2.0)]
+    spikes = [_spike(1.5, 0.0).translate((x, 0.0)) for x in (-w / 2 + 2.0, w / 2 - 2.0)]
+    s = _sign(cs_union([board] + posts + spikes), [("YARD LIMIT", cap, 0.0, 13.0)])
+    return s + ext(rim, ZS - 0.01, ZS + LETTER)
+
+
+def flanger_sign():
+    """A flanger sign: a white board on a post with a black chevron pointing down the track,
+    warning the snow flanger to lift its blade."""
+    post = rect(-0.75, 0.0, 0.75, 11.5)
+    board = rect(-3.0, 10.5, 3.0, 15.0)
+    s = _sign(cs_union([post, board, _spike(1.5, 0.0)]), [])
+    chev = poly([(-2.4, 14.4), (-1.3, 14.4), (0.0, 12.4), (1.3, 14.4), (2.4, 14.4), (0.0, 11.0)])
+    return s + ext(chev, ZS - 0.01, ZS + LETTER)
 
 
 # ================================================================== packs

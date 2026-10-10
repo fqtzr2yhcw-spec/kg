@@ -108,6 +108,32 @@ building's render data); the shops stand side by side in two rows of five in
 | 88 | The Rochambeau | Second Empire villa, 216 x 128 mm: sage stucco scored as ashlar with chamfered quoins, ivory dressings and burgundy accents on a bluestone base with a blind arcade; two-storey side bays under mansard hoods that run into the main roof; a straight mansard of purple slate laid with diamond-cut crosses, add-ins with scrolled cheeks, crests with their own cornices and lyre cresting; segmental windows in Gibbs surrounds below, round-headed windows on balconettes above, a double door under a radiating transom in a Gibbs surround; a portico on banded columns with an iron balustrade on its roof, a veranda down the east side; cornices of ribboned medallions (joint) and acanthus on cushion consoles (eave), running-dog courses; stuccoed stacks with pyramid lids on piers | print files and build guide done |
 | 89 | The Beauvais | Second Empire cottage, 190 x 136 mm (230 x 156 with its veranda): a storey and a half, peach channel-and-bead siding with bobbin corner boards on a pebble-dashed base, cream trim and forest accents; the tall bell-cast mansard is the bedroom storey, chequered in square and diamond-pointed slates, fourteen big sunburst dormer add-ins and a twin one over the door, crook-and-daisy cresting; tall windows under sunflower friezes and shed hoods, a door between sidelights under a diamond-barred transom; a veranda wrapping the front and both sides on twin-vase posts with stacked-ring railings, scroll arches and icicles; an eave of sunflowers on lyre consoles over ovals and bars and interlaced arcading; brick stacks with sunk diamonds and arched hoods | print files and build guide done |
 | 90 | The Fontaine | Second Empire mansion, 224 x 144 mm (H plan): grey granite, banded rustication below and fine ashlar above, vermiculated quoins, marble dressings and verdigris accents on a battered plinth; end pavilions under taller mansards rising through the centre range's; a square entrance tower rising to a swelling dome with wreathed oculi, its own cornice, crest and a bannerette vane; slating with a band of diamond pyramids, two-tier add-ins with oculi, trident cresting; round-headed windows between engaged columns below, eared windows under broken pediments with urns above, a double door under a three-circle fanlight between paired columns; verandas either side of the tower on bell-capital columns with tulip balusters, lunettes and bells, on one deck that runs on as an open terrace before the door (tulip balusters between ball-capped newels, the steps at the door); cornices of lozenges and rosettes (joint) and coronets on ram's-horn consoles (eave), loop-knot and bell-chain courses; granite stacks with corner balls | print files and build guide done |
+## Scenery and detail packs (`hoarch/packs.py`)
+
+Small pieces sold in packs beside the buildings, chosen from what sells on Etsy and eBay
+(industrial clutter, pallets, retaining walls, drums) and from gaps nobody fills in HO (military
+field works, maintenance-of-way stock, EV chargers and solar). Every piece prints in its colours
+off the plate (one colour, or one filament change at a height its plate shares), so a pack ships
+with no painting. A run of a pack's plates makes several packs (`per_run`). Each has a print
+package zip with README and listing copy, and a coloured P2S project. Build one with
+`python3 -m hoarch.packs <key>`.
+
+| Key | Pack | Contents | Colours |
+|-----|------|----------|---------|
+| pallets | Loaded Pallets | 10 loaded pallets (cartons, cement sacks, drums, concrete blocks), a stack of empties | Caramel wood; Latte Brown, Bone White, Cobalt Blue, Gray loads |
+| drums | Oil Drums and Barrels | 24 x 55 gal drums in four colours, 6 wooden barrels | Cobalt Blue, Red, Black, Mistletoe Green; Cocoa Brown |
+| walls | Retaining Walls | tie wall on H-piles, concrete crib wall, board-formed concrete (lapped 50 mm panels), culvert headwall | Black Walnut; Dark Brown fill + Light Gray; Light Gray; Gray |
+| clutter | Industrial Clutter | 4 crates, 4 barrels, 2 tyre stacks, a pipe stack, a cable reel with its flange | Caramel, Cocoa Brown, Black, Copper Brown Metallic |
+| military | HO Military Defences | sandbag walls, corner and gun pit, dragon's teeth, ammo boxes, jerrycans, plank and wattle revetments, duckboards | Desert Tan, Light Gray, Bronze, Cocoa Brown |
+| mow | Track Crew Stock | new tie pile, old tie heaps, rail rack (rails in steel), spike kegs | Black Walnut, Iron Gray Metallic, Cocoa Brown |
+| modern | EV Chargers and Rooftop Solar | 2 EV islands, 3 flush solar arrays, 4 AC condensers, 2 rooftop units | Gray + Ivory White; Silver + Dark Blue; Light Gray |
+| cemetery | Old Cemetery | 15 headstones in 5 shapes, 2 obelisks, a mausoleum, railing on a granite curb, 2 dead trees | Light Gray; Gray + Black; Black Walnut |
+| treelot | Christmas Tree Lot | 9 trees in stands, the sales shack, lot fence, TREES sign | Cocoa Brown + Mistletoe Green; Red + Ivory White; White + Red |
+| signs | Trackside Signs | whistle posts, mileposts, speed boards, yard limit, flanger signs, 2 station boards | White + Black |
+| poles | Telephone Poles | 6 poles, 4- and 6-pin crossarms with aqua insulators, 2 transformers | Black Walnut; Cocoa Brown + Turquoise; Gray |
+| lamps | Victorian Street Lamps | acorn, boulevard and platform lamps, 2 each | Iron Gray Metallic + Ivory White |
+| ironfence | Wrought Iron Fence | 4 fence runs, 5 posts, a double gate on 2 gate posts | Gray + Black |
+
 ## Log
 - Sixth batch (81 to 90), the mansard batch: the roof system of the owner's tan reference kit
   in our own designs (a deep multi-ring eave, a flat-topped mansard storey with one-piece window

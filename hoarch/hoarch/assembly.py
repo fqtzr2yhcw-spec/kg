@@ -1511,5 +1511,13 @@ ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt"
            "blackwater": "Blackwater_Coaling_Tower", "stonehaven": "Stonehaven_Tunnel_Portals",
            "sandhouse": "Blackwater_Sand_House", "enginehouse": "Blackwater_Engine_House", "yardoffice": "Blackwater_Yard_Office", "section4": "Section_House_No4", "shanty": "Crossing_Shanty_Oil_House", "kilnridge": "Kiln_Ridge_Tunnel_Portals", "millcreek": "Mill_Creek_Bridge", "beaverrun": "Beaver_Run_Trestle"}
 
+# the scenery and detail packs (hoarch.packs)
+ZIPNAME.update({"pallets": "Loaded_Pallets_Pack", "drums": "Oil_Drums_and_Barrels_Pack", "walls": "Retaining_Walls_Pack",
+                "clutter": "Industrial_Clutter_Pack", "military": "HO_Military_Defences_Pack", "mow": "Track_Crew_Stock_Pack",
+                "modern": "EV_Chargers_and_Solar_Pack", "cemetery": "Old_Cemetery_Pack", "treelot": "Christmas_Tree_Lot_Pack",
+                "signs": "Trackside_Signs_Pack", "poles": "Telephone_Poles_Pack", "lamps": "Victorian_Street_Lamps_Pack",
+                "ironfence": "Wrought_Iron_Fence_Pack"})
+
+
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}
 SHOPS = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in SHOPS.items()}
