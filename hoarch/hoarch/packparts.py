@@ -474,7 +474,7 @@ def dead_tree(h=26.0, seed=81):
         x += rng.uniform(-0.7, 0.7)
         y += rng.uniform(-0.7, 0.7)
         trunk_pts.append((x, y, h * 0.62 * k / 6))
-    parts = [_chain(trunk_pts, 1.5, 0.55), M.cylinder(0.8, 3.2, 1.6, 24)]
+    parts = [_chain(trunk_pts, 1.6, 0.8), M.cylinder(0.8, 3.2, 1.6, 24)]
     for k in range(5):
         z0 = h * (0.3 + 0.07 * k)
         a = rng.uniform(0, 2 * math.pi)
@@ -486,7 +486,7 @@ def dead_tree(h=26.0, seed=81):
             p = np.array(pts[-1]) + np.array([math.cos(a) * step * 0.7, math.sin(a) * step * 0.7, step])
             a += rng.uniform(-0.5, 0.5)
             pts.append(tuple(p))
-        parts.append(_chain(pts, 0.5, 0.22))
+        parts.append(_chain(pts, 0.65, 0.43))          # no twig under 0.85 mm: the nozzle draws 0.4
     return union(parts) ^ box([-50, -50, 0.0], [50, 50, 100])
 
 
@@ -555,7 +555,9 @@ def telephone_pole(h=ft(30.0), r0=inch(5.2), r1=inch(4.0), steps=True):
         for k, z in enumerate(np.arange(ft(8.0), h - ft(3.0), ft(1.5))):
             a = 0 if k % 2 else 180
             rr = r0 + (r1 - r0) * z / h
-            parts.append(box([rr - 0.2, -0.15, z - 0.15], [rr + 0.75, 0.15, z + 0.15]).rotate([0, 0, a]))
+            # a wedge step: its underside rises at 45 degrees from the pole, so it prints unsupported
+            parts.append(M.hull_points([(rr - 0.25, y, z - 0.6) for y in (-0.22, 0.22)] + [(rr + 0.6, y, z) for y in (-0.22, 0.22)] +
+                                       [(x, y, z + 0.25) for x in (rr - 0.25, rr + 0.6) for y in (-0.22, 0.22)]).rotate([0, 0, a]))
     return union(parts)
 
 
