@@ -32,9 +32,9 @@ SPOOL = {"Caramel": "#AE835B", "Latte Brown": "#D3B7A7", "Bone White": "#E6DFCB"
          "Cocoa Brown": "#6F5034", "Black Walnut": "#4F3F24", "Dark Brown": "#7D6556", "Copper Brown Metallic": "#AA6443",
          "Desert Tan": "#E8DBB7", "Bronze": "#847D48", "Iron Gray Metallic": "#43403D", "Silver": "#A6A9AA",
          "Dark Blue": "#042F56", "Ivory White": "#FFFFFF", "White": "#F4F4F2", "Turquoise": "#00B1B7",
-         "Green": "#16924A", "Marine Blue": "#0078BF", "Sunflower Yellow": "#FEC600"}
+         "Green": "#16924A", "Marine Blue": "#0078BF", "Sunflower Yellow": "#FEC600", "Iridium Gold Metallic": "#B39B84"}
 FINISH = {"Copper Brown Metallic": (0.45, 0.5), "Iron Gray Metallic": (0.42, 0.55), "Silver": (0.35, 0.6),
-          "Cobalt Blue": (0.45, 0.15), "Dark Blue": (0.25, 0.1), "Turquoise": (0.15, 0.0)}
+          "Cobalt Blue": (0.45, 0.15), "Dark Blue": (0.25, 0.1), "Turquoise": (0.15, 0.0), "Iridium Gold Metallic": (0.35, 0.65)}
 
 
 def _piece(name, fn, colour, qty=1, change=None, show=None, note=""):
@@ -317,9 +317,9 @@ PACKS = {
         title="Pressure Vessel Load", zipname="Pressure_Vessel_Load", per_run=1, kind="flatcar load",
         scene=lambda: F.pack_scene("vessel"),
         blurb="A refinery pressure vessel on its shipping skid: a 34 ft shell with girth welds and 2:1 ellipsoidal heads, two "
-              "saddles with wear plates on a pierced cradle, flanged nozzles with blind flanges, a manway, lifting lugs and a "
+              "saddles with wear plates on a black arched cradle, flanged nozzles with blind flanges, a manway, lifting lugs and a "
               "nameplate. For a 60 ft flatcar.",
-        pieces=[_piece("Pressure-vessel", F.pressure_vessel, "Black", 1, (F.VESSEL_SKID, "White"))],
+        pieces=[_piece("Pressure-vessel", F.pressure_vessel, "Black", 1, (F.VESSEL_CHANGE, "White"))],
         listing=dict(price="21.99", title="HO Scale Pressure Vessel Flatcar Load | Refinery Chemical Plant Tank on Skid | Printed in Color | 1:87",
                      tags=["ho scale load", "pressure vessel", "refinery load", "chemical plant", "oil refinery", "flatcar load",
                            "ho flat car load", "model railroad load", "industrial load", "heavy load", "1:87 scale",
@@ -327,10 +327,10 @@ PACKS = {
     "propeller": dict(
         title="Ship Propeller Load", zipname="Ship_Propeller_Load", per_run=2, kind="flatcar load",
         scene=lambda: F.pack_scene("propeller"),
-        blurb="A four-bladed bronze ship's propeller about 10 ft across, lying face down on a timber platform: skewed blades "
+        blurb="A four-bladed bronze ship's propeller about 10 1/2 ft across, printed in metallic bronze-gold, lying face down on a timber platform: skewed blades "
               "rising from thin edges to a thick root, the boss with its bore and keyway. For a 40 ft flatcar or a dockside "
               "scene.",
-        pieces=[_piece("Propeller", F.propeller, "Cocoa Brown", 1, (F.PROP_SKID, "Bronze"))],
+        pieces=[_piece("Propeller", F.propeller, "Cocoa Brown", 1, (F.PROP_SKID, "Iridium Gold Metallic"))],
         listing=dict(price="16.99", title="HO Scale Bronze Ship Propeller Flatcar Load | Shipyard Harbor Load | Printed in Color | 1:87",
                      tags=["ho scale load", "ship propeller", "bronze propeller", "shipyard", "harbor diorama", "port scene",
                            "flatcar load", "ho flat car load", "model railroad load", "marine load", "1:87 scale",

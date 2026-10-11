@@ -149,8 +149,8 @@ market). The pipe load competes with the best-selling Etsy pipe load.
 | linepipe | Coated Line Pipe Load | five 36 in x 40 ft joints, banded on dunnage, bevel protectors | Cocoa Brown + Green |
 | tarps | Tarped Flatcar Loads | tarped machine, tall crate, long bundle on blocking | Cocoa Brown + Desert Tan, Marine Blue, Black |
 | steel | Steel Mill Loads | 3 coils eye-to-sky on skids, a plate bundle, two tiers of wide-flange beams | Cocoa Brown + Silver, Iron Gray Metallic, Copper Brown Metallic |
-| vessel | Pressure Vessel Load | 34 ft vessel with ellipsoidal heads, saddles, nozzles, on a skid | Black + White |
-| propeller | Ship Propeller Load | 4-blade 10 ft bronze propeller face down on a timber platform | Cocoa Brown + Bronze |
+| vessel | Pressure Vessel Load | 34 ft vessel with ellipsoidal heads, saddles, nozzles, on an arched cradle and skid | Black + White |
+| propeller | Ship Propeller Load | 4-blade 10.5 ft bronze propeller face down on a timber platform | Cocoa Brown + Iridium Gold Metallic |
 
 ## Log
 - Sixth batch (81 to 90), the mansard batch: the roof system of the owner's tan reference kit

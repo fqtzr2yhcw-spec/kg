@@ -518,18 +518,22 @@ def beam_bundle(L=ft(40.0), n=5, tiers=2, d=6.0, bf=3.0, tf=0.6, tw=0.45):
 
 
 # ================================================================== pressure vessel
-VESSEL_SKID = 2.0         # pressure vessel: black skid, then the white vessel and its saddles
+VESSEL_SKID = 2.0         # pressure vessel: skid beams' top
+VESSEL_R = 13.1           # 7.5 ft shell
+VESSEL_ZC = VESSEL_SKID + VESSEL_R * math.sqrt(2) + 6.2      # shell axis: a tall cradle under it
+VESSEL_CHANGE = math.floor((VESSEL_ZC - VESSEL_R - 0.5) / 0.2) * 0.2   # black skid and cradle, then the white vessel
 
 
-def pressure_vessel(Lt=ft(34.0), D=ft(8.6)):
+def pressure_vessel(Lt=ft(34.0)):
     """A horizontal pressure vessel shipped on a skid: shell with girth seams, 2:1 ellipsoidal
     heads, two saddles with wear plates, a cradle web between them pierced with 45 degree
     topped openings, nozzles with blind flanges, a manway, lifting lugs and a nameplate. The
-    web under the shell carries it at 45 degrees, so nothing overhangs."""
-    r = D / 2
+    web under the shell carries it at 45 degrees, so nothing overhangs. Skid and cradle print
+    black to VESSEL_CHANGE, half a millimetre under the shell; the vessel prints white."""
+    r = VESSEL_R
     hd = r / 2
     z0 = VESSEL_SKID
-    zc = z0 + r * math.sqrt(2) + 0.2
+    zc = VESSEL_ZC
     x0, x1 = hd, hd + Lt
     L = Lt + 2 * hd
     shell = M.cylinder(Lt, r, r, 96).rotate([0, 90, 0]).translate([x0, 0, zc])
@@ -543,11 +547,12 @@ def pressure_vessel(Lt=ft(34.0), D=ft(8.6)):
     xs1, xs2 = x0 + Lt * 0.18, x1 - Lt * 0.18
     holes = []
     span = xs2 - xs1 - 6.0
-    w = 2 * ((zc - r - z0) - 2.6)                  # the gable's apex stays a mm under the shell
-    n = int((span + 3.0) / (w + 3.0))
-    w = (span - (n - 1) * 3.0) / n if (span - (n - 1) * 3.0) / n <= w else w
+    wmax = 2 * ((zc - r - z0) - 2.6)               # the gable's apex stays a mm under the shell
+    n = 3
+    w = min(wmax, (span - (n - 1) * 4.0) / n)
+    start = xs1 + 3.0 + (span - (n * w + (n - 1) * 4.0)) / 2
     for k in range(n):
-        a = xs1 + 3.0 + k * (w + 3.0)
+        a = start + k * (w + 4.0)
         top = z0 + 1.6
         holes.append(M.hull_points([(x, y, z) for y in (-20, 20) for (x, z) in
                                     ((a, z0 - 0.5), (a + w, z0 - 0.5), (a, top), (a + w, top), (a + w / 2, top + w / 2))]))
@@ -600,7 +605,7 @@ def pressure_vessel(Lt=ft(34.0), D=ft(8.6)):
 PROP_SKID = 1.6           # propeller: timber platform, then the bronze
 
 
-def propeller(R=17.5, blades=4, rh=5.0, hh=11.0):
+def propeller(R=18.5, blades=4, rh=4.6, hh=9.5):
     """A cast bronze ship's propeller lying face down on a timber platform: a tapered boss with
     its bore and keyway, and skewed blades whose backs rise in an airfoil from thin edges, from
     a thick root to a thin tip. Everything stands on the platform."""
@@ -612,12 +617,12 @@ def propeller(R=17.5, blades=4, rh=5.0, hh=11.0):
         secs = []
         for i, r in enumerate(stations):
             f = (r - stations[0]) / (R - stations[0])
-            chord = (11.0 + 9.0 * math.sin(math.pi * min(f, 0.85) / 1.2)) * (1.0 - 0.75 * f ** 3)
-            skew = 6.0 * f ** 1.6                       # the blade sweeps back toward the tip
-            tmax = 4.8 * (1 - f) + 0.7
+            chord = (9.0 + 12.0 * math.sin(math.pi * min(f, 0.7) / 1.4)) * math.sqrt(max(1.0 - f ** 2.4, 0.04))
+            skew = 9.0 * f ** 1.8                       # the blade sweeps back toward the tip
+            tmax = 3.0 * (1 - f) ** 1.3 + 0.55
             pts = []
             for s in np.linspace(0, 1, 9):
-                h = 0.35 + (tmax - 0.35) * math.sin(math.pi * s) ** 0.8 * (1.0 - 0.25 * s)
+                h = 0.4 + (tmax - 0.4) * math.sin(math.pi * s ** 0.8) ** 0.9
                 u = (s - 0.4) * chord - skew
                 pts.append((r, u, z0 + h))
                 pts.append((r, u, z0 - 0.01))
@@ -802,11 +807,11 @@ def pack_scene(key):
     if key == "vessel":
         L = ft(60.0)
         s = _car(L, "car_oxide")
-        _place(s, pressure_vessel(), "Black", L / 2, zd, (VESSEL_SKID, "White"), centre=True)
+        _place(s, pressure_vessel(), "Black", L / 2, zd, (VESSEL_CHANGE, "White"), centre=True)
         return s
     if key == "propeller":
         L = ft(42.0)
         s = _car(L, "car_mineral")
-        _place(s, propeller(), "Cocoa Brown", L / 2, zd, (PROP_SKID, "Bronze"), centre=True)
+        _place(s, propeller(), "Cocoa Brown", L / 2, zd, (PROP_SKID, "Iridium Gold Metallic"), centre=True)
         return s
     raise KeyError(key)
