@@ -502,6 +502,10 @@ def readme(key, man):
               "  0.20 mm layers, no supports. Two-colour plates change filament once, at the height above; the Bambu",
               "  project does it on its own. Single-colour plates print on any printer, the P1S included.",
               "  Tall, slim pieces (poles, lamps) stand better with a brim.", ""]
+    if pk.get("kind") == "flatcar load":
+        lines += ["  The project is set for the Textured PEI plate. On a smooth (cool) plate, pick that plate in Bambu Studio",
+                  "  so the bed runs at its temperature, wash a new plate with dish soap first, and use a glue stick for the",
+                  "  long loads. Each load stands on a 0.6 mm sheet that fills its footprint, so its ends stay down.", ""]
     return "\n".join(lines)
 
 

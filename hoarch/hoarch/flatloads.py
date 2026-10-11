@@ -9,6 +9,8 @@ import math
 import numpy as np
 from manifold3d import CrossSection as CS, Manifold as M
 
+from manifold3d import JoinType
+
 from .core import box, circle, cs_union, ft, offset, poly, union
 from .ornament import ext
 
@@ -16,6 +18,30 @@ from .ornament import ext
 XF_BLOCK = 2.0            # transformer: timber cribbing, then the tank
 TARP_BLOCK = 2.0          # tarped loads: timber blocking, then the tarp
 PIPE_DUN = 1.4            # line pipe: dunnage strips, then the pipe
+
+
+BED_SHEET = 0.6          # every load's footprint is filled at the bed, three layers thick
+
+
+def _sheeted(fn):
+    """Fill the gaps between a load's feet (timbers, dunnage, skid beams, frame members) with a
+    sheet BED_SHEET thick, in its base colour, kept 0.3 mm inside the feet's outline. Loads
+    standing on their blocking alone touched the plate with 6 to 29 % of their footprint, and
+    the nacelle's ends lifted off a cool plate as the housing above shrank."""
+    import functools
+
+    @functools.wraps(fn)
+    def wrapped(*a, **k):
+        m = fn(*a, **k)
+        feet = m.slice(0.05)
+        if feet.is_empty():
+            return m
+        filled = feet.offset(15.0, JoinType.Round).offset(-15.0, JoinType.Round)    # closes gaps under 30 mm
+        sheet = ext(filled.offset(-0.3, JoinType.Miter) + feet, 0.0, BED_SHEET)
+        m = m + sheet
+        voids = [c.hull() for c in m.decompose() if c.volume() < 0]          # pockets sealed under the load: fill them
+        return union([m] + voids) if voids else m
+    return wrapped
 
 
 def _seg(a, b, w):
@@ -106,6 +132,7 @@ def _belt(x0, y0, x1, y1, c, z, d, h):
                          _crect(x0 - d, y0 - d, x1 + d, y1 + d, c + d * 0.4, z + h))
 
 
+@_sheeted
 def transformer(L=ft(22.0), W=ft(8.5)):
     """A large power transformer as it travels: the main tank only, with the radiators,
     conservator and bushings taken off and their openings blanked. On timber cribbing (to
@@ -220,6 +247,7 @@ def _tarp_body(kind, grow=0.0):
     return union(hulls)
 
 
+@_sheeted
 def tarp_load(kind, seed=3):
     """A load under a lashed tarpaulin on timber blocking (to TARP_BLOCK). The cloth hangs to
     the blocking with a flare and a stitched hem, folds run down its sides and gather at the
@@ -281,6 +309,7 @@ def tarp_load(kind, seed=3):
 
 
 # ================================================================== line pipe
+@_sheeted
 def pipe_load(r=ft(1.5), L=ft(40.0), rows=(3, 2)):
     """Coated line pipe, 40 ft joints, stacked three and two on dunnage (to PIPE_DUN) and banded.
     The ends wear bevel protectors. Printed lying: each bottom pipe sits on a 45 degree keel
@@ -327,6 +356,7 @@ def pipe_load(r=ft(1.5), L=ft(40.0), rows=(3, 2)):
 NAC_FRAME = 3.0           # nacelle and hub: yellow transport frame or stand, then the white casting
 
 
+@_sheeted
 def nacelle(L=105.0, W=36.0, H=40.0):
     """A wind turbine nacelle on its transport frame (yellow, to NAC_FRAME): a GRP housing with
     rounded roof edges, tapering to the nose, with panel seams, a roof hatch, louvred intakes
@@ -445,6 +475,7 @@ def _skid(L, W, runners=3, gap=0.3, plank=2.4):
     return union(parts)
 
 
+@_sheeted
 def coil(od=ft(6.0), idia=ft(2.0), w=ft(5.0)):
     """A steel coil eye-to-sky on a timber skid: laps marked on its face, the outer wrap's end,
     an edge chamfer, four radial bands through the eye and two round it."""
@@ -470,6 +501,7 @@ def coil(od=ft(6.0), idia=ft(2.0), w=ft(5.0)):
     return union(parts + [_skid(sk, sk).translate([-sk / 2, -sk / 2, 0])])
 
 
+@_sheeted
 def plate_bundle(L=ft(20.0), W=ft(8.0), n=8, t=0.6):
     """A bundle of steel plate on dunnage: each plate's edge shows, the stack a little ragged,
     banded three times."""
@@ -491,6 +523,7 @@ def plate_bundle(L=ft(20.0), W=ft(8.0), n=8, t=0.6):
     return union([stack] + bands + dun)
 
 
+@_sheeted
 def beam_bundle(L=ft(40.0), n=5, tiers=2, d=6.0, bf=3.0, tf=0.6, tw=0.45):
     """A bundle of wide-flange beams standing on their bottom flanges on dunnage, two tiers,
     banded. Inner flanges meet their neighbours' (the gap under them is a bridge); the outer
@@ -524,6 +557,7 @@ VESSEL_ZC = VESSEL_SKID + VESSEL_R * math.sqrt(2) + 6.2      # shell axis: a tal
 VESSEL_CHANGE = math.floor((VESSEL_ZC - VESSEL_R - 0.5) / 0.2) * 0.2   # black skid and cradle, then the white vessel
 
 
+@_sheeted
 def pressure_vessel(Lt=ft(34.0)):
     """A horizontal pressure vessel shipped on a skid: shell with girth seams, 2:1 ellipsoidal
     heads, two saddles with wear plates, a cradle web between them pierced with 45 degree
@@ -605,6 +639,7 @@ def pressure_vessel(Lt=ft(34.0)):
 PROP_SKID = 1.6           # propeller: timber platform, then the bronze
 
 
+@_sheeted
 def propeller(R=18.5, blades=4, rh=4.6, hh=9.5):
     """A cast bronze ship's propeller lying face down on a timber platform: a tapered boss with
     its bore and keyway, and skewed blades whose backs rise in an airfoil from thin edges, from

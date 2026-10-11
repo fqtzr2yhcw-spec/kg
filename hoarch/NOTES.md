@@ -600,4 +600,9 @@ Freight for HO flatcars, under the pack rules above. What is particular to loads
 - Coils stand eye-to-sky on planked skids. Beams stand on their bottom flanges: inner flanges
   meet their neighbours' (a bridge), outer flange tips stop at 0.9 mm. Bands stand on dunnage
   strips, never in the air.
+- Every load stands on a bed sheet (`flatloads._sheeted`, 0.6 mm, in its base colour) that fills
+  the gaps between its feet, so the whole footprint grips the plate. Standing on its blocking
+  alone, a load touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends
+  lifted off the owner's new cool plate as the housing above shrank. Pockets sealed between
+  the sheet and the load are filled.
 - The stand-in cars are drawn for the renders only. Listings say the car is not included.

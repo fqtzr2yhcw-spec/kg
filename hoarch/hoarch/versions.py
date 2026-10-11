@@ -33,6 +33,13 @@ QUOINS = ("Corner quoins: bigger, flat-faced stones 0.9 mm proud with a solid co
           "fringe up the corner). Walls only: reprint the WALLS- parts if your corners came out fringed.")
 
 HISTORY = {
+    "nacelle": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "transformer": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "linepipe": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "tarps": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "steel": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "vessel": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "propeller": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
     "villa": [("1.1", "2026-09-30", INSERTS_DEEP + " The doors' upper lights now open to their glass, as designed. "
                "WALLS-1: the front and back doors sit 0.8 mm higher, leaving a 6-layer strip of wall under each "
                "(at 2 layers the wall could kink at the front door); reprint WALLS-1 only if yours kinked, or glue "
