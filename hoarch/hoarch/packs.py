@@ -17,7 +17,7 @@ import zipfile
 
 import numpy as np
 
-from . import details as D, packparts as P, scenery as S
+from . import details as D, flatloads as F, packparts as P, scenery as S
 from .core import mesh_arrays
 from .kit import Kit
 
@@ -31,7 +31,8 @@ SPOOL = {"Caramel": "#AE835B", "Latte Brown": "#D3B7A7", "Bone White": "#E6DFCB"
          "Gray": "#8C8D8F", "Light Gray": "#D1D3D5", "Red": "#C12E1F", "Black": "#1A1A1A", "Mistletoe Green": "#3F8E43",
          "Cocoa Brown": "#6F5034", "Black Walnut": "#4F3F24", "Dark Brown": "#7D6556", "Copper Brown Metallic": "#AA6443",
          "Desert Tan": "#E8DBB7", "Bronze": "#847D48", "Iron Gray Metallic": "#43403D", "Silver": "#A6A9AA",
-         "Dark Blue": "#042F56", "Ivory White": "#FFFFFF", "White": "#F4F4F2", "Turquoise": "#00B1B7"}
+         "Dark Blue": "#042F56", "Ivory White": "#FFFFFF", "White": "#F4F4F2", "Turquoise": "#00B1B7",
+         "Green": "#16924A", "Marine Blue": "#0078BF", "Sunflower Yellow": "#FEC600"}
 FINISH = {"Copper Brown Metallic": (0.45, 0.5), "Iron Gray Metallic": (0.42, 0.55), "Silver": (0.35, 0.6),
           "Cobalt Blue": (0.45, 0.15), "Dark Blue": (0.25, 0.1), "Turquoise": (0.15, 0.0)}
 
@@ -239,6 +240,101 @@ PACKS = {
                      tags=["ho scale fence", "wrought iron fence", "victorian fence", "model railroad", "1:87 scale",
                            "iron gate", "train layout", "victorian house", "diorama fence", "ho scale details",
                            "3d printed", "model train gift", "garden fence"])),
+    # ---------------------------------------------------------------- flatcar loads (hoarch.flatloads)
+    "windtower": dict(
+        title="Wind Tower Section Load", zipname="Wind_Tower_Section_Load", per_run=1, kind="flatcar load",
+        scene=lambda: F.pack_scene("windtower"),
+        blurb="A tapered wind turbine tower section, about 70 ft long and 13 ft across its big end, in blue transport frames for "
+              "an 89 ft heavy-duty flatcar. The shell shows its rolled cans, raised girth welds and staggered long seams, with "
+              "the bolting flange inside each open end. The frames glue to the tower's ends and stand on their foot plates.",
+        pieces=[_piece("Tower-section", F.tower_section, "Light Gray", 1, note="prints standing, 245 mm tall; use a brim"),
+                _piece("Frame-big-end", lambda: F.tower_frame(F.TOWER_R0), "Cobalt Blue", 1),
+                _piece("Frame-small-end", lambda: F.tower_frame(F.TOWER_R1), "Cobalt Blue", 1)],
+        listing=dict(price="27.99", title="HO Scale Wind Turbine Tower Section Flatcar Load | Transport Frames | 89 ft Flat Car Load | 1:87",
+                     tags=["ho scale load", "wind turbine", "wind tower", "flatcar load", "ho flat car load", "model railroad load",
+                           "89 ft flatcar", "heavy duty flatcar", "dimensional load", "modern railroad", "1:87 scale",
+                           "train layout", "3d printed load"])),
+    "nacelle": dict(
+        title="Wind Turbine Nacelle and Hub Loads", zipname="Wind_Nacelle_and_Hub_Load", per_run=1, kind="flatcar load",
+        scene=lambda: F.pack_scene("nacelle"),
+        blurb="The rest of a wind turbine on the rails: the nacelle on its yellow transport frame, with panel seams, roof "
+              "hatch, louvred intakes, lifting points and the main-shaft flange at the nose, and the cast rotor hub on its "
+              "stand with its three blade flanges, bolting rings and studs. Pairs with our wind tower section load.",
+        pieces=[_piece("Nacelle", F.nacelle, "Sunflower Yellow", 1, (F.NAC_FRAME, "White")),
+                _piece("Rotor-hub", F.hub, "Sunflower Yellow", 1, (F.NAC_FRAME, "White"))],
+        listing=dict(price="29.99", title="HO Scale Wind Turbine Nacelle and Rotor Hub Flatcar Loads | Printed in Color | 1:87 Model Railroad",
+                     tags=["ho scale load", "wind turbine", "turbine nacelle", "rotor hub", "wind farm", "flatcar load",
+                           "ho flat car load", "model railroad load", "heavy duty flatcar", "modern railroad", "1:87 scale",
+                           "train layout", "3d printed load"])),
+    "transformer": dict(
+        title="Power Transformer Load", zipname="Power_Transformer_Load", per_run=2, kind="flatcar load",
+        scene=lambda: F.pack_scene("transformer"),
+        blurb="A large power transformer the way they really travel: radiators, conservator and bushings taken off and every "
+              "opening blanked, a dry-nitrogen bottle strapped to one end, an impact recorder on the side, lifting lugs and "
+              "jacking pads, on its base skid and timber cribbing. Sized for a depressed-centre flatcar's well.",
+        pieces=[_piece("Transformer", F.transformer, "Cocoa Brown", 1, (F.XF_BLOCK, "Gray"))],
+        listing=dict(price="22.99", title="HO Scale Power Transformer Flatcar Load | Depressed Center Flat Car | Printed in Color | 1:87",
+                     tags=["ho scale load", "transformer load", "depressed flatcar", "flatcar load", "ho flat car load",
+                           "model railroad load", "power plant", "substation", "heavy load", "electrical load",
+                           "1:87 scale", "train layout", "3d printed load"])),
+    "linepipe": dict(
+        title="Coated Line Pipe Load", zipname="Coated_Line_Pipe_Load", per_run=2, kind="flatcar load",
+        scene=lambda: F.pack_scene("linepipe"),
+        blurb="Five joints of 36 in pipeline pipe, 40 ft long, in green fusion-bonded coating with bevel protectors on the "
+              "ends, stacked three and two on dunnage and banded. Fits a 53 ft bulkhead flat or any flatcar 42 ft and longer.",
+        pieces=[_piece("Pipe-load", F.pipe_load, "Cocoa Brown", 1, (F.PIPE_DUN, "Green"))],
+        listing=dict(price="14.99", title="HO Scale Coated Line Pipe Flatcar Load | Bulkhead Flat Car Pipe Load | Printed in Color | 1:87",
+                     tags=["ho scale pipe load", "pipe load", "line pipe", "pipeline", "flatcar load", "bulkhead flatcar",
+                           "ho flat car load", "model railroad load", "oil and gas", "ho scale pipes", "1:87 scale",
+                           "train layout", "3d printed load"])),
+    "tarps": dict(
+        title="Tarped Flatcar Loads", zipname="Tarped_Flatcar_Loads", per_run=2, kind="flatcar load",
+        scene=lambda: F.pack_scene("tarps"),
+        blurb="Three loads under lashed tarpaulins on timber blocking: a machine in canvas, a tall crate under a blue poly "
+              "tarp and a long bundle under black. The cloth hangs in folds to a stitched hem, gathers at the corners and "
+              "bulges between the ropes. Right for any era.",
+        pieces=[_piece("Tarp-machine", lambda: F.tarp_load("machine"), "Cocoa Brown", 1, (F.TARP_BLOCK, "Desert Tan")),
+                _piece("Tarp-tall", lambda: F.tarp_load("tall"), "Cocoa Brown", 1, (F.TARP_BLOCK, "Marine Blue")),
+                _piece("Tarp-long", lambda: F.tarp_load("long"), "Cocoa Brown", 1, (F.TARP_BLOCK, "Black"))],
+        listing=dict(price="14.99", title="HO Scale Tarped Flatcar Loads 3 pc | Covered Machinery, Crate, Long Load | Printed in Color | 1:87",
+                     tags=["ho scale load", "tarped load", "covered load", "flatcar load", "ho flat car load",
+                           "model railroad load", "machinery load", "freight load", "ho scale freight", "1:87 scale",
+                           "train layout", "3d printed load", "flat car tarp"])),
+    "steel": dict(
+        title="Steel Mill Loads", zipname="Steel_Mill_Loads", per_run=2, kind="flatcar load",
+        scene=lambda: F.pack_scene("steel"),
+        blurb="Steel for the flatcars and gondolas: three galvanized coils eye-to-sky on timber skids, banded through the "
+              "eye and round the wrap; a bundle of plate with every plate's edge showing; and two tiers of wide-flange beams "
+              "in mill rust, all banded on dunnage.",
+        pieces=[_piece("Steel-coil", F.coil, "Cocoa Brown", 3, (F.STEEL_DUN, "Silver")),
+                _piece("Plate-bundle", F.plate_bundle, "Cocoa Brown", 1, (F.STEEL_DUN, "Iron Gray Metallic")),
+                _piece("Beam-bundle", F.beam_bundle, "Cocoa Brown", 1, (F.STEEL_DUN, "Copper Brown Metallic"))],
+        listing=dict(price="15.99", title="HO Scale Steel Loads 5 pc | Steel Coils, Plate Bundle, I-Beam Bundle | Flatcar Gondola Load | 1:87",
+                     tags=["ho scale steel", "steel coils", "steel load", "i beam load", "steel plate", "flatcar load",
+                           "gondola load", "ho flat car load", "model railroad load", "steel mill", "1:87 scale",
+                           "train layout", "3d printed load"])),
+    "vessel": dict(
+        title="Pressure Vessel Load", zipname="Pressure_Vessel_Load", per_run=1, kind="flatcar load",
+        scene=lambda: F.pack_scene("vessel"),
+        blurb="A refinery pressure vessel on its shipping skid: a 34 ft shell with girth welds and 2:1 ellipsoidal heads, two "
+              "saddles with wear plates on a pierced cradle, flanged nozzles with blind flanges, a manway, lifting lugs and a "
+              "nameplate. For a 60 ft flatcar.",
+        pieces=[_piece("Pressure-vessel", F.pressure_vessel, "Black", 1, (F.VESSEL_SKID, "White"))],
+        listing=dict(price="21.99", title="HO Scale Pressure Vessel Flatcar Load | Refinery Chemical Plant Tank on Skid | Printed in Color | 1:87",
+                     tags=["ho scale load", "pressure vessel", "refinery load", "chemical plant", "oil refinery", "flatcar load",
+                           "ho flat car load", "model railroad load", "industrial load", "heavy load", "1:87 scale",
+                           "train layout", "3d printed load"])),
+    "propeller": dict(
+        title="Ship Propeller Load", zipname="Ship_Propeller_Load", per_run=2, kind="flatcar load",
+        scene=lambda: F.pack_scene("propeller"),
+        blurb="A four-bladed bronze ship's propeller about 10 ft across, lying face down on a timber platform: skewed blades "
+              "rising from thin edges to a thick root, the boss with its bore and keyway. For a 40 ft flatcar or a dockside "
+              "scene.",
+        pieces=[_piece("Propeller", F.propeller, "Cocoa Brown", 1, (F.PROP_SKID, "Bronze"))],
+        listing=dict(price="16.99", title="HO Scale Bronze Ship Propeller Flatcar Load | Shipyard Harbor Load | Printed in Color | 1:87",
+                     tags=["ho scale load", "ship propeller", "bronze propeller", "shipyard", "harbor diorama", "port scene",
+                           "flatcar load", "ho flat car load", "model railroad load", "marine load", "1:87 scale",
+                           "train layout", "3d printed load"])),
 }
 
 
@@ -282,6 +378,8 @@ def scene(key):
     {material: [solids]}. Telephone poles get their crossarms and transformers fitted, the cable
     reel its top flange."""
     pk = PACKS[key]
+    if pk.get("scene"):
+        return pk["scene"]()
     mats = {}
 
     def put(colour, m):
@@ -369,6 +467,7 @@ def render(key, samples=36, res="1600x1000"):
     for name, hexc in SPOOL.items():
         r, mt = FINISH.get(name, (0.75, 0.0))
         mats[name.replace(" ", "_").lower()] = [hexc, r, mt]
+    mats.update(F.CAR_COLOURS)
     views = {"hero": [-30, 24, 60, 0.95, [0, 0, 0]], "rear": [150, 26, 60, 0.95, [0, 0, 0]]}
     json.dump({"materials": mats, "views": views}, open(os.path.join(out, "palette.json"), "w"), indent=1)
     r = subprocess.run([sys.executable, "-m", "hoarch.render", "--npz", npz, "--palette", os.path.join(out, "palette.json"),
@@ -382,7 +481,7 @@ def render(key, samples=36, res="1600x1000"):
 def readme(key, man):
     pk = PACKS[key]
     cols = _colours(pk)
-    lines = [f"{pk['title'].upper()} - HO scale (1:87.1) scenery pack", "", pk["blurb"], "",
+    lines = [f"{pk['title'].upper()} - HO scale (1:87.1) {pk.get('kind', 'scenery pack')}", "", pk["blurb"], "",
              f"ONE PACK HOLDS", ""]
     for pc in pk["pieces"]:
         col = pc["colour"] + (f", then {pc['change'][1]} above {pc['change'][0]:.1f} mm" if pc["change"] else "")
@@ -413,6 +512,8 @@ def listing_text(key, man):
              pk["blurb"], "", "What's in the pack:"]
     for pc in pk["pieces"]:
         lines.append(f"  - {pc['qty']} x {pc['name'].replace('-', ' ')}")
+    if pk.get("kind") == "flatcar load":
+        lines += ["", "Load only: the flatcar shown is not included. The load stands on its own blocking, so it sits on any deck."]
     lines += ["", "Printed in colour: every piece comes off the printer in its finished colours, so it is ready to place.",
               "HO scale (1:87). Designed and printed by us. Weather them with chalks or washes if you like.", "",
               "TAGS (13): " + ", ".join(L["tags"])]

@@ -1517,6 +1517,10 @@ ZIPNAME.update({"pallets": "Loaded_Pallets_Pack", "drums": "Oil_Drums_and_Barrel
                 "modern": "EV_Chargers_and_Solar_Pack", "cemetery": "Old_Cemetery_Pack", "treelot": "Christmas_Tree_Lot_Pack",
                 "signs": "Trackside_Signs_Pack", "poles": "Telephone_Poles_Pack", "lamps": "Victorian_Street_Lamps_Pack",
                 "ironfence": "Wrought_Iron_Fence_Pack"})
+# the flatcar loads (hoarch.flatloads, packaged by hoarch.packs)
+ZIPNAME.update({"windtower": "Wind_Tower_Section_Load", "nacelle": "Wind_Nacelle_and_Hub_Load", "transformer": "Power_Transformer_Load",
+                "linepipe": "Coated_Line_Pipe_Load", "tarps": "Tarped_Flatcar_Loads", "steel": "Steel_Mill_Loads",
+                "vessel": "Pressure_Vessel_Load", "propeller": "Ship_Propeller_Load"})
 
 
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}

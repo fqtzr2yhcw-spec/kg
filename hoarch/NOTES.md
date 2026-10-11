@@ -576,7 +576,7 @@ Small pieces that sell by the pack. The rules:
   draft listing.
 
 
-## Flatcar loads (`flatloads.py`, pilot)
+## Flatcar loads (`flatloads.py`)
 
 Freight for HO flatcars, under the pack rules above. What is particular to loads:
 
@@ -591,4 +591,13 @@ Freight for HO flatcars, under the pack rules above. What is particular to loads
   These stop 0.4 mm short of the ends, so the ends read round, and the ledge left is under 1 mm.
 - A long round load stands up instead. The tower section prints upright (245 mm, inside a
   256 mm build height), and its transport frames print flat and glue to its end faces.
+- Round castings that stand on a flange (the rotor hub) rise from it in a 45 degree waist cut
+  into the sphere. Anything on the waist (the blade rings) is clipped to it plus 0.7 mm.
+- A lying vessel stands on a cradle web, the hull of the shell with the skid's beams. The web is
+  pierced with gable-topped openings, and each apex stays a mm under the shell.
+- Flat-bottomed castings lie face down on a full platform: the propeller's blades are lofted
+  from flat-bottomed airfoil sections with thin edges.
+- Coils stand eye-to-sky on planked skids. Beams stand on their bottom flanges: inner flanges
+  meet their neighbours' (a bridge), outer flange tips stop at 0.9 mm. Bands stand on dunnage
+  strips, never in the air.
 - The stand-in cars are drawn for the renders only. Listings say the car is not included.

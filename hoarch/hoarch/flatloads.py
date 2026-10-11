@@ -323,6 +323,323 @@ def pipe_load(r=ft(1.5), L=ft(40.0), rows=(3, 2)):
     return union([pipes] + caps + bands + dun)
 
 
+# ================================================================== wind turbine nacelle and hub
+NAC_FRAME = 3.0           # nacelle and hub: yellow transport frame or stand, then the white casting
+
+
+def nacelle(L=105.0, W=36.0, H=40.0):
+    """A wind turbine nacelle on its transport frame (yellow, to NAC_FRAME): a GRP housing with
+    rounded roof edges, tapering to the nose, with panel seams, a roof hatch, louvred intakes
+    at the rear, lifting points, and the main-shaft flange the hub bolts to on a cast bearing
+    housing (45 degrees underneath). The frame is flush with the housing so nothing overhangs."""
+    z0 = NAC_FRAME
+    rr = 6.0
+    parts = []
+    # frame: perimeter beams, cross beams, corner feet and tie-down lugs
+    fb = 2.2
+    for (x0, y0, x1, y1) in ((0, 0, L, fb), (0, W - fb, L, W), (0, 0, fb, W), (L - fb, 0, L, W),
+                             (L * 0.33 - fb / 2, 0, L * 0.33 + fb / 2, W), (L * 0.66 - fb / 2, 0, L * 0.66 + fb / 2, W),
+                             (0, W / 2 - fb / 2, L, W / 2 + fb / 2)):
+        parts.append(box([x0, y0, 0.0], [x1, y1, z0 + 0.01]))
+    for x in (6.0, L - 6.0):
+        for y, sgn in ((0.0, -1), (W, 1)):
+            parts.append(M.hull_points([(x + dx, y, z) for dx in (-1.6, 1.6) for z in (0.0, z0)] +
+                                       [(x + dx, y + sgn * 1.4, z) for dx in (-1.6, 1.6) for z in (0.0, 1.4)]))
+    # housing: cross-section with rounded roof edges, swept nose
+    def section(x, w, h):
+        pts = [(x, 0.0 + (W - w) / 2, z0), (x, W - (W - w) / 2, z0)]
+        for k in range(9):
+            a = math.pi / 2 * k / 8
+            pts.append((x, W - (W - w) / 2 - rr + rr * math.cos(a), z0 + h - rr + rr * math.sin(a)))
+            pts.append((x, (W - w) / 2 + rr - rr * math.cos(a), z0 + h - rr + rr * math.sin(a)))
+        return pts
+    body = M.hull_points(section(0.0, W, H) + section(L - 14.0, W, H))
+    nose = M.hull_points(section(L - 14.01, W, H) + section(L, W - 6.0, H - 7.0))
+    housing = body + nose
+    # panel seams and a belt seam, sunk 0.2
+    seams = []
+    for ya, yb in ((-1.0, 0.2), (W - 0.2, W + 1.0)):
+        seams += [box([x - 0.2, ya, z0 + 1.0], [x + 0.2, yb, z0 + H - rr]) for x in np.arange(15.0, L - 14.0, 15.0)]
+        seams.append(box([0.6, ya, z0 + H * 0.45 - 0.2], [L - 14.6, yb, z0 + H * 0.45 + 0.2]))
+    housing = housing - union(seams)
+    parts.append(housing)
+    # roof hatch and lifting points
+    parts.append(box([L * 0.35, W * 0.3, z0 + H - 0.01], [L * 0.35 + 12.0, W * 0.7, z0 + H + 0.5]))
+    for x in (L * 0.15, L * 0.75):
+        for y in (W * 0.3, W * 0.7):
+            lug = M.hull(box([x - 1.2, y - 0.4, z0 + H - 0.01], [x + 1.2, y + 0.4, z0 + H + 1.4]) +
+                         M.cylinder(0.8, 1.2, 1.2, 18).rotate([90, 0, 0]).translate([x, y + 0.4, z0 + H + 1.4]))
+            parts.append(lug - M.cylinder(2.0, 0.5, 0.5, 12).rotate([90, 0, 0]).translate([x, y + 1.0, z0 + H + 1.4]))
+    # louvred intakes: slats with 45 degree undersides on the rear end and both sides near it
+    def slats(x0, x1, y0, y1, zlo, zhi, out):
+        s = []
+        for z in np.arange(zlo, zhi, 1.2):
+            if out == "x":
+                s.append(M.hull_points([(x0, y, z) for y in (y0, y1)] + [(x0 - 0.5, y, z + 0.5) for y in (y0, y1)] +
+                                       [(x0, y, z + 0.8) for y in (y0, y1)] + [(x0 - 0.5, y, z + 0.8) for y in (y0, y1)]))
+            else:
+                sg = -1 if out == "-y" else 1
+                s.append(M.hull_points([(x, y0, z) for x in (x0, x1)] + [(x, y0 + sg * 0.5, z + 0.5) for x in (x0, x1)] +
+                                       [(x, y0, z + 0.8) for x in (x0, x1)] + [(x, y0 + sg * 0.5, z + 0.8) for x in (x0, x1)]))
+        return s
+    parts += slats(0.01, 0, W * 0.2, W * 0.8, z0 + 8.0, z0 + H - 10.0, "x")
+    parts += slats(4.0, 16.0, 0.01, 0, z0 + 10.0, z0 + 22.0, "-y")
+    parts += slats(4.0, 16.0, W - 0.01, 0, z0 + 10.0, z0 + 22.0, "+y")
+    # main bearing housing and shaft flange at the nose, 45 degrees under
+    zc = z0 + H * 0.55
+    rf = 9.0
+    disc = M.cylinder(4.0, rf, rf, 48).rotate([0, 90, 0]).translate([L - 0.01, W / 2, zc])
+    flange = M.cylinder(1.0, rf + 0.8, rf + 0.8, 48).rotate([0, 90, 0]).translate([L + 3.99, W / 2, zc])
+    keel = M.hull(disc + flange + box([L - 0.01, W / 2 - rf, zc - rf - 6.0], [L, W / 2 + rf, zc]))
+    face = M.cylinder(0.6, rf - 3.0, rf - 3.0, 40).rotate([0, 90, 0]).translate([L + 4.6, W / 2, zc])
+    studs = [M.cylinder(0.5, 0.35, 0.35, 8).rotate([0, 90, 0]).translate([L + 4.95, W / 2 + (rf - 1.2) * math.cos(a), zc + (rf - 1.2) * math.sin(a)])
+             for a in np.linspace(0, 2 * math.pi, 20, endpoint=False)]
+    parts += [keel - face] + studs
+    return union(parts)
+
+
+def hub(R=21.0):
+    """A cast rotor hub on its transport stand (yellow, to NAC_FRAME), main-shaft flange down: a
+    45 degree waist rising from the flange into the spherical body, three flat-faced blade
+    flanges with bolting rings, studs and bores, and the spinner flange on top."""
+    z0 = NAC_FRAME
+    zf = z0 + 1.6                                  # top of the main-shaft flange
+    zc = zf + R * 0.75
+    stand = [box([-15, -15, 0.0], [15, 15, 1.0]),
+             M.cylinder(z0 - 0.99, 13.0, 13.0, 48).translate([0, 0, 0.99])]
+    for a in range(45, 360, 90):
+        stand.append(M.hull_points([(13.0, -0.5, 1.0), (13.0, 0.5, 1.0), (13.0, -0.5, z0 - 0.2), (13.0, 0.5, z0 - 0.2),
+                                    (15.0, -0.5, 1.0), (15.0, 0.5, 1.0)]).rotate([0, 0, a]))
+    flange = M.cylinder(1.6, 12.0, 12.0, 64).translate([0, 0, z0 - 0.01])
+    h = 2 * R
+    waist = M.cylinder(h, 11.4, 11.4 + h, 72).translate([0, 0, zf - 0.01])      # 45 degrees out from the flange
+    body = M.sphere(R, 72).translate([0, 0, zc]) ^ waist
+    body = body - box([-40, -40, zc + R - 4.0], [40, 40, zc + R + 5])
+    d = R - 4.0
+    rings, bores = [], []
+    for k in range(3):
+        a = 90 + 120 * k
+        body = body - box([d, -R - 5, zc - R - 5], [d + 30, R + 5, zc + R + 5]).rotate([0, 0, a])
+        ring = (M.cylinder(0.7, 11.0, 11.0, 48) - M.cylinder(2.0, 8.5, 8.5, 48).translate([0, 0, -1])).rotate([0, 90, 0]).translate([d - 0.01, 0, zc])
+        studs = [M.cylinder(0.4, 0.3, 0.3, 8).rotate([0, 90, 0]).translate([d + 0.68, 9.8 * math.cos(t), zc + 9.8 * math.sin(t)])
+                 for t in np.linspace(0, 2 * math.pi, 18, endpoint=False)]
+        rings.append((ring + union(studs)).rotate([0, 0, a]))
+        bores.append(M.cylinder(2.0, 6.5, 6.5, 40).rotate([0, 90, 0]).translate([d - 1.6, 0, zc]).rotate([0, 0, a]))
+    spinner = M.cylinder(0.8, 10.0, 10.0, 48).translate([0, 0, zc + R - 4.01]) - M.cylinder(1.0, 8.0, 8.0, 48).translate([0, 0, zc + R - 3.6])
+    reach = M.cylinder(h, 12.1, 12.1 + h, 72).translate([0, 0, zf - 0.01])        # rings stand at most 0.7 off the waist
+    return union(stand + [flange, body - union(bores), spinner] + [rg ^ reach for rg in rings])
+
+
+# ================================================================== steel mill loads
+STEEL_DUN = 1.4           # steel loads: wood skids and dunnage, then the steel
+
+
+def _skid(L, W, runners=3, gap=0.3, plank=2.4):
+    """A timber skid to STEEL_DUN: runners under, planks across on top."""
+    ph = 0.6
+    parts = [box([0, y - 1.1, 0.0], [L, y + 1.1, STEEL_DUN - ph + 0.01]) for y in np.linspace(1.1, W - 1.1, runners)]
+    x = 0.0
+    while x < L - 0.5:
+        parts.append(box([x, 0, STEEL_DUN - ph], [min(x + plank, L), W, STEEL_DUN]))
+        x += plank + gap
+    return union(parts)
+
+
+def coil(od=ft(6.0), idia=ft(2.0), w=ft(5.0)):
+    """A steel coil eye-to-sky on a timber skid: laps marked on its face, the outer wrap's end,
+    an edge chamfer, four radial bands through the eye and two round it."""
+    ro, ri = od / 2, idia / 2
+    sk = ro * 2 + 2.0
+    z0 = STEEL_DUN
+    c = M.cylinder(w, ro, ro, 72) - M.cylinder(w + 2, ri, ri, 40).translate([0, 0, -1])
+    c = c - (M.cylinder(0.4, ro + 1, ro + 1, 72).translate([0, 0, w - 0.4]) - M.cylinder(0.41, ro + 0.01, ro - 0.4, 72).translate([0, 0, w - 0.4]))
+    laps = [M.cylinder(0.4, r + 0.15, r + 0.15, 72).translate([0, 0, w - 0.2]) - M.cylinder(0.6, r - 0.15, r - 0.15, 72).translate([0, 0, w - 0.3])
+            for r in np.arange(ri + 1.0, ro - 0.8, 0.9)]
+    c = c - union(laps)
+    parts = [c.translate([0, 0, z0])]
+    parts.append(M.hull_points([(ro - 0.05, -0.15, z0), (ro + 0.15, 0.0, z0), (ro - 0.05, 0.15, z0),
+                                (ro - 0.05, -0.15, z0 + w), (ro + 0.15, 0.0, z0 + w), (ro - 0.05, 0.15, z0 + w)]).rotate([0, 0, 20]))
+    for a in (45, 135, 225, 315):
+        b = [box([ri - 0.2, -0.3, z0 + w - 0.01], [ro + 0.01, 0.3, z0 + w + 0.2]),
+             box([ro - 0.01, -0.3, z0], [ro + 0.2, 0.3, z0 + w + 0.2]),
+             box([ri - 0.2, -0.3, z0], [ri + 0.01, 0.3, z0 + w + 0.2])]
+        parts.append(union(b).rotate([0, 0, a]))
+    for z in (z0 + w * 0.3, z0 + w * 0.7):
+        parts.append(M.cylinder(0.6, ro + 0.2, ro + 0.2, 72).translate([0, 0, z]) - M.cylinder(1.0, ro - 0.5, ro - 0.5, 72).translate([0, 0, z - 0.2]))
+        parts.append(M.cylinder(0.2, ro, ro + 0.2, 72).translate([0, 0, z - 0.2]) - M.cylinder(1.0, ro - 0.5, ro - 0.5, 72).translate([0, 0, z - 0.5]))
+    return union(parts + [_skid(sk, sk).translate([-sk / 2, -sk / 2, 0])])
+
+
+def plate_bundle(L=ft(20.0), W=ft(8.0), n=8, t=0.6):
+    """A bundle of steel plate on dunnage: each plate's edge shows, the stack a little ragged,
+    banded three times."""
+    rng = np.random.default_rng(11)
+    z = STEEL_DUN
+    plates = []
+    for k in range(n):
+        dx, dy = rng.uniform(-0.25, 0.25, 2)
+        plates.append(box([dx, dy, z], [L + dx, W + dy, z + t - 0.06]))
+        plates.append(box([dx + 0.15, dy + 0.15, z + t - 0.07], [L + dx - 0.15, W + dy - 0.15, z + t + 0.01]))
+        z += t
+    stack = union(plates)
+    bands = []
+    for x in (L * 0.2, L * 0.5, L * 0.8):                       # bands stand on dunnage strips
+        outer = box([x - 0.3, -0.45, STEEL_DUN], [x + 0.3, W + 0.45, z + 0.25])
+        inner = box([x - 1, 0.3, STEEL_DUN - 1], [x + 1, W - 0.3, z])
+        bands.append(outer - inner)
+    dun = [box([x - 0.7, -1.2, 0.0], [x + 0.7, W + 1.2, STEEL_DUN]) for x in (1.2, L * 0.2, L * 0.5, L * 0.8, L - 1.2)]
+    return union([stack] + bands + dun)
+
+
+def beam_bundle(L=ft(40.0), n=5, tiers=2, d=6.0, bf=3.0, tf=0.6, tw=0.45):
+    """A bundle of wide-flange beams standing on their bottom flanges on dunnage, two tiers,
+    banded. Inner flanges meet their neighbours' (the gap under them is a bridge); the outer
+    flange tips reach 0.9 mm, a ledge."""
+    parts = []
+    z = STEEL_DUN
+    for t in range(tiers):
+        for k in range(n):
+            y0 = k * bf
+            yc = y0 + bf / 2
+            lo, hi = (0.9 if k == 0 else bf / 2), (0.9 if k == n - 1 else bf / 2)
+            parts.append(box([0, y0 + (bf / 2 - lo if k == 0 else 0.0), z], [L, y0 + bf - (bf / 2 - hi if k == n - 1 else 0.0), z + tf]))
+            parts.append(box([0, yc - tw / 2, z + tf - 0.01], [L, yc + tw / 2, z + d - tf + 0.01]))
+            parts.append(box([0, yc - lo, z + d - tf], [L, yc + hi, z + d]))
+        z += d
+    W = n * bf
+    bands = []
+    e = bf / 2 - 0.9                                            # where the outer flange tips are
+    for x in (L / 6, L / 2, 5 * L / 6):                         # bands stand on dunnage strips
+        outer = box([x - 0.3, e - 0.4, STEEL_DUN], [x + 0.3, W - e + 0.4, z + 0.3])
+        inner = box([x - 1, e + 0.05, STEEL_DUN - 1], [x + 1, W - e - 0.05, z])
+        bands.append(outer - inner)
+    dun = [box([x - 0.7, -1.2, 0.0], [x + 0.7, W + 1.2, STEEL_DUN]) for x in (1.2, L / 6, L / 3, L / 2, 2 * L / 3, 5 * L / 6, L - 1.2)]
+    return union(parts + bands + dun)
+
+
+# ================================================================== pressure vessel
+VESSEL_SKID = 2.0         # pressure vessel: black skid, then the white vessel and its saddles
+
+
+def pressure_vessel(Lt=ft(34.0), D=ft(8.6)):
+    """A horizontal pressure vessel shipped on a skid: shell with girth seams, 2:1 ellipsoidal
+    heads, two saddles with wear plates, a cradle web between them pierced with 45 degree
+    topped openings, nozzles with blind flanges, a manway, lifting lugs and a nameplate. The
+    web under the shell carries it at 45 degrees, so nothing overhangs."""
+    r = D / 2
+    hd = r / 2
+    z0 = VESSEL_SKID
+    zc = z0 + r * math.sqrt(2) + 0.2
+    x0, x1 = hd, hd + Lt
+    L = Lt + 2 * hd
+    shell = M.cylinder(Lt, r, r, 96).rotate([0, 90, 0]).translate([x0, 0, zc])
+    head = M.sphere(1.0, 64).scale([hd, r, r])
+    heads = [(head - box([0, -r - 1, -r - 1], [hd + 1, r + 1, r + 1])).translate([x0 + 0.01, 0, zc]),
+             (head - box([-hd - 1, -r - 1, -r - 1], [0, r + 1, r + 1])).translate([x1 - 0.01, 0, zc])]
+    vessel = union([shell] + heads)
+    yw = 8.0
+    web = M.hull(vessel + box([x0, -yw, z0 - 0.01], [x1, yw, z0]))
+    # openings through the web between the saddles, gable-topped at 45 degrees
+    xs1, xs2 = x0 + Lt * 0.18, x1 - Lt * 0.18
+    holes = []
+    span = xs2 - xs1 - 6.0
+    w = 2 * ((zc - r - z0) - 2.6)                  # the gable's apex stays a mm under the shell
+    n = int((span + 3.0) / (w + 3.0))
+    w = (span - (n - 1) * 3.0) / n if (span - (n - 1) * 3.0) / n <= w else w
+    for k in range(n):
+        a = xs1 + 3.0 + k * (w + 3.0)
+        top = z0 + 1.6
+        holes.append(M.hull_points([(x, y, z) for y in (-20, 20) for (x, z) in
+                                    ((a, z0 - 0.5), (a + w, z0 - 0.5), (a, top), (a + w, top), (a + w / 2, top + w / 2))]))
+    web = web - union(holes)
+    # saddles (on the skid's cross beams) with wear plates
+    sad = []
+    for xs in (xs1, xs2):
+        yy = r * math.sin(math.radians(60)) + 0.8
+        plate = box([xs - 0.8, -yy, z0 - 0.01], [xs + 0.8, yy, zc - r * math.cos(math.radians(60))])
+        sad.append(plate - M.cylinder(4.0, r + 0.01, r + 0.01, 96).rotate([0, 90, 0]).translate([xs - 2, 0, zc]))
+        wear = M.cylinder(5.0, r + 0.25, r + 0.25, 96).rotate([0, 90, 0]).translate([xs - 2.5, 0, zc])
+        sad.append(wear ^ box([xs - 2.5, -yy, z0], [xs + 2.5, yy, zc - r * 0.45]))
+        for y in (-yy + 0.8, 0.0, yy - 0.8):
+            sad.append(box([xs - 3.0, y - 0.4, z0 - 0.01], [xs + 3.0, y + 0.4, z0 + 2.4]))
+    # girth seams with 45 degree undersides, kept to the upper half (the web hides the rest)
+    seams = []
+    for x in np.linspace(x0 + Lt / 3, x1 - Lt / 3, 2):
+        ring = M.cylinder(0.5, r + 0.15, r + 0.15, 96).rotate([0, 90, 0]).translate([x - 0.25, 0, zc])
+        seams.append(ring ^ box([x - 1, -r - 1, zc - r * 0.7], [x + 1, r + 1, zc + r + 1]))
+    for x in (x0, x1):
+        ring = M.cylinder(0.5, r + 0.15, r + 0.15, 96).rotate([0, 90, 0]).translate([x - 0.25, 0, zc])
+        seams.append(ring ^ box([x - 1, -r - 1, zc - r * 0.7], [x + 1, r + 1, zc + r + 1]))
+    # nozzles, manway, lugs on top
+    tops = []
+    for x, rn, hn in ((x0 + Lt * 0.15, 1.6, 4.0), (x0 + Lt * 0.5, 4.0, 3.0), (x0 + Lt * 0.72, 2.0, 4.5), (x0 + Lt * 0.88, 1.3, 3.5)):
+        zt = zc + r - 0.6
+        tops.append(M.cylinder(hn + 0.6, rn, rn, 40).translate([x, 0, zt]))
+        tops.append(M.cylinder(0.6, rn + 0.9, rn + 0.9, 40).translate([x, 0, zt + hn + 0.6]))
+        tops.append(M.cylinder(0.9, rn, rn + 0.9, 40).translate([x, 0, zt + hn - 0.3]))
+    for x in (x0 + Lt * 0.3, x0 + Lt * 0.62):
+        lug = M.hull(box([x - 1.6, -0.5, zc + r - 1.0], [x + 1.6, 0.5, zc + r + 1.6]) +
+                     M.cylinder(1.0, 1.6, 1.6, 20).rotate([90, 0, 0]).translate([x, 0.5, zc + r + 1.6]))
+        tops.append(lug - M.cylinder(2.2, 0.6, 0.6, 12).rotate([90, 0, 0]).translate([x, 1.1, zc + r + 1.6]))
+    name = M.hull_points([(x0 + Lt * 0.42 + dx, -r - 0.15, zc + dz) for dx in (0, 5.0) for dz in (-1.2, 1.6)] +
+                         [(x0 + Lt * 0.42 + dx, -r + 1.0, zc + dz) for dx in (0, 5.0) for dz in (-1.6, 1.6)])
+    # skid: two longitudinal beams, cross beams under the saddles and at the ends
+    skid = [box([x0 - 2.0, y - 1.0, 0.0], [x1 + 2.0, y + 1.0, z0]) for y in (-yw + 1.0, yw - 1.0)]
+    yy = r * math.sin(math.radians(60)) + 0.8
+    for x, hw in ((x0 - 1.0, 1.2), (xs1, 3.2), (xs2, 3.2), (x1 + 1.0, 1.2)):      # the saddles' gussets stand on these
+        skid.append(box([x - hw, -yy, 0.0], [x + hw, yy, z0]))
+    for x in (x0 - 1.0, x1 + 1.0):
+        for y in (-yy, yy):
+            skid.append(M.hull_points([(x + dx, y, z) for dx in (-1.2, 1.2) for z in (0.0, z0)] +
+                                      [(x + dx, y + math.copysign(1.2, y), z) for dx in (-1.2, 1.2) for z in (0.0, 1.0)]))
+    out = union([vessel, web, name] + sad + seams + tops + skid)
+    return out.translate([0, yy + 1.2, 0])
+
+
+# ================================================================== ship propeller
+PROP_SKID = 1.6           # propeller: timber platform, then the bronze
+
+
+def propeller(R=17.5, blades=4, rh=5.0, hh=11.0):
+    """A cast bronze ship's propeller lying face down on a timber platform: a tapered boss with
+    its bore and keyway, and skewed blades whose backs rise in an airfoil from thin edges, from
+    a thick root to a thin tip. Everything stands on the platform."""
+    z0 = PROP_SKID
+    parts = []
+    stations = np.linspace(rh - 1.0, R, 10)
+    for b in range(blades):
+        ang = 2 * math.pi * b / blades
+        secs = []
+        for i, r in enumerate(stations):
+            f = (r - stations[0]) / (R - stations[0])
+            chord = (11.0 + 9.0 * math.sin(math.pi * min(f, 0.85) / 1.2)) * (1.0 - 0.75 * f ** 3)
+            skew = 6.0 * f ** 1.6                       # the blade sweeps back toward the tip
+            tmax = 4.8 * (1 - f) + 0.7
+            pts = []
+            for s in np.linspace(0, 1, 9):
+                h = 0.35 + (tmax - 0.35) * math.sin(math.pi * s) ** 0.8 * (1.0 - 0.25 * s)
+                u = (s - 0.4) * chord - skew
+                pts.append((r, u, z0 + h))
+                pts.append((r, u, z0 - 0.01))
+            # to world: radial along ang, chord along the tangent
+            ca, sa = math.cos(ang), math.sin(ang)
+            secs.append([(rr * ca - u * sa, rr * sa + u * ca, z) for (rr, u, z) in pts])
+        for a, b2 in zip(secs[:-1], secs[1:]):
+            parts.append(M.hull_points(a + b2))
+    boss = M.cylinder(hh, rh + 0.6, rh - 0.4, 64).translate([0, 0, z0 - 0.01])
+    boss = boss + M.cylinder(0.8, rh - 0.4, rh - 1.2, 64).translate([0, 0, z0 + hh - 0.02])
+    bore = M.cylinder(hh + 2, 2.4, 2.0, 40).translate([0, 0, z0 + 2.0])
+    key = box([1.8, -0.5, z0 + 2.0], [2.9, 0.5, z0 + hh + 2])
+    parts.append(boss - bore - key)
+    parts.append(M.cylinder(0.25, rh + 0.65, rh + 0.42, 64).translate([0, 0, z0 + hh * 0.35 - 0.25]))
+    # platform: runners, planks across, a little larger than the propeller
+    S = 2 * R + 3.0
+    plat = _skid(S, S, runners=4, plank=2.8)
+    plat = plat.scale([1, 1, PROP_SKID / STEEL_DUN]).translate([-S / 2, -S / 2, 0])
+    out = union(parts + [plat])
+    return union([c for c in out.decompose() if c.volume() > 1.0])     # drop slivers where blade segments meet
+
+
 # ================================================================== stand-in cars (renders only)
 RAIL_TOP = 2.9                    # code 83 rail on 0.8 mm ties
 DECK_H = ft(3.7)                  # deck top above the rail head
@@ -404,117 +721,92 @@ def ballast(x0, x1):
                          [(x, y, 0.55) for x in (x0, x1) for y in (-16.5, 16.5)])
 
 
-# ================================================================== review renders
+# ================================================================== pack render scenes
 CAR_COLOURS = {"ttx_yellow": ["#E3AE12", 0.6, 0.0], "car_black": ["#262626", 0.7, 0.0], "car_oxide": ["#6A2C1E", 0.75, 0.0],
                "car_mineral": ["#5B3A2A", 0.75, 0.0], "deck": ["#76664F", 0.85, 0.0], "wheel": ["#2C2B2A", 0.5, 0.5],
                "tie": ["#4A3D31", 0.9, 0.0], "rail": ["#857E76", 0.4, 0.6], "ballast": ["#8E8A84", 0.95, 0.0]}
-LOAD_SPOOLS = {"Green": "#16924A", "Marine Blue": "#0078BF"}
 
 
-def review_scenes():
-    """{car: {material: [solids]}}: each pilot load on its stand-in car on a length of track."""
-    def car(L, body, **kw):
-        mats = {"ballast": [ballast(-12.0, L + 12.0)]}
-        for k, v in track(-12.0, L + 12.0).items():
-            mats.setdefault(k, []).extend(v)
-        for k, v in stand_in_flat(L, **kw).items():
-            mats.setdefault(body if k == "car" else k, []).extend(v)
-        return mats
+def _car(L, body, **kw):
+    mats = {"ballast": [ballast(-12.0, L + 12.0)]}
+    for k, v in track(-12.0, L + 12.0).items():
+        mats.setdefault(k, []).extend(v)
+    for k, v in stand_in_flat(L, **kw).items():
+        mats.setdefault(body if k == "car" else k, []).extend(v)
+    return mats
 
-    def put(mats, colour, m):
-        mats.setdefault(colour.replace(" ", "_").lower(), []).append(m)
 
-    def split(mats, m, z, below, above, move):
-        hi, lo = m.split_by_plane((0.0, 0.0, 1.0), z + 1e-3)
-        put(mats, below, lo.transform(move) if isinstance(move, np.ndarray) else lo.translate(move))
-        put(mats, above, hi.transform(move) if isinstance(move, np.ndarray) else hi.translate(move))
+def _put(mats, colour, m):
+    mats.setdefault(colour.replace(" ", "_").lower(), []).append(m)
 
-    scenes = {}
-    # 89 ft TTX flat: the tower section in its transport frames
-    L = ft(89.3)
-    s = car(L, "ttx_yellow", kind="fishbelly", W=ft(9.8))
+
+def _place(mats, m, colour, x, z, change=None, y=None, centre=False):
+    """Set a piece (print pose) on the deck: its low x at ``x`` (or centred on x), centred
+    across the car, its base at ``z``; split at its colour change. Returns its far x."""
+    b = m.bounding_box()
+    dx = (x - (b[0] + b[3]) / 2) if centre else (x - b[0])
+    move = [dx, -(b[1] + b[4]) / 2 if y is None else y, z]
+    if change:
+        hi, lo = m.split_by_plane((0.0, 0.0, 1.0), change[0] + 1e-3)
+        _put(mats, colour, lo.translate(move))
+        _put(mats, change[1], hi.translate(move))
+    else:
+        _put(mats, colour, m.translate(move))
+    return b[3] + dx
+
+
+def pack_scene(key):
+    """{material: [solids]}: a flatcar-load pack on its stand-in car, on track, for the renders."""
     zd = deck()
-    x0 = (L - TOWER_L) / 2
-    zc = zd + TOWER_R0 + TOWER_GAP
-    put(s, "Light Gray", tower_section().transform(np.array([[0, 0, 1, x0], [0, 1, 0, 0], [-1, 0, 0, zc]], float)))
-    put(s, "Cobalt Blue", tower_frame(TOWER_R0).transform(np.array([[0, 0, -1, x0], [-1, 0, 0, 0], [0, 1, 0, zc]], float)))
-    put(s, "Cobalt Blue", tower_frame(TOWER_R1).transform(np.array([[0, 0, 1, x0 + TOWER_L], [1, 0, 0, 0], [0, 1, 0, zc]], float)))
-    scenes["tower"] = s
-    # depressed-centre flat: the transformer
-    L, well = ft(52.0), ft(30.0)
-    s = car(L, "car_black", kind="depressed", well=well, W=ft(10.0))
-    xf = transformer()
-    b = xf.bounding_box()
-    split(s, xf, XF_BLOCK, "Cocoa Brown", "Gray", [L / 2 - (b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, deck("depressed")])
-    scenes["transformer"] = s
-    # 60 ft flat: tarped machine and tall load
-    L = ft(60.0)
-    s = car(L, "car_oxide")
-    x = 14.0
-    for kind, colour in (("machine", "Desert Tan"), ("tall", "Marine Blue")):
-        m = tarp_load(kind)
-        b = m.bounding_box()
-        split(s, m, TARP_BLOCK, "Cocoa Brown", colour, [x - b[0], -(b[1] + b[4]) / 2, zd])
-        x += b[3] - b[0] + 40.0
-    scenes["tarps"] = s
-    # 42 ft flat: the long tarped bundle
-    L = ft(42.0)
-    s = car(L, "car_black")
-    m = tarp_load("long")
-    b = m.bounding_box()
-    split(s, m, TARP_BLOCK, "Cocoa Brown", "Black", [L / 2 - (b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, zd])
-    scenes["tarp_long"] = s
-    # 53 ft bulkhead flat: coated line pipe
-    L = ft(53.5)
-    s = car(L, "car_mineral", bulkhead=ft(9.0))
-    m = pipe_load()
-    b = m.bounding_box()
-    split(s, m, PIPE_DUN, "Cocoa Brown", "Green", [L / 2 - (b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, zd])
-    scenes["pipe"] = s
-    return scenes
-
-
-def render_review(out_dir, samples=36, res="1600x1000", only=None):
-    import json
-    import os
-    import subprocess
-    import sys
-
-    from .core import mesh_arrays
-    from .packs import FINISH, SPOOL
-    mats_pal = dict(CAR_COLOURS)
-    for name, hexc in {**SPOOL, **LOAD_SPOOLS}.items():
-        r, mt = FINISH.get(name, (0.75, 0.0))
-        mats_pal[name.replace(" ", "_").lower()] = [hexc, r, mt]
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for key, mats in review_scenes().items():
-        if only and key not in only:
-            continue
-        out = os.path.join(out_dir, key)
-        os.makedirs(out, exist_ok=True)
-        data = {}
-        for mat, ms in mats.items():
-            ms = [m for m in ms if not m.is_empty()]
-            vs, fs, o = [], [], 0
-            for m in ms:
-                v, f = mesh_arrays(m)
-                vs.append(v)
-                fs.append(f + o)
-                o += len(v)
-            data[mat + "__v"] = np.concatenate(vs).astype(np.float32)
-            data[mat + "__f"] = np.concatenate(fs).astype(np.int32)
-        npz = os.path.join(out, f"{key}.npz")
-        np.savez_compressed(npz, **data)
-        views = {"hero": [-34, 20, 55, 0.92, [0, 0, 0]], "rear": [146, 22, 55, 0.92, [0, 0, 0]]}
-        json.dump({"materials": mats_pal, "views": views}, open(os.path.join(out, "palette.json"), "w"), indent=1)
-        r = subprocess.run([sys.executable, "-m", "hoarch.render", "--npz", npz, "--palette", os.path.join(out, "palette.json"),
-                            "--views", "hero,rear", "--samples", str(samples), "--res", res, "--out", os.path.join(out, "renders")],
-                           cwd=root, capture_output=True, text=True)
-        if r.returncode:
-            print(r.stdout[-2000:], r.stderr[-2000:])
-        print(key, "rendered")
-
-
-if __name__ == "__main__":
-    import sys
-    render_review(sys.argv[1] if len(sys.argv) > 1 else "out/flatloads_pilot", only=sys.argv[2:] or None)
+    if key == "windtower":
+        L = ft(89.3)
+        s = _car(L, "ttx_yellow", kind="fishbelly", W=ft(9.8))
+        x0 = (L - TOWER_L) / 2
+        zc = zd + TOWER_R0 + TOWER_GAP
+        _put(s, "Light Gray", tower_section().transform(np.array([[0, 0, 1, x0], [0, 1, 0, 0], [-1, 0, 0, zc]], float)))
+        _put(s, "Cobalt Blue", tower_frame(TOWER_R0).transform(np.array([[0, 0, -1, x0], [-1, 0, 0, 0], [0, 1, 0, zc]], float)))
+        _put(s, "Cobalt Blue", tower_frame(TOWER_R1).transform(np.array([[0, 0, 1, x0 + TOWER_L], [1, 0, 0, 0], [0, 1, 0, zc]], float)))
+        return s
+    if key == "nacelle":
+        L = ft(89.3)
+        s = _car(L, "car_black", kind="fishbelly", W=ft(9.8))
+        x = _place(s, nacelle(), "Sunflower Yellow", 30.0, zd, (NAC_FRAME, "White"))
+        _place(s, hub(), "Sunflower Yellow", x + 50.0, zd, (NAC_FRAME, "White"), centre=True)
+        return s
+    if key == "transformer":
+        L = ft(52.0)
+        s = _car(L, "car_black", kind="depressed", well=ft(30.0), W=ft(10.0))
+        _place(s, transformer(), "Cocoa Brown", L / 2, deck("depressed"), (XF_BLOCK, "Gray"), centre=True)
+        return s
+    if key == "linepipe":
+        L = ft(53.5)
+        s = _car(L, "car_mineral", bulkhead=ft(9.0))
+        _place(s, pipe_load(), "Cocoa Brown", L / 2, zd, (PIPE_DUN, "Green"), centre=True)
+        return s
+    if key == "tarps":
+        L = ft(89.3)
+        s = _car(L, "car_oxide", kind="fishbelly", W=ft(9.8))
+        x = 14.0
+        for kind, colour in (("machine", "Desert Tan"), ("tall", "Marine Blue"), ("long", "Black")):
+            x = _place(s, tarp_load(kind), "Cocoa Brown", x, zd, (TARP_BLOCK, colour)) + 18.0
+        return s
+    if key == "steel":
+        L = ft(89.3)
+        s = _car(L, "car_black", kind="fishbelly", W=ft(9.8))
+        x = 6.0
+        for _ in range(3):
+            x = _place(s, coil(), "Cocoa Brown", x, zd, (STEEL_DUN, "Silver")) + 3.0
+        x = _place(s, plate_bundle(), "Cocoa Brown", x + 3.0, zd, (STEEL_DUN, "Iron Gray Metallic")) + 6.0
+        _place(s, beam_bundle(), "Cocoa Brown", x, zd, (STEEL_DUN, "Copper Brown Metallic"))
+        return s
+    if key == "vessel":
+        L = ft(60.0)
+        s = _car(L, "car_oxide")
+        _place(s, pressure_vessel(), "Black", L / 2, zd, (VESSEL_SKID, "White"), centre=True)
+        return s
+    if key == "propeller":
+        L = ft(42.0)
+        s = _car(L, "car_mineral")
+        _place(s, propeller(), "Cocoa Brown", L / 2, zd, (PROP_SKID, "Bronze"), centre=True)
+        return s
+    raise KeyError(key)

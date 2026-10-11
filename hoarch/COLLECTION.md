@@ -134,6 +134,24 @@ package zip with README and listing copy, and a coloured P2S project. Build one 
 | lamps | Victorian Street Lamps | acorn, boulevard and platform lamps, 2 each | Iron Gray Metallic + Ivory White |
 | ironfence | Wrought Iron Fence | 4 fence runs, 5 posts, a double gate on 2 gate posts | Gray + Black |
 
+### Flatcar loads (`hoarch/flatloads.py`)
+
+Freight for HO flatcars, packaged like the packs (`python3 -m hoarch.packs <key>`). Each load
+stands on its own blocking, skid or frame, so it sits on any deck. Renders show it on a stand-in
+car (not sold). The tower section is the gap the research found (no HO tower section on the
+market). The pipe load competes with the best-selling Etsy pipe load.
+
+| Key | Load | Contents | Colours |
+|-----|------|----------|---------|
+| windtower | Wind Tower Section Load | 70 ft tapered tower section (prints standing, 245 mm), two transport frames | Light Gray; Cobalt Blue |
+| nacelle | Wind Turbine Nacelle and Hub Loads | nacelle on its transport frame, rotor hub on its stand | Sunflower Yellow + White |
+| transformer | Power Transformer Load | main tank in shipping trim on skid and cribbing, nitrogen bottle | Cocoa Brown + Gray |
+| linepipe | Coated Line Pipe Load | five 36 in x 40 ft joints, banded on dunnage, bevel protectors | Cocoa Brown + Green |
+| tarps | Tarped Flatcar Loads | tarped machine, tall crate, long bundle on blocking | Cocoa Brown + Desert Tan, Marine Blue, Black |
+| steel | Steel Mill Loads | 3 coils eye-to-sky on skids, a plate bundle, two tiers of wide-flange beams | Cocoa Brown + Silver, Iron Gray Metallic, Copper Brown Metallic |
+| vessel | Pressure Vessel Load | 34 ft vessel with ellipsoidal heads, saddles, nozzles, on a skid | Black + White |
+| propeller | Ship Propeller Load | 4-blade 10 ft bronze propeller face down on a timber platform | Cocoa Brown + Bronze |
+
 ## Log
 - Sixth batch (81 to 90), the mansard batch: the roof system of the owner's tan reference kit
   in our own designs (a deep multi-ring eave, a flat-topped mansard storey with one-piece window
