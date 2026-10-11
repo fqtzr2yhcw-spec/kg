@@ -371,6 +371,7 @@ def nacelle(L=105.0, W=36.0, H=40.0):
                              (L * 0.33 - fb / 2, 0, L * 0.33 + fb / 2, W), (L * 0.66 - fb / 2, 0, L * 0.66 + fb / 2, W),
                              (0, W / 2 - fb / 2, L, W / 2 + fb / 2)):
         parts.append(box([x0, y0, 0.0], [x1, y1, z0 + 0.01]))
+    parts.append(box([fb - 0.01, fb - 0.01, 0.0], [L - fb + 0.01, W - fb + 0.01, z0 + 0.01]))   # solid between the beams: no bridges under the housing
     for x in (6.0, L - 6.0):
         for y, sgn in ((0.0, -1), (W, 1)):
             parts.append(M.hull_points([(x + dx, y, z) for dx in (-1.6, 1.6) for z in (0.0, z0)] +
@@ -422,16 +423,18 @@ def nacelle(L=105.0, W=36.0, H=40.0):
     flange = M.cylinder(1.0, rf + 0.8, rf + 0.8, 48).rotate([0, 90, 0]).translate([L + 3.99, W / 2, zc])
     keel = M.hull(disc + flange + box([L - 0.01, W / 2 - rf, zc - rf - 6.0], [L, W / 2 + rf, zc]))
     face = M.cylinder(0.6, rf - 3.0, rf - 3.0, 40).rotate([0, 90, 0]).translate([L + 4.6, W / 2, zc])
-    studs = [M.cylinder(0.5, 0.35, 0.35, 8).rotate([0, 90, 0]).translate([L + 4.95, W / 2 + (rf - 1.2) * math.cos(a), zc + (rf - 1.2) * math.sin(a)])
-             for a in np.linspace(0, 2 * math.pi, 20, endpoint=False)]
-    parts += [keel - face] + studs
+    groove = (M.cylinder(1.0, rf - 0.9, rf - 0.9, 48) - M.cylinder(1.2, rf - 1.5, rf - 1.5, 48).translate([0, 0, -0.1])
+              ).rotate([0, 90, 0]).translate([L + 4.6, W / 2, zc])          # bolt circle, cut in (studs printed as blobs)
+    parts += [keel - face - groove]
     return union(parts)
 
 
 def hub(R=21.0):
     """A cast rotor hub on its transport stand (yellow, to NAC_FRAME), main-shaft flange down: a
     45 degree waist rising from the flange into the spherical body, three flat-faced blade
-    flanges with bolting rings, studs and bores, and the spinner flange on top."""
+    flanges and the spinner flange on top. The blade flanges' detail is cut into their faces (a
+    bearing seat, a bolt-circle groove, the bore), never stuck out sideways: 0.6 mm studs on the
+    faces printed as blobs, and a raised ring's lower edge printed over air."""
     z0 = NAC_FRAME
     zf = z0 + 1.6                                  # top of the main-shaft flange
     zc = zf + R * 0.75
@@ -446,18 +449,18 @@ def hub(R=21.0):
     body = M.sphere(R, 72).translate([0, 0, zc]) ^ waist
     body = body - box([-40, -40, zc + R - 4.0], [40, 40, zc + R + 5])
     d = R - 4.0
-    rings, bores = [], []
+    cuts = []
     for k in range(3):
         a = 90 + 120 * k
         body = body - box([d, -R - 5, zc - R - 5], [d + 30, R + 5, zc + R + 5]).rotate([0, 0, a])
-        ring = (M.cylinder(0.7, 11.0, 11.0, 48) - M.cylinder(2.0, 8.5, 8.5, 48).translate([0, 0, -1])).rotate([0, 90, 0]).translate([d - 0.01, 0, zc])
-        studs = [M.cylinder(0.4, 0.3, 0.3, 8).rotate([0, 90, 0]).translate([d + 0.68, 9.8 * math.cos(t), zc + 9.8 * math.sin(t)])
-                 for t in np.linspace(0, 2 * math.pi, 18, endpoint=False)]
-        rings.append((ring + union(studs)).rotate([0, 0, a]))
-        bores.append(M.cylinder(2.0, 6.5, 6.5, 40).rotate([0, 90, 0]).translate([d - 1.6, 0, zc]).rotate([0, 0, a]))
+        x = lambda depth, r_out, r_in=0.0: ((M.cylinder(depth + 1.0, r_out, r_out, 64) -
+                                             (M.cylinder(depth + 3.0, r_in, r_in, 64).translate([0, 0, -1]) if r_in else M()))
+                                            .rotate([0, 90, 0]).translate([d - depth, 0, zc]).rotate([0, 0, a]))
+        cuts += [x(0.6, 9.0),                      # bearing seat
+                 x(1.2, 6.5),                      # bore, a step deeper
+                 x(0.4, 10.75, 10.15)]             # bolt-circle groove in the flange face
     spinner = M.cylinder(0.8, 10.0, 10.0, 48).translate([0, 0, zc + R - 4.01]) - M.cylinder(1.0, 8.0, 8.0, 48).translate([0, 0, zc + R - 3.6])
-    reach = M.cylinder(h, 12.1, 12.1 + h, 72).translate([0, 0, zf - 0.01])        # rings stand at most 0.7 off the waist
-    return union(stand + [flange, body - union(bores), spinner] + [rg ^ reach for rg in rings])
+    return union(stand + [flange, body - union(cuts), spinner])
 
 
 # ================================================================== steel mill loads
