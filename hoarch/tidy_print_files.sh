@@ -48,8 +48,8 @@ LATEST="
   HO_Military_Defences_Pack 1.0 Track_Crew_Stock_Pack 1.0 EV_Chargers_and_Solar_Pack 1.0 Old_Cemetery_Pack 1.0
   Christmas_Tree_Lot_Pack 1.0 Trackside_Signs_Pack 1.0 Telephone_Poles_Pack 1.0 Victorian_Street_Lamps_Pack 1.0
   Wrought_Iron_Fence_Pack 1.0
-  Wind_Tower_Section_Load 1.0 Wind_Nacelle_and_Hub_Load 1.0 Power_Transformer_Load 1.0 Coated_Line_Pipe_Load 1.0
-  Tarped_Flatcar_Loads 1.0 Steel_Mill_Loads 1.0 Pressure_Vessel_Load 1.0 Ship_Propeller_Load 1.0
+  Wind_Tower_Section_Load 1.0 Wind_Nacelle_and_Hub_Load 1.1 Power_Transformer_Load 1.1 Coated_Line_Pipe_Load 1.1
+  Tarped_Flatcar_Loads 1.1 Steel_Mill_Loads 1.1 Pressure_Vessel_Load 1.1 Ship_Propeller_Load 1.1
 "
 
 DUP='( ?\([0-9]+\)| [0-9]+|-[0-9]+)?'      # a browser's extra-copy mark: " (1)", "(1)", " 2", "-1"
