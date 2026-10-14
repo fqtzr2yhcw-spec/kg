@@ -64,6 +64,25 @@ def unmid(m, layer=0.2, tol=0.012, shift=0.06):
     return out if not out.is_empty() else m
 
 
+def ground(m):
+    """Make a print's underside meet the bed: tips that hold the whole print up are cut off. When
+    what touches the bed is a sliver of what stands a millimetre up (the Camellia's hip-cap ends
+    dipped 0.4 mm below its eave), the print's first layers would start in mid air round them, so
+    it is cut at its real underside and that sits on the bed. ``m`` is in print pose with its
+    bottom at z = 0. (Filling shallow regions near the bed down to it was tried and dropped: on
+    prints that stand on their show face, such as porch roofs printed upside down, it left ridges.)"""
+    a1 = m.slice(1.0).area()
+    if a1 > 50.0:
+        zs = np.arange(0.02, 1.0, 0.02)
+        areas = [m.slice(z).area() for z in zs]
+        if areas[0] < 0.02 * a1:
+            k = next((i for i, a in enumerate(areas) if a >= 0.3 * a1), None)
+            if k:
+                zc = zs[k - 1] + 0.01
+                m = m.trim_by_plane([0.0, 0.0, 1.0], zc).translate([0, 0, -zc])
+    return m
+
+
 class Part:
     def __init__(self, name, color, solid, P, key, group, render=None, change=None):
         self.name, self.color, self.solid, self.P, self.key, self.group = name, color, solid, P, key, group
@@ -73,7 +92,9 @@ class Part:
     def printed(self):
         s = self.solid.transform(self.P)
         b = s.bounding_box()
-        return unmid(s.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]]))
+        s = s.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]])
+        # (a two-colour part keeps its pose: its change height is measured from its bottom)
+        return unmid(s if self.change else ground(s))
 
 
 class Kit:

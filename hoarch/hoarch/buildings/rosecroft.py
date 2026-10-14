@@ -326,9 +326,9 @@ def build(kit=None):
         n = np.array([t_[1], -t_[0]])
         mm = (a + b) / 2
         Al = np.array([[t_[0], 0.0, n[0], mm[0]], [t_[1], 0.0, n[1], mm[1]], [0.0, 1.0, 0.0, zl]])
-        if k % 2 == 0:            # a framed light with a centre bar
+        if k % 2 == 0:            # a framed light with a centre bar 0.9 mm wide (two lines, not one)
             lantern = lantern - ext(light, -LT - 0.5, 1.0).transform(Al)
-            lantern = lantern + (_stepped(lfr, -0.01, 0.5) + ext(rect(-0.3, 3.0, 0.3, HL - 7.0 + lw), -LT, -0.4)).transform(Al)
+            lantern = lantern + (_stepped(lfr, -0.01, 0.5) + ext(rect(-0.45, 3.0, 0.45, HL - 7.0 + lw), -LT, -0.4)).transform(Al)
         else:                     # a blind panel in a frame
             lantern = lantern + _stepped(lfr, -0.01, 0.5).transform(Al) + _stepped(light.offset(-1.4, JoinType.Miter, 4.0),
                                                                                   -0.01, 0.3).transform(Al)

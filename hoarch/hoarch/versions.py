@@ -278,6 +278,34 @@ for _k, _note in _GLAZE2.items():
     _maj, _min = (_h[-1][0] if _h else "1.0").split(".")
     _h.append((f"{_maj}.{int(_min) + 1}", "2026-10-07", _note))
 
+# 2026-10-14: the Westbrook's roof showed loose stilts where its chimneys' seats should be; a scan
+# of every part for thin posts in hollows and for prints held off the plate found these
+CHIMNEY_BUCKET = ("Roof: each chimney now drops into a bucket in the hollow roof (walls round the pocket rising "
+                  "from the roof's underside, and a floor carried on a corbel that steps in from them) instead of "
+                  "a floor standing on thin posts in the roof's hollow, which printed as loose stilts. Reprint the ROOF.")
+ROOF_FLAT = ("Roof: the hip caps' ends dipped 0.4 mm below the eaves and held the whole roof up off the plate on "
+             "their tips, so its first layers started in mid air; they now stop at the eaves and the roof sits flat "
+             "on the plate. Reprint the ROOF.")
+_FIX_1014 = {
+    "westbrook": CHIMNEY_BUCKET, "lindenwald": CHIMNEY_BUCKET, "randolph": CHIMNEY_BUCKET,
+    "camellia": ROOF_FLAT, "hawthorn": ROOF_FLAT,
+    "drugstore": ("Turret: the brick ends at its two back corners, hidden inside the building, are cut off; they "
+                  "printed as a loose sliver one line thick. Reprint the TURRET."),
+    "rosecroft": ("Tower lantern: the centre bars of its four lights are 0.9 mm wide, two lines of plastic (they were "
+                  "0.6 mm, a single line standing 17 mm tall). Reprint the TOWER-lantern."),
+    "pallets": ("Two of each pallet's five bottom boards sat right under the fork notches and printed loose; the bottom "
+                "boards now stand clear of the notches. The concrete-block courses and the carton tiers stand on each "
+                "other instead of over a hair of air, which could start a course in mid air. Reprint every piece."),
+    "military": ("Ammo boxes: each tier stands on the one below instead of over a 0.02 mm gap, which could start a "
+                 "tier in mid air. Reprint the Ammo-boxes."),
+    "walls": ("Culvert headwall: the tips that held it up off the plate are trimmed, so it sits flat on the plate. "
+              "Reprint the Culvert-headwall."),
+}
+for _k, _note in _FIX_1014.items():
+    _h = HISTORY.setdefault(_k, [])
+    _maj, _min = (_h[-1][0] if _h else "1.0").split(".")
+    _h.append((f"{_maj}.{int(_min) + 1}", "2026-10-14", _note))
+
 def version(key):
     h = HISTORY.get(key)
     return h[-1][0] if h else "1.0"

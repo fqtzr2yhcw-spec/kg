@@ -158,7 +158,10 @@ def build(kit=None):
     # the turret: an octagonal shell of its own, standing on the belt and its corbel
     tops = _turret_openings()
     tw = wall_shell([TURRET], tops, t=2.0, belt=None, corners="none", water_table=False, siding=_siding)
-    kit.add("TURRET", "Brick", tw - walls2, group="turret")          # its corner beads stop at the building
+    # its corner beads stop at the building, and its back faces stand inside the building: the brick
+    # ends at the hidden corners there would print as a loose sliver, so they are cut off
+    hidden = slab(offset(MAIN.cs, -0.05) - offset(TURRET.cs, 0.01), TZ0 - 1.0, TZ1 + 2.0)
+    kit.add("TURRET", "Brick", tw - walls2 - hidden, group="turret")
     for o in tops:
         world, P, zones = O.place(o.spec, o.local_frame(), "Windows_Doors", "Sash", "Glass")
         kit.add(f"WIN-{o.name}", "Windows_Doors", world, P=P, key="WIN-turret", group="inserts", render=zones)

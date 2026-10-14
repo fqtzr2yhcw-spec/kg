@@ -32,9 +32,8 @@ def pallet():
     seven top boards. 14.0 x 11.7 x 1.6 mm."""
     L, W = ft(4.0), ft(40 / 12.0)
     parts = []
-    for k in range(5):                                       # bottom deck
-        x = (L - 1.0) * k / 4
-        parts.append(box([x, 0.0, 0.0], [x + 1.0, W, 0.4]))
+    for x in (0.0, 5.0, 6.5, 8.0, L - 1.0):                  # bottom deck: clear of the fork notches,
+        parts.append(box([x, 0.0, 0.0], [x + 1.0, W, 0.4]))  # so no board hangs loose under one
     for y in (0.0, (W - 0.9) / 2, W - 0.9):                  # stringers with fork notches
         s = box([0.0, y, 0.39], [L, y + 0.9, 1.21])
         for xn in (L * 0.22, L * 0.78):
@@ -68,7 +67,8 @@ def load_cartons(seed=1):
                 dx, dy = dy * L / W, dx * W / L
             x0, y0 = g + i * (L - g) / 2, g + j * (W - g) / 2
             jit = rng.uniform(-0.12, 0.12, 2)
-            tiers.append(_carton(x0 + jit[0], y0 + jit[1], z, min(dx, L - x0 - g), min(dy, W - y0 - g), h + rng.uniform(-0.2, 0.0)))
+            dz = rng.uniform(-0.2, 0.0) if t == 2 else 0.02   # a tier stands on full-height cartons
+            tiers.append(_carton(x0 + jit[0], y0 + jit[1], z, min(dx, L - x0 - g), min(dy, W - y0 - g), h + dz))
         z += h
     return pallet() + union(tiers)
 
@@ -123,10 +123,14 @@ def load_drums():
     return pallet() + union(drums)
 
 
-def _block(x0, y0, z0, cores=True):
-    """An 8 x 8 x 16 in concrete block, its two cores open at the top."""
+def _block(x0, y0, z0, cores=True, foot=False):
+    """An 8 x 8 x 16 in concrete block, its two cores open at the top. With ``foot`` its bottom
+    layer steps in 0.15 mm, so a course standing on another shows its joint without an air gap."""
     l, w, h = inch(15.6), inch(7.6), inch(7.6)
     b = box([x0, y0, z0], [x0 + l, y0 + w, z0 + h])
+    if foot:
+        b = b - (box([x0 - 1, y0 - 1, z0 - 1], [x0 + l + 1, y0 + w + 1, z0 + 0.2]) -
+                 box([x0 + 0.15, y0 + 0.15, z0 - 2], [x0 + l - 0.15, y0 + w - 0.15, z0 + 0.3]))
     if cores:
         for k in (0.27, 0.73):
             b = b - box([x0 + l * k - 0.62, y0 + 0.45, z0 + h - 0.6], [x0 + l * k + 0.62, y0 + w - 0.45, z0 + h + 0.1])
@@ -146,7 +150,9 @@ def load_blocks():
             for j in range(ny):
                 x0 = (L - nx * (l + gap)) / 2 + i * (l + gap)
                 y0 = (W - ny * (w + gap)) / 2 + j * (w + gap)
-                blocks.append(_block(x0, y0, PALLET_TOP + c * (h + 0.05), cores=c == 3))
+                # each course overlaps the one below by a hair: a gap there (it was 0.05 mm) can
+                # catch a slice and leave the course above starting in the air
+                blocks.append(_block(x0, y0, PALLET_TOP + c * (h - 0.02), cores=c == 3, foot=c > 0))
     return pallet() + union(blocks)
 
 
@@ -267,7 +273,7 @@ def ammo_stack(cols=3, rows=2, tiers=3):
     for t in range(tiers):
         for i in range(cols):
             for j in range(rows):
-                x0, y0, z0 = i * (l + 0.12), j * (w + 0.12), t * (h + 0.02)
+                x0, y0, z0 = i * (l + 0.12), j * (w + 0.12), t * (h - 0.02)   # tiers overlap, no air gap
                 b = _rbox(x0, y0, z0, x0 + l, y0 + w, z0 + h, 0.1)
                 for xb in (0.6, l - 1.2):
                     b = b + box([x0 + xb, y0 - 0.08, z0 + h - 0.35], [x0 + xb + 0.6, y0 + w + 0.08, z0 + h - 0.05])

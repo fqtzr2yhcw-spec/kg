@@ -409,6 +409,32 @@ support. A reach of 1 mm or less is a ledge that prints. A long reach on a membe
 than a nozzle line is a bridge between two supports, and prints as one. A long reach on a
 thin strip is the fault.
 
+More habits found later (October 2026, after the owner's Westbrook roof showed loose stilts
+where its chimney seats should be):
+- **A floor on posts inside a hollow.** `gables.pocket_seat` used to stand the chimney's
+  floor on thin posts rising from the roof's bed through its hollow. They printed as loose
+  stilts. It now builds a bucket: walls round the pocket rise from the roof's bed to its
+  slates, and the floor sits on a corbel that steps in from those walls at 45 degrees. Never
+  carry anything inside a hollow on a post; hang it from the walls.
+- **A hair of air between stacked solids.** The pallets' block courses stood 0.05 mm apart,
+  the carton tiers up to 0.2 mm, the ammo boxes 0.02 mm. When a slicing plane falls in the
+  gap, a whole course starts in mid-air. Stacked pieces overlap by 0.02 mm. Show the joint
+  with a 0.15 mm step at the upper piece's foot instead.
+- **Cuts that leave a piece loose.** The pallets' fork notches cut away the stringer above
+  two bottom boards, so those boards printed as loose sticks. Check every piece is one solid
+  (`len(m.decompose()) == 1`) after its cuts.
+- **Hidden faces still print.** The drugstore turret's back corners stand inside the
+  building, and their brick ends were a loose sliver one line thick. Cut off what a part
+  puts inside a neighbour's footprint.
+- **Tips holding a print off the bed.** The Camellia's and Hawthorn's hip caps dipped 0.4 mm
+  below the eaves, so each roof stood on its cap ends and its first layers started in mid
+  air. `kit.ground`, run by `Part.printed()` before `unmid`, cuts such tips off at the
+  print's real underside. It acts when what touches the bed is under 2 % of the area 1 mm
+  up. Two-colour parts are left alone, because their change height is measured from the
+  bottom. Over all 3157 parts it changes only those two roofs and the culvert headwall.
+  Filling shallow regions near the bed was tried and dropped: on parts that print on their
+  show face (porch roofs upside down), it left ridges.
+
 ## Glazing: every opening 1.6 mm or more
 
 The owner's prints set the rule. The sash windows' panes (1.6 to 3 mm wide, 0.5 mm bars) print

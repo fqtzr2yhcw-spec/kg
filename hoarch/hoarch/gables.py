@@ -161,21 +161,24 @@ def chimney_seat(roof_solid, x, y, half, z_top):
     return M.hull_points(pts) ^ roof_solid
 
 
-def pocket_seat(roof_solid, x, y, hx, hy, z_floor, over=1.6):
-    """The floor under a chimney's pocket in a hollow roof: a block whose top runs ``over``
-    past the pocket (half sizes hx, hy) at 0.4 above its floor ``z_floor``, so the floor is
-    solid and joined to the roof's shell, narrowing to a point below on a 2 mm post down to the
-    bed (it prints upright, nothing starting in mid-air).
-    Use it where the pocket is cut deeper than chimney_seat's pyramid reaches: there only
-    that pyramid's loose tip was left in the hollow, and the chimney had no floor."""
-    zt = z_floor + 0.4
-    ax, ay = hx + over, hy + over
-    pts = [(x + sx * ax, y + sy * ay, zt) for sx in (-1, 1) for sy in (-1, 1)]
-    za = zt - max(ax, ay) - 1.0
-    pts.append((x, y, za))                          # narrowing to a point...
-    z_bed = roof_solid.bounding_box()[2]
-    post = box([x - 1.0, y - 1.0, z_bed], [x + 1.0, y + 1.0, za + 1.0])   # ...on a post from the bed (a point or a
-    return (M.hull_points(pts) + post) ^ roof_solid                          # strip in mid-air slices as a floating start)
+def pocket_seat(roof_solid, x, y, hx, hy, z_floor, over=1.6, wall=1.2):
+    """The bucket a chimney drops into in a hollow roof: walls ``wall`` thick round the pocket
+    (half sizes hx, hy) rising from the roof's bed to its slates, and a floor at ``z_floor``
+    carried on a corbel that steps in from the walls at 45 degrees. It prints upright with
+    nothing starting in mid-air and no thin post. (It used to stand the floor on a pyramid on a
+    2 mm post up to 40 mm tall; on the owner's Westbrook the posts printed as loose stilts and
+    the floors never formed.) ``over`` is kept for the old call signature."""
+    bb = roof_solid.bounding_box()
+    z_bed, z_top = bb[2], bb[5] + 1.0
+    outer = box([x - hx - wall, y - hy - wall, z_bed], [x + hx + wall, y + hy + wall, z_top])
+    inner = box([x - hx, y - hy, z_bed - 1.0], [x + hx, y + hy, z_top + 1.0])
+    m = min(hx, hy)
+    zc = z_floor - 0.8 - m                          # the corbel starts here at the walls...
+    lx, ly = hx - m, hy - m
+    void = M.hull_points([(x + sx * (hx + 0.01), y + sy * (hy + 0.01), zc - 0.01) for sx in (-1, 1) for sy in (-1, 1)] +
+                         [(x + sx * max(lx, 0.01), y + sy * max(ly, 0.01), z_floor - 0.8) for sx in (-1, 1) for sy in (-1, 1)])
+    corbel = box([x - hx - 0.01, y - hy - 0.01, zc], [x + hx + 0.01, y + hy + 0.01, z_floor]) - void   # ...and closes 0.8 under the floor
+    return ((outer - inner) + corbel) ^ roof_solid
 
 
 def hip_cap(a, b, half=1.0, up=0.7, drop=1.6):

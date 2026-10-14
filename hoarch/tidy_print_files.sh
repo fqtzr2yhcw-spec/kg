@@ -31,21 +31,21 @@ LATEST="
   Alvarado 1.2 Ardmore 1.1 Arroyo 1.2 Ashby_Villa 1.2 Ashcombe 1.3 Bakery 1.2 Bank 1.3 Barber 1.1
   Beaumont_Queen_Anne 1.2 Beauvais 1.2 Beaver_Run_Trestle 1.0 Belcourt 1.1 Bellerive 1.2
   Blackwater_Coaling_Tower 1.2 Blackwater_Engine_House 1.2 Blackwater_Sand_House 1.1
-  Blackwater_Yard_Office 1.2 Brenton 1.2 Camellia 1.4 Capistrano 1.1 Carrow 1.4 Chatham 1.2
-  Chevalier 1.1 Crossing_Shanty_Oil_House 1.1 Delacroix 1.1 Delancey 1.2 Drugstore 1.3 Ellsworth 1.4
+  Blackwater_Yard_Office 1.2 Brenton 1.2 Camellia 1.5 Capistrano 1.1 Carrow 1.4 Chatham 1.2
+  Chevalier 1.1 Crossing_Shanty_Oil_House 1.1 Delacroix 1.1 Delancey 1.2 Drugstore 1.4 Ellsworth 1.4
   Engine_Company_No3 1.1 Fairhaven 1.3 Fontaine 1.2 Fowler 1.3 General 1.2 Greenfield_Bandstand 1.0
-  Harcourt_Second_Empire 1.3 Hardware 1.4 Harmon_Town_Hall 1.1 Hathaway 1.3 Hawthorn 1.4 Hollis 1.4
+  Harcourt_Second_Empire 1.3 Hardware 1.4 Harmon_Town_Hall 1.1 Hathaway 1.3 Hawthorn 1.5 Hollis 1.4
   Hollister 1.4 Hotel 1.4 Jeweler 1.3 Juniper 1.3 Kiln_Ridge_Tunnel_Portals 1.0 Kittredge 1.3
-  Lafayette 1.2 Lakeshore_Freight_House 1.1 Larkspur 1.3 Lindenwald 1.3 Magnolia 1.3 Marchand 1.2
+  Lafayette 1.2 Lakeshore_Freight_House 1.1 Larkspur 1.3 Lindenwald 1.4 Magnolia 1.3 Marchand 1.2
   Marigold 1.3 Merritt 1.1 Mill_Creek_Bridge 1.0 Millbrook_Depot 1.2 Millinery 1.2 Montclair 1.3
   MX_Tower 1.1 Oakhurst 1.5 Pemberton 1.2 Pennock 1.2 Pinckney 1.3 Pingree 1.4
-  Pleasant_Valley_School 1.1 Porter 1.3 Prescott 1.2 Primrose 1.3 Pullman 1.3 Randolph 1.3
-  Ridgely 1.3 Rochambeau 1.1 Rosecroft 1.3 Sandoval 1.1 Section_House_No4 1.0 St_Brendans_Church 1.3
+  Pleasant_Valley_School 1.1 Porter 1.3 Prescott 1.2 Primrose 1.3 Pullman 1.3 Randolph 1.4
+  Ridgely 1.3 Rochambeau 1.1 Rosecroft 1.4 Sandoval 1.1 Section_House_No4 1.0 St_Brendans_Church 1.3
   Stauffer 1.1 Stickley 1.4 Stonehaven_Tunnel_Portals 1.0 Thorne_Livery 1.1 Twins 1.4 Valcour 1.2
-  Vantassel 1.4 Water_Tank_No12 1.0 Westbrook 1.3 Whitby 1.3 Whitmore 1.3 Winthrop 1.3 Wisteria 1.3
+  Vantassel 1.4 Water_Tank_No12 1.0 Westbrook 1.4 Whitby 1.3 Whitmore 1.3 Winthrop 1.3 Wisteria 1.3
   Wrightwood 1.2
-  Loaded_Pallets_Pack 1.0 Oil_Drums_and_Barrels_Pack 1.0 Retaining_Walls_Pack 1.0 Industrial_Clutter_Pack 1.0
-  HO_Military_Defences_Pack 1.0 Track_Crew_Stock_Pack 1.0 EV_Chargers_and_Solar_Pack 1.0 Old_Cemetery_Pack 1.0
+  Loaded_Pallets_Pack 1.1 Oil_Drums_and_Barrels_Pack 1.0 Retaining_Walls_Pack 1.1 Industrial_Clutter_Pack 1.0
+  HO_Military_Defences_Pack 1.1 Track_Crew_Stock_Pack 1.0 EV_Chargers_and_Solar_Pack 1.0 Old_Cemetery_Pack 1.0
   Christmas_Tree_Lot_Pack 1.0 Trackside_Signs_Pack 1.0 Telephone_Poles_Pack 1.0 Victorian_Street_Lamps_Pack 1.0
   Wrought_Iron_Fence_Pack 1.0
   Wind_Tower_Section_Load 1.0 Wind_Nacelle_and_Hub_Load 1.2 Power_Transformer_Load 1.1 Coated_Line_Pipe_Load 1.1
