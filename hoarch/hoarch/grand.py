@@ -850,3 +850,887 @@ PW.BALUSTERS.update(bottleblock=(baluster_bottleblock, 1.6))
 PW.FRIEZES.update(ballspindle=frieze_ballspindle)
 PW.SKIRTS.update(sunpanels=skirt_sunpanels)
 FT.EDGE_EXTRA.update(ballfringe=edge_ballfringe)
+
+
+# ================================================================== the Evangeline (house 92)
+# Steamboat Gothic, 1858: a sugar planter's house raised on a stuccoed ground storey, wrapped on
+# all four sides by a gallery whose paired decks read like a riverboat's: a lower arcade of
+# stuccoed arches carrying a planked main gallery of slender Gothic colonnettes, lancet lace and
+# onion balusters, its flat roof a promenade deck behind a Gothic railing. Above, a straight
+# slated hip with Gothic wall dormers stops at a flat crested deck, and on the deck stands the
+# pilot house: a glazed belvedere of lancet windows under its own bracketed cornice and a
+# concave tent roof with a star finial. A double horseshoe stair climbs to the front door; two
+# domed cypress cisterns on brick bases stand by the back corners. Peach stucco, celadon lap,
+# ivory trim, deep teal accents and a pewter roof; the ornament is the Delta's (sugar cane,
+# cotton bolls, stars) set in Gothic lancets, trefoils and quatrefoils.
+
+def _lancet(u0, u1, vs, v0=0.0, r=None, seg=10):
+    """A pointed (lancet) outline: straight jambs from v0 up to the springing vs, then two arcs
+    of radius r (default the span: an equilateral arch) struck from the opposite springings,
+    meeting in a point."""
+    s = u1 - u0
+    r = s if r is None else max(r, s / 2 + 1e-3)
+    cx = u0 + r
+    th = math.acos(max(-1.0, min(1.0, (s / 2 - r) / r)))
+    left = [(cx + r * math.cos(t), vs + r * math.sin(t)) for t in np.linspace(math.pi, th, seg + 1)]
+    right = [(u0 + u1 - x, y) for x, y in reversed(left[:-1])]
+    return poly([(u0, v0)] + left + right + [(u1, v0)])
+
+
+def _apex(s, r=None):
+    """Height of a lancet's point over its springing, span s, radius r (default s)."""
+    r = s if r is None else r
+    return math.sqrt(max(0.0, r * r - (s / 2) ** 2))
+
+
+def _star(c, ro, ri=None, n=5, rot=math.pi / 2):
+    ri = ro * 0.45 if ri is None else ri
+    pts = []
+    for k in range(2 * n):
+        r = ro if k % 2 == 0 else ri
+        a = rot + math.pi * k / n
+        pts.append((c[0] + r * math.cos(a), c[1] + r * math.sin(a)))
+    return poly(pts)
+
+
+def _trefoil(c, r, seg=14):
+    d = r * 0.9
+    return cs_union([circle((c[0] + d * math.cos(a), c[1] + d * math.sin(a)), r, seg)
+                     for a in (math.pi / 2, math.pi / 2 + 2.094, math.pi / 2 - 2.094)] + [circle(c, r * 0.8, seg)])
+
+
+def _quatrefoil(c, r, seg=14):
+    d = r * 0.85
+    return cs_union([circle((c[0] + dx * d, c[1] + dy * d), r, seg) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))]
+                    + [circle(c, r, seg)])
+
+
+def slate_swallowbands(k, j):
+    """The Evangeline's slating: square slates, every seventh and eighth course swallow-tailed
+    (a band of V-cut butts round the roof), the band's slates in the second course shifted."""
+    return "swallow" if k % 8 in (5, 6) else "square"
+
+
+# ------------------------------------------------------------------ wall skins, corners, foundation
+def stucco_tabled(region, datum=0.0, tall=3.0, short=1.2, block=7.2, joint=0.5, d=0.32):
+    """Stucco ruled as ashlar in tall and short courses in turn: the tall courses' blocks
+    bevelled round every edge (V joints), the short courses plain bands between grooves (the
+    Evangeline's raised ground storey). Every bevel is 45 degrees (it prints upright)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    p = tall + short
+    out = []
+    k = math.floor((v0 - datum) / p) - 1
+    while datum + k * p < v1 + p:
+        v = datum + k * p
+        a, b = v + joint / 2, v + tall - joint / 2
+        if b > v0 - 1 and a < v1 + 1:
+            u = u0 - block + (k % 2) * block / 2
+            while u < u1 + block:
+                out.append(chamfer_box(u + joint / 2, a, u + block - joint / 2, b, 0.0, d, c=0.28, bottom=d))
+                u += block
+            out.append(ext(rect(u0 - 1, v + tall + joint / 2, u1 + 1, v + p - joint / 2), 0.0, d * 0.55))
+        k += 1
+    return union(out) ^ M.extrude(region, d + 0.1)
+
+
+def lap_twinbead(region, datum=0.0, pitch=2.0, d=0.34):
+    """Lap boards 2 mm to the weather, each butt a short square step under a pair of small
+    beads run along the board just above it (the Evangeline's main storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    k1 = math.ceil((v1 - datum) / pitch) + 1
+    pts = [(datum + k0 * pitch, 0.0)]
+    for k in range(k0, k1):
+        vk = datum + k * pitch
+        pts += [(vk, d), (vk + 0.12, d + 0.1), (vk + 0.3, d - 0.02), (vk + 0.48, d + 0.06), (vk + 0.62, d - 0.06),
+                (vk + pitch, 0.06)]
+    pts.append((datum + k1 * pitch, 0.0))
+    strip = M.extrude(poly(pts), (u1 - u0) + 2).transform(frame([u0 - 1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]))
+    return strip ^ M.extrude(region, d + 0.3).translate([0, 0, -0.1])
+
+
+def corner_evangeline(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Evangeline's corner boards: a board on a plinth block, sunk with a long lancet-headed
+    panel, a raised trefoil over the panel's point, and a gabled cap block (its gablet a 45
+    degree prism, so it prints upright)."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    if qb - qa < 8.0:
+        return M()
+    a, b = span(0.0, w)
+    parts = [box([a, qa, 0.0], [b, qb, t])]
+    pa, pb = span(-0.2, w + 0.2)
+    parts.append(chamfer_box(pa, qa, pb, qa + 2.0, 0.0, t + 0.3, c=0.2, bottom=t + 0.3))
+    um = (a + b) / 2
+    top = qb - 3.6
+    pan = _lancet(um - 0.5, um + 0.5, top - 0.9, v0=qa + 2.8, r=1.0)
+    out = union(parts) - ext(pan, t - 0.25, t + 1.0)
+    out = out + ext(_trefoil((um, top + 0.6), 0.32), t - 0.01, t + 0.25)
+    out = out + chamfer_box(pa, qb - 2.0, pb, qb, 0.0, t + 0.45, c=0.2, bottom=t + 0.45)
+    return out
+
+
+def foundation_plinthtorus(reg, seed=0):
+    """A low stucco plinth: a chamfered base course, a sunk band, and a torus under a fillet
+    at its head (the Evangeline)."""
+    b = reg.bounds()
+    h = b[3] - b[1]
+    out = [M.extrude(reg, 0.25)]
+    base = rect(b[0] - 1, b[1], b[2] + 1, b[1] + h * 0.45) ^ reg
+    if not base.is_empty():
+        bb = base.bounds()
+        out.append(M.hull_points([(x, bb[1], 0.24) for x in (bb[0], bb[2])] + [(x, bb[1], 0.7) for x in (bb[0], bb[2])] +
+                                 [(x, bb[3], 0.7) for x in (bb[0], bb[2])] + [(x, bb[3] + 0.45, 0.24) for x in (bb[0], bb[2])]))
+    tor = rect(b[0] - 1, b[3] - 1.0, b[2] + 1, b[3]) ^ reg
+    if not tor.is_empty():
+        tb = tor.bounds()
+        out.append(M.hull_points([(x, tb[1] - 0.35, 0.24) for x in (tb[0], tb[2])] + [(x, tb[1] + 0.15, 0.62) for x in (tb[0], tb[2])] +
+                                 [(x, tb[3] - 0.2, 0.62) for x in (tb[0], tb[2])] + [(x, tb[3], 0.4) for x in (tb[0], tb[2])]))
+    return union(out)
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_starrow(L, h, b, pitch, margin, p):
+    """A row of five-pointed steamboat stars on a fillet (the Evangeline's storey joint)."""
+    pu = 2.4
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    rod = rect(0.2, 0.25, L - 0.2, h - 0.25)
+    ro = min(h * 0.5 - 0.05, 0.95)
+    stars = cs_union([_star((u0 + pu * (k + 0.5), h / 2 - 0.05), ro) for k in range(n)]) ^ rect(0.2, 0.0, L - 0.2, h)
+    return [_st(rod, b, 0.2), _st(stars, b + 0.2, 0.3)]
+
+
+def course_trefoilrow(L, h, b, pitch, margin, p):
+    """A row of raised trefoils, each on a short stalk, between beads (the Evangeline's eave)."""
+    pu = 2.2
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    rod = rect(0.2, 0.2, L - 0.2, h - 0.2)
+    r = min(0.42, h * 0.2)
+    tre = cs_union([_trefoil((u0 + pu * (k + 0.5), h * 0.56), r) for k in range(n)])
+    beads = cs_union([circle((u0 + pu * k, h / 2), 0.32, 10) for k in range(n + 1)])
+    return [_st(rod, b, 0.22), _st(tre ^ rod, b + 0.22, 0.3), _st(beads ^ rod, b + 0.22, 0.22)]
+
+
+def frieze_sugarcane(L, h, b, pitch, margin, pair, half):
+    """Sugar cane: in every bay two jointed canes crossed saltire-wise, a long leaf springing
+    each way from their crossing; a rosette at every station between bays (the Evangeline's
+    storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    vm = (v0 + v1) / 2
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 3.6:
+            continue
+        hw = min(wd * 0.36, 3.6)
+        a0, a1 = (uc - hw, v0 + 0.3), (uc + hw, v1 - 0.3)
+        b0, b1 = (uc + hw, v0 + 0.3), (uc - hw, v1 - 0.3)
+        canes = cs_union([stroke([a0, a1], 0.6), stroke([b0, b1], 0.6)])
+        nodes = []
+        for (p0, p1) in ((a0, a1), (b0, b1)):
+            for t_ in (0.2, 0.8):
+                nodes.append(circle((p0[0] + (p1[0] - p0[0]) * t_, p0[1] + (p1[1] - p0[1]) * t_), 0.42, 12))
+        leaves = cs_union([_lens((uc + sg * hw * 0.55, vm + 0.35), min(2.8, hw * 1.1), 0.6, sg * 0.42) for sg in (-1, 1)])
+        out.append(_st(_clip_v(canes, v0, v1), b, 0.32))
+        out.append(_st(_clip_v(cs_union(nodes), v0, v1), b, 0.5))
+        out.append(_st(_clip_v(leaves, v0, v1), b, 0.38))
+    for u in CO._us(L, pitch, margin, 0.0):
+        if 1.2 < u < L - 1.2:
+            out.append(_st(_quatrefoil((u, vm), min(0.55, (v1 - v0) * 0.18)), b, 0.35))
+            out.append(_st(circle((u, vm), 0.4, 12), b + 0.35, 0.2))
+    return out, []
+
+
+def frieze_cottonbolls(L, h, b, pitch, margin, pair, half):
+    """Cotton: in every bay between the brackets an open boll, four locks round a heart on a
+    calyx of three pointed bracts, on a stem with a leaf either side (the Evangeline's eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 3.0:
+            continue
+        r = min(0.62, wd * 0.12, hh * 0.13)
+        c = (uc, v0 + hh * 0.62)
+        locks = cs_union([circle((c[0] + dx * r * 1.05, c[1] + dy * r * 1.05), r, 14) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))])
+        bracts = cs_union([_lens((c[0] + 1.3 * r * math.sin(a), c[1] - 1.3 * r * math.cos(a)), 2.4 * r, 0.55, -math.pi / 2 + a)
+                           for a in (-0.9, 0.0, 0.9)])
+        stem = stroke([(uc, v0 + 0.2), (uc + 0.25, v0 + hh * 0.3), (uc, c[1] - 1.6 * r)], 0.5)
+        leaves = cs_union([_lens((uc + sg * 0.85, v0 + hh * 0.28), min(2.0, wd * 0.3), 0.6, sg * 0.5) for sg in (-1, 1)])
+        out.append(_st(_clip_v(stem + leaves, v0, v1), b, 0.32))
+        out.append(_st(_clip_v(bracts, v0, v1), b, 0.38))
+        out.append(_st(_clip_v(locks, v0, v1), b, 0.55))
+        out.append(_st(circle(c, r * 0.55, 12), b + 0.55, 0.2))
+    return out, []
+
+
+def frieze_lancetfoils(L, h, b, pitch, margin, pair, half):
+    """A blind Gothic arcade: in every bay a lancet outlined by a raised rim, a quatrefoil boss
+    in its head (the Evangeline's belvedere)."""
+    v0, v1 = 0.7, h - 0.7
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        s = min(wd * 0.7, 3.6)
+        if s < 2.2:
+            continue
+        ap = _apex(s)
+        vs = v1 - ap
+        if vs < v0 + 1.0:
+            continue
+        outer = _lancet(uc - s / 2, uc + s / 2, vs, v0=v0)
+        rim = outer - outer.offset(-0.5, MIT, 4.0)
+        out.append(_st(rim, b, 0.35))
+        qr = min(0.42, s * 0.14)
+        out.append(_st(_quatrefoil((uc, vs + ap * 0.3), qr), b, 0.4))
+    return out, []
+
+
+def bracket_trefoilknee(h, d, t):
+    """A Gothic knee bracket: a leg on the wall, an arm under the soffit, a hollow-curved brace
+    between them and a sunk trefoil in the spandrel (side profile, top at v = 0)."""
+    leg, arm = 0.9, 0.9
+    pts = [(0.0, 0.0), (d, 0.0), (d, -arm)]
+    cx, cy = d, -h
+    rr = min(d - leg, h - arm)
+    for t_ in np.linspace(0.0, 1.0, 10):
+        a = math.pi / 2 + t_ * math.pi / 2
+        pts.append((cx + rr * math.cos(a), cy + rr * math.sin(a) + (h - arm - rr)))
+    pts += [(leg, -h), (0.0, -h)]
+    prof = poly(pts)
+    prof = prof + circle((d - 0.35, -arm - 0.15), 0.42, 12)
+    tc = (leg + (d - leg) * 0.32, -arm - (h - arm) * 0.32)
+    return prof - _trefoil(tc, min(0.34, (d - leg) * 0.12))
+
+
+def quatrefoilchain(L, h):
+    """A crest course: a chain of quatrefoils linked by a bar, on a fillet (the Evangeline's
+    roof deck and belvedere)."""
+    pu = 2.6
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    vm = h / 2 + 0.1
+    r = min(0.48, h * 0.18)
+    quat = cs_union([_quatrefoil((u0 + pu * (k + 0.5), vm), r) for k in range(n)])
+    bar = rect(0.2, vm - 0.25, L - 0.2, vm + 0.25)
+    base = rect(0.2, 0.05, L - 0.2, 0.35)
+    return [cs_union([quat, bar, base]) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def fence_evangeline(L, h):
+    """Evangeline cresting (drawn at half size for SE.printable): a bottom rail, uprights
+    rising to five-pointed stars, between every two a lancet arch springing from a middle rail,
+    and under the rail a lozenge."""
+    pitch = 3.4
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    rail = h * 0.32
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, rail, L, rail + 0.45)]
+    ro = min(0.95, p * 0.28)
+    for j in range(n + 1):
+        u = min(max(p * j, 0.25), L - 0.25)
+        cells.append(rect(u - 0.25, 0.0, u + 0.25, h - ro))
+        cells.append(_star((u, h - ro + 0.1), ro, ro * 0.5))
+        if j < n:
+            m = p * j + p / 2
+            s = p - 0.5
+            ap = min(_apex(s, s * 0.8), h - ro * 2 - rail - 0.6)
+            arc = _lancet(m - s / 2, m + s / 2, rail + 0.45, v0=rail, r=s * 0.8, seg=12)
+            cells.append(arc - arc.offset(-0.45, MIT, 4.0) ^ rect(-1e3, rail, 1e3, rail + 0.45 + ap + 0.5))
+            lz = poly([(m, 0.55), (m + 0.6, (rail + 0.6) / 2), (m, rail + 0.05), (m - 0.6, (rail + 0.6) / 2)])
+            cells.append(lz)
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def fence_evangeline_promenade(L, h):
+    """The promenade deck's railing seen face on (printed flat, full size): a plinth rail, a
+    hand rail, square newels with pointed caps every 14 mm or so, and between them an arcade of
+    lancets on slender bars."""
+    nseg = max(1, int(round(L / 14.0)))
+    seg = L / nseg
+    cells = [rect(0.0, 0.0, L, 0.9), rect(0.0, h - 1.0, L, h)]
+    for j in range(nseg + 1):
+        u = min(max(seg * j, 0.85), L - 0.85)
+        cells.append(rect(u - 0.85, 0.0, u + 0.85, h + 0.3))
+        cells.append(poly([(u - 0.85, h + 0.29), (u + 0.85, h + 0.29), (u, h + 1.4)]))
+        if j < nseg:
+            a, b = u + 0.85, min(max(seg * (j + 1), 0.85), L - 0.85) - 0.85
+            field = rect(a, 0.85, b, h - 0.95)
+            nb = max(1, int(round((b - a) / 2.2)))
+            pw = (b - a) / nb
+            holes = []
+            for k in range(nb):
+                x0, x1 = a + pw * k + 0.32, a + pw * (k + 1) - 0.32
+                if x1 - x0 < 1.2:
+                    continue
+                ap = _apex(x1 - x0)
+                holes.append(_lancet(x0, x1, h - 1.25 - ap, v0=0.9))
+            cells.append(field - cs_union(holes) if holes else field)
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.6)
+
+
+def finial_evangeline(h=14.0):
+    """The belvedere's finial: a turned base, an onion bulb with a ring under it, and a spike
+    carrying a ball (a riverboat's flagstaff knob)."""
+    prof = [(0.0, 0.0), (1.6, 0.0), (1.6, 0.6), (1.1, 1.1), (0.7, 1.5), (0.7, 2.1), (1.05, 2.4), (1.05, 2.7), (0.8, 2.9),
+            (1.25, 3.4), (1.5, 4.0), (1.35, 4.7), (0.9, 5.3), (0.55, 5.8), (0.45, 6.2), (0.0, 6.2)]
+    body = PW._revolve(prof, 28)
+    body = body + M.cylinder(h - 6.1, 0.5, 0.4, 14).translate([0, 0, 6.1])
+    body = body + M.sphere(0.85, 24).translate([0, 0, 6.1 + (h - 6.1) * 0.55])
+    return body
+
+
+# ------------------------------------------------------------------ windows and doors
+def _vous(w, h, rise, A, n=7, long_=2.2, short=1.6, gap=0.3):
+    """Stucco voussoirs round a segmental head, long and short in turn, as one CrossSection
+    (and the keystone's outline)."""
+    half = w / 2
+    spring = h - rise
+    R0 = (half * half + rise * rise) / (2 * rise)
+    cy = spring + rise - R0
+    a_lim = math.asin(min(1.0, half / R0)) + 0.06
+    blocks = []
+    for k in range(n):
+        a0 = -a_lim + 2 * a_lim * k / n + (gap / 2) / (R0 + A)
+        a1 = -a_lim + 2 * a_lim * (k + 1) / n - (gap / 2) / (R0 + A)
+        L = long_ if k % 2 == 0 else short
+        r0, r1 = R0 + A - 0.05, R0 + A + L
+        pts = [(r0 * math.sin(a), cy + r0 * math.cos(a)) for a in np.linspace(a0, a1, 5)]
+        pts += [(r1 * math.sin(a), cy + r1 * math.cos(a)) for a in np.linspace(a1, a0, 5)]
+        if k != n // 2:
+            blocks.append(poly(pts))
+    kw = 2 * a_lim / n * (R0 + A)
+    key = poly([(-kw / 2, cy + R0 + A - 0.05), (kw / 2, cy + R0 + A - 0.05), (kw / 2 + 0.4, cy + R0 + A + long_ + 0.6),
+                (-kw / 2 - 0.4, cy + R0 + A + long_ + 0.6)])
+    return cs_union(blocks), key, cy + R0 + A + long_ + 0.6
+
+
+def window_evangeline_ground(w=8.0, h=14.0, A=0.8, rise=1.6):
+    """The ground storey's window: a six-over-six sash under a segmental head, an architrave,
+    stucco voussoirs long and short in turn round a projecting keystone, and a sill on two
+    blocks."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    sash = O.window_insert(w, h, rise, lites=(3, 3), rows=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, RND), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vs, key, vt = _vous(w, h, rise, A)
+    parts.append(ext(vs, 0.0, 0.7))
+    parts.append(ext(key, 0.0, 1.1))
+    sw = w / 2 + A + 0.5
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.7, -1.8, sg * (w / 2) + 0.7, -0.8, 0.0, 0.9, c=0.25))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vt + 0.2, -1.8)
+
+
+def _hood_lancet(op, A, vs, w, stops=True, crockets=0, finial=True):
+    """A hood mould round a lancet (outline ``op`` widened by A): a moulded label stopping at
+    the springing on carved stops, with ``crockets`` knobs up each side and a trefoil finial."""
+    out = [MD.band(op.offset(A + 1.0, MIT, 4.0), 1.0, MD.CROWN, clip=rect(-50, vs - 0.01, 50, 100))]
+    hu = w / 2 + A + 0.5
+    if stops:
+        for sg in (-1, 1):
+            out.append(chamfer_box(sg * hu - 0.7, vs - 1.6, sg * hu + 0.7, vs, 0.0, 1.0, c=0.2))
+            out.append(ext(circle((sg * hu, vs - 0.8), 0.45, 12), 0.99, 1.35))
+    top = op.offset(A + 1.0, MIT, 4.0).bounds()[3]
+    if crockets:
+        outer = op.offset(A + 1.3, MIT, 4.0)
+        ob = outer.bounds()
+        for k in range(crockets):
+            t_ = (k + 1) / (crockets + 1)
+            v = vs + (ob[3] - vs) * t_ * 0.92
+            row = outer ^ rect(-50, v - 0.05, 50, v + 0.05)
+            if row.is_empty():
+                continue
+            rb = row.bounds()
+            for x in (rb[0], rb[2]):
+                out.append(ext(circle((x, v), 0.45, 12), 0.0, 1.1))
+    if finial:
+        out.append(ext(cs_union([rect(-0.3, top - 0.6, 0.3, top + 0.8), _trefoil((0.0, top + 1.1), 0.42)]), 0.0, 1.1))
+        top += 1.6
+    return out, top
+
+
+def window_evangeline_main(w=9.6, h=30.0, A=1.0):
+    """The main storey's French window, floor to near ceiling (it opens onto the gallery): two
+    casement leaves of three lights over a raised panel, under a lancet head filled with bar
+    tracery (two sub-lancets and an oculus); a moulded architrave, a crocketed hood mould on
+    carved stops with a trefoil finial; a threshold."""
+    ap = _apex(w, w * 0.9)
+    vs = h - ap
+    op = _lancet(-w / 2, w / 2, vs, r=w * 0.9, seg=14)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    ib = inner.bounds()
+    pan_top = 5.0
+    body = [ext(plug_cs, -pl, -0.6), _panel(rect(ib[0] + 0.5, 1.0, -0.9, pan_top - 0.8)),
+            _panel(rect(0.9, 1.0, ib[2] - 0.5, pan_top - 0.8))]
+    g = inner ^ rect(-w, pan_top, w, h + 5)
+    bars = [rect(-0.4, pan_top - 1, 0.4, vs + 0.2)]
+    for v in np.linspace(pan_top, vs, 4)[1:-1]:
+        bars.append(rect(-w, v - RIB / 2, w, v + RIB / 2))
+    bars.append(rect(-w, vs - 0.3, w, vs + 0.3))
+    sub = w / 2 - 0.6
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * 0.0, sg * (w / 2 - 0.6)))
+        sl = _lancet(x0, x1, vs, v0=vs - 1.0, r=sub * 0.9, seg=10)
+        bars.append(sl - sl.offset(-RIB, MIT, 4.0))
+    oc = (0.0, vs + _apex(sub, sub * 0.9) + (ap - _apex(sub, sub * 0.9)) * 0.45)
+    ro = min(1.2, (ap - _apex(sub, sub * 0.9)) * 0.42)
+    if ro > 0.7:
+        bars.append(circle(oc, ro, 24) - circle(oc, ro - RIB, 24))
+    sash = _glazed(body, g, pl, cs_union(bars), plug_cs)
+    sash.append(ext(rect(-w, pan_top - 0.8, w, pan_top + 0.01) ^ plug_cs, -pl, -0.6))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    hood, top = _hood_lancet(op, A, vs, w, crockets=3)
+    parts += hood
+    parts.append(ext(rect(-w / 2 - A - 0.4, -0.6, w / 2 + A + 0.4, 0.01), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 0.2, -0.6)
+
+
+def window_evangeline_belv(w=6.6, h=15.0, A=0.8):
+    """The belvedere's window: a lancet of two lights divided by a mullion that forks into Y
+    tracery in the head, an architrave, a hood mould on stops and a sill."""
+    ap = _apex(w)
+    vs = h - ap
+    op = _lancet(-w / 2, w / 2, vs, seg=14)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    body = [ext(plug_cs, -pl, -0.6)]
+    mid = vs * 0.5
+    bars = [rect(-RIB / 2, -1.0, RIB / 2, vs + 0.4), rect(-w, mid - 0.35, w, mid + 0.35)]
+    ycs = cs_union([stroke([(0.0, vs + 0.2), (sg * w * 0.18, vs + ap * 0.45), (sg * w * 0.22, vs + ap * 0.9)], RIB)
+                    for sg in (-1, 1)])
+    bars.append(ycs)
+    sash = _glazed(body, inner, pl, cs_union(bars) ^ inner.offset(0.4, MIT, 4.0), plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    hood, top = _hood_lancet(op, A, vs, w, crockets=0, finial=False)
+    parts += hood
+    sw = w / 2 + A + 0.5
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 0.2, -1.0)
+
+
+def _ogee(x0, v0, H, n=16):
+    """The centre line of an ogee arch from (+-x0, v0) to its point at (0, v0 + H): a convex
+    swell at the haunches reversing into a concave rise to the point."""
+    P0, P1, P2, P3 = np.array([x0, v0]), np.array([x0, v0 + 0.62 * H]), np.array([0.0, v0 + 0.42 * H]), np.array([0.0, v0 + H])
+    pts = []
+    for t in np.linspace(0.0, 1.0, n + 1):
+        p = (1 - t) ** 3 * P0 + 3 * (1 - t) ** 2 * t * P1 + 3 * (1 - t) * t * t * P2 + t ** 3 * P3
+        pts.append((float(p[0]), float(p[1])))
+    return pts
+
+
+def door_evangeline(w=15.0, h=31.0, A=1.2):
+    """The Evangeline's entrance: a pair of leaves, each a raised panel under a glazed lancet
+    light, under a lancet head of bar tracery (two sub-lancets and a quatrefoil); an architrave
+    between clustered colonnettes on blocks, and over all an ogee hood rising in a crocketed
+    swell to a tall trefoil finial, a quatrefoil boss in its tympanum; a threshold."""
+    ap = _apex(w, w * 0.75)
+    vs = h - ap
+    op = _lancet(-w / 2, w / 2, vs, r=w * 0.75, seg=16)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    mid = 0.7
+    dh = vs - 0.4
+    lw = (ib[2] - ib[0] - mid) / 2
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    ul = ib[0]
+    for i in range(2):
+        body.append(ext(rect(ul, 0.5, ul + lw, dh), -pl, -0.8))
+        body.append(_panel(rect(ul + 0.8, 1.2, ul + lw - 0.8, dh * 0.42)))
+        s = lw - 1.8
+        la = _apex(s)
+        lights.append(_lancet(ul + 0.9, ul + lw - 0.9, dh - 0.9 - la, v0=dh * 0.42 + 1.0))
+        ul += lw + mid
+    head = inner ^ rect(-w, vs + 0.4, w, h + 5)
+    bars = [rect(-w, vs - 0.1, w, vs + 0.5)]
+    sub = w / 2 - 0.8
+    for sg in (-1, 1):
+        x0, x1 = sorted((0.0, sg * (w / 2 - 0.8)))
+        sl = _lancet(x0, x1, vs + 0.4, v0=vs, r=sub * 0.8, seg=10)
+        bars.append(sl - sl.offset(-RIB, MIT, 4.0))
+    sap = _apex(sub, sub * 0.8)
+    qc = (0.0, vs + 0.4 + sap + (ap - 0.4 - sap) * 0.42)
+    qr = min(0.9, (ap - sap) * 0.2)
+    if qr > 0.5:
+        q = _quatrefoil(qc, qr, 18)
+        bars.append(q - q.offset(-RIB, RND))
+    sash = _glazed(body, cs_union(lights) + head, pl, cs_union(bars), plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, vs + 0.5) ^ plug_cs, -pl, -0.5))
+    sash.append(ext(rect(-mid / 2, 0.4, mid / 2, vs) ^ plug_cs, -pl, -0.6))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    # clustered colonnettes: three half-round shafts on a block, ringed capitals
+    xc = w / 2 + A + 1.2
+    vt = vs + 0.6
+    for sg in (-1, 1):
+        x = sg * xc
+        parts.append(chamfer_box(x - 1.4, -0.2, x + 1.4, 2.2, 0.0, 1.5, c=0.25))
+        parts.append(chamfer_box(x - 1.5, vt - 0.01, x + 1.5, vt + 1.4, 0.0, 1.6, c=0.25))
+        for dx, rc in ((-0.75, 0.55), (0.0, 0.7), (0.75, 0.55)):
+            prof = [(0.0, 0.0), (rc, 0.0)]
+            z = 3.6
+            prof += [(rc, z), (rc + 0.18, z + 0.2), (rc + 0.18, z + 0.4), (rc, z + 0.6)]
+            z = (vt - 2.2) * 0.55
+            prof += [(rc, z), (rc + 0.18, z + 0.2), (rc + 0.18, z + 0.4), (rc, z + 0.6)]
+            prof += [(rc, vt - 2.2), (0.0, vt - 2.2)]
+            col = PW._revolve(prof, 18).rotate([-90, 0, 0]).translate([x + dx, 2.19, 0.0]) ^ box([x - 3, 0.0, 0.0], [x + 3, vt, 5.0])
+            parts.append(col)
+    # the ogee hood: a band along an ogee from over the capitals to a point, crockets, finial
+    H = ap + 6.4
+    cl = _ogee(xc, vt + 1.4, H)
+    band = cs_union([stroke(cl, 1.2), stroke([(-x, v) for x, v in cl], 1.2)])
+    parts.append(ext(band, 0.0, 1.3))
+    for k in range(3, len(cl) - 2, 3):
+        x, v = cl[k]
+        for sg in (-1, 1):
+            parts.append(ext(circle((sg * (x + 0.75), v + 0.35), 0.45, 12), 0.0, 1.2))
+    vtop = vt + 1.4 + H
+    parts.append(ext(cs_union([rect(-0.35, vtop - 0.8, 0.35, vtop + 1.2), _trefoil((0.0, vtop + 1.6), 0.5)]), 0.0, 1.3))
+    tym = poly(cl + [(-x, v) for x, v in reversed(cl)]) - op.offset(A + 0.2, MIT, 4.0)
+    tb = tym.bounds() if not tym.is_empty() else None
+    if tb is not None:
+        qc2 = (0.0, (op.bounds()[3] + A + vtop) / 2 - 0.4)
+        parts.append(ext(_quatrefoil(qc2, 0.62, 16) ^ tym, 0.0, 0.9))
+        parts.append(ext(tym, 0.0, 0.3))
+    parts.append(ext(rect(-xc - 1.5, -0.6, xc + 1.5, 0.01), 0.0, 1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vtop + 2.3, -0.6)
+
+
+def door_evangeline_back(w=10.0, h=29.0, A=1.0):
+    """The back door to the gallery: one leaf of two raised panels under a glazed lancet
+    light, a lancet transom with a Y bar, an architrave, and a hood mould on stops with a
+    trefoil finial; a threshold."""
+    ap = _apex(w, w * 0.85)
+    vs = h - ap
+    op = _lancet(-w / 2, w / 2, vs, r=w * 0.85, seg=14)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    dh = vs - 0.4
+    u0, u1 = ib[0], ib[2]
+    gp = (dh * 0.5 - 2.0) / 2
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, dh), -pl, -0.8),
+            _panel(rect(u0 + 0.8, 1.2, u1 - 0.8, 1.2 + gp - 0.2)), _panel(rect(u0 + 0.8, 1.2 + gp + 0.2, u1 - 0.8, dh * 0.5 - 0.8))]
+    s = (u1 - u0) - 1.8
+    light = _lancet(u0 + 0.9, u1 - 0.9, dh - 0.9 - _apex(s), v0=dh * 0.5)
+    head = inner ^ rect(-w, vs + 0.4, w, h + 5)
+    ycs = cs_union([stroke([(0.0, vs + 0.3), (sg * w * 0.16, vs + ap * 0.45), (sg * w * 0.2, vs + ap)], RIB) for sg in (-1, 1)]
+                   + [rect(-RIB / 2, vs, RIB / 2, vs + 0.6)])
+    sash = _glazed(body, light + head, pl, ycs ^ head.offset(0.2, MIT, 4.0), plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, vs + 0.42) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    hood, top = _hood_lancet(op, A, vs, w, crockets=0)
+    parts += hood
+    parts.append(ext(rect(-w / 2 - A - 0.4, -0.6, w / 2 + A + 0.4, 0.01), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 0.2, -0.6)
+
+
+def door_evangeline_ground(w=9.0, h=18.0, A=0.8, rise=2.0):
+    """The ground storey's door under the gallery: a pair of batten-and-panel leaves under a
+    segmental fanlight of radiating bars, a casing, voussoirs and a keystone."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    spring = h - rise
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    dh = spring - 1.6
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(ib[0], 0.5, ib[2], dh), -pl, -0.8)]
+    for x0, x1 in ((ib[0] + 0.7, -0.6), (0.6, ib[2] - 0.7)):
+        body.append(_panel(rect(x0, 1.2, x1, dh * 0.45)))
+        body.append(_panel(rect(x0, dh * 0.45 + 0.8, x1, dh - 0.8)))
+    fan = inner ^ rect(-w, dh + 0.5, w, h + 2)
+    fc = (0.0, dh + 0.5)
+    rays = cs_union([stroke([fc, (fc[0] + w * math.cos(a), fc[1] + w * math.sin(a))], RIB) for a in np.linspace(0.6, math.pi - 0.6, 3)])
+    sash = _glazed(body, fan, pl, rays, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    sash.append(ext(rect(-0.3, 0.4, 0.3, dh) ^ plug_cs, -pl, -0.6))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, RND), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vs, key, vt = _vous(w, h, rise, A, n=9)
+    parts.append(ext(vs, 0.0, 0.7))
+    parts.append(ext(key, 0.0, 1.1))
+    parts.append(ext(rect(-w / 2 - A - 0.3, -0.6, w / 2 + A + 0.3, 0.01), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vt + 0.2, -0.6)
+
+
+def addin_evangeline(w=5.2, h=9.0, A=0.8):
+    """A Gothic wall dormer for the hip (an add-in): a lancet light of two panes, its frame a
+    steep gablet whose bargeboard is cut in a row of trefoil-headed notches, tied solid to a
+    pendant and a fleur finial at the peak; a sill. The plug's roof is the gablet."""
+    ap = _apex(w)
+    vs = h - ap
+    op = _lancet(-w / 2, w / 2, vs, seg=12)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, vs + 0.3), rect(-w, vs * 0.5 - RIB / 2, w, vs * 0.5 + RIB / 2)])
+    half = w / 2 + A + 0.6
+    pk = vs + half * 1.25 + 0.6                     # the gablet's peak: a steep 51 degree gable
+    gab = poly([(-half - 0.6, vs - 0.6), (-half, vs - 0.6), (-half, -0.2), (half, -0.2), (half, vs - 0.6),
+                (half + 0.6, vs - 0.6), (0.0, pk + 0.6)])
+    face = gab.offset(-0.01, MIT, 4.0)
+    barge = gab - gab.offset(-1.1, MIT, 4.0) ^ rect(-50, vs - 0.6, 50, 100)
+    notch = []
+    for t_ in (0.3, 0.55, 0.8):
+        for sg in (-1, 1):
+            x = sg * (half + 0.6) * (1 - t_)
+            v = vs - 0.6 + (pk + 0.6 - vs + 0.6) * t_ - 0.9
+            notch.append(circle((x, v), 0.3, 10))
+    barge = barge - cs_union(notch)
+    parts = [ext(face - op, 0.0, 0.6),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-20, 0.0, 20, 40) - op),
+             ext(barge, 0.0, 1.1)]
+    parts.append(ext(cs_union([rect(-0.35, pk - 2.0, 0.35, pk + 1.4), _trefoil((0.0, pk + 1.7), 0.45)]), 0.0, 1.1))
+    sw = half - 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = gab.offset(-0.4, MIT, 4.0) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=pk + 2.3, bottom=-1.0)
+
+
+# ------------------------------------------------------------------ gallery parts
+def post_crocketcap(h, collar=None, abacus=3.2, slot=(1.2, 1.0)):
+    """A Gothic colonnette: an octagonal plinth, a moulded base, a slender shaft girdled by two
+    shaft rings, a bell capital with a crocket leaf curling out under each corner of the
+    abacus (a flat-topped plate, so it stands on the abacus when the gallery top prints upside
+    down) (the Evangeline)."""
+    z1 = h - 3.2
+    r = 0.82
+    za, zb = z1 * 0.36, z1 * 0.68
+    prof = [(0.0, 1.19), (1.3, 1.19), (1.3, 1.45), (1.05, 1.75), (1.18, 1.95), (0.95, 2.25), (r, 2.5),
+            (r, za), (1.02, za + 0.2), (1.02, za + 0.6), (r, za + 0.8), (r, zb), (1.02, zb + 0.2), (1.02, zb + 0.6), (r, zb + 0.8),
+            (r, z1), (1.0, z1 + 0.2), (1.0, z1 + 0.45), (0.9, z1 + 0.6), (1.35, z1 + 1.05)]
+    body = PW._revolve(prof, 28)
+    body = body + M.extrude(circle((0.0, 0.0), 1.62, 8).rotate(22.5), 1.2)
+    body = body + PW._top(h, abacus / 2, z1 + 1.05, 1.35, slot, seg=28)
+    zt = z1 + 1.05 + max(0.2, abacus / 2 * math.sqrt(2) - 1.35)
+    sq = abacus / 2
+    leaf = poly([(-1.0, 0.0), (0.0, 0.0), (0.62, -0.62), (0.66, -1.0), (0.4, -1.2), (0.05, -1.0), (-1.0, -1.7)])
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            d = np.array([sx, sy]) / math.sqrt(2)
+            c = d * sq * math.sqrt(2) * 0.92
+            plate = M.extrude(leaf, 0.5).translate([0, 0, -0.25])
+            A = np.array([[d[0], 0.0, -d[1], c[0]], [d[1], 0.0, d[0], c[1]], [0.0, 1.0, 0.0, zt]])
+            body = body + plate.transform(A)
+    return body
+
+
+def baluster_onionbulb(h, seg=18):
+    """An onion baluster: a ring on a square foot, a slender stem swelling into an onion bulb
+    that draws to a point, a long neck, and a square top block (the Evangeline)."""
+    prof = [(0.0, 0.8), (0.32, 0.8), (0.32, 1.0), (0.42, 1.2), (0.26, 1.45), (0.24, h * 0.28), (0.46, h * 0.38),
+            (0.52, h * 0.45), (0.38, h * 0.55), (0.22, h * 0.64), (0.22, h - 1.3), (0.34, h - 1.1), (0.34, h - 0.8)]
+    body = PW._revolve(prof, seg)
+    return body + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_lancetarcade(u0, u1, v_bot, v_top):
+    """A gallery frieze: a beam over a run of lancet arches on slender piers, a turned drop
+    under every pier, and a solid spandrel with a pierced trefoil at each post (the
+    Evangeline)."""
+    vb = v_top - 4.6
+    L = u1 - u0
+    cells = [rect(u0, v_top - 0.9, u1, v_top + 0.05)]
+    a, b = u0 + 3.0, u1 - 3.0
+    n = max(1, int(round((b - a) / 2.4)))
+    pw = (b - a) / n
+    field = rect(a - 0.3, vb, b + 0.3, v_top - 0.85)
+    holes = []
+    for k in range(n):
+        x0, x1 = a + pw * k + 0.3, a + pw * (k + 1) - 0.3
+        holes.append(_lancet(x0, x1, v_top - 1.2 - _apex(x1 - x0), v0=vb - 1.0))
+    cells.append(field - cs_union(holes))
+    for k in range(n + 1):
+        x = a + pw * k
+        cells.append(rect(x - 0.3, vb - 0.6, x + 0.3, vb + 0.1))
+        cells.append(circle((x, vb - 0.85), 0.42, 12))
+    for x0, sg in ((u0, 1), (u1, -1)):
+        q = poly([(x0, v_top - 0.85), (x0 + sg * 3.4, v_top - 0.85), (x0, v_top - 4.6)])
+        cells.append(q - _trefoil((x0 + sg * 1.1, v_top - 2.0), 0.34))
+    return cs_union(cells)
+
+
+def edge_lancetfringe(L, z0, zc):
+    """Gallery fascia (the Evangeline): a valance cut along its foot in a row of small
+    lancets, a bead hanging under every point between them."""
+    band = rect(0.3, zc - 1.8, L - 0.3, zc)
+    pu = 1.9
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    holes = cs_union([_lancet(u0 + pu * k + 0.35, u0 + pu * (k + 1) - 0.35, zc - 1.0 - _apex(1.2), v0=zc - 2.2, seg=6)
+                      for k in range(n)])
+    beads = cs_union([circle((u0 + pu * k, zc - 2.05), 0.36, 10) for k in range(n + 1)]) ^ rect(0.3, -1e3, L - 0.3, 1e3)
+    return cs_union([band - holes, beads]), 0.6
+
+
+def arcade_evangeline(L, piers, H, t=3.0, pw=4.2, rise=3.0, pier_side=None):
+    """The lower gallery's arcade along one side, in a run's frame (u along it, v up from the
+    ground, w out: the face at w = 0, the back at w = -t): square stucco piers at ``piers``,
+    segmental arches between them with an archivolt and keystone, impost bands, plinths. It
+    is part of the gallery deck, printed upside down, so every relief is stepped from the top."""
+    from .secondempire import _st_down
+    wall = rect(0.0, 0.0, L, H)
+    us = sorted(piers)
+    holes, rel = [], []
+    spring = H - 3.4 - rise
+    for a, b in zip(us[:-1], us[1:]):
+        x0, x1 = a + pw / 2, b - pw / 2
+        if x1 - x0 < 3.0:
+            continue
+        holes.append(arch_cs(x0, x1, -1.0, spring, rise=min(rise, (x1 - x0) / 2), seg=24))
+    if not holes:
+        return ext(wall, -t, 0.0)
+    out = [ext(wall - cs_union(holes), -t, 0.0)]
+    for hcs in holes:
+        rel.append(hcs.offset(0.9, MIT, 4.0) - hcs.offset(0.0, MIT, 4.0) ^ rect(-1e3, spring - 0.6, 1e3, 1e3))
+        hb = hcs.bounds()
+        xm = (hb[0] + hb[2]) / 2
+        rel.append(poly([(xm - 0.7, hb[3] - 0.1), (xm + 0.7, hb[3] - 0.1), (xm + 1.0, hb[3] + 1.6), (xm - 1.0, hb[3] + 1.6)]))
+    for u in us:
+        rel.append(rect(u - pw / 2 - 0.4, spring - 1.2, u + pw / 2 + 0.4, spring) ^ wall)
+        rel.append(rect(u - pw / 2 - 0.3, 0.0, u + pw / 2 + 0.3, 1.6) ^ wall)
+    rel.append(rect(0.0, H - 2.2, L, H - 0.8))
+    relief = cs_union(rel) ^ wall
+    out.append(_st_down(relief, H, 0.0, 0.4))
+    return union(out)
+
+
+def stair_horseshoe(H, n=13, fw=7.0, tread=2.6, land=(16.0, 8.0), cheek=1.6, wall_t=2.0):
+    """A double horseshoe stair: a landing at the gallery floor (``land`` = width, depth) with
+    two flights falling away from it to left and right, parallel to the house, each between
+    stucco cheek walls with a sloping coping, a pier with a ball at each foot. Local frame: u
+    along the house (0 at the landing's middle), v up from the ground, the landing's back at
+    w = 0 and the stair coming forward to w = depth. One part, printed upright: every step and
+    the coping stand on the solid below."""
+    LW, LD = land
+    rise = H / n
+    run = (n - 1) * tread
+    depth = max(LD, fw + cheek)
+    parts = [box([-LW / 2, 0.0, 0.0], [LW / 2, H, LD])]
+    # the landing's parapet across the front with an opening for the house door behind it
+    parts.append(box([-LW / 2, H - 0.01, LD - cheek], [LW / 2, H + 5.2, LD]))
+    for sg in (-1, 1):
+        for k in range(n - 1):
+            x0 = sg * (LW / 2 + k * tread)
+            x1 = sg * (LW / 2 + (k + 1) * tread)
+            top = H - rise * (k + 1)
+            parts.append(box([min(x0, x1) - (0.01 if sg < 0 else 0), 0.0, LD - fw - cheek],
+                             [max(x0, x1) + (0.01 if sg > 0 else 0), top, LD - cheek + 0.01]))
+        # the outer cheek wall (front), its coping sloping with the flight, a pier at its foot
+        xa, xb = sg * LW / 2, sg * (LW / 2 + run)
+        pts = [(xa, 0.0), (xb, 0.0), (xb, 4.2), (xa, H + 5.2)]
+        cw = M.extrude(poly(pts), cheek).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])).translate([0, 0, LD - cheek])
+        parts.append(cw)
+        xp = xb + sg * 1.4
+        parts.append(box([min(xp - 1.8, xp + 1.8), 0.0, LD - cheek - 0.6], [max(xp - 1.8, xp + 1.8), 6.4, LD + 0.6]))
+        parts.append(M.hull_points([(xp + dx, LD - cheek / 2 + dz, 6.39) for dx in (-1.8, 1.8) for dz in (-1.4, 1.4)] +
+                                   [(xp + dx, LD - cheek / 2 + dz, 7.4) for dx in (-1.3, 1.3) for dz in (-0.9, 0.9)]))
+        parts.append(M.sphere(1.3, 24).translate([xp, LD - cheek / 2, 8.5]))
+        # the back cheek (against the gallery) as a low wall
+        parts.append(box([min(xa, xb) - 0.01, 0.0, 0.0], [max(xa, xb) + 0.01, 3.0, LD - fw - cheek + 0.01]))
+    body = union(parts)
+    # the parapet's door opening, a blind lancet arch under the landing
+    body = body - box([-LW / 2 + cheek, H - 0.5, LD - cheek - 1], [LW / 2 - cheek, H + 6, LD + 1])
+    nich = _lancet(-3.0, 3.0, H - 9.0 - _apex(6.0), v0=2.0)
+    body = body - M.extrude(nich, 0.8).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])).translate([0, 0, LD - 0.79])
+    return body
+
+
+def cistern_evangeline(r=9.0, hb=12.0, ht=30.0):
+    """A domed cypress cistern on an octagonal brick base, as two parts: the base (a battered
+    octagon with a chamfered cap) and the tank (staves with three iron hoops, a cornice ring and
+    an ogee dome with a ball finial; one filament change at the dome). Both print upright; the
+    tank's foot drops into a shallow socket in the base."""
+    oc = circle((0.0, 0.0), r + 2.4, 8).rotate(22.5)
+    base = M.extrude(oc, hb - 1.2)
+    base = base + M.hull_points([(p[0] * 1.0, p[1] * 1.0, hb - 1.21) for p in oc.offset(0.0, MIT, 4.0).to_polygons()[0]] +
+                                [(p[0], p[1], hb) for p in oc.offset(0.6, MIT, 4.0).to_polygons()[0]])
+    for k in range(8):
+        a = math.pi / 4 * k + math.pi / 8
+        arch = _lancet(-2.0, 2.0, 5.0, v0=1.4, r=4.0, seg=8)
+        A = np.array([[-math.sin(a), 0, math.cos(a), (r + 2.4) * math.cos(math.pi / 8) * math.cos(a)],
+                      [math.cos(a), 0, math.sin(a), (r + 2.4) * math.cos(math.pi / 8) * math.sin(a)],
+                      [0, 1.0, 0, 0]])
+        base = base - ext(arch, -0.5, 1.0).transform(A)
+    sock = M.cylinder(1.0, r + 0.15, r + 0.15, 48).translate([0, 0, hb - 0.8])
+    base = base - sock
+    # the tank: staves (shallow grooves), hoops, a cornice, the dome
+    tank = M.cylinder(ht + 0.8, r, r, 48).translate([0, 0, -0.8])
+    grooves = union([box([r - 0.25, -0.2, 0.6], [r + 1.0, 0.2, ht - 2.6]).rotate([0, 0, 360.0 * k / 40]) for k in range(40)])
+    tank = tank - grooves
+    for z in (ht * 0.12, ht * 0.45, ht * 0.78):
+        tank = tank + M.cylinder(0.8, r + 0.3, r + 0.3, 48).translate([0, 0, z]) + \
+            M.cylinder(0.3, r, r + 0.3, 48).translate([0, 0, z - 0.3])
+    tank = tank + M.cylinder(0.6, r, r + 0.6, 48).translate([0, 0, ht - 2.0]) + M.cylinder(1.4, r + 0.6, r + 0.6, 48).translate([0, 0, ht - 1.41])
+    zc = ht
+    prof = [(0.0, 0.0), (r + 0.2, 0.0), (r - 0.2, 1.0), (r - 1.2, 2.6), (r - 3.0, 4.6), (r * 0.42, 6.4), (r * 0.26, 8.0),
+            (r * 0.2, 9.0), (0.9, 9.6), (0.6, 10.2), (0.0, 10.2)]
+    dome = PW._revolve(prof, 48).translate([0, 0, zc - 0.01])
+    dome = dome + M.sphere(1.2, 24).translate([0, 0, zc + 11.2])
+    return base, tank, dome
+
+
+def chimney_evangeline(w=9.0, d=8.0, h=30.0):
+    """A riverboat stack pair: a stucco base with a sunk lancet panel on each face under a
+    moulded band, from which rise two round flues each crowned with a flared feathered crown
+    (points round a ring) like a steamboat's smokestacks; a tie bar between them below the
+    crowns. Prints upright."""
+    h = round(h / 0.2) * 0.2
+    hb = h * 0.42
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, hb])
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        pan = _lancet(-L / 2 + 1.4, L / 2 - 1.4, hb - 3.0 - _apex(L - 2.8), v0=2.4)
+        sunk = M.extrude(pan, 0.5).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2 - 0.49], [0, 1.0, 0, 0]]))
+        body = body - sunk.rotate([0, 0, rot])
+    body = body + M.hull_points([(x, y, hb - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                                [(x, y, hb + 0.6) for x in (-w / 2 - 0.6, w / 2 + 0.6) for y in (-d / 2 - 0.6, d / 2 + 0.6)])
+    body = body + box([-w / 2 - 0.6, -d / 2 - 0.6, hb + 0.59], [w / 2 + 0.6, d / 2 + 0.6, hb + 1.6])
+    body = body + M.hull_points([(x, y, hb + 1.59) for x in (-w / 2 - 0.6, w / 2 + 0.6) for y in (-d / 2 - 0.6, d / 2 + 0.6)] +
+                                [(x, y, hb + 2.4) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)])
+    rf = min(w / 4 - 0.2, d / 2 - 0.8)
+    zf = hb + 2.39
+    hf = h - zf - 3.2
+    for sx in (-1, 1):
+        x = sx * w / 4
+        flue = M.cylinder(hf, rf, rf * 0.92, 32).translate([x, 0.0, zf])
+        flue = flue + M.cylinder(1.2, rf * 0.92, rf * 0.92 + 1.1, 32).translate([x, 0.0, zf + hf - 0.01])
+        ring = M.cylinder(0.8, rf * 0.92 + 1.1, rf * 0.92 + 1.1, 32).translate([x, 0.0, zf + hf + 1.18])
+        flue = flue + ring
+        for k in range(8):
+            a = 2 * math.pi * k / 8
+            cx, cy = x + (rf * 0.92 + 0.65) * math.cos(a), (rf * 0.92 + 0.65) * math.sin(a)
+            flue = flue + M.hull_points([(cx + 0.45 * math.cos(a + s * math.pi / 2), cy + 0.45 * math.sin(a + s * math.pi / 2), zf + hf + 1.97)
+                                         for s in (-1, 1)] + [(cx + 0.3 * math.cos(a), cy + 0.3 * math.sin(a), zf + hf + 1.97),
+                                                              (cx - 0.3 * math.cos(a), cy - 0.3 * math.sin(a), zf + hf + 1.97),
+                                                              (cx, cy, zf + hf + 3.2)])
+        flue = flue - M.cylinder(4.0, rf * 0.92 - 0.6, rf * 0.92 - 0.6, 24).translate([x, 0.0, zf + hf - 1.0])
+        body = body + flue
+    body = body + box([-w / 4, -0.45, zf + hf * 0.7], [w / 4, 0.45, zf + hf * 0.7 + 0.9])
+    return body
+
+
+CO.FRIEZE_EXTRA.update(sugarcane=frieze_sugarcane, cottonbolls=frieze_cottonbolls, lancetfoils=frieze_lancetfoils)
+CO.COURSE_EXTRA.update(starrow=course_starrow, trefoilrow=course_trefoilrow)
+TW.BRACKET_EXTRA.update(trefoilknee=bracket_trefoilknee)
+TW.PIERCED = TW.PIERCED + ("trefoilknee",)
+TW.FOUNDATION_EXTRA.update(plinthtorus=foundation_plinthtorus)
+SH.CORNER_EXTRA.update(evangeline=corner_evangeline)
+PW.POSTS.update(crocketcap=post_crocketcap)
+PW.BALUSTERS.update(onionbulb=(baluster_onionbulb, 1.6))
+PW.FRIEZES.update(lancetarcade=frieze_lancetarcade)
+FT.EDGE_EXTRA.update(lancetfringe=edge_lancetfringe)

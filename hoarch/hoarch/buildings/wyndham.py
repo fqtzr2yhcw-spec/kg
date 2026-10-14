@@ -353,6 +353,13 @@ def build(kit=None):
             kit.add(f"BOW-rail-{i}", "Cream", seg, P=inv34(A), group="bow")
     print("bow", round(time.time() - t0, 1))
 
+    # the main roof's slating wraps the tower's free faces as a pent, from the eave's crown up
+    # to the tower wall, so no bare ledge rings the tower where the mansard stops
+    pb, ptx, _ = R.mansard(TOWER.pts, [(DK, ZW), (0.6, ZW + 5.0)], t=1.6, tex=SLATE)
+    pent = (pb + ptx) - walls2 - mfoot
+    pent = union([c for c in pent.decompose() if c.volume() > 20.0])
+    kit.add("TOWER-pent", "Slate", pent, group="tower")
+
     # --- the tower: its cornice (above), a tall bell cap with oval add-ins on the street faces,
     # crest, cresting, finial
     cprof = SE.bell_cap(ZTW, TCAP_H, TOWER_C["layers"][-1]["P"] + 0.2, -11.6, a=0.45, bands=10)
