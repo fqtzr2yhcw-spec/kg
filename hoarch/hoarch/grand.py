@@ -4628,3 +4628,608 @@ PW.BALUSTERS.update(spindleknop=(baluster_spindleknop, 1.6))
 PW.FRIEZES.update(syrianarch=frieze_syrianarch)
 PW.SKIRTS.update(rockwall=skirt_rockwall)
 FT.EDGE_EXTRA.update(corbeltable=edge_corbeltable)
+
+
+# ================================================================== the Foscari (house 98)
+# Venetian Gothic Revival, 1876: a palazzo after the Ca' d'Oro and the Fondaco dei Turchi for a
+# shipping fortune. A ground storey of white Istrian ashlar in tall and short courses, a piano
+# nobile of rose stucco patterned in the Doge's Palace lozenge diaper, twisted rope colonnettes at
+# every corner. Between two corner towers (torreselle) that rise a stage over the roof, an open
+# loggia of ogee arches on slender columns carries a balcony, and over it the piano nobile's
+# polifora: five cusped ogee lights under a band of quatrefoil tracery. Every window is an ogee
+# in a rectangular frame bordered with saw-tooth dentils, roundels (patere) in its spandrels. The
+# flat roofs are edged with Venetian merlons; on the main roof stand a timber altana and funnel
+# chimneys. Istrian white, rose, Verona red, a gilt frieze (the Ca' d'Oro was gilded).
+
+FS_LEVELS = dict(hi=40.0)      # the building sets it: the upper storey's foot over the block's base
+
+
+def _ogee_op(w, vs, H, n=14):
+    """An ogee-headed outline: jambs from v = 0 to the springing vs, an ogee head rising H to
+    its point."""
+    right = _ogee(w / 2, vs, H, n)
+    left = [(-x, y) for x, y in reversed(right[:-1])]
+    return poly([(w / 2, 0.0)] + right + left + [(-w / 2, 0.0)])
+
+
+def _ogee_cusped(w, vs, H, n=14):
+    """The light of a Venetian 'fifth order' arch: the ogee with trefoil cusping in its head
+    (three lobes whose meeting points are the cusps)."""
+    op = _ogee_op(w, vs, H, n)
+    r2 = w * 0.3
+    lobes = cs_union([circle((0.0, vs + H * 0.42), w * 0.24, 20), circle((-w * 0.2, vs + H * 0.06), r2, 20),
+                      circle((w * 0.2, vs + H * 0.06), r2, 20), rect(-w, -1.0, w, vs + H * 0.06)])
+    return op ^ lobes
+
+
+def _dentil_rect(x0, y0, x1, y1, bw=1.1, d0=0.45, d1=0.85, pu=0.9):
+    """A rectangular frame band carved all round as a row of saw teeth (dentello)."""
+    band = rect(x0, y0, x1, y1) - rect(x0 + bw, y0 + bw, x1 - bw, y1 - bw)
+    teeth = []
+    for u in np.arange(x0 + bw, x1 - bw - pu * 0.6, pu):
+        teeth.append(poly([(u, y1 - bw), (u + pu, y1 - bw), (u + pu / 2, y1 - 0.12)]))
+        teeth.append(poly([(u + pu / 2, y0 + 0.12), (u + pu, y0 + bw), (u, y0 + bw)]))
+    for v in np.arange(y0 + bw, y1 - bw - pu * 0.6, pu):
+        teeth.append(poly([(x0 + bw, v + pu), (x0 + 0.12, v + pu / 2), (x0 + bw, v)]))
+        teeth.append(poly([(x1 - bw, v), (x1 - 0.12, v + pu / 2), (x1 - bw, v + pu)]))
+    return [ext(band, 0.0, d0), ext(cs_union(teeth) ^ band, d0 - 0.01, d1)]
+
+
+def _patera(c, r, w0=0.0, d=0.45):
+    """A Byzantine roundel (patera): a moulded ring round an eight-petalled rosette and a boss."""
+    out = [ext(circle(c, r, 32) - circle(c, r - 0.45, 32), w0, w0 + d + 0.15), ext(circle(c, r - 0.2, 32), w0, w0 + 0.12)]
+    pet = [_lens((c[0] + (r - 0.45) * 0.5 * math.cos(a), c[1] + (r - 0.45) * 0.5 * math.sin(a)), (r - 0.45) * 0.95, 0.5, a)
+           for a in np.arange(0, 2 * math.pi, math.pi / 4)]
+    out.append(ext(cs_union(pet) ^ circle(c, r - 0.46, 32), w0, w0 + d))
+    out.append(ext(circle(c, max(0.35, r * 0.2), 14), w0, w0 + d + 0.2))
+    return out
+
+
+# ------------------------------------------------------------------ wall skins, corners, foundation
+def stone_istrian(region, datum=0.0, tall=2.8, short=1.4, joint=0.25, d=0.3):
+    """Istrian stone ashlar in tall and short courses in turn (pseudo-isodomic), the blocks of
+    each course of random length, every edge chamfered (the Foscari's ground storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(17)
+    out = []
+    v = datum + math.floor((v0 - datum) / (tall + short)) * (tall + short) - (tall + short)
+    k = 0
+    while v < v1:
+        hc = tall if k % 2 == 0 else short
+        if v + hc > v0 - 1:
+            u = u0 - rng.uniform(0.0, 5.0)
+            while u < u1 + 1:
+                Ls = rng.uniform(5.0, 8.6) if hc == tall else rng.uniform(7.0, 11.0)
+                out.append(chamfer_box(u + joint / 2, v + joint / 2, u + Ls - joint / 2, v + hc - joint / 2, 0.0, d, c=0.18))
+                u += Ls
+        v += hc
+        k += 1
+    return union(out) ^ M.extrude(region, d + 0.2)
+
+
+def stucco_diaper(region, datum=0.0, pw=6.0, ph=4.4, bar=0.5, d=0.26):
+    """Rose stucco patterned in the Doge's Palace lozenge diaper: a net of raised bands crossing
+    on the diagonal, a little cross in every lozenge (the Foscari's piano nobile)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    lines, crosses = [], []
+    span = (v1 - v0) + (u1 - u0) * ph / pw + 2 * ph
+    k0 = math.floor((u0 - (v1 - datum) * pw / ph) / pw) - 2
+    k1 = math.ceil((u1 + (v1 - datum) * pw / ph) / pw) + 2
+    for k in range(k0, k1):
+        x = k * pw
+        lines.append(stroke([(x, datum), (x + span * pw / ph, datum + span)], bar, caps=False))
+        lines.append(stroke([(x, datum), (x - span * pw / ph, datum + span)], bar, caps=False))
+        lines.append(stroke([(x, datum), (x + span * pw / ph, datum - span)], bar, caps=False))
+        lines.append(stroke([(x, datum), (x - span * pw / ph, datum - span)], bar, caps=False))
+    jv0 = math.floor((v0 - datum) / ph) - 1
+    for j in range(jv0, int((v1 - datum) / ph) + 2):
+        vc = datum + j * ph + ph / 2
+        for k in range(k0, k1):
+            uc = k * pw + (pw / 2 if j % 2 == 0 else 0.0)
+            if u0 - 2 < uc < u1 + 2:
+                crosses.append(rect(uc - 0.7, vc - 0.18, uc + 0.7, vc + 0.18) + rect(uc - 0.18, vc - 0.7, uc + 0.18, vc + 0.7))
+    net = cs_union(lines) ^ region
+    out = [M.extrude(net, d)]
+    if crosses:
+        out.append(M.extrude(cs_union(crosses) ^ region, d * 0.8))
+    return union(out)
+
+
+def corner_foscari(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Foscari's corners: a twisted rope colonnette standing on the corner itself (drawn at
+    each facade's start only, so every corner has one), on a little base under a cap."""
+    if not at_start:
+        return M()
+    H = qb - qa - 2.0
+    if H < 4.0:
+        return M()
+    r, rs = 0.95, 0.5
+    cs = cs_union([circle((rs * math.cos(a), rs * math.sin(a)), 0.55, 16) for a in (0.0, 2.094, 4.189)])
+    rope = M.extrude(cs, H, int(H / 0.4), 360.0 * H / 3.2)
+    base = M.cylinder(1.0, r + 0.25, r, 24)
+    cap = M.cylinder(1.0, r, r + 0.25, 24)
+    col = base + rope.translate([0, 0, 0.99]) + cap.translate([0, 0, H + 0.98])
+    return col.rotate([-90, 0, 0]).translate([0.0, qa, 0.0])
+
+
+def foundation_foscari(reg, seed=0):
+    """A plinth of Istrian stone: a plain face under a bevelled water table carried on a band of
+    saw teeth (the Foscari)."""
+    b = reg.bounds()
+    hgt = b[3] - b[1]
+    out = [M.extrude(reg, 0.35)]
+    top = rect(b[0] - 1, b[3] - 1.4, b[2] + 1, b[3]) ^ reg
+    if not top.is_empty():
+        tb = top.bounds()
+        out.append(M.hull_points([(x, tb[1], 0.0) for x in (tb[0], tb[2])] + [(x, tb[1] + 0.3, 1.0) for x in (tb[0], tb[2])] +
+                                 [(x, tb[3] - 0.3, 1.0) for x in (tb[0], tb[2])] + [(x, tb[3], 0.34) for x in (tb[0], tb[2])]))
+    teeth = []
+    for u in np.arange(b[0] + 0.3, b[2] - 0.9, 1.0):
+        teeth.append(poly([(u, b[3] - 1.4), (u + 0.5, b[3] - 2.4), (u + 1.0, b[3] - 1.4)]))
+    if teeth and hgt > 3.0:
+        out.append(M.extrude(cs_union(teeth) ^ reg, 0.75))
+    return union(out)
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_dentello(L, h, b, pitch, margin, p):
+    """Dentello: the Venetian saw-tooth course, a row of triangular teeth on a fillet (the
+    Foscari)."""
+    pu = 1.0
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    teeth = cs_union([poly([(u0 + pu * k, 0.25), (u0 + pu * (k + 1), 0.25), (u0 + pu * (k + 0.5), h - 0.25)]) for k in range(n)])
+    clip = rect(0.2, 0.0, L - 0.2, h)
+    return [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.15), _st(teeth ^ clip, b + 0.14, 0.4)]
+
+
+def frieze_paterae(L, h, b, pitch, margin, pair, half):
+    """Patere and formelle: Byzantine roundels in turn with upright panels carved with a cross
+    between two leaves, on a ground framed in fillets (the Foscari's storey joint)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    pu = max(4.0, hh * 1.25)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    rings, pets, bosses, panels, crosses = [], [], [], [], []
+    for k in range(n):
+        c = (u0 + pu * (k + 0.5), vm)
+        if k % 2 == 0:
+            r = hh * 0.44
+            rings.append(circle(c, r, 32) - circle(c, r - 0.42, 32))
+            pets += [_lens((c[0] + (r - 0.42) * 0.5 * math.cos(a), c[1] + (r - 0.42) * 0.5 * math.sin(a)), (r - 0.42) * 0.95, 0.5, a)
+                     for a in np.arange(0, 2 * math.pi, math.pi / 4)]
+            bosses.append(circle(c, 0.4, 12))
+        else:
+            pw_, ph_ = hh * 0.62, hh * 0.86
+            pan = rect(c[0] - pw_ / 2, c[1] - ph_ / 2, c[0] + pw_ / 2, c[1] + ph_ / 2)
+            panels.append(pan - pan.offset(-0.4, MIT, 4.0))
+            crosses.append(rect(c[0] - 0.22, c[1] - ph_ * 0.32, c[0] + 0.22, c[1] + ph_ * 0.34) +
+                           rect(c[0] - pw_ * 0.28, c[1] + ph_ * 0.1 - 0.22, c[0] + pw_ * 0.28, c[1] + ph_ * 0.1 + 0.22))
+            for sg in (-1, 1):
+                crosses.append(_lens((c[0] + sg * pw_ * 0.18, c[1] - ph_ * 0.2), ph_ * 0.32, 0.4, math.pi / 2 - sg * 0.5))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    frame_ = rect(0.2, v0, L - 0.2, v0 + 0.4) + rect(0.2, v1 - 0.4, L - 0.2, v1)
+    return [_st(frame_, b, 0.3), _st(cs_union(rings + panels) ^ clip, b, 0.45), _st(cs_union(pets + crosses) ^ clip, b, 0.35),
+            _st(cs_union(bosses) ^ clip, b, 0.6)], []
+
+
+def frieze_archetti(L, h, b, pitch, margin, pair, half):
+    """Archetti pensili: a corbel table of little hanging trefoil-cusped arches, a knob at every
+    springing, under a fillet (the Foscari's eave, gilt)."""
+    v0, v1 = 0.5, h - 0.5
+    hh = v1 - v0
+    pu = max(2.6, hh * 0.62)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    top = rect(0.2, v1 - 0.6, L - 0.2, v1)
+    arcs, knobs = [], []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        o = _ogee_cusped(pu - 0.5, hh * 0.18, hh * 0.42).translate((uc, v0 + hh * 0.18))
+        oo = _ogee_op(pu + 0.3, hh * 0.18, hh * 0.46).translate((uc, v0 + hh * 0.14))
+        arcs.append((oo - o) ^ rect(-1e3, v0 + hh * 0.3, 1e3, 1e3))
+    for k in range(n + 1):
+        u = u0 + pu * k
+        knobs.append(circle((u, v0 + hh * 0.3), 0.42, 12))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    return [_st(top, b, 0.35), _st(cs_union(arcs) ^ clip, b, 0.42), _st(cs_union(knobs) ^ clip, b, 0.55)], []
+
+
+def bracket_mensola(h, d, t):
+    """A Venetian mensola: a corbel built of three stepped quarter rounds, each course projecting
+    over the one below (side profile, top at v = 0; the Foscari)."""
+    pts = [(0.0, 0.0), (d, 0.0)]
+    steps = 3
+    sh = h / steps
+    for k in range(steps):
+        dk = d * (1.0 - k / steps)
+        dn = d * (1.0 - (k + 1) / steps)
+        for a in np.linspace(0.0, -math.pi / 2, 6):
+            pts.append((dn + (dk - dn) * math.cos(a), -k * sh + sh * math.sin(a) * 0.999))
+    pts.append((0.0, -h))
+    return poly(pts)
+
+
+def fence_foscari_merli(L, h):
+    """Venetian merlons (drawn at full size, printed flat): a row of stepped merlons each rising
+    to a pointed tip between two little horns, on a base course (the Foscari's roofs)."""
+    pu = 3.6
+    n = max(1, int((L - 0.8) / pu))
+    u0 = (L - n * pu) / 2
+    out = [rect(0.2, 0.0, L - 0.2, 1.4)]
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        w1, w2 = 1.2, 0.75
+        h1, h2 = h * 0.5, h * 0.72
+        out.append(poly([(uc - w1, 1.0), (uc + w1, 1.0), (uc + w1, h1), (uc + w2, h1 + 0.4), (uc + w2 + 0.35, h2),
+                         (uc + 0.35, h2 - 0.2), (uc, h), (uc - 0.35, h2 - 0.2), (uc - w2 - 0.35, h2), (uc - w2, h1 + 0.4),
+                         (uc - w1, h1)]))
+    body = cs_union(out)
+    eyes = cs_union([_quatrefoil((u0 + pu * (k + 0.5), h * 0.32), 0.3) for k in range(n)])
+    return body - eyes
+
+
+def fence_foscari_balcony(L, h):
+    """The loggia roof's balcony front (printed flat): little columns carrying cusped ogee
+    arches under a rail, on a base course."""
+    pu = 2.8
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    solid = rect(0.2, 0.0, L - 0.2, h)
+    holes = cs_union([_ogee_cusped(pu - 0.9, h * 0.32, h * 0.3).translate((u0 + pu * (k + 0.5), 1.1)) for k in range(n)])
+    return solid - (holes ^ rect(-1e3, 1.1, 1e3, h - 1.0))
+
+
+def fence_foscari_altana(L, h):
+    """The altana's timber railing (printed flat): posts, a top and a middle rail, and a St
+    Andrew's cross in every bay below."""
+    pu = 4.4
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    out = [rect(0.2, h - 0.8, L - 0.2, h), rect(0.2, 0.0, L - 0.2, 0.7), rect(0.2, h * 0.55 - 0.3, L - 0.2, h * 0.55 + 0.3)]
+    for k in range(n + 1):
+        x = u0 + pu * k
+        out.append(rect(x - 0.4, 0.0, x + 0.4, h))
+    for k in range(n):
+        a, b_ = u0 + pu * k, u0 + pu * (k + 1)
+        out.append(stroke([(a, 0.5), (b_, h * 0.55)], 0.5))
+        out.append(stroke([(a, h * 0.55), (b_, 0.5)], 0.5))
+    return cs_union(out) ^ rect(0.2, 0.0, L - 0.2, h)
+
+
+def finial_foscari(h=9.0):
+    """A corner pinnacle for the towers: a square pedestal, an octagonal spirelet with a ring and
+    a ball at its tip. Stands on its pedestal."""
+    ped = box([-1.2, -1.2, 0.0], [1.2, 1.2, 2.4]) + M.hull_points([(x, y, 2.39) for x in (-1.2, 1.2) for y in (-1.2, 1.2)] +
+                                                                 [(x, y, 2.9) for x in (-0.9, 0.9) for y in (-0.9, 0.9)])
+    oc = circle((0.0, 0.0), 0.85, 8)
+    spire = M.extrude(oc, h - 4.2, 0, 0.0, (0.25, 0.25)).translate([0, 0, 2.89])
+    ring = M.cylinder(0.4, 0.9, 0.9, 16).translate([0, 0, 2.89 + (h - 4.2) * 0.35])
+    return ped + spire + ring + _ball(0.55, h - 0.6, neck=0.3)
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_foscari_upper(w=7.4, vs=16.0, H=6.4, A=0.7):
+    """The piano nobile's window: a cusped ogee light (two casements, a trefoil in the head) in an
+    Istrian frame, set in a rectangle of saw-tooth dentils with patere in the spandrels and a
+    fleuron on the ogee's point; a balconette on two corbels, its front carved with little
+    cusped arches."""
+    op = _ogee_op(w, vs, H)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    tre = _ogee_cusped(w - 1.0, vs, H - 0.8).translate((0.0, 0.0))
+    bars = [rect(-RIB / 2, -1.0, RIB / 2, vs + 0.2), rect(-w, vs - 0.3, w, vs + 0.3), rect(-w, vs * 0.5 - RIB / 2, w, vs * 0.5 + RIB / 2)]
+    bars.append((inner - tre) ^ rect(-w, vs, w, vs + H + 2))
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, cs_union(bars), plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, vs + H + 20) - op)]
+    X = w / 2 + A + 2.0
+    top = vs + H + A + 2.8
+    parts += _dentil_rect(-X, -0.4, X, top)
+    spand = (rect(-X + 1.0, vs, X - 1.0, top - 1.0) - op.offset(A, MIT, 4.0))
+    parts.append(ext(spand, 0.0, 0.2))
+    for sg in (-1, 1):
+        parts += _patera((sg * (X - 2.1), top - 2.6), 1.15, 0.19, 0.35)
+    fl = _trefoil((0.0, vs + H + A + 0.9), 0.55) + rect(-0.25, vs + H + A - 0.3, 0.25, vs + H + A + 0.6)
+    parts.append(ext(fl ^ rect(-X, -1, X, top - 1.0), 0.0, 0.9))
+    bw = X - 0.2
+    parts.append(chamfer_box(-bw, -3.2, bw, 0.01, 0.0, 2.6, c=0.3))
+    arc = cs_union([_ogee_cusped(1.3, 0.9, 0.6).translate((u, -2.7)) for u in np.arange(-bw + 1.2, bw - 1.0, 1.9)])
+    parts.append(ext(rect(-bw + 0.5, -2.8, bw - 0.5, -0.5) - arc, 2.59, 2.9))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (bw - 1.6) - 0.8, -5.6, sg * (bw - 1.6) + 0.8, -3.19, 0.0, 2.2, c=0.3, bottom=2.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 0.2, -5.6)
+
+
+def window_foscari_ground(w=6.0, h=16.0, A=0.6):
+    """The ground storey's window: a pointed light behind an iron grille, in a plain Istrian frame
+    under a hood of saw teeth, a patera over its point, a sill on two little corbels."""
+    ap = _apex(w, w * 0.8)
+    vs = h - ap
+    op = _lancet(-w / 2, w / 2, vs, r=w * 0.8, seg=14)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    bars = [rect(x - RIB / 2, -1.0, x + RIB / 2, h + 1) for x in (-w / 6, w / 6)]
+    bars += [rect(-w, v - RIB / 2, w, v + RIB / 2) for v in np.arange(3.0, vs + 0.1, 3.2)]
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, cs_union(bars), plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    hood = (op.offset(A + 1.2, MIT, 4.0) - op.offset(A - 0.05, MIT, 4.0)) ^ rect(-50, vs, 50, 100)
+    parts.append(ext(hood, 0.0, 0.55))
+    hb = hood.bounds()
+    nt = []
+    for x in np.arange(hb[0] + 0.4, hb[2] - 0.4, 0.9):
+        nt.append(poly([(x, vs + 0.3), (x + 0.45, vs - 0.9), (x + 0.9, vs + 0.3)]))
+    parts.append(ext(cs_union(nt) ^ (rect(-w / 2 - A - 1.2, vs - 1.0, -w / 2 - A + 0.1, vs + 0.3) +
+                                     rect(w / 2 + A - 0.1, vs - 1.0, w / 2 + A + 1.2, vs + 0.3)), 0.0, 0.55))
+    parts += _patera((0.0, hb[3] + 1.5), 1.2, 0.0, 0.4)
+    parts.append(ext(rect(-0.35, hb[3] - 0.2, 0.35, hb[3] + 0.4), 0.0, 0.4))
+    sw = w / 2 + A + 0.8
+    parts.append(chamfer_box(-sw, -1.2, sw, 0.01, 0.0, 1.2, c=0.3, bottom=1.2))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2 - 0.4) - 0.7, -2.6, sg * (w / 2 - 0.4) + 0.7, -1.19, 0.0, 1.0, c=0.3, bottom=1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, hb[3] + 2.9, -2.6)
+
+
+def window_foscari_polifora(n=5, wl=4.4, col=1.4, vs=15.0, H=5.0, T=5.6, A=0.6):
+    """The piano nobile's polifora over the loggia (after the Ca' d'Oro): five cusped ogee lights
+    on slim columns, over them a band of quatrefoils in rings, all in one rectangle of saw-tooth
+    dentils, a fleuron on every point; a sill course on corbels."""
+    W = n * wl + (n - 1) * col
+    hb = vs + H + 0.6 + T
+    op = rect(-W / 2, 0.0, W / 2, hb)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.4, MIT, 4.0)
+    xs = [-W / 2 + wl / 2 + k * (wl + col) for k in range(n)]
+    lights = cs_union([_ogee_cusped(wl, vs, H).translate((x, 0.0)) for x in xs])
+    qv = vs + H + 0.6 + T / 2
+    rq = T * 0.42
+    rings = cs_union([circle((x + (wl + col) / 2, qv), rq, 32) for x in xs[:-1]] + [circle((x, qv), rq, 32) for x in (xs[0] - (wl + col) / 2, xs[-1] + (wl + col) / 2)])
+    quats = cs_union([_quatrefoil((x + (wl + col) / 2, qv), rq * 0.42) for x in xs[:-1]])
+    glass_ = lights + (quats ^ inner)
+    bars = (inner - glass_)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    sash.append(ext(cs_union([rect(x - RIB / 2, 0.0, x + RIB / 2, vs) for x in xs]) ^ inner, -pl + O.GLASS - 0.01, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    ring_band = (rings - rings.offset(-0.45, MIT, 4.0)) ^ rect(-W / 2, vs + H + 0.6, W / 2, hb)
+    parts.append(ext(ring_band, -0.6, 0.35))
+    for x in [xs[0] - (wl + col) / 2] + [x + (wl + col) / 2 for x in xs]:
+        xc = max(-W / 2 + 0.6, min(W / 2 - 0.6, x))
+        prof = [(0.0, 0.0), (0.55, 0.0), (0.55, 0.4), (0.4, 0.7), (0.42, vs - 1.6), (0.75, vs - 0.6), (0.75, vs), (0.0, vs)]
+        parts.append(PW._revolve(prof, 16).rotate([-90, 0, 0]).translate([xc, 0.0, 0.0]) ^ box([xc - 2, 0.0, 0.0], [xc + 2, vs, 2.0]))
+    fl = cs_union([_trefoil((x, vs + H + 0.25), 0.4) for x in xs])
+    parts.append(ext(fl ^ op, -0.6, 0.6))
+    X = W / 2 + A + 1.2
+    parts += _dentil_rect(-X, -0.6, X, hb + A + 1.2, bw=1.2)
+    parts.append(ext(rect(-X + 1.1, -0.5, X - 1.1, hb + A + 0.1) - op, 0.0, 0.25))
+    parts.append(chamfer_box(-X - 0.6, -1.8, X + 0.6, -0.59, 0.0, 1.4, c=0.3, bottom=1.4))
+    for x in [xs[0] - (wl + col) / 2 + 0.5, xs[-1] + (wl + col) / 2 - 0.5] + [x + (wl + col) / 2 for x in xs[:-1]]:
+        parts.append(chamfer_box(x - 0.7, -3.4, x + 0.7, -1.79, 0.0, 1.2, c=0.3, bottom=1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, hb + A + 1.4, -3.4)
+
+
+def window_foscari_bifora(wl=4.0, col=1.2, vs=10.0, H=4.2, A=0.5):
+    """A tower's bifora: two cusped ogee lights parted by a column, a quatrefoil oculus over
+    them, in a dentil rectangle."""
+    W = 2 * wl + col
+    hb = vs + H + 4.2
+    op = rect(-W / 2, 0.0, W / 2, hb)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.4, MIT, 4.0)
+    xs = (-(wl + col) / 2, (wl + col) / 2)
+    lights = cs_union([_ogee_cusped(wl, vs, H).translate((x, 0.0)) for x in xs])
+    oc = (0.0, vs + H + 1.6)
+    quat = _quatrefoil(oc, 0.75)
+    glass_ = lights + quat
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, inner - glass_, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    parts.append(ext(circle(oc, 1.9, 28) - circle(oc, 1.45, 28), -0.6, 0.35))
+    prof = [(0.0, 0.0), (0.5, 0.0), (0.5, 0.4), (0.38, 0.7), (0.4, vs - 1.4), (0.68, vs - 0.5), (0.68, vs), (0.0, vs)]
+    parts.append(PW._revolve(prof, 16).rotate([-90, 0, 0]) ^ box([-2, 0.0, 0.0], [2, vs, 2.0]))
+    X = W / 2 + A + 1.1
+    parts += _dentil_rect(-X, -0.5, X, hb + A + 1.1, bw=1.1)
+    parts.append(ext(rect(-X + 1.0, -0.4, X - 1.0, hb + A) - op, 0.0, 0.22))
+    parts.append(chamfer_box(-X - 0.4, -1.6, X + 0.4, -0.49, 0.0, 1.2, c=0.3, bottom=1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, hb + A + 1.3, -1.6)
+
+
+def door_foscari(w=11.0, h=24.0, A=1.0, back=False):
+    """The Foscari's portal: a pair of leaves of studded panels under a tympanum carved with a
+    shield bearing a lily, in a cusped ogee arch of Istrian stone with a carved leaf band, all in
+    a rectangle of saw-tooth dentils; an ogee hood with crockets rises to a fleuron. The back
+    door (``back``) drops the hood and the crockets."""
+    H = w * 0.62
+    vs = h - H
+    op = _ogee_op(w, vs, H, n=18)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ja = w / 2 - O.CLR - 0.5
+    dh = vs - 0.3
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(-ja, 0.5, ja, dh), -pl, -0.8)]
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * 0.35, sg * (ja - 0.4)))
+        for v0_, v1_ in ((1.2, dh * 0.45), (dh * 0.5, dh - 0.6)):
+            body.append(ext(rect(x0 + 0.3, v0_, x1 - 0.3, v1_) - rect(x0 + 0.8, v0_ + 0.5, x1 - 0.8, v1_ - 0.5), -0.81, -0.5))
+            for x in np.linspace(x0 + 0.9, x1 - 0.9, 3):
+                for v in np.linspace(v0_ + 1.0, v1_ - 1.0, max(2, int((v1_ - v0_) / 2.6))):
+                    body.append(ext(circle((x, v), 0.32, 8), -0.81, -0.45))
+    tym = inner ^ rect(-w, dh + 0.5, w, h + 2)
+    shield = poly([(-1.6, vs + H * 0.55), (1.6, vs + H * 0.55), (1.6, vs + H * 0.2), (0.0, vs - 0.6 + H * 0.05), (-1.6, vs + H * 0.2)])
+    lily = _trefoil((0.0, vs + H * 0.33), 0.5) + rect(-0.2, vs + H * 0.12, 0.2, vs + H * 0.36)
+    rays = cs_union([stroke([(0.0, dh + 0.5), (w * math.cos(t_), dh + 0.5 + w * math.sin(t_))], RIB) for t_ in (0.45, math.pi - 0.45)])
+    sash = _glazed(body, tym, pl, (shield + rays) ^ tym, plug_cs)
+    sash.append(ext(lily ^ tym, -0.51, -0.2))
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    lb = (op.offset(A + 1.5, MIT, 4.0) - op.offset(A - 0.05, MIT, 4.0)) ^ rect(-50, 0.0, 50, 100)
+    parts.append(ext(lb, 0.0, 0.5))
+    leaves = []
+    for v in np.arange(0.8, vs, 1.6):
+        for sg in (-1, 1):
+            leaves.append(_lens((sg * (w / 2 + A + 0.75), v + 0.8), 1.3, 0.45, math.pi / 2 + sg * 0.5))
+    parts.append(ext(cs_union(leaves) ^ lb, 0.49, 0.8))
+    X = w / 2 + A + 3.0
+    top = h + A + (2.4 if back else 4.6)
+    parts += _dentil_rect(-X, -0.6, X, top, bw=1.2)
+    parts.append(ext(rect(-X + 1.1, -0.5, X - 1.1, top - 1.1) - op.offset(A + 1.5, MIT, 4.0), 0.0, 0.25))
+    if not back:
+        for sg in (-1, 1):
+            parts += _patera((sg * (X - 2.4), top - 3.0), 1.2, 0.24, 0.4)
+        right = _ogee(w / 2 + A + 1.5, vs, H + A + 1.5, 18)
+        for t_ in (0.3, 0.55, 0.78):
+            p = right[int(t_ * (len(right) - 1))]
+            for sg in (-1, 1):
+                parts.append(ext(_lens((sg * p[0] + sg * 0.5, p[1] + 0.3), 1.3, 0.55, math.pi / 2 - sg * 0.7) ^ rect(-X + 1.1, 0, X - 1.1, top - 1.1), 0.49, 0.9))
+        parts.append(ext(_trefoil((0.0, h + A + 2.6), 0.75) + rect(-0.3, h + A + 1.0, 0.3, h + A + 2.2), 0.0, 0.9))
+    parts.append(ext(rect(-X, -0.6, X, 0.01), 0.0, 1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 0.2, -0.6)
+
+
+# ------------------------------------------------------------------ the loggia
+def post_foscari(h, collar=None, abacus=3.2, slot=(1.2, 1.0)):
+    """A Venetian Gothic column: an Attic base on a square plinth, a slender shaft, a basket
+    capital whose bell carries four leaves curling out under the corners of a square impost
+    (the Foscari's loggia)."""
+    zc = h - 4.2
+    r = 0.95
+    prof = [(0.0, 1.19), (1.35, 1.19), (1.35, 1.45), (1.1, 1.7), (1.2, 1.95), (r, 2.25), (r, zc - 0.4), (1.15, zc - 0.25), (1.15, zc), (r, zc + 0.15)]
+    body = PW._revolve(prof, 24) + PW._plinth(3.0)
+    body = body + PW._top(h, abacus / 2, zc + 0.15, r, slot, seg=24, shape="round")
+    for k in range(4):
+        a = math.pi / 4 + k * math.pi / 2
+        c, s_ = math.cos(a), math.sin(a)
+        leaf = M.hull_points([(r * 0.9 * c, r * 0.9 * s_, zc + 0.4), ((r + 0.8) * c, (r + 0.8) * s_, zc + 1.6),
+                              ((r + 0.4) * c - 0.4 * s_, (r + 0.4) * s_ + 0.4 * c, zc + 1.0), ((r + 0.4) * c + 0.4 * s_, (r + 0.4) * s_ - 0.4 * c, zc + 1.0),
+                              (r * 0.9 * c, r * 0.9 * s_, zc + 1.9)])
+        body = body + leaf
+    return body
+
+
+def baluster_foscaritwist(h, seg=16):
+    """A twisted colonnette for the loggia railing: a spiral-fluted shaft between a square foot
+    and a square cap."""
+    H = h - 1.6
+    cs = cs_union([circle((0.18 * math.cos(a), 0.18 * math.sin(a)), 0.27, 12) for a in (0.0, 2.094, 4.189)])
+    tw = M.extrude(cs, H, int(H / 0.4), 360.0 * H / 2.4).translate([0, 0, 0.79])
+    return tw + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_ogeearcade(u0, u1, v_bot, v_top):
+    """The loggia's arcade: a cusped ogee arch between every two columns, a patera pierced as a
+    quatrefoil in each spandrel where there is room (the Foscari)."""
+    L = u1 - u0
+    um = (u0 + u1) / 2
+    hh = v_top - v_bot
+    H = min(hh - 1.4, (L - 0.6) * 0.62)
+    vs = v_top - 1.0 - H
+    solid = rect(u0, v_bot, u1, v_top + 0.05)
+    hole = _ogee_cusped(L - 0.6, vs - (v_bot - 1.0), H).translate((um, v_bot - 1.0))
+    out = solid - hole
+    rq = min(0.9, (v_top - 1.0 - (vs + H * 0.55)) * 0.3)
+    if rq > 0.45 and L > 8.0:
+        for sg in (-1, 1):
+            out = out - _quatrefoil((um + sg * (L / 2 - 1.8), vs + H * 0.75), rq * 0.6)
+    return out
+
+
+def edge_dentello(L, z0, zc):
+    """Loggia fascia (the Foscari): a fillet under the crown hung with a row of saw teeth."""
+    out = [rect(0.3, zc - 0.6, L - 0.3, zc)]
+    pu = 1.2
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    out += [poly([(u0 + pu * k, zc - 0.55), (u0 + pu * (k + 0.5), zc - 1.6), (u0 + pu * (k + 1), zc - 0.55)]) for k in range(n)]
+    return cs_union(out) ^ rect(0.3, -1e3, L - 0.3, 1e3), 0.6
+
+
+def skirt_foscari(reg, d=1.2):
+    """The loggia's base between the piers: Istrian panels each set with a Verona roundel."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, d * 0.4)]
+    n = max(1, int((u1 - u0) / 8.0))
+    pw_ = (u1 - u0) / n
+    for k in range(n):
+        a = u0 + pw_ * k
+        pan = rect(a + 0.6, v0 + 0.6, a + pw_ - 0.6, v1 - 0.6)
+        out.append(ext(pan - pan.offset(-0.5, MIT, 4.0), d * 0.4 - 0.01, d * 0.8))
+        c = (a + pw_ / 2, (v0 + v1) / 2)
+        r = min((v1 - v0) * 0.3, pw_ * 0.25)
+        if r > 0.9:
+            out += _patera(c, r, d * 0.4, 0.35)
+    return union(out) ^ M.extrude(reg, d + 0.5)
+
+
+# ------------------------------------------------------------------ the roof
+def chimney_foscari(s=6.0, h=28.0):
+    """A Venetian funnel chimney (fumaiolo): a square stuccoed shaft on a moulded base, a collar,
+    and an inverted cone flaring at 30 degrees to a rim of little merlons round a domed cap.
+    Prints upright."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 9.0
+    body = box([-s / 2, -s / 2, 0.0], [s / 2, s / 2, sh])
+    body = body + M.hull_points([(x, y, 0.0) for x in (-s / 2 - 0.8, s / 2 + 0.8) for y in (-s / 2 - 0.8, s / 2 + 0.8)] +
+                                [(x, y, 1.2) for x in (-s / 2 - 0.8, s / 2 + 0.8) for y in (-s / 2 - 0.8, s / 2 + 0.8)] +
+                                [(x, y, 2.0) for x in (-s / 2, s / 2) for y in (-s / 2, s / 2)])
+    body = body + M.hull_points([(x, y, sh - 0.01) for x in (-s / 2, s / 2) for y in (-s / 2, s / 2)] +
+                                [(x, y, sh + 0.8) for x in (-s / 2 - 0.8, s / 2 + 0.8) for y in (-s / 2 - 0.8, s / 2 + 0.8)] +
+                                [(x, y, sh + 1.6) for x in (-s / 2 - 0.8, s / 2 + 0.8) for y in (-s / 2 - 0.8, s / 2 + 0.8)])
+    r0 = s * 0.42
+    r1 = r0 + 5.0 * math.tan(math.radians(30.0))
+    neck = M.cylinder(1.0, r0, r0, 32).translate([0, 0, sh + 1.59])
+    funnel = M.cylinder(5.0, r0, r1, 32).translate([0, 0, sh + 2.58])
+    rim = M.cylinder(0.8, r1, r1, 32).translate([0, 0, sh + 7.57])
+    body = body + neck + funnel + rim
+    for k in range(10):
+        a = 2 * math.pi * k / 10
+        body = body + box([-0.45, -0.45, 0.0], [0.45, 0.45, 1.0]).rotate([0, 0, math.degrees(a)]).translate(
+            [(r1 - 0.45) * math.cos(a), (r1 - 0.45) * math.sin(a), sh + 8.36])
+    cap = M.cylinder(0.6, r1 - 0.9, r1 - 1.3, 32).translate([0, 0, sh + 8.36]) + _ball(r1 * 0.35, sh + 8.9, neck=0.0)
+    return body + cap
+
+
+def altana_foscari(w, d, h, post=1.4):
+    """The altana: a timber roof terrace, a planked platform on six posts with knee braces at 45
+    degrees, a peg under every post. Local: the posts' feet at z = 0 (on the roof deck), the
+    platform's planked top at z = h + 1.2. One part, printed upside down on its planks."""
+    out = []
+    xs = (-w / 2 + post, 0.0, w / 2 - post)
+    ys = (-d / 2 + post, d / 2 - post)
+    plat = box([-w / 2, -d / 2, h], [w / 2, d / 2, h + 1.2])
+    slots = union([box([-w / 2 + 1.0, y - 0.15, h + 0.9], [w / 2 - 1.0, y + 0.15, h + 1.3]) for y in np.arange(-d / 2 + 1.6, d / 2 - 1.0, 1.6)])
+    out.append(plat - slots)
+    out.append(box([-w / 2, -d / 2, h - 1.0], [w / 2, -d / 2 + 1.0, h + 0.01]))
+    out.append(box([-w / 2, d / 2 - 1.0, h - 1.0], [w / 2, d / 2, h + 0.01]))
+    for x in xs:
+        for y in ys:
+            out.append(box([x - post / 2, y - post / 2, 0.0], [x + post / 2, y + post / 2, h + 0.01]))
+            out.append(box([x - 0.5, y - 0.5, -0.8], [x + 0.5, y + 0.5, 0.01]))
+            sg = 1 if y < 0 else -1
+            for dx in ((-1, 1) if x == 0.0 else ((1,) if x < 0 else (-1,))):
+                k = 2.6
+                out.append(M.hull_points([(x + dx * post / 2, y + a, z) for a in (-0.35, 0.35) for z in (h - 1.0 - k, h - 1.0 - k + 0.7)] +
+                                         [(x + dx * (post / 2 + k), y + a, z) for a in (-0.35, 0.35) for z in (h - 1.0, h - 0.99)]))
+    return union(out)
+
+
+CO.FRIEZE_EXTRA.update(paterae=frieze_paterae, archetti=frieze_archetti)
+CO.COURSE_EXTRA.update(dentello=course_dentello)
+TW.BRACKET_EXTRA.update(mensola=bracket_mensola)
+TW.FOUNDATION_EXTRA.update(foscari=foundation_foscari)
+SH.CORNER_EXTRA.update(foscari=corner_foscari)
+PW.POSTS.update(foscari=post_foscari)
+PW.BALUSTERS.update(foscaritwist=(baluster_foscaritwist, 1.4))
+PW.FRIEZES.update(ogeearcade=frieze_ogeearcade)
+PW.SKIRTS.update(foscari=skirt_foscari)
+FT.EDGE_EXTRA.update(dentello=edge_dentello)

@@ -1475,6 +1475,136 @@ frieze windows too) print face up with supports under their frames only.
      terrace's open edges, a drop of glue in each; TERRACE-steps at the tower door, STOOP-back at
      the back door.
 """, addin_note("ADDIN, ADDIN-P and ADDIN-T", "marble", "The CRESTs change once from verdigris to marble.")),
+    "wyndham": ("THE WYNDHAM - QUEEN ANNE, SECOND EMPIRE AND COLONIAL REVIVAL", "  1. FOUNDATION (panelled plinth).\n" + jointed(
+        " (the first storey of the house, the pavilion, the tower and the bow)",
+        " (the second storey of all of them and the tower's top storey)") + """
+  5. The CORNICE-E parts round the eave band of the whole house (the pieces round the tower fit on
+     from the side): the course first, then -lower, then -upper on top.
+  6. Bow: BOW-deck onto the bow's eave, its back against the roof's foot; the BOW-rail strips
+     (the balustrade) into the slots round it.
+  7. MANSARD (upside down; two pieces, MANSARD and MANSARD-front, either side of the pavilion)
+     onto the eave's crown; then MANSARD-P (the pavilion's taller roof, also upside down) onto the
+     pavilion's eave, its sides meeting the main roof. """ + ADDIN_STEP + """ (ADDIN-P,
+     the Palladian one, on the pavilion's front).
+  8. """ + CREST_STEP + """ (two pieces like the mansard's).
+  9. Pavilion: PAV-CREST onto its mansard, keyed the same way; PAV-deck; the PAV-iron strips.
+ 10. Tower: TOWER-pent (the slated skirt) round the tower over the main eave; the CORNICE-T parts
+     round its top band; TOWER-CAP (upside down) onto the tower's lip; the ADDIN-Ts into its three
+     street faces; TOWER-CREST on top, keyed in; TOWER-deck (its finial printed on it); the
+     TOWER-iron strips.
+ 11. Porch (round the tower): """ + top_porch() + """; PORCH-pediment on the porch roof over the
+     steps; the PORCH-rail strips (the balustrade) into the slots round the porch roof; STOOP-back
+     at the back door.
+""", addin_note("ADDIN, ADDIN-P and ADDIN-T", "cream", "The CRESTs change once from gold to cream.")),
+    "evangeline": ("THE EVANGELINE - STEAMBOAT GOTHIC PLANTATION HOUSE", "  1. FOUNDATION (stucco plinth with a torus).\n" + jointed(
+        " (the stuccoed ground storey)", " (the main storey)") + """
+  5. The CORNICE-E parts round the eave band: -lower, then -upper on top.
+  6. ROOF (upside down) down over the walls onto the eave's crown. """ + ADDIN_STEP + """.
+  7. """ + CREST_STEP + """.
+  8. Belvedere: BELV-walls onto their seat in the middle of the deck; its windows; the CORNICE-B
+     parts round its top band; BELV-roof (the concave tent) onto its lip; BELV-CREST on top,
+     keyed in; BELV-deck (its star finial printed on it); the BELV-iron strips.
+  9. Galleries, front and back halves alike: GALLERY-F-deck and GALLERY-B-deck (the arcade and
+     its planked floor) against the ground storey, their ends meeting at the middle of each side;
+     GALLERY-F-top and GALLERY-B-top (the roof, colonnettes, lace and railings of each half in one
+     piece) lowered onto them, the square peg under each colonnette dropping into its socket in
+     the planks, the back edge meeting the wall under the eave; the GALLERY-rail strips (the
+     promenade railing) into the slots round the gallery roof.
+ 10. STAIR (the horseshoe stair, one piece) against the front of the gallery at the door, its two
+     flights meeting the gallery floor; STEPS-back at the back gallery.
+ 11. The two cisterns at the back corners: CISTERN-base on the ground, CISTERN-tank (its dome
+     printed on it) on top.
+""", addin_note("ADDIN", "ivory", "The CRESTs change once from teal to ivory; the CISTERN-tanks change once, from cypress to teal for the domes.")),
+    "bellosguardo": ("THE BELLOSGUARDO - ITALIANATE VILLA WITH A CAMPANILE", "  1. FOUNDATION (battered, with vents).\n" + jointed(
+        " (the first storey of the house, the wing and the campanile)",
+        " (the second storey of all of them and the whole campanile above the joint)") + """
+  5. The CORNICE-E parts round the eave band (the pieces round the campanile fit on from the
+     side): -lower, then -upper on top.
+  6. ROOF-deck (the flat tin roof, seams up) onto the walls inside the eave; the ROOF-rail strips
+     (the balustrade) into the slots along its edge; the CHIMNEYs in their pockets.
+  7. Campanile: the CORNICE-TJ parts round the band over the bifora stage; TOWER-floor onto the
+     corbelled ledge inside the open loggia stage; the CORNICE-T parts round its top band;
+     TOWER-roof (the tile pyramid, its pine cone printed on it) onto the tower's lip.
+  8. Loggia (across the front and down the west side): """ + top_porch().replace("PORCH-", "LOGGIA-") + """; the LOGGIA-rail strips (the balustrade on its
+     flat roof) into the slots round it; STOOP-back at the back door.
+""", """Walls, roof deck, tower and chimneys print upright. Windows and doors print face up with
+supports under their frames only.
+"""),
+    "chantilly": ("THE CHANTILLY - CHATEAUESQUE COUNTRY HOUSE", "  1. FOUNDATION (diamond-point blocks).\n" + jointed(
+        " (the first storey and both towers')", " (the second storey and both towers' upper storeys)") + """
+  5. The CORNICE-E parts round the eave band of the house and the towers (the pieces round the
+     towers fit on from the side): -lower, then -upper on top.
+  6. ROOF (upside down; two pieces, ROOF and ROOF-front) down over the walls onto the eave's crown,
+     its corners notched round the towers. The ADDINs (the lucarnes) push into their pockets from
+     outside, plug first; ADDIN-G, the grand one, over the front door.
+  7. """ + CREST_STEP + """.
+  8. Towers: the CORNICE-TW and CORNICE-TE parts round each tower's top band; TOWER-W-cone and
+     TOWER-E-cone (the candle-snuffers, their épis printed on them) onto the towers' lips.
+  9. Terrace: TERRACE (the paving) against the front of the house between the towers; the
+     TERRACE-rail strips (the pierced parapet) into their slots; TERRACE-steps at the door;
+     STOOP-back at the back door.
+""", addin_note("ADDIN and ADDIN-G", "stone", "The CRESTs change once from lead to stone.")),
+    "vanderlyn": ("THE VANDERLYN - BEAUX-ARTS PALACE", "  1. FOUNDATION (panelled podium).\n" + jointed() + """
+  5. The CORNICE-E parts round the eave band: -lower, then -upper on top; the ROOF-balustrade
+     strips onto the eave's crown, keyed into its slots.
+  6. MANSARD (upside down) down over the walls onto the eave's crown inside the balustrade.
+     """ + ADDIN_STEP + """.
+  7. """ + CREST_STEP + """.
+  8. DOME (its drum and ribbed dome in one) onto its seat in the middle of the deck; DOME-finial
+     (the lantern and gilt ball) is printed on it.
+  9. Portico: """ + top_porch().replace("PORCH-", "PORTICO-") + """; PORTICO-pediment on the portico's roof, its back against the wall; STOOP-back at
+     the back door.
+""", addin_note("ADDIN", "marble", "The CREST changes once from copper to marble.")),
+    "zenobia": ("THE ZENOBIA - ORIENTAL REVIVAL OCTAGON VILLA", "  1. FOUNDATION (star-panelled plinth).\n" + jointed() + """
+  5. The CORNICE-E parts round the eave band: -lower, then -upper on top.
+  6. ROOF (upside down) down over the walls onto the eave's crown.
+  7. """ + CREST_STEP + """.
+  8. Drum: DRUM-walls onto their seat in the middle of the deck; its four horseshoe windows; the
+     CORNICE-D parts round its top band; ONION (the gilt dome, its tulip finial printed on it)
+     onto the drum's lip.
+  9. Galleries, front and back halves alike (the halves meet at the middle of the east and west
+     sides): GALLERY-F-deck and GALLERY-B-deck against the base; GALLERY-F-1-top and
+     GALLERY-B-1-top (the lower tier's roof, colonnettes, arches and railings in one piece)
+     lowered onto them, the square peg under each colonnette dropping into its socket in the
+     planks; then GALLERY-F-2-top and GALLERY-B-2-top (the upper tier) onto the lower tops, their
+     pegs into the sockets in the lower roofs, their back edges meeting the wall under the eave;
+     the GALLERY-steps at the doors.
+""", """Walls, roof, drum and chimneys print upright; the CREST changes once from turquoise to ivory.
+Windows and doors print face up with supports under their frames only.
+"""),
+    "foscari": ("THE FOSCARI - VENETIAN GOTHIC PALAZZO", "  1. FOUNDATION (Istrian plinth with a saw-tooth water table).\n" + jointed(
+        " (the first storey of the house and both towers)", " (the piano nobile and both towers above the joint)") + """
+  5. The CORNICE-E parts round the eave band of the house and the towers (the pieces round the
+     towers fit on from the side): the course first, then -lower, then -upper on top.
+  6. ROOF-deck (the flat lead roof, seams up) onto the walls inside the eave, round the towers;
+     the ROOF-merli strips (the merlons) into the slots along its edge; the CHIMNEYs (the funnel
+     stacks) in their pockets.
+  7. ALTANA (the roof terrace) onto the deck behind the towers: the peg under each post drops
+     into its socket; the ALTANA-rail strips into the slots round its platform.
+  8. Towers: the CORNICE-TW and CORNICE-TE parts round each tower's top band; TOWER-W-deck and
+     TOWER-E-deck (lead, the corner pinnacles printed on them) onto the towers' tops; the
+     TOWER-merli strips into the slots between the pinnacles.
+  9. Loggia (between the towers): """ + top_porch().replace("PORCH-", "LOGGIA-") + """; the LOGGIA-balcony strip (the balcony front) into the slot along the
+     loggia's flat roof; STOOP-back at the back door.
+""", """Walls, roof deck, tower decks, chimneys and the altana print upright (the altana upside down,
+on its planks). Windows and doors print face up with supports under their frames only. The
+tower decks change once, from lead to Istrian white, just above the seams, for the pinnacles.
+"""),
+    "thornbury": ("THE THORNBURY - RICHARDSONIAN ROMANESQUE", "  1. FOUNDATION (two chamfered courses).\n" + jointed(
+        " (the first storey of the house, the tower and the apse)",
+        " (the second storey of all of them and the tower's top stage)") + """
+  5. The CORNICE-E parts round the eave band of the house, the tower and the apse (the pieces round
+     the tower fit on from the side): the course first, then -lower, then -upper on top.
+  6. Apse: APSE-deck onto the apse's eave, its back against the roof's foot; the APSE-rail strips
+     (the little arcaded parapet) into the slots round it.
+  7. ROOF (upside down) down over the walls onto the eave's crown, its corner notched round the
+     tower. """ + ADDIN_STEP + """ (the eyebrows).
+  8. """ + CREST_STEP + """.
+  9. Tower: the CORNICE-T parts round its top band; TOWER-cone (its finial printed on it) onto
+     the tower's lip.
+ 10. Porch (round the tower's foot and along the front): """ + top_porch() + """; PORCH-gable (the rock-faced gable) on the porch roof over the steps,
+     its back toward the house; STOOP-back at the back door.
+""", addin_note("ADDIN", "copper", "The CREST changes once from copper to brownstone.")),
     "section4": ("SECTION HOUSE No. 4 - TOOL HOUSE AND SPEEDER SHED", """  1. TOOL-FOUNDATION on the layout, the door side toward the track; TOOL-WALLS onto it; the door and windows; TOOL-CORNICE-frieze, then TOOL-CORNICE-crown; TOOL-ROOF; STOVEPIPE down into the hole in the back slope.
   2. SPEEDER-FOUNDATION with its gable end to the speeder's spur; SPEEDER-WALLS onto it; the doors and window; SPEEDER-CORNICE-course, then SPEEDER-CORNICE-crown; SPEEDER-ROOF.
 """, """Walls and roofs print upright. Windows and doors print face up with supports under their frames only.
