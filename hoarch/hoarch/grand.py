@@ -1652,10 +1652,17 @@ def stair_horseshoe(H, n=13, fw=7.0, tread=2.6, land=(16.0, 8.0), cheek=1.6, wal
         # the back cheek (against the gallery) as a low wall
         parts.append(box([min(xa, xb) - 0.01, 0.0, 0.0], [max(xa, xb) + 0.01, 3.0, LD - fw - cheek + 0.01]))
     body = union(parts)
-    # the parapet's door opening, a blind lancet arch under the landing
-    body = body - box([-LW / 2 + cheek, H - 0.5, LD - cheek - 1], [LW / 2 - cheek, H + 6, LD + 1])
-    nich = _lancet(-3.0, 3.0, H - 9.0 - _apex(6.0), v0=2.0)
-    body = body - M.extrude(nich, 0.8).translate([0, 0, LD - 0.79])
+    # each flight rides on a raking soffit 7 mm under its nosings (49 degrees: it prints
+    # upright with nothing hanging), open beneath so the arcade shows through; a lancet
+    # passage runs under the landing
+    for sg in (-1, 1):
+        x0, x1 = sg * (LW / 2 + 1.0), sg * (LW / 2 + run * (1 - 7.0 / H) - 3.6)
+        vt = H * (1 - (abs(x0) - LW / 2) / run) - 7.0
+        vb = H * (1 - (abs(x1) - LW / 2) / run) - 7.0
+        hole = poly([(x0, -1.0), (x1, -1.0), (x1, max(vb, 0.0) + 0.0), (x0, vt)]).offset(-0.6, RND).offset(0.6, RND)
+        body = body - ext(hole ^ rect(-1e3, -1.0, 1e3, 1e3), -1.0, LD + 1.0)
+    pas = _lancet(-LW / 2 + 2.4, LW / 2 - 2.4, H - 9.0 - _apex(LW - 4.8), v0=-1.0)
+    body = body - ext(pas, -1.0, LD + 1.0)
     return body
 
 
@@ -1742,3 +1749,645 @@ PW.POSTS.update(crocketcap=post_crocketcap)
 PW.BALUSTERS.update(onionbulb=(baluster_onionbulb, 1.6))
 PW.FRIEZES.update(lancetarcade=frieze_lancetarcade)
 FT.EDGE_EXTRA.update(lancetfringe=edge_lancetfringe)
+
+
+# ================================================================== the Bellosguardo (house 93)
+# An Italian villa, 1866, of the kind the pattern books called "Tuscan": a brownstone ground
+# storey of drafted ashlar and an upper storey of orange Siena brick in monk bond with a diaper of
+# raised headers, pillowed quoins, cream stone dressings and olive accents; a flat roof behind a
+# stone balustrade with urns over a deep cornice of coffers and paired pendant scrolls. In the
+# angle of the L a campanile rises two stages over the roof: a stage of bifora windows, then an
+# open belvedere loggia of paired arches, under a bracketed cornice and a pyramid of clay tiles
+# crowned by a pine cone. A loggia of Corinthian columns and archivolted arches wraps the front
+# and the west side, its flat roof a terrace behind another balustrade; the wing's upper storey
+# holds a Serliana over a balconet; the door stands in a Gibbs surround of rusticated blocks.
+
+BS_LEVELS = dict(hi=40.0)      # the building sets it: the brick storey's foot over the block's base
+
+
+def stone_drafted(region, datum=0.0, course=3.0, block=6.4, joint=0.45, d=0.42):
+    """Drafted ashlar: every block a raised field inside a flat margin band, both bevelled at
+    45 degrees all round, in courses of long blocks broken half a block (the Bellosguardo's
+    ground storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1 + course:
+        a, b = datum + k * course + joint / 2, datum + (k + 1) * course - joint / 2
+        if b > v0 - 1 and a < v1 + 1:
+            u = u0 - block + (k % 2) * block / 2
+            while u < u1 + block:
+                x0, x1 = u + joint / 2, u + block - joint / 2
+                out.append(chamfer_box(x0, a, x1, b, 0.0, d * 0.55, c=0.2, bottom=d * 0.55))
+                out.append(chamfer_box(x0 + 0.5, a + 0.45, x1 - 0.5, b - 0.45, d * 0.55 - 0.01, d * 0.45, c=0.18,
+                                       bottom=d * 0.45))
+                u += block
+        k += 1
+    return union(out) ^ M.extrude(region, d + 0.2)
+
+
+def brick_monk(region, datum=0.0, bl=2.4, bh=0.8, mortar=0.5, bed=0.2, d=0.25, lift=0.14):
+    """Monk bond (two stretchers and a header in every course, each course shifted half a unit),
+    its headers on a diagonal lattice raised a little proud as a diaper of glazed headers (the
+    Bellosguardo's upper storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    unit = 2 * bl + bl / 2
+    cells, diaper = [], []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        top = v + bh - bed
+        j0 = math.floor((u0 - 2 * unit) / unit)
+        u = j0 * unit + (k % 2) * unit / 2
+        j = j0
+        while u < u1 + unit:
+            cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, top))
+            cells.append(rect(u + bl + mortar / 2, v, u + 2 * bl - mortar / 2, top))
+            hd = rect(u + 2 * bl + mortar / 2, v, u + unit - mortar / 2, top)
+            if (j + k // 2) % 4 == 0 or (j - k // 2) % 4 == 0:
+                diaper.append(hd)
+            else:
+                cells.append(hd)
+            u += unit
+            j += 1
+        k += 1
+    out = [M.extrude(cs_union(cells) ^ region, d)]
+    if diaper:
+        out.append(M.extrude(cs_union(diaper) ^ region, d + lift))
+    return union(out)
+
+
+def corner_bellosguardo(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Bellosguardo's corners: on the ashlar storey long and short drafted blocks in its
+    courses; on the brick storey pillowed quoins (each face swelling in a 45 degree pillow from
+    a flat margin), long and short in turn."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    hi = BS_LEVELS["hi"]
+    parts = []
+    v, k = qa, 0
+    while v < min(qb, hi) - 1.6:
+        leg = 4.6 if k % 2 == 0 else 2.8
+        top = min(v + 2.6, min(qb, hi) - 0.2)
+        a, b = span(-0.6, leg)
+        parts.append(chamfer_box(a, v + 0.2, b, top, 0.0, t, c=0.25, bottom=t, square=("u0",) if at_start else ("u1",)))
+        v += 3.0
+        k += 1
+    v, k = max(qa, hi), 0
+    while v < qb - 2.0:
+        leg = 4.4 if k % 2 == 0 else 2.6
+        top = min(v + 2.2, qb - 0.2)
+        a, b = span(-t - 0.3, leg)
+        parts.append(chamfer_box(a, v, b, top, 0.0, 0.35, c=0.15, bottom=0.35, square=("u0",) if at_start else ("u1",)))
+        fa, fb = span(0.4, leg - 0.4)
+        parts.append(M.hull_points([(x, y, 0.34) for x in (min(fa, fb), max(fa, fb)) for y in (v + 0.4, top - 0.4)] +
+                                   [(x, y, t + 0.3) for x in (min(fa, fb) + 0.5, max(fa, fb) - 0.5) for y in (v + 0.9, top - 0.9)]))
+        v += 2.6
+        k += 1
+    return union(parts) if parts else M()
+
+
+def foundation_talusvent(reg, seed=0):
+    """A battered brownstone talus under a cyma water table, pierced every 20 mm or so by a
+    square vent with two bars (the Bellosguardo)."""
+    b = reg.bounds()
+    out = [M.hull_points([(x, b[1], 0.0) for x in (b[0], b[2])] + [(x, b[1], 0.9) for x in (b[0], b[2])] +
+                         [(x, b[3] - 1.6, 0.4) for x in (b[0], b[2])] + [(x, b[3] - 1.6, 0.0) for x in (b[0], b[2])])]
+    wt = rect(b[0] - 1, b[3] - 1.6, b[2] + 1, b[3]) ^ reg
+    if not wt.is_empty():
+        wb = wt.bounds()
+        out.append(M.hull_points([(x, wb[1] - 0.3, 0.0) for x in (wb[0], wb[2])] + [(x, wb[1] + 0.4, 0.9) for x in (wb[0], wb[2])] +
+                                 [(x, wb[3] - 0.3, 0.9) for x in (wb[0], wb[2])] + [(x, wb[3], 0.4) for x in (wb[0], wb[2])] +
+                                 [(x, wb[3], 0.0) for x in (wb[0], wb[2])]))
+    body = union(out) ^ M.extrude(reg, 2.0)
+    u = b[0] + 10.0
+    vents = []
+    while u < b[2] - 6.0:
+        vc = (b[1] + b[3] - 1.6) / 2
+        if b[3] - b[1] > 5.0:
+            vents.append(ext(rect(u - 1.6, vc - 1.0, u + 1.6, vc + 1.0), 0.3, 2.0) -
+                         ext(cs_union([rect(u - 0.8 - 0.25, vc - 1.2, u - 0.8 + 0.25, vc + 1.2),
+                                       rect(u + 0.8 - 0.25, vc - 1.2, u + 0.8 + 0.25, vc + 1.2)]), 0.3, 2.0))
+        u += 20.0
+    if vents:
+        body = body - union(vents)
+    return body
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_guilloche(L, h, b, pitch, margin, p):
+    """A guilloche: a chain of interlaced rings, a bead in every eye (the Bellosguardo's storey
+    joint)."""
+    ro = h * 0.45
+    pu = ro * 1.7
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    rings = cs_union([circle((u0 + pu * (k + 0.5), h / 2), ro, 24) - circle((u0 + pu * (k + 0.5), h / 2), ro - 0.42, 20)
+                      for k in range(n)]) ^ rect(0.2, 0.0, L - 0.2, h)
+    beads = cs_union([circle((u0 + pu * (k + 0.5), h / 2), max(0.3, ro - 0.75), 12) for k in range(n)])
+    return [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.18), _st(rings, b + 0.18, 0.3), _st(beads, b + 0.18, 0.3)]
+
+
+def course_eggdart(L, h, b, pitch, margin, p):
+    """Egg and dart: eggs in open shells, a dart between every two (the Bellosguardo's eave)."""
+    pu = 2.0
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    eggs, shells, darts = [], [], []
+    for k in range(n):
+        c = (u0 + pu * (k + 0.5), h * 0.48)
+        ry = h * 0.36
+        eggs.append(oval(c, 0.5, ry, 16))
+        sh = oval(c, 0.82, ry + 0.3, 18) - oval(c, 0.58, ry + 0.08, 16)
+        shells.append(sh ^ rect(-1e3, -1e3, 1e3, c[1] + ry * 0.6))
+        x = u0 + pu * k
+        darts.append(poly([(x - 0.26, h * 0.82), (x + 0.26, h * 0.82), (x, h * 0.12)]))
+    darts.append(poly([(u0 + pu * n - 0.26, h * 0.82), (u0 + pu * n + 0.26, h * 0.82), (u0 + pu * n, h * 0.12)]))
+    clip = rect(0.2, 0.0, L - 0.2, h)
+    return [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.15), _st(cs_union(shells) ^ clip, b + 0.15, 0.25),
+            _st(cs_union(eggs) ^ clip, b + 0.15, 0.4), _st(cs_union(darts) ^ clip, b + 0.15, 0.3)]
+
+
+def frieze_olivebranch(L, h, b, pitch, margin, pair, half):
+    """An olive branch running the length of the frieze in a gentle wave, pointed leaves in
+    pairs along it and clusters of olives; a rosette at every station (the Bellosguardo's storey
+    joint)."""
+    v0, v1 = 0.8, h - 0.8
+    vm = (v0 + v1) / 2
+    amp = (v1 - v0) * 0.18
+    pts = [(u, vm + amp * math.sin(u / 5.0 * math.pi)) for u in np.arange(0.4, L - 0.3, 0.5)]
+    out = []
+    if len(pts) > 1:
+        out.append(_st(stroke(pts, 0.5), b, 0.3))
+    leaves, olives = [], []
+    for k, u in enumerate(np.arange(1.6, L - 1.4, 1.8)):
+        v = vm + amp * math.sin(u / 5.0 * math.pi)
+        sg = 1 if k % 2 == 0 else -1
+        leaves.append(_lens((u + 0.35, v + sg * 0.75), 1.9, 0.55, sg * 1.1))
+        if k % 3 == 1:
+            olives.append(oval((u - 0.4, v - sg * 0.85), 0.4, 0.55, 12))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    if leaves:
+        out.append(_st(cs_union(leaves) ^ clip, b, 0.38))
+    if olives:
+        out.append(_st(cs_union(olives) ^ clip, b, 0.5))
+    return out, []
+
+
+def frieze_rosettecoffers(L, h, b, pitch, margin, pair, half):
+    """Coffers: in every bay between the paired brackets a square coffer with a moulded rim and
+    a raised eight-petal rosette (the Bellosguardo's eave)."""
+    v0, v1 = 0.7, h - 0.7
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        s = min(wd - 0.8, v1 - v0)
+        if s < 3.0:
+            continue
+        sq = rect(uc - s / 2, (v0 + v1) / 2 - s / 2, uc + s / 2, (v0 + v1) / 2 + s / 2)
+        out.append(_st(sq - sq.offset(-0.55, MIT, 4.0), b, 0.4))
+        c = (uc, (v0 + v1) / 2)
+        r = min(1.3, s * 0.3)
+        pet = cs_union([circle((c[0] + r * 0.62 * math.cos(a), c[1] + r * 0.62 * math.sin(a)), r * 0.38, 12)
+                        for a in np.linspace(0, 2 * math.pi, 8, endpoint=False)])
+        out.append(_st(pet, b, 0.35))
+        out.append(_st(circle(c, r * 0.36, 12), b, 0.55))
+    return out, []
+
+
+def frieze_wreathribbons(L, h, b, pitch, margin, pair, half):
+    """Laurel wreaths tied with ribbons whose ends flutter down either side, one in every bay
+    (the Bellosguardo's campanile)."""
+    v0, v1 = 0.7, h - 0.7
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        R_ = min((v1 - v0) * 0.36, wd * 0.28, 1.9)
+        if R_ < 1.1:
+            continue
+        c = (uc, (v0 + v1) / 2 + 0.3)
+        leaves = []
+        for a in np.linspace(math.pi * 0.62, math.pi * 2.38, 12):
+            leaves.append(_lens((c[0] + R_ * math.cos(a), c[1] + R_ * math.sin(a)), 1.1, 0.5, a + math.pi / 2 + 0.45))
+        bow = circle((c[0], c[1] - R_), 0.45, 12)
+        ribbons = cs_union([stroke([(c[0], c[1] - R_), (c[0] + sg * 0.8, c[1] - R_ - 0.7), (c[0] + sg * 1.2, v0 + 0.15)], 0.5)
+                            for sg in (-1, 1)])
+        out.append(_st(_clip_v(cs_union(leaves), v0, v1), b, 0.38))
+        out.append(_st(_clip_v(ribbons + bow, v0, v1), b, 0.3))
+    return out, []
+
+
+def bracket_pendantscroll(h, d, t):
+    """An Italianate console: an S of a big scroll against the wall and a small one under the
+    soffit's front, a bead down its front edge and a turned drop hanging under the big scroll
+    (side profile, top at v = 0; the Bellosguardo, in pairs)."""
+    rb = min(1.1, h * 0.26, d * 0.3)
+    rs = min(0.6, h * 0.14, d * 0.18)
+    cb = (rb + 0.25, -h + rb + 0.5)
+    cs_ = (d - rs, -rs)
+    body = poly([(0.0, 0.0), (d, 0.0), (d, -rs * 2 + 0.1), (cb[0] + rb * 0.6, cb[1] + rb * 0.9), (cb[0], cb[1] - rb),
+                 (0.0, cb[1] - rb)])
+    prof = cs_union([body, circle(cb, rb, 20), circle(cs_, rs, 14), circle((cb[0], cb[1] - rb - 0.25), 0.42, 12)])
+    return prof - circle(cb, rb * 0.4, 12)
+
+
+def fence_bello_parapet(L, h):
+    """The roofs' stone balustrade seen face on (printed flat, full size): a plinth, a capped
+    rail, square pedestals every 16 mm or so carrying urns, and between them Renaissance
+    balusters swelling twice (vase over vase)."""
+    nseg = max(1, int(round(L / 16.0)))
+    seg = L / nseg
+    cells = [rect(0.0, 0.0, L, 1.0), rect(0.0, h - 1.1, L, h - 0.4), rect(0.0, h - 0.41, L, h)]
+    for j in range(nseg + 1):
+        u = min(max(seg * j, 1.1), L - 1.1)
+        cells.append(rect(u - 1.1, 0.0, u + 1.1, h + 0.4))
+        cells.append(urn_cs(u, h + 0.39, 3.2, 1.8))
+        if j < nseg:
+            a, b = u + 1.1, min(max(seg * (j + 1), 1.1), L - 1.1) - 1.1
+            nb = max(1, int((b - a) / 1.7))
+            for k in range(nb):
+                x = a + (b - a) * (k + 0.5) / nb
+                lo, hi = 0.95, h - 1.05
+                cells.append(cs_union([rect(x - 0.28, lo, x + 0.28, hi), oval((x, lo + (hi - lo) * 0.28), 0.5, (hi - lo) * 0.17, 14),
+                                       oval((x, lo + (hi - lo) * 0.7), 0.42, (hi - lo) * 0.13, 14)]))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 4.0)
+
+
+def finial_pigna(h=8.0):
+    """A pine cone (pigna) finial: a moulded base, a cone of scales (rings stepping in), a
+    pointed tip (the Bellosguardo's campanile)."""
+    prof = [(0.0, 0.0), (1.5, 0.0), (1.5, 0.5), (1.0, 1.0), (0.7, 1.3), (1.1, 1.7)]
+    z = 1.7
+    r = 1.25
+    k = 0
+    while r > 0.35:
+        prof += [(r, z), (r - 0.15, z + 0.35), (r - 0.05, z + 0.45)]
+        z += 0.6
+        r = 1.25 * (1 - (z - 1.7) / (h - 1.7)) + 0.1 * (k % 2)
+        k += 1
+    prof += [(0.3, h), (0.0, h)]
+    return PW._revolve(prof, 24)
+
+
+# ------------------------------------------------------------------ windows and doors
+def _florentine(w, h, A, n=9, gap=0.3, crown=2.6, foot=1.5):
+    """Florentine voussoirs round a round head (opening w wide, spring at h - w/2): radial
+    stones whose extrados rises from ``foot`` long at the springing to ``crown`` at the key, so
+    the arch's outer edge comes to a slight point. Returns (cs, top v)."""
+    r0 = w / 2 + A
+    cy = h - w / 2
+    blocks = []
+    for k in range(n):
+        a0 = math.pi * k / n + gap / 2 / r0
+        a1 = math.pi * (k + 1) / n - gap / 2 / r0
+        am = (a0 + a1) / 2
+        Lk = foot + (crown - foot) * math.sin(am)
+        pts = [(r0 * math.cos(a), cy + r0 * math.sin(a)) for a in np.linspace(a0, a1, 5)]
+        pts += [((r0 + Lk) * math.cos(a), cy + (r0 + Lk) * math.sin(a)) for a in np.linspace(a1, a0, 5)]
+        blocks.append(poly(pts))
+    return cs_union(blocks), cy + r0 + crown
+
+
+def window_bello_ground(w=8.4, h=20.0, A=0.8):
+    """The ashlar storey's window: a round-headed two-over-two sash in a casing, Florentine
+    voussoirs round its head over an impost band, a sill on two blocks and a panelled apron."""
+    op = O.opening_cs(w, h, w / 2)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    sash = O.window_insert(w, h, w / 2, lites=(2, 2), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, RND), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vs, vt = _florentine(w, h, A)
+    parts.append(ext(vs, 0.0, 0.8))
+    spring = h - w / 2
+    hw = w / 2 + A + 1.8
+    parts.append(chamfer_box(-hw, spring - 1.0, -w / 2 - A + 0.01, spring, 0.0, 0.9, c=0.2, bottom=0.9))
+    parts.append(chamfer_box(w / 2 + A - 0.01, spring - 1.0, hw, spring, 0.0, 0.9, c=0.2, bottom=0.9))
+    sw = w / 2 + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts.append(ext(rect(-w / 2, -3.4, w / 2, -0.79), 0.0, 0.4))
+    parts.append(chamfer_box(-w / 2 + 0.7, -2.8, w / 2 - 0.7, -1.4, 0.39, 0.3, c=0.15))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vt + 0.2, -3.4)
+
+
+def window_bello_upper(w=8.0, h=19.0, A=0.9, rise=1.2):
+    """The brick storey's window (a tabernacle): a segmental one-over-one sash in an eared
+    architrave, a frieze hung with a festoon, a cornice hood on two scroll consoles, a sill on
+    blocks."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    sash = O.window_insert(w, h, rise, lites=(1, 1), bare=True)["insert"]
+    half = w / 2 + A
+    outer = cs_union([rect(-half, 0.0, half, h + A), rect(-half - 0.7, h - 1.8, half + 0.7, h + A)])
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(outer, A + 0.7, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 2.4), 0.0, 0.5))
+    fest = swag(-half + 1.0, half - 1.0, vf + 2.0, 1.1, width=0.6)
+    tails = cs_union([stroke([(sg * (half - 1.0), vf + 2.0), (sg * (half - 0.8), vf + 0.6)], 0.5) for sg in (-1, 1)])
+    parts.append(ext(_clip_v(fest + tails, vf + 0.15, vf + 2.3), 0.49, 0.9))
+    vc = vf + 2.4 + 1.1
+    parts.append(MD.run(-half - 1.2, half + 1.2, vc, MD.CROWN, 1.1, up=False))
+    for sg in (-1, 1):
+        x = sg * (half + 0.55)
+        con = cs_union([rect(x - 0.5, vf - 2.2, x + 0.5, vc - 1.05), circle((x, vf - 2.2), 0.5, 12)])
+        parts.append(ext(con, 0.0, 1.0))
+        parts.append(ext(circle((x, vc - 1.6), 0.4, 12), 0.99, 1.3))
+    sw = half + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.7, -1.8, sg * (w / 2) + 0.7, -0.8, 0.0, 0.9, c=0.25))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + 0.2, -1.8)
+
+
+def window_bello_serliana(wc=7.2, hc=20.0, ws=3.2, hs=14.0, mul=1.6, A=0.9):
+    """A Serliana for the wing's upper storey: a round-headed centre light springing from the
+    entablature over two narrow flat-headed side lights, engaged colonnettes at the mullions, an
+    archivolt with a keystone; a balconet of turned balusters below."""
+    W_ = wc + 2 * ws + 2 * mul
+    rc = wc / 2
+    spring = hc - rc
+    op = cs_union([O.opening_cs(wc + 2 * mul, hc, rc + mul), rect(-W_ / 2, 0.0, W_ / 2, hs)])
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    body = [ext(plug_cs, -pl, -0.6)]
+    mids = cs_union([rect(sg * (wc / 2 + mul / 2) - mul / 2, -1, sg * (wc / 2 + mul / 2) + mul / 2, hs + 0.8) for sg in (-1, 1)]
+                    + [rect(-W_, hs - 0.1, W_, hs + 0.8) - rect(-wc / 2, -1, wc / 2, 100)])
+    g = inner - mids
+    bars = cs_union([rect(-W_, hs * 0.5 - 0.35, W_, hs * 0.5 + 0.35), rect(-RIB / 2, spring, RIB / 2, hc)])
+    sash = _glazed(body, g, pl, bars, plug_cs) + [ext(mids ^ plug_cs, -pl, -0.6)]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-W_ - 10, 0.0, W_ + 10, hc + 40) - op)]
+    for sg in (-1, 1):
+        x = sg * (wc / 2 + mul / 2)
+        prof = [(0.0, 0.0), (0.55, 0.0), (0.55, hs - 1.4), (0.75, hs - 1.0), (0.75, hs - 0.6), (0.0, hs - 0.6)]
+        parts.append(PW._revolve(prof, 18).rotate([-90, 0, 0]).translate([x, 0.0, 0.0]) ^ box([x - 2, 0.0, 0.0], [x + 2, hs, 3.0]))
+    ent = rect(-W_ / 2 - A, hs - 0.01, W_ / 2 + A, hs + 1.2) - O.opening_cs(wc, hc + 5, rc)
+    parts.append(ext(ent, 0.0, 1.0))
+    arc = O.opening_cs(wc + 2 * (mul + 1.0), hc + 1.0, rc + mul + 1.0) - O.opening_cs(wc + 2 * mul, hc, rc + mul)
+    parts.append(ext(arc ^ rect(-W_, spring, W_, hc + 5), 0.0, 1.1))
+    parts.append(keystone(0.0, hc - 0.4, 2.6, 1.2, 1.8, 0.0, 1.5))
+    sw = W_ / 2 + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    bal = [rect(-sw + 0.4, -4.2, sw - 0.4, -3.6), rect(-sw + 0.4, -1.4, sw - 0.4, -0.79)]
+    for x in np.arange(-sw + 1.2, sw - 1.0, 1.5):
+        bal.append(cs_union([rect(x - 0.25, -3.7, x + 0.25, -1.3), oval((x, -2.6), 0.45, 0.6, 12)]))
+    parts.append(ext(cs_union(bal), 0.0, 0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, hc + 2.4, -4.2)
+
+
+def window_bello_bifora(w=11.0, h=17.0, A=0.9):
+    """The campanile's bifora: two round-headed lights parted by a colonnette under one round
+    arch, an oculus in the tympanum between them, an archivolt with a keystone; a sill."""
+    r = w / 2
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    sw_ = (w - 1.2 - 1.2) / 2
+    rs = sw_ / 2
+    vs = h - r - 0.6
+    lights = [O.opening_cs(sw_, vs, rs).translate((sg * (sw_ / 2 + 0.6), 0.0)) ^ inner for sg in (-1, 1)]
+    oc = (0.0, vs + (h - vs) * 0.45)
+    ro = min(1.4, (h - vs) * 0.3)
+    lights.append(circle(oc, ro, 24))
+    body = [ext(plug_cs, -pl, -0.6)]
+    bars = cs_union([rect(-w, (vs - rs) * 0.5 - 0.3, w, (vs - rs) * 0.5 + 0.3)])
+    sash = _glazed(body, cs_union(lights), pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, RND), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    prof = [(0.0, 0.0), (0.5, 0.0), (0.5, vs - rs - 1.0), (0.72, vs - rs - 0.6), (0.72, vs - rs - 0.2), (0.0, vs - rs - 0.2)]
+    parts.append(PW._revolve(prof, 16).rotate([-90, 0, 0]) ^ box([-2, 0.0, 0.0], [2, h, 3.0]))
+    parts.append(keystone(0.0, h - 0.3, A + 1.6, 1.2, 1.8, 0.0, 1.4))
+    sw = r + A + 0.5
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.6, -1.0)
+
+
+def door_bello(w=13.0, h=25.0, A=1.0):
+    """The Bellosguardo's entrance: a pair of leaves of two raised panels each under a round
+    fanlight of radiating bars and a ring; a Gibbs surround (a casing broken by rusticated
+    blocks long and short up the jambs and round the head as voussoirs, a big keystone); a
+    cornice over all."""
+    r = w / 2
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    spring = h - r
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    dh = spring - 0.4
+    mid = 0.6
+    lw = (ib[2] - ib[0] - mid) / 2
+    body = [ext(plug_cs, -pl, -1.0)]
+    ul = ib[0]
+    for i in range(2):
+        body.append(ext(rect(ul, 0.5, ul + lw, dh), -pl, -0.8))
+        body.append(_panel(rect(ul + 0.7, 1.2, ul + lw - 0.7, dh * 0.42)))
+        body.append(_panel(rect(ul + 0.7, dh * 0.42 + 0.8, ul + lw - 0.7, dh - 0.8)))
+        ul += lw + mid
+    fan = inner ^ rect(-w, spring + 0.4, w, h + 2)
+    fc = (0.0, spring + 0.4)
+    rays = [stroke([fc, (fc[0] + w * math.cos(a), fc[1] + w * math.sin(a))], RIB) for a in np.linspace(0.42, math.pi - 0.42, 5)]
+    ring = circle(fc, r * 0.55, 32) - circle(fc, r * 0.55 - RIB, 32)
+    sash = _glazed(body, fan, pl, cs_union(rays + [ring, circle(fc, 1.0, 16)]), plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, spring + 0.42) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, RND), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    # the Gibbs blocks up the jambs
+    v = 0.0
+    k = 0
+    while v < spring - 2.0:
+        leg = 2.8 if k % 2 == 0 else 1.8
+        for sg in (-1, 1):
+            a, b = sorted((sg * (w / 2 + A - 0.2), sg * (w / 2 + A + leg)))
+            parts.append(chamfer_box(a, v, b, min(v + 2.4, spring), 0.0, 1.0, c=0.25, bottom=1.0))
+        v += 2.8
+        k += 1
+    vs, vt = _florentine(w, h, A, n=7, crown=3.0, foot=2.4)
+    parts.append(ext(vs, 0.0, 1.0))
+    parts.append(keystone(0.0, h + A - 0.4, 3.6, 1.8, 2.6, 0.0, 1.6))
+    half = w / 2 + A + 3.2
+    parts.append(MD.run(-half, half, vt + 0.6, MD.CROWN, 1.2, up=False))
+    parts.append(ext(rect(-half + 0.4, vt - 0.61, half - 0.4, vt + 0.61 - 1.2 + 0.01), 0.0, 0.6))
+    parts.append(ext(rect(-w / 2 - A - 0.6, -0.6, w / 2 + A + 0.6, 0.01), 0.0, 1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vt + 0.8, -0.6)
+
+
+def door_bello_back(w=10.0, h=24.0, A=0.9, rise=1.4):
+    """The garden door: one leaf, two raised panels under a light of four panes, a segmental
+    transom, a plain architrave under a frieze and cornice."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    dh = h - rise - 3.6
+    gv0 = dh * 0.48
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(ib[0], 0.5, ib[2], dh), -pl, -0.8),
+            _panel(rect(ib[0] + 0.8, 1.2, ib[2] - 0.8, gv0 * 0.5 - 0.2)), _panel(rect(ib[0] + 0.8, gv0 * 0.5 + 0.2, ib[2] - 0.8, gv0 - 0.8))]
+    light = rect(ib[0] + 0.9, gv0, ib[2] - 0.9, dh - 0.8)
+    tran = inner ^ rect(-w, dh + 0.5, w, h + 2)
+    bars = cs_union([rect(-RIB / 2, gv0, RIB / 2, dh), rect(-w, (gv0 + dh - 0.8) / 2 - RIB / 2, w, (gv0 + dh - 0.8) / 2 + RIB / 2)])
+    sash = _glazed(body, light + tran, pl, bars, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.4
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.8), 0.0, 0.5))
+    vc = vf + 1.8 + 1.1
+    parts.append(MD.run(-half - 0.8, half + 0.8, vc, MD.CROWN, 1.1, up=False))
+    parts.append(ext(rect(-w / 2 - A - 0.4, -0.6, w / 2 + A + 0.4, 0.01), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + 0.2, -0.6)
+
+
+# ------------------------------------------------------------------ loggia parts
+def post_corinthian(h, collar=None, abacus=3.4, slot=(1.2, 1.0)):
+    """A Corinthian column: an Attic base, a plain shaft with entasis, a bell capital wrapped in
+    two rows of eight acanthus leaves (thin ribs standing off the bell) under four corner
+    volutes (flat-topped plates) and a concave abacus (the Bellosguardo's loggia)."""
+    zc = h - 3.6
+    r = 1.0
+    prof = [(0.0, 1.19), (1.45, 1.19), (1.45, 1.4), (1.25, 1.6), (1.12, 1.8), (1.26, 2.0), (1.08, 2.3), (r, 2.6),
+            (r * 1.05, (2.6 + zc) * 0.4), (r * 0.9, zc - 0.3), (1.05, zc - 0.1), (1.05, zc + 0.1), (0.95, zc + 0.3),
+            (1.1, zc + 1.4), (1.3, zc + 2.0)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    body = body + PW._top(h, abacus / 2, zc + 2.0, 1.3, slot, seg=32)
+    for row, (z0, z1, rr, off) in enumerate(((zc + 0.3, zc + 1.2, 1.08, 0.0), (zc + 0.9, zc + 1.9, 1.24, math.pi / 8))):
+        for k in range(8):
+            a = 2 * math.pi * k / 8 + off
+            c, s = math.cos(a), math.sin(a)
+            leaf = M.hull_points([(c * (rr - 0.1) - s * 0.25, s * (rr - 0.1) + c * 0.25, z0), (c * (rr - 0.1) + s * 0.25, s * (rr - 0.1) - c * 0.25, z0),
+                                  (c * (rr + 0.25) - s * 0.25, s * (rr + 0.25) + c * 0.25, z1 - 0.25),
+                                  (c * (rr + 0.25) + s * 0.25, s * (rr + 0.25) - c * 0.25, z1 - 0.25),
+                                  (c * (rr - 0.1), s * (rr - 0.1), z1)])
+            body = body + leaf
+    zt = zc + 2.0 + max(0.2, abacus / 2 * math.sqrt(2) - 1.3)
+    sq = abacus / 2
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            d = np.array([sx, sy]) / math.sqrt(2)
+            cc = np.array([sx, sy]) * (sq - 0.3)
+            disc = circle((0.0, 0.0), 0.7, 20) ^ rect(-1, -1, 1, 0.0)
+            plate = M.extrude(disc, 0.5).translate([0, 0, -0.25])
+            A = np.array([[-d[1], 0.0, d[0], cc[0]], [d[0], 0.0, d[1], cc[1]], [0.0, 1.0, 0.0, zt]])
+            body = body + plate.transform(A)
+    return body
+
+
+def baluster_squarebellied(h, seg=4):
+    """A Renaissance baluster square in plan: a square foot, a square belly swelling out and
+    in at 45 degrees, a square neck and a square top block, each stage a chamfered block (the
+    Bellosguardo)."""
+    def lay(z0, z1, a0, a1):
+        return M.hull_points([(x * a0, y * a0, z0) for x in (-1, 1) for y in (-1, 1)] + [(x * a1, y * a1, z1) for x in (-1, 1) for y in (-1, 1)])
+    hb = h * 0.42
+    parts = [box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.8]), lay(0.79, 1.0, 0.36, 0.36), lay(0.99, hb, 0.36, 0.52),
+             lay(hb - 0.01, hb + (0.52 - 0.28), 0.52, 0.28), lay(hb + 0.23, h - 1.2, 0.28, 0.28), lay(h - 1.21, h - 0.81, 0.28, 0.42),
+             box([-0.55, -0.55, h - 0.82], [0.55, 0.55, h])]
+    return union(parts)
+
+
+def frieze_archivoltarcade(u0, u1, v_bot, v_top):
+    """A loggia arcade: an elliptical arch filling the bay from post to post, an archivolt
+    band round it, a pierced roundel in each spandrel and a keystone at the crown (the
+    Bellosguardo)."""
+    L = u1 - u0
+    hh = v_top - v_bot
+    rise = min(L / 2, hh - 1.6)
+    solid = rect(u0, v_bot, u1, v_top + 0.05)
+    hole = arch_cs(u0 + 0.3, u1 - 0.3, v_bot - 1.0, v_bot, rise=rise, seg=32)
+    out = solid - hole
+    rnd = []
+    for x in (u0 + L * 0.13, u1 - L * 0.13):
+        rr = min(0.9, hh * 0.12)
+        if rr > 0.55:
+            rnd.append(circle((x, v_top - rr - 0.9), rr, 16))
+    if rnd:
+        out = out - cs_union(rnd)
+    key = poly([(0.0 + (u0 + u1) / 2 - 0.7, v_bot + rise - 0.6), ((u0 + u1) / 2 + 0.7, v_bot + rise - 0.6),
+                ((u0 + u1) / 2 + 1.0, v_top), ((u0 + u1) / 2 - 1.0, v_top)])
+    return out + (key ^ solid)
+
+
+def edge_eggedge(L, z0, zc):
+    """Loggia fascia (the Bellosguardo): a fillet over a row of hanging eggs between darts."""
+    out = [rect(0.3, zc - 0.5, L - 0.3, zc)]
+    pu = 1.6
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    for k in range(n):
+        x = u0 + pu * (k + 0.5)
+        out.append(oval((x, zc - 1.05), 0.5, 0.65, 14))
+        out.append(poly([(u0 + pu * k - 0.25, zc - 0.45), (u0 + pu * k + 0.25, zc - 0.45), (u0 + pu * k, zc - 1.4)]))
+    return cs_union(out) ^ rect(0.3, -1e3, L - 0.3, 1e3), 0.6
+
+
+def skirt_medallion(reg, d=1.2):
+    """A loggia skirt of sunk panels, each holding a raised oval medallion between small
+    pilaster strips (the Bellosguardo)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, d * 0.4)]
+    pw = 8.0
+    n = max(1, int((u1 - u0) / pw))
+    p = (u1 - u0) / n
+    for k in range(n):
+        a, b = u0 + p * k, u0 + p * (k + 1)
+        out.append(ext(rect(a, v0, a + 0.8, v1), d * 0.4 - 0.01, d * 0.75))
+        c = ((a + b) / 2 + 0.4, (v0 + v1) / 2)
+        rx, ry = min(2.2, (b - a) * 0.28), min(1.4, (v1 - v0) * 0.3)
+        if rx > 0.9 and ry > 0.7:
+            out.append(ext(oval(c, rx, ry, 24) - oval(c, rx - 0.5, ry - 0.5, 20), d * 0.4 - 0.01, d * 0.72))
+            out.append(ext(oval(c, rx - 0.85, ry - 0.85, 16), d * 0.4 - 0.01, d * 0.62) if rx > 1.5 and ry > 1.2 else M())
+    out.append(ext(rect(u0 - 1, v1 - 0.9, u1 + 1, v1 + 1), d * 0.4 - 0.01, d * 0.75))
+    return union(out) ^ M.extrude(reg, d + 0.5)
+
+
+def chimney_bellosguardo(w=10.0, d=8.0, h=26.0):
+    """An Italian stack (comignolo): a plinth, a brick shaft with a sunk round-headed panel on
+    each face, a corbelled cap, and on it a little house over the flues: four piers carrying a
+    hipped tile roof with a ball at its peak. Prints upright."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 9.0
+    body = box([-w / 2 - 0.5, -d / 2 - 0.5, 0.0], [w / 2 + 0.5, d / 2 + 0.5, 1.6])
+    body = body + M.hull_points([(x, y, 1.59) for x in (-w / 2 - 0.5, w / 2 + 0.5) for y in (-d / 2 - 0.5, d / 2 + 0.5)] +
+                                [(x, y, 2.1) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)])
+    body = body + box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        pan = O.opening_cs(L - 3.0, sh - 5.0, (L - 3.0) / 2).translate((0.0, 3.0))
+        body = body - M.extrude(pan, 0.45).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2 - 0.44], [0, 1.0, 0, 0]])).rotate([0, 0, rot])
+    for k, e in enumerate((0.4, 0.8)):
+        z = sh + 0.8 * k
+        body = body + M.hull_points([(x, y, z - 0.01) for x in (-w / 2 - e + 0.4, w / 2 + e - 0.4) for y in (-d / 2 - e + 0.4, d / 2 + e - 0.4)] +
+                                    [(x, y, z + 0.4) for x in (-w / 2 - e, w / 2 + e) for y in (-d / 2 - e, d / 2 + e)]) + \
+            box([-w / 2 - e, -d / 2 - e, z + 0.39], [w / 2 + e, d / 2 + e, z + 0.8])
+    zp = sh + 1.6
+    body = body + box([-w / 2 - 0.4, -d / 2 - 0.4, zp - 0.01], [w / 2 + 0.4, d / 2 + 0.4, zp + 0.8])
+    zq = zp + 0.79
+    hp = 3.6
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            body = body + box([sx * (w / 2 - 0.2) - 0.8, sy * (d / 2 - 0.2) - 0.8, zq], [sx * (w / 2 - 0.2) + 0.8, sy * (d / 2 - 0.2) + 0.8, zq + hp])
+    zr = zq + hp - 0.01
+    rh = 3.0
+    body = body + M.hull_points([(x, y, zr) for x in (-w / 2 - 0.9, w / 2 + 0.9) for y in (-d / 2 - 0.9, d / 2 + 0.9)] +
+                                [(x, y, zr + 0.5) for x in (-w / 2 - 0.9, w / 2 + 0.9) for y in (-d / 2 - 0.9, d / 2 + 0.9)] +
+                                [(x, 0.0, zr + rh) for x in (-w / 2 + d / 2, w / 2 - d / 2)])
+    body = body + _ball(0.8, zr + rh + 0.6, neck=0.5)
+    return body
+
+
+CO.FRIEZE_EXTRA.update(olivebranch=frieze_olivebranch, rosettecoffers=frieze_rosettecoffers, wreathribbons=frieze_wreathribbons)
+CO.COURSE_EXTRA.update(guilloche=course_guilloche, eggdart=course_eggdart)
+TW.BRACKET_EXTRA.update(pendantscroll=bracket_pendantscroll)
+TW.PIERCED = TW.PIERCED + ("pendantscroll",)
+TW.FOUNDATION_EXTRA.update(talusvent=foundation_talusvent)
+SH.CORNER_EXTRA.update(bellosguardo=corner_bellosguardo)
+PW.POSTS.update(corinthian=post_corinthian)
+PW.BALUSTERS.update(squarebellied=(baluster_squarebellied, 1.6))
+PW.FRIEZES.update(archivoltarcade=frieze_archivoltarcade)
+PW.SKIRTS.update(medallion=skirt_medallion)
+FT.EDGE_EXTRA.update(eggedge=edge_eggedge)
