@@ -423,6 +423,13 @@ where its chimney seats should be):
 - **Cuts that leave a piece loose.** The pallets' fork notches cut away the stringer above
   two bottom boards, so those boards printed as loose sticks. Check every piece is one solid
   (`len(m.decompose()) == 1`) after its cuts.
+- **A run-on cut back to its target.** `FT.key_into(..., conform=True)` runs a part's face
+  on into its neighbour, then subtracts the neighbour. Where the neighbour had a thin skin
+  over a groove, a 0.3 mm strip was left 0.05 mm off the steps' back face, loose. This hit
+  nine buildings' steps. It now keeps only what stays joined to the part. Among the 73
+  multi-shell parts, check each extra shell's gap to the rest (`min_gap`): over 0.02 mm it
+  is loose. Shells that only touch print as one. Separate pieces that are each a whole on
+  the plate (the Fontaine's mansard wings) are by design.
 - **Hidden faces still print.** The drugstore turret's back corners stand inside the
   building, and their brick ends were a loose sliver one line thick. Cut off what a part
   puts inside a neighbour's footprint.
