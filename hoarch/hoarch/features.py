@@ -1339,7 +1339,11 @@ def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2, b
     keep = [c for c in tongue.decompose() if c.volume() > 1e-3 and (c ^ pt.solid).volume() > 1e-4]
     tongue = union(keep) if keep else M()                  # only what joins the part
     if conform:
-        pt.solid = (pt.solid + tongue) - tgt
+        # cut back to their shape, the run-on can leave a strip loose in front of a board's
+        # face (the Lindenwald's steps): keep only what stays joined to the part
+        out = (pt.solid + tongue) - tgt
+        keep = [c for c in out.decompose() if (c ^ pt.solid).volume() > 1e-4]
+        pt.solid = union(keep) if keep else out
     else:
         pt.solid = pt.solid + tongue
         sock = _grow(tongue, clr)              # the tongue grown (what lies outside the target cuts nothing)
