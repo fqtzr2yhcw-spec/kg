@@ -118,6 +118,8 @@ building's render data); the shops stand side by side in two rows of five in
 | 98 | The Foscari | Venetian Gothic palazzo, 148 x 100 mm: Istrian ashlar below, rose stucco in the Doge's Palace lozenge diaper above, rope colonnettes at the corners; two corner towers rising a stage over the flat roof to merlons and pinnacles; an ogee-arched loggia between them under a five-light polifora; ogee windows in dentil frames with patere, balconettes; a flat lead roof with Venetian merlons, a timber altana and funnel chimneys | print files and build guide done |
 | 99 | The Carrington | Southern Colonial Revival mansion, 156 x 92 mm plus portico: butter-yellow bevelled clapboard on red brick, panelled corner pilasters, six-over-six sashes between plantation shutters; a colossal six-column Ionic portico curving round a bowed centre with a curved iron balcony inside it and a balustrade on top; a fanlit door under a Palladian window; a hipped slate roof with pedimented dormers to a widow's walk; swags and bow-knots, Prince of Wales plumes, volute modillions | print files and build guide done |
 | 100 | The Ravenhurst | Castellated Gothic Revival villa, 150 x 94 mm plus tower and bay: squared rubble below, flint chequer above, stepped angle buttresses; battlemented flat roofs; a square tower with four pepperpot turrets and a great traceried window; Tudor-arched windows under labels; a vaulted porch of clustered piers and Tudor arches under battlements; clustered twisted chimneys; dogtooth, blind quatrefoil panels and grotesque corbel heads | print files and build guide done |
+| 101 | The Kenmore | New-layouts batch pilot 1, after the Wedding Cake House (Kennebunk): a plain five-bay Federal house of butter-yellow brick in English garden-wall bond, 120 x 90 mm, under a low hipped slate roof with four end stacks, wrapped in a standing Gothic skeleton (stepped buttresses between the bays and at the corners rising from the ground, an openwork screen of cusped pointed arches hung from the eave, a crocketed pinnacle over every buttress on the roof's edge); a Gothic porch of clustered shafts under a crocketed gable; a one-storey link with a pointed carriage arch through it to a gable-fronted clapboard barn with a great pointed hay door, cusped bargeboards and a louvred cupola. About 230 x 116 mm in all | renders for review |
+| 102 | The Sakonnet | New-layouts batch pilot 2, Shingle Style after the Low House and Kragsyde: the whole house under one great front gable, 176 x 100 mm, its eaves brought down to the ground storey so the upper floors live inside the roof; a ground storey of squared rubble with a loggia of three rock-faced round arches and a carriage arch right through the house front to back; the shingled gable jettied over the loggia with a ribbon of five casements and a balcony sunk under a round arch; a round bay at the east corner rising out of the ground and through the roof's edge under a bell cap; eyebrow dormers; rubble chimneys; a kitchen lean-to; a stone terrace on boulders | renders for review |
 ## Scenery and detail packs (`hoarch/packs.py`)
 
 Small pieces sold in packs beside the buildings, chosen from what sells on Etsy and eBay
@@ -163,6 +165,13 @@ market). The pipe load competes with the best-selling Etsy pipe load.
 | propeller | Ship Propeller Load | 4-blade 10.5 ft bronze propeller face down on a timber platform | Cocoa Brown + Iridium Gold Metallic |
 
 ## Log
+- New-layouts batch (101 on): each house starts from a real building's plan and massing, not
+  from the collection's box with a corner tower (the owner found houses 91 to 100 reused one
+  chassis: a rectangle, the mansard batch's roof generator or a flat deck, a corner tower and a
+  front porch). Plain grey massing models (`hoarch/massing/`) are reviewed before any detail.
+  Pilots: the Kenmore (a Federal house in a standing Gothic skeleton, with a carriage-arch link
+  to a barn) and the Sakonnet (Shingle Style, the whole house under one great gable). Their
+  pieces are in `hoarch/novel.py`.
 - Seventh batch (91 to 100), the grand batch: everything learned from the Victorian, Colonial and
   flat-roof (mansard batch) houses blended into ten showpieces, each a different strand of
   nineteenth-century design (Queen Anne x Second Empire x Colonial Revival, Steamboat Gothic,
