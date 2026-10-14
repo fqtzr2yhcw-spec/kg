@@ -289,8 +289,9 @@ ROOF_FLAT = ("Roof: the hip caps' ends dipped 0.4 mm below the eaves and held th
 _FIX_1014 = {
     "westbrook": CHIMNEY_BUCKET, "lindenwald": CHIMNEY_BUCKET, "randolph": CHIMNEY_BUCKET,
     "camellia": ROOF_FLAT, "hawthorn": ROOF_FLAT,
-    "drugstore": ("Turret: the brick ends at its two back corners, hidden inside the building, are cut off; they "
-                  "printed as a loose sliver one line thick. Reprint the TURRET."),
+    "drugstore": ("Turret: the brick-course ends at its two back corners, hidden inside the building, stood as a "
+                  "column one line thick joined to the wall only every other course; they are cut off. Reprint the "
+                  "TURRET."),
     "rosecroft": ("Tower lantern: the centre bars of its four lights are 0.9 mm wide, two lines of plastic (they were "
                   "0.6 mm, a single line standing 17 mm tall). Reprint the TOWER-lantern."),
     "pallets": ("Two of each pallet's five bottom boards sat right under the fork notches and printed loose; the bottom "

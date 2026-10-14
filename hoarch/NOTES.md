@@ -435,8 +435,15 @@ where its chimney seats should be):
   print as one. Separate pieces that are each a whole on the plate (the Fontaine's mansard
   wings) are by design.
 - **Hidden faces still print.** The drugstore turret's back corners stand inside the
-  building, and their brick ends were a loose sliver one line thick. Cut off what a part
-  puts inside a neighbour's footprint.
+  building. Their brick-course ends stood as a column one line thick, joined to the wall only
+  every other course. Cut off what a part puts inside a neighbour's footprint.
+- **Scan the solid, not the STL.** An exported STL is written in float32, and where shells
+  touch along an edge (brick corners, porch-top joints) it is not strictly manifold. Slicers
+  print it fine, but rebuilding it as a manifold drops triangles. 41 of the 3157 parts lost
+  volume that way (the drugstore turret 250 mm³), and a scan of the rebuilt mesh reported a
+  sliver that was really a torn hole. Check a scanner's loaded volume against the STL's
+  signed triangle volume. Scan suspect parts on the in-memory `Part.printed()` solid
+  (`kit.unique()`) instead.
 - **Tips holding a print off the bed.** The Camellia's and Hawthorn's hip caps dipped 0.4 mm
   below the eaves, so each roof stood on its cap ends and its first layers started in mid
   air. `kit.ground`, run by `Part.printed()` before `unmid`, cuts such tips off at the
