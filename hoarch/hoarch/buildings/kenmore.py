@@ -211,7 +211,7 @@ OPEN1, OPEN2, OPEN_L, OPEN_B = _openings()
 OPENINGS = OPEN1 + OPEN2
 
 
-def _place_inserts(kit, ops, ins_keep):
+def _place_inserts(kit, ops, ins_keep, group="inserts"):
     for o in ops:
         A = o.local_frame()
         sp = o.spec
@@ -219,7 +219,7 @@ def _place_inserts(kit, ops, ins_keep):
         key = "DOOR" if o.kind == "door" else "WIN"
         world, P, zones = O.place(sp, A, "Windows_Doors", "Door" if o.kind == "door" else "Sash", "Glass")
         part = kit.add(f"{key}-{o.name}", "Windows_Doors", world, P=P, key=f"{key}-{o.fam}-{b[2] - b[0]:.1f}x{b[3] - b[1]:.1f}",
-                       group="inserts", render=zones)
+                       group=group, render=zones)
         ins_keep.append(part.solid)
 
 
@@ -311,7 +311,7 @@ def build(kit=None):
         kit.add(f"CHIMNEY-{k}", "Brick", s_, key="CHIMNEY", group="roof")
     for tag, p, z_seat in pins:
         T = np.array([[1.0, 0, 0, p[0]], [0, 1.0, 0, p[1]], [0, 0, 1.0, z_seat]])
-        kit.add(f"PINNACLE-{tag}", "Lace", PIN.transform(T), P=inv34(T), key="PINNACLE", group="skeleton")
+        kit.add(f"PINNACLE-{tag}", "Lace", PIN.transform(T), P=inv34(T), key="PINNACLE", group="roof")
     print("roof", round(time.time() - t0, 1))
 
     # --- the skeleton: the buttresses (each printed on its back) and the screens
@@ -360,7 +360,7 @@ def build(kit=None):
 
     # --- the link: brick walls front and back, the passage walls, its cornice and roof
     lins = []
-    _place_inserts(kit, OPEN_L, lins)
+    _place_inserts(kit, OPEN_L, lins, group="link")
     lwalls = wall_shell([LINK], OPEN_L, t=3.0, belt=None, corners="none", water_table=False, siding=_link_skin,
                         undress=[slab(offset(LINK.cs, 10.0), LZE - LEDGE - 0.6, LZW + 0.01)],
                         partitions=[((ARCH_X - ARCH_W / 2 - 1.0, LY0 + 3.0), (ARCH_X - ARCH_W / 2 - 1.0, LY1 - 3.0), 2.0, ZF, LZW),
@@ -410,7 +410,7 @@ def build(kit=None):
     brings, _ = CO.level(BARN.pts, BZE, SMALL, cut=bkeep)
     CO.add_level(kit, brings, "CORNICE-B", "cornice")
     bins = []
-    _place_inserts(kit, OPEN_B, bins)
+    _place_inserts(kit, OPEN_B, bins, group="barn")
     broof = brf["body"] + brf["tex"] + brf["skins"] + brf["skin_tex"]
     zrb = BZ_EAVE + S_B * ((BX1 - BX0) / 2 + D_B)
     walls_env = union([wl["facade"].place(M.extrude(wl["cs"].offset(0.15), RAKE_B + 4.2).translate([0, 0, -3.15])) for wl in brf["walls"]])
@@ -426,17 +426,17 @@ def build(kit=None):
     kit.add("BARN-ROOF", "Slate", broof, group="barn")
     cup = N.cupola_kenmore(CU, round((zrb + 12.0 - z_cu) / 0.2) * 0.2)
     cub = cup.bounding_box()
-    kit.add("CUPOLA", "Lace", cup.translate([BXC, cy, z_cu]), group="barn")
+    kit.add("CUPOLA", "Lace", cup.translate([BXC, cy, z_cu]), group="cupola")
     ztop = z_cu + cub[5]
     cuproof, _ = R.hip_roof([([(BXC - CU / 2 - 1.6, cy - CU / 2 - 1.6), (BXC + CU / 2 + 1.6, cy - CU / 2 - 1.6),
                                (BXC + CU / 2 + 1.6, cy + CU / 2 + 1.6), (BXC - CU / 2 - 1.6, cy + CU / 2 + 1.6)], [0, 1, 2, 3])],
                             ztop, 1.5, 0.0, texture=None, zlo=ztop)
     cuproof = cuproof.trim_by_plane([0, 0, -1.0], -(ztop + 9.0))
     cuproof = cuproof + box([BXC - 0.8, cy - 0.8, ztop + 8.99], [BXC + 0.8, cy + 0.8, ztop + 10.2])
-    kit.add("CUPOLA-roof", "Slate", cuproof, group="barn")
+    kit.add("CUPOLA-roof", "Slate", cuproof, group="cupola")
     T = np.array([[1.0, 0, 0, BXC], [0, 1.0, 0, cy], [0, 0, 1.0, ztop + 9.0]])
     kit.add("PINNACLE-cupola", "Lace", N.pinnacle_kenmore(base=4.6, h_ped=2.4, h_shaft=3.0, h_spire=9.0).transform(T), P=inv34(T),
-            group="barn")
+            group="cupola")
     for k, wl in enumerate(brf["walls"]):
         bgb = N.barge_kenmore(wl["L"], wl["slope"], D_B, skin=SKIN_B)
         fw = wl["facade"]
@@ -444,7 +444,7 @@ def build(kit=None):
         A[:, 3] = fw.world(0.0, 0.0, RAKE_B)
         bw = bgb.transform(A) - broof
         bw = max(bw.decompose(), key=lambda m_: m_.volume())
-        kit.add(f"BARGE-{k}", "Lace", bw, P=inv34(A), key="BARGE", group="barn")
+        kit.add(f"BARGE-{k}", "Lace", bw, P=inv34(A), key="BARGE", group="roof")
     bfnd = foundation([BARN], 0.0, BZF, style="kmquarry",
                       openings=[(o.block.facades()[o.edge], o.u, -BZF - 1.0, 27.0, BZF + 2.0) for o in OPEN_B if o.name == "hay"])
     bfnd = bfnd - bkeep - box([LX0 - 4.0, LY0 - 1, -1], [BX0 + 0.2, LY1 + 1, BZF + 2]) - fnd

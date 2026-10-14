@@ -284,7 +284,7 @@ def build(kit=None):
     kit.add("ROOF", "Moss", roof, group="roof")
     for name, sp, Af in eyes:
         world, P, zones = O.place(sp, Af, "Windows_Doors", "Sash", "Glass")
-        kit.add(f"WIN-eyebrow-{name}", "Windows_Doors", world, P=P, key="WIN-eyebrow", group="inserts", render=zones)
+        kit.add(f"WIN-eyebrow-{name}", "Windows_Doors", world, P=P, key="WIN-eyebrow", group="roof", render=zones)
     print("roof", round(time.time() - t0, 1))
 
     # --- the bay's cornice and its bell cap, both cut where they run into the roof
@@ -326,7 +326,7 @@ def build(kit=None):
     Ast[:, 3] = fr.world(XC + 2.0, -ZF, 18.0)
     steps = FT.steps(18.0, zt - 0.4, 3).transform(Ast)
     kit.add("TERRACE", "Boulder", terr - fnd, group="terrace")
-    kit.add("TERRACE-steps", "Boulder", steps - terr - fnd, group="terrace")
+    kit.add("TERRACE-steps", "Boulder", steps - terr - fnd, group="stoop")
     parts_ = {p_.name: p_ for p_ in kit.parts}
     parts_["FOUNDATION"].solid = parts_["FOUNDATION"].solid + (fnd_b - parts_["WALLS-1"].solid)
     print("base + terrace", round(time.time() - t0, 1))
@@ -358,7 +358,7 @@ def build(kit=None):
     pp["LEAN-FOUNDATION"].solid = pp["LEAN-FOUNDATION"].solid - box([sb[0] - 0.1, D + 20.0, -1.0], [sb[3] + 0.1, sb[4] + 1.0, ZF - 0.5])
     pp["LEAN-FOUNDATION"].solid = pp["LEAN-FOUNDATION"].solid - stoop
     pp["LEAN-WALLS"].solid = pp["LEAN-WALLS"].solid - stoop
-    kit.add("STOOP-back", "Boulder", stoop, group="lean")
+    kit.add("STOOP-back", "Boulder", stoop, group="stoop")
     print("lean-to", round(time.time() - t0, 1))
     print("specks dropped:", kit.drop_specks())
     print("done", round(time.time() - t0, 1))

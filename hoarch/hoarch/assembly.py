@@ -1634,6 +1634,57 @@ under their frames only. The BARTIZANs change once, from limestone to slate, at 
  10. Porch (round the tower's foot and along the front): """ + top_porch() + """; PORCH-gable (the rock-faced gable) on the porch roof over the steps,
      its back toward the house; STOOP-back at the back door.
 """, addin_note("ADDIN", "copper", "The CREST changes once from copper to brownstone.")),
+    "kenmore": ("THE KENMORE - FEDERAL HOUSE IN A GOTHIC SKELETON, WITH LINK AND BARN", "  1. FOUNDATION (quarry-faced granite, under the house and the link, open under the carriage arch).\n" + jointed(
+        " (the brick ground storey)", " (the upper storey, with the ledge for the eave)") + """
+  5. The CORNICE-J parts are short runs between the buttresses (-lower-0 to -7, then the
+     -crown pieces on them); each fits on from the front, so they can go on after WALLS-2.
+  6. The CORNICE-E parts round the eave band: -lower, then -upper on top.
+  7. Skeleton: a BUTTRESS at each notch in the base and the cornices (six across the front,
+     four down the west side, one at each east corner), its foot on the ground, its back
+     flat against the brick; a drop of glue up its back. SCREEN-S (the front) and SCREEN-W
+     (the west side) hang under the eave in front of the buttresses, the key along each top
+     edge up into the slot under CORNICE-E-upper.
+  8. ROOF onto the lip at the wall tops; the four CHIMNEYs in their pockets; a PINNACLE in each
+     of the twelve pockets along the roof's edge, over the buttresses: the socket in its foot
+     drops over the boss in the pocket.
+  9. Porch: PORCH-deck (the planked landing) in front of the door; PORCH-top (the clustered
+     shafts, pointed arches, crocketed gable and roof in one piece, so no shaft is glued on its
+     own) lowered onto it: the socket under each shaft's plinth drops over its boss on the deck
+     and the back edge meets the wall; PORCH-steps at the front; STOOP-back at the back door.
+ 10. Barn: BARN-FOUNDATION east of the house (the gap between them is for the link);
+     BARN-WALLS (both gables in one) onto its lip; its doors and lancets; CORNICE-B-lower, then
+     CORNICE-B-crown, along both eaves; a BUTTRESS-barn at each corner of the two gable fronts;
+     BARN-ROOF onto the lip; a BARGE on each gable's rake ends; CUPOLA into its pocket on the
+     ridge, CUPOLA-roof on it, PINNACLE-cupola on its tip; BARN-ramp up to the hay door.
+ 11. Link: LINK-WALLS on the foundation between the house and the barn, its ends against both;
+     DOOR-arch-S and DOOR-arch-N (the carriage arch's surrounds) into the passage's front and
+     back; the CORNICE-L parts along its front and back eave bands (-lower, then -crown);
+     LINK-ROOF on top, its ends against the house and the barn walls.
+""", """Walls, roofs, chimneys, pinnacles, the cupola and the porch top print upright. The BUTTRESSes,
+the SCREENs and the BARGEs print on their backs. Windows and doors print face up with supports
+under their frames only. The CORNICE-J-lower runs change once from white to green (the ball
+flowers); CORNICE-E-lower, CORNICE-B-lower and CORNICE-L-lower once from white to yellow.
+"""),
+    "sakonnet": ("THE SAKONNET - SHINGLE STYLE HOUSE UNDER ONE GREAT GABLE", "  1. FOUNDATION (the boulder plinth, with the curbs along the carriage passage).\n" + jointed(
+        " (the rubble ground storey, the loggia's arcade, the passage walls and the bay's lower\n     storey)",
+        " (the shingled upper storey: the knee walls, both gables and the bay's upper storey).\n     Here the JOINT is the girt: it jetties out over the loggia, its soffit under the overhang") + """
+     ARCH-loggia (three) into the loggia's arches from the front; DOOR-carriage-S and
+     DOOR-carriage-N (the rock-faced arches) into the carriage passage's ends.
+  5. The CORNICE-E parts round the foot of WALLS-2, on the girt (under both eaves and across
+     the gable feet): -course, then -crown on top.
+  6. ROOF (the great gable, hollow, printed upright) onto the lip at the top of the knee walls,
+     round the bay; the two CHIMNEYs down into their pockets; the WIN-eyebrows into the
+     eyebrows on both slopes.
+  7. Bay: CORNICE-BAY-lower, then -crown, round its top band; BAY-cap (the bell cap) on top.
+  8. LOGGIA-deck (the planked floor) between the arcade and the loggia's back wall; TERRACE
+     against the base in front of the loggia; TERRACE-steps at its front.
+  9. Kitchen lean-to: LEAN-FOUNDATION against the back of the base; LEAN-WALLS onto its lip;
+     its door and windows; CORNICE-LEAN-lower, then -crown; LEAN-ROOF from the cornice up
+     against the back wall; STOOP-back at the kitchen door.
+""", """Walls, roofs, chimneys and the bay cap print upright. The loggia arches and the windows and
+doors print face up with supports under their frames only. CORNICE-J-lower changes once from
+oxblood to cream (the chevron course); CORNICE-BAY-lower and CORNICE-LEAN-lower the same way.
+"""),
     "section4": ("SECTION HOUSE No. 4 - TOOL HOUSE AND SPEEDER SHED", """  1. TOOL-FOUNDATION on the layout, the door side toward the track; TOOL-WALLS onto it; the door and windows; TOOL-CORNICE-frieze, then TOOL-CORNICE-crown; TOOL-ROOF; STOVEPIPE down into the hole in the back slope.
   2. SPEEDER-FOUNDATION with its gable end to the speeder's spur; SPEEDER-WALLS onto it; the doors and window; SPEEDER-CORNICE-course, then SPEEDER-CORNICE-crown; SPEEDER-ROOF.
 """, """Walls and roofs print upright. Windows and doors print face up with supports under their frames only.
