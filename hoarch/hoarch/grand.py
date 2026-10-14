@@ -2946,3 +2946,638 @@ CO.COURSE_EXTRA.update(cordelette=course_cordelette)
 TW.BRACKET_EXTRA.update(machicolation=bracket_machicolation)
 TW.FOUNDATION_EXTRA.update(diamondpoint=foundation_diamondpoint)
 SH.CORNER_EXTRA.update(chantilly=corner_chantilly)
+
+
+# ================================================================== the Vanderlyn (house 95)
+# Beaux-Arts, 1902: a white palace for a Gilded Age fortune. A podium, a ground storey of
+# deep V-jointed rustication pierced by round-arched French windows under scrolled keys, an upper
+# storey of buff brick in English cross bond between colossal pilasters, its windows balconied
+# under segmental pediments; a cornice of bucrania and garlands on garland consoles, carrying a
+# balustrade of bottle balusters between pedestals with balls, and behind it a copper mansard
+# with oeils-de-boeuf, a crested deck with bronze anthemion cresting and, at the centre, a ribbed
+# dome on a drum of oculi under a lantern. A colossal portico of four fluted Composite columns
+# rises through both storeys to a triglyph entablature and a pediment with a cartouche and
+# garlands, urns and a palmette at its corners.
+
+VL_LEVELS = dict(hi=40.0)      # the building sets it: the brick storey's foot over the block's base
+
+
+def slate_copper(k, j):
+    """The Vanderlyn's copper: square copper shingles, every seventh course clipped into a
+    band of hexagons."""
+    return "hex" if k % 7 == 3 else "square"
+
+
+def rusticated_vjoint(region, datum=0.0, course=2.8, block=8.4, joint=0.8, d=0.45):
+    """Rustication with deep V joints both ways: every block a flat face bevelled back 45
+    degrees to the joint, long blocks broken half (the Vanderlyn's ground storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1 + course:
+        a, b = datum + k * course + 0.05, datum + (k + 1) * course - 0.05
+        if b > v0 - 1 and a < v1 + 1:
+            u = u0 - block + (k % 2) * block / 2
+            while u < u1 + block:
+                out.append(chamfer_box(u + 0.05, a, u + block - 0.05, b, 0.0, d, c=joint / 2, bottom=d))
+                u += block
+        k += 1
+    return union(out) ^ M.extrude(region, d + 0.1)
+
+
+def brick_englishcross(region, datum=0.0, bl=2.4, bh=0.8, mortar=0.45, bed=0.2, d=0.25):
+    """English cross bond: courses of stretchers and of headers in turn, every other stretcher
+    course broken half a brick, so the joints form crosses (the Vanderlyn's buff brick)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    cells = []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        top = v + bh - bed
+        if k % 2 == 0:
+            step, off = bl, (bl / 2 if (k // 2) % 2 else 0.0)
+        else:
+            step, off = bl / 2, bl / 4
+        u = u0 - 2 * bl + off
+        while u < u1 + bl:
+            cells.append(rect(u + mortar / 2, v, u + step - mortar / 2, top))
+            u += step
+        k += 1
+    return M.extrude(cs_union(cells) ^ region, d)
+
+
+def corner_vanderlyn(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Vanderlyn's corners: on the rusticated storey the V-jointed blocks turning the
+    corner; on the brick storey a colossal pilaster (three sunk flutes, a base, a capital block
+    with two volute bosses)."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    hi = VL_LEVELS["hi"]
+    parts = []
+    v = qa
+    while v < min(qb, hi) - 1.4:
+        a, b = span(-0.45, 4.2)
+        top = min(v + 2.7, min(qb, hi) - 0.1)
+        parts.append(chamfer_box(a, v + 0.05, b, top, 0.0, 0.45, c=0.4, bottom=0.45, square=("u0",) if at_start else ("u1",)))
+        v += 2.8
+    z0 = max(qa, hi)
+    if qb - z0 > 8.0:
+        pw = 3.2
+        a, b = span(0.0, pw)
+        shaft = box([a, z0, 0.0], [b, qb, t + 0.15])
+        for f in (0.25, 0.5, 0.75):
+            fa, fb = span(pw * f - 0.22, pw * f + 0.22)
+            shaft = shaft - box([fa, z0 + 3.0, t - 0.1], [fb, qb - 3.4, t + 0.5])
+        parts.append(shaft)
+        pa, pb = span(-0.3, pw + 0.3)
+        parts.append(chamfer_box(pa, z0, pb, z0 + 2.0, 0.0, t + 0.5, c=0.2, bottom=t + 0.5))
+        parts.append(chamfer_box(pa, qb - 2.6, pb, qb, 0.0, t + 0.6, c=0.25, bottom=t + 0.6))
+        for f in (0.2, 0.8):
+            x = span(pw * f, pw * f)[0]
+            parts.append(ext(circle((x, qb - 1.5), 0.45, 12), t + 0.59, t + 0.9))
+    return union(parts) if parts else M()
+
+
+def foundation_dadopodium(reg, seed=0):
+    """A podium: a moulded base (a torus over a plinth), a dado sunk in long panels, a cyma
+    cap (the Vanderlyn)."""
+    b = reg.bounds()
+    hgt = b[3] - b[1]
+    out = [M.extrude(reg, 0.3)]
+    base = rect(b[0] - 1, b[1], b[2] + 1, b[1] + 1.6) ^ reg
+    if not base.is_empty():
+        bb = base.bounds()
+        out.append(M.hull_points([(x, bb[1], 0.0) for x in (bb[0], bb[2])] + [(x, bb[1], 0.9) for x in (bb[0], bb[2])] +
+                                 [(x, bb[3] - 0.4, 0.9) for x in (bb[0], bb[2])] + [(x, bb[3] + 0.3, 0.29) for x in (bb[0], bb[2])]))
+    cap = rect(b[0] - 1, b[3] - 1.4, b[2] + 1, b[3]) ^ reg
+    if not cap.is_empty():
+        cb = cap.bounds()
+        out.append(M.hull_points([(x, cb[1] - 0.5, 0.29) for x in (cb[0], cb[2])] + [(x, cb[1] + 0.4, 0.95) for x in (cb[0], cb[2])] +
+                                 [(x, cb[3], 0.95) for x in (cb[0], cb[2])] + [(x, cb[3], 0.29) for x in (cb[0], cb[2])]))
+    body = union(out)
+    if hgt > 5.0:
+        u = b[0] + 1.6
+        while u < b[2] - 4.0:
+            u1 = min(u + 12.0, b[2] - 1.6)
+            pan = rect(u, b[1] + 2.4, u1, b[3] - 2.4) ^ reg
+            if not pan.is_empty() and pan.area() > 4.0:
+                body = body - ext(pan, 0.12, 1.0)
+            u = u1 + 1.6
+    return body
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_rosettebeads(L, h, b, pitch, margin, p):
+    """Small rosettes between pairs of beads (the Vanderlyn's storey joint and eave)."""
+    pu = 2.8
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    ros, beads = [], []
+    for k in range(n):
+        c = (u0 + pu * (k + 0.5), h / 2)
+        r = min(0.62, h * 0.32)
+        ros.append(cs_union([circle((c[0] + r * 0.55 * math.cos(a), c[1] + r * 0.55 * math.sin(a)), r * 0.45, 10)
+                             for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)]))
+        for dx in (-0.95, 0.95):
+            beads.append(oval((c[0] + dx, h / 2), 0.26, 0.38, 10))
+    clip = rect(0.2, 0.05, L - 0.2, h - 0.05)
+    return [_st(rect(0.2, 0.2, L - 0.2, h - 0.2), b, 0.18), _st(cs_union(ros) ^ clip, b + 0.18, 0.32),
+            _st(cs_union(beads) ^ clip, b + 0.18, 0.25)]
+
+
+def frieze_anthemion(L, h, b, pitch, margin, pair, half):
+    """The anthemion: palmettes (fans of pointed leaves) and inverted lotus in turn, linked by
+    S-scrolls (the Vanderlyn's storey joint)."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    pu = max(4.0, hh * 1.2)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    pal, lot, scr = [], [], []
+    for k in range(n):
+        u = u0 + pu * (k + 0.5)
+        if k % 2 == 0:
+            base = (u, v0 + 0.3)
+            for a in np.linspace(-0.9, 0.9, 5):
+                Lf = hh * (0.62 if abs(a) > 0.5 else 0.78)
+                pal.append(_lens((base[0] + Lf * 0.5 * math.sin(a), base[1] + Lf * 0.5 * math.cos(a)), Lf, 0.55, math.pi / 2 - a))
+            pal.append(circle(base, 0.5, 12))
+        else:
+            top = (u, v1 - 0.3)
+            for a in (-0.55, 0.0, 0.55):
+                Lf = hh * 0.6
+                lot.append(_lens((top[0] + Lf * 0.5 * math.sin(a), top[1] - Lf * 0.5 * math.cos(a)), Lf, 0.6, -math.pi / 2 + a))
+        if k < n - 1:
+            x0, x1 = u + pu * 0.18, u + pu * 0.82
+            scr.append(stroke([(x0, v0 + hh * 0.3), ((x0 + x1) / 2, v0 + hh * 0.15), ((x0 + x1) / 2, v0 + hh * 0.85), (x1, v0 + hh * 0.7)], 0.45))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    out = []
+    if scr:
+        out.append(_st(cs_union(scr) ^ clip, b, 0.3))
+    if pal:
+        out.append(_st(cs_union(pal) ^ clip, b, 0.42))
+    if lot:
+        out.append(_st(cs_union(lot) ^ clip, b, 0.42))
+    return out, []
+
+
+def frieze_bucrania(L, h, b, pitch, margin, pair, half):
+    """Bucrania and garlands: at every station an ox skull with curling horns, between them a
+    garland of husks hung from ribbons (the Vanderlyn's eave)."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    out = []
+    for u in CO._us(L, pitch, margin, 0.0):
+        if not 1.6 < u < L - 1.6:
+            continue
+        sk = poly([(u - 0.75, v1 - 1.0), (u + 0.75, v1 - 1.0), (u + 0.45, v0 + hh * 0.3), (u, v0 + hh * 0.18), (u - 0.45, v0 + hh * 0.3)])
+        horns = cs_union([stroke([(u + sg * 0.6, v1 - 1.0), (u + sg * 1.4, v1 - 0.6), (u + sg * 1.5, v1 - 1.5), (u + sg * 1.15, v1 - 1.7)], 0.42)
+                          for sg in (-1, 1)])
+        eyes = cs_union([circle((u + sg * 0.32, v1 - 1.6), 0.2, 8) for sg in (-1, 1)])
+        out.append(_st(_clip_v(horns, v0, v1), b, 0.35))
+        out.append(_st(_clip_v(sk, v0, v1) - eyes, b, 0.55))
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 4.0:
+            continue
+        a, c = uc - wd / 2 + 1.6, uc + wd / 2 - 1.6
+        g = swag(a, c, v1 - 1.0, hh * 0.45, width=0.9)
+        husks = cs_union([circle((a + (c - a) * t_, v1 - 1.0 - hh * 0.45 * (1 - (2 * t_ - 1) ** 2)), 0.42, 10) for t_ in np.linspace(0.15, 0.85, 6)])
+        drop = cs_union([circle((uc, v1 - 1.0 - hh * 0.45 - 0.5 - 0.6 * k), 0.38 - 0.06 * k, 10) for k in range(2)])
+        out.append(_st(_clip_v(g, v0, v1), b, 0.3))
+        out.append(_st(_clip_v(husks + drop, v0, v1), b + 0.3, 0.2))
+    return out, []
+
+
+def bracket_garlandconsole(h, d, t):
+    """A console with a garland: an S of a big scroll at the wall and a small one at the soffit,
+    and a drop of three husks hanging from the big scroll (side profile, top at v = 0; the
+    Vanderlyn)."""
+    rb = min(1.0, h * 0.24, d * 0.3)
+    rs = min(0.55, h * 0.13)
+    cb = (rb + 0.2, -h + rb + 1.5)
+    body = poly([(0.0, 0.0), (d, 0.0), (d, -rs * 2), (cb[0] + rb * 0.7, cb[1] + rb * 0.8), (cb[0], cb[1] - rb), (0.0, cb[1] - rb)])
+    husks = cs_union([circle((cb[0] - 0.2, cb[1] - rb - 0.25 - 0.55 * k), 0.38 - 0.04 * k, 10) for k in range(3)] +
+                     [rect(cb[0] - 0.42, cb[1] - rb - 1.4, cb[0] + 0.02, cb[1] - rb + 0.01)])
+    prof = cs_union([body, circle(cb, rb, 18), circle((d - rs, -rs), rs, 12), husks])
+    return prof - circle(cb, rb * 0.42, 12)
+
+
+def anthemionlets(L, h):
+    """A crest course: little palmettes on a fillet, one every 2.6 mm (the Vanderlyn's deck
+    and drum)."""
+    pu = 2.6
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    cells = [rect(0.2, 0.05, L - 0.2, 0.45)]
+    for k in range(n):
+        u = u0 + pu * (k + 0.5)
+        for a in (-0.65, 0.0, 0.65):
+            Lf = h * 0.62
+            cells.append(_lens((u + Lf * 0.45 * math.sin(a), 0.4 + Lf * 0.45 * math.cos(a)), Lf, 0.5, math.pi / 2 - a))
+    return [cs_union(cells) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def fence_vanderlyn(L, h):
+    """Vanderlyn cresting (drawn at half size for SE.printable): bronze anthemion: tall palmette
+    fans on stems and small lotus buds in turn, linked low by S-scrolls, on a rail."""
+    pitch = 3.4
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    cells = [rect(0.0, 0.0, L, 0.6)]
+    for j in range(n + 1):
+        u = min(max(p * j, 0.4), L - 0.4)
+        cells.append(rect(u - 0.25, 0.0, u + 0.25, h * 0.5))
+        for a in (-0.7, -0.35, 0.0, 0.35, 0.7):
+            Lf = h * 0.48
+            cells.append(_lens((u + Lf * 0.45 * math.sin(a), h * 0.48 + Lf * 0.45 * math.cos(a)), Lf, 0.5, math.pi / 2 - a))
+        if j < n:
+            m = p * j + p / 2
+            cells.append(rect(m - 0.25, 0.0, m + 0.25, h * 0.45))
+            cells.append(_lens((m, h * 0.5), h * 0.28, 0.6, math.pi / 2))
+            for sg in (-1, 1):
+                cells.append(stroke([(m + sg * 0.25, h * 0.2), (m + sg * 0.9, h * 0.32), (m + sg * 1.2, h * 0.16)], 0.42))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def fence_vanderlyn_balustrade(L, h):
+    """The eave balustrade seen face on (printed flat, full size): a plinth, a capped rail,
+    pedestals every 18 mm or so with sunk panels and balls on plinths, bottle balusters."""
+    nseg = max(1, int(round(L / 18.0)))
+    seg = L / nseg
+    cells = [rect(0.0, 0.0, L, 1.0), rect(0.0, h - 1.1, L, h - 0.4), rect(0.0, h - 0.41, L, h)]
+    for j in range(nseg + 1):
+        u = min(max(seg * j, 1.2), L - 1.2)
+        ped = rect(u - 1.2, 0.0, u + 1.2, h + 0.5)
+        cells.append(ped - rect(u - 0.55, 1.6, u + 0.55, h - 1.6))
+        cells.append(rect(u - 0.8, h + 0.49, u + 0.8, h + 1.0))
+        cells.append(circle((u, h + 1.75), 0.8, 16))
+        if j < nseg:
+            a, b = u + 1.2, min(max(seg * (j + 1), 1.2), L - 1.2) - 1.2
+            nb = max(1, int((b - a) / 1.6))
+            for k in range(nb):
+                x = a + (b - a) * (k + 0.5) / nb
+                lo, hi = 0.95, h - 1.05
+                cells.append(cs_union([rect(x - 0.27, lo, x + 0.27, hi), oval((x, lo + (hi - lo) * 0.3), 0.52, (hi - lo) * 0.24, 14),
+                                       rect(x - 0.45, hi - 0.5, x + 0.45, hi)]))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 2.6)
+
+
+def dome_vanderlyn(r=13.0, hd=12.0, hdrum=11.0, ribs=12):
+    """The central dome as one part, printed upright: a drum (pilaster strips between oculi
+    sunk in its wall, a cornice), a ribbed dome, and a lantern of arched lights under a little
+    dome; the finial is added by the building. Local: centred on the axis, foot at z = 0."""
+    drum = M.cylinder(hdrum, r, r, 64)
+    for k in range(ribs):
+        a = 2 * math.pi * (k + 0.5) / ribs
+        oc = M.cylinder(2.0, 1.5, 1.5, 20).rotate([0, 90, 0]).translate([r - 0.6, 0, hdrum * 0.55]).rotate([0, 0, math.degrees(a)])
+        drum = drum - oc + (M.cylinder(1.2, 1.0, 1.0, 16).rotate([0, 90, 0]).translate([r - 1.3, 0, hdrum * 0.55]).rotate([0, 0, math.degrees(a)])
+                            - M.cylinder(3.0, 0.55, 0.55, 12).rotate([0, 90, 0]).translate([r - 2.0, 0, hdrum * 0.55]).rotate([0, 0, math.degrees(a)]))
+        pil = box([r - 0.2, -0.7, 0.0], [r + 0.4, 0.7, hdrum]).rotate([0, 0, math.degrees(2 * math.pi * k / ribs)])
+        drum = drum + pil
+    drum = drum + PW._revolve([(0.0, hdrum - 1.4), (r + 0.4, hdrum - 1.4), (r + 1.0, hdrum - 0.8), (r + 1.0, hdrum), (0.0, hdrum)], 64)
+    prof = [(0.0, hdrum - 0.01), (r + 0.4, hdrum - 0.01)]
+    for t in np.linspace(0.0, math.pi / 2, 12)[1:]:
+        prof.append(((r + 0.4) * math.cos(t), hdrum + hd * math.sin(t)))
+    dome = PW._revolve(prof, 64)
+    rib_body = PW._revolve([(0.0, hdrum)] + [((r + 0.75) * math.cos(t), hdrum + (hd + 0.35) * math.sin(t)) for t in np.linspace(0.0, math.pi / 2, 12)], 64)
+    for k in range(ribs):
+        sl = box([0.0, -0.4, hdrum], [r + 2.0, 0.4, hdrum + hd + 2.0]).rotate([0, 0, math.degrees(2 * math.pi * k / ribs)])
+        dome = dome + (rib_body ^ sl)
+    zl = hdrum + hd - 0.6
+    rl = 3.4
+    lan = M.cylinder(5.0, rl, rl, 32).translate([0, 0, zl])
+    for k in range(6):
+        a = math.degrees(2 * math.pi * k / 6)
+        win = (O.opening_cs(1.6, 3.2, 0.8))
+        lan = lan - M.extrude(win, 1.4).translate([0, 0, -0.7]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, rl], [0, 1.0, 0, zl + 0.8]])).rotate([0, 0, a + 90])
+    lan = lan + PW._revolve([(0.0, zl + 4.99), (rl + 0.6, zl + 4.99), (rl + 0.6, zl + 5.6), (rl * 0.8, zl + 6.6), (rl * 0.45, zl + 7.4), (0.0, zl + 7.6)], 32)
+    return drum + dome + lan, zl + 7.6
+
+
+# ------------------------------------------------------------------ windows and doors
+def _scrollkey(v0, h=3.2, w0=1.0, w1=1.8, d=1.4):
+    """A scrolled keystone: a console standing on the arch's crown, its face rolled into a scroll
+    at the top and dressed with a leaf."""
+    body = poly([(-w0 / 2, v0), (w0 / 2, v0), (w1 / 2, v0 + h), (-w1 / 2, v0 + h)])
+    out = [ext(body, 0.0, d)]
+    out.append(ext(circle((0.0, v0 + h - 0.5), 0.5, 14), d - 0.01, d + 0.35))
+    out.append(ext(_lens((0.0, v0 + h * 0.4), h * 0.5, 0.6, math.pi / 2), d - 0.01, d + 0.25))
+    return out
+
+
+def window_vanderlyn_ground(w=9.2, h=22.0, A=0.9):
+    """The rusticated storey's French window: two casements under a round head of radiating
+    bars, an archivolt and a scrolled keystone, a balconette of balusters across its foot."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    body = [ext(plug_cs, -pl, -0.6)]
+    fc = (0.0, spring)
+    bars = [rect(-0.4, -1.0, 0.4, spring + 0.3), rect(-w, spring - 0.35, w, spring + 0.35)]
+    for v in np.linspace(0.0, spring, 4)[1:-1]:
+        bars.append(rect(-w, v - RIB / 2, w, v + RIB / 2))
+    for a in np.linspace(0.6, math.pi - 0.6, 3):
+        bars.append(stroke([fc, (fc[0] + w * math.cos(a), fc[1] + w * math.sin(a))], RIB))
+    sash = _glazed(body, inner, pl, cs_union(bars), plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, RND), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts += _scrollkey(h + A - 0.6)
+    bal = [rect(-r - A, -0.6, r + A, 0.01), rect(-r - 0.4, 3.4, r + 0.4, 4.0)]
+    for x in np.linspace(-r + 0.2, r - 0.2, 6):
+        bal.append(cs_union([rect(x - 0.25, -0.1, x + 0.25, 3.5), oval((x, 1.1), 0.45, 0.65, 12)]))
+    parts.append(ext(cs_union(bal), 0.0, 0.9))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.8, -0.6)
+
+
+def window_vanderlyn_upper(w=8.8, h=20.0, A=0.9):
+    """The brick storey's window: a one-over-one sash in an eared architrave, a frieze with a
+    cartouche, a segmental pediment on two consoles; a stone balcony on two big scrolls
+    below."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(1, 1), bare=True)["insert"]
+    half = w / 2 + A
+    outer = cs_union([op.offset(A, MIT, 4.0), rect(-half - 0.7, h - 1.8, half + 0.7, h + A)])
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(outer, A + 0.7, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 2.4), 0.0, 0.5))
+    car = oval((0.0, vf + 1.2), 1.4, 0.9, 20)
+    parts.append(ext(car - oval((0.0, vf + 1.2), 0.9, 0.45, 16), 0.49, 0.95))
+    parts.append(ext(cs_union([stroke([(sg * 1.3, vf + 1.2), (sg * 2.8, vf + 1.9), (sg * 4.0, vf + 1.0)], 0.45) for sg in (-1, 1)]) ^ rect(-half, vf, half, vf + 2.4), 0.49, 0.85))
+    vc = vf + 2.4 + 0.96
+    parts.append(MD.run(-half - 1.0, half + 1.0, vc, MD.CROWN, 1.0, up=False))
+    seg = arch_cs(-half - 1.0, half + 1.0, vc - 0.01, vc - 0.01, rise=2.2, seg=40)
+    parts.append(ext((seg - seg.offset(-0.8, MIT, 4.0)) ^ rect(-50, vc - 0.01, 50, 50), 0.0, 1.1))
+    for sg in (-1, 1):
+        x = sg * (half + 0.5)
+        parts.append(ext(cs_union([rect(x - 0.5, vf - 2.4, x + 0.5, vc - 1.0), circle((x, vf - 2.4), 0.5, 12)]), 0.0, 1.0))
+    sw = half + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.2, up=False))
+    for sg in (-1, 1):
+        x = sg * (half - 0.4)
+        parts.append(ext(cs_union([rect(x - 0.6, -3.4, x + 0.6, -1.19), circle((x, -3.4), 0.6, 14)]), 0.0, 1.4))
+    bal = [rect(-sw + 0.4, -1.2, sw - 0.4, -0.79)]
+    parts.append(ext(cs_union(bal), 0.0, 1.0))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + 2.4, -4.0)
+
+
+def addin_vanderlyn(rx=2.4, ry=3.2, A=0.9):
+    """An oeil-de-boeuf for the copper mansard (an add-in): an oval light with a cross of bars
+    in a moulded oval frame, a garland hung across its head from two rosettes, a scrolled
+    cartouche crest and a sill on a console."""
+    c = (0.0, ry + 1.0)
+    op = oval(c, rx, ry, 40)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, 20.0), rect(-10.0, c[1] - RIB / 2, 10.0, c[1] + RIB / 2)])
+    rim = oval(c, rx + A + 0.4, ry + A + 0.4, 40) - op
+    parts = [ext(rim, 0.0, 0.9)]
+    g = swag(-rx - 0.8, rx + 0.8, c[1] + ry * 0.55, 1.1, width=0.7)
+    parts.append(ext(g + circle((-rx - 0.8, c[1] + ry * 0.55), 0.55, 12) + circle((rx + 0.8, c[1] + ry * 0.55), 0.55, 12), 0.6, 1.25))
+    top = c[1] + ry + A + 0.4
+    crest = cs_union([poly([(-1.4, top - 0.5), (1.4, top - 0.5), (0.8, top + 1.6), (-0.8, top + 1.6)]),
+                      circle((-1.2, top + 1.3), 0.5, 12), circle((1.2, top + 1.3), 0.5, 12)])
+    parts.append(ext(crest, 0.0, 1.0))
+    parts.append(MD.run(-rx - 0.8, rx + 0.8, 0.6, MD.SILL, 0.9, up=False))
+    parts.append(ext(cs_union([rect(-0.6, -0.9, 0.6, 0.0), circle((0.0, -0.9), 0.6, 12)]), 0.0, 1.0))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = (oval(c, rx + A + 0.4, ry + A + 0.4, 40) + rect(-rx - A - 0.4, 0.2, rx + A + 0.4, c[1])).offset(-0.3, RND) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=top + 1.8, bottom=-1.6)
+
+
+def door_vanderlyn(w=14.0, h=27.0, A=1.2):
+    """The Vanderlyn's entrance under the portico: a pair of leaves, each a glazed upper panel
+    over a raised one, under a round fanlight of radiating bars; a heavy architrave, and over
+    it a broken segmental pediment on consoles with a cartouche in the break."""
+    r = w / 2
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    spring = h - r
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    dh = spring - 0.4
+    mid = 0.6
+    lw = (ib[2] - ib[0] - mid) / 2
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    ul = ib[0]
+    for i in range(2):
+        body.append(ext(rect(ul, 0.5, ul + lw, dh), -pl, -0.8))
+        body.append(_panel(rect(ul + 0.7, 1.2, ul + lw - 0.7, dh * 0.38)))
+        lights.append(rect(ul + 0.8, dh * 0.38 + 0.8, ul + lw - 0.8, dh - 0.8))
+        ul += lw + mid
+    fan = inner ^ rect(-w, dh + 0.5, w, h + 2)
+    fc = (0.0, dh + 0.5)
+    rays = [stroke([fc, (fc[0] + w * math.cos(a), fc[1] + w * math.sin(a))], RIB) for a in np.linspace(0.4, math.pi - 0.4, 6)]
+    bars = cs_union(rays + [circle(fc, 1.2, 16) - circle(fc, 1.2 - RIB, 16)] +
+                    [rect(ul_ - 0.0, (dh * 0.38 + dh) / 2 - RIB / 2, ul_ + lw, (dh * 0.38 + dh) / 2 + RIB / 2) for ul_ in (ib[0], ib[0] + lw + mid)])
+    sash = _glazed(body, cs_union(lights) + fan, pl, bars, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, RND), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts += _scrollkey(h + A - 0.6, h=3.4, w0=1.2, w1=2.0)
+    half = r + A + 2.4
+    for sg in (-1, 1):
+        x = sg * (r + A + 1.2)
+        parts.append(ext(rect(x - 1.1, 0.0, x + 1.1, spring + 2.0), 0.0, 1.0))
+        parts.append(ext(cs_union([rect(x - 0.65, spring + 2.0, x + 0.65, h + 2.0), circle((x, spring + 2.0), 0.65, 12)]), 0.0, 1.3))
+    vc = h + A + 3.6
+    parts.append(MD.run(-half, half, vc, MD.CROWN, 1.2, up=False))
+    seg = arch_cs(-half, half, vc - 0.01, vc - 0.01, rise=3.4, seg=40)
+    band = (seg - seg.offset(-1.0, MIT, 4.0)) ^ rect(-50, vc - 0.01, 50, 50)
+    parts.append(ext(band - rect(-2.6, vc - 1, 2.6, 50), 0.0, 1.2))
+    car = oval((0.0, vc + 2.0), 1.8, 2.2, 24)
+    parts.append(ext(car, 0.0, 0.8))
+    parts.append(ext(car - car.offset(-0.5, RND), 0.79, 1.3))
+    parts.append(ext(rect(-half, -0.6, half, 0.01), 0.0, 1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + 4.4, -0.6)
+
+
+def door_vanderlyn_back(w=10.0, h=24.0, A=1.0, rise=1.6):
+    """The garden door: one leaf, a glazed upper panel over two raised ones, a segmental
+    transom, an architrave under a frieze and cornice on consoles."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    dh = h - rise - 3.4
+    gv0 = dh * 0.5
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(ib[0], 0.5, ib[2], dh), -pl, -0.8),
+            _panel(rect(ib[0] + 0.8, 1.2, ib[2] - 0.8, gv0 * 0.5 - 0.2)), _panel(rect(ib[0] + 0.8, gv0 * 0.5 + 0.2, ib[2] - 0.8, gv0 - 0.8))]
+    light = rect(ib[0] + 0.9, gv0, ib[2] - 0.9, dh - 0.8)
+    tran = inner ^ rect(-w, dh + 0.5, w, h + 2)
+    sash = _glazed(body, light + tran, pl, cs_union([rect(-RIB / 2, gv0, RIB / 2, h + 2)]), plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A + 0.5
+    vf = h + A
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 1.8), 0.0, 0.5))
+    vc = vf + 1.8 + 1.1
+    parts.append(MD.run(-half - 0.9, half + 0.9, vc, MD.CROWN, 1.1, up=False))
+    for sg in (-1, 1):
+        x = sg * (half + 0.4)
+        parts.append(ext(cs_union([rect(x - 0.5, vf - 2.2, x + 0.5, vc - 1.1), circle((x, vf - 2.2), 0.5, 12)]), 0.0, 1.0))
+    parts.append(ext(rect(-half, -0.6, half, 0.01), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + 0.2, -0.6)
+
+
+# ------------------------------------------------------------------ the portico
+def post_composite(h, collar=None, abacus=7.4, slot=(1.2, 1.0), r=2.9):
+    """A colossal Composite column: an Attic base on a plinth, a shaft with entasis cut in
+    sixteen flutes, an astragal, a bell wrapped in two rows of acanthus (ribs standing off it),
+    an egg band, big Ionic volutes under the corners of a concave abacus (flat-topped plates,
+    for the upside-down top) (the Vanderlyn's portico)."""
+    zc = h - 7.0
+    prof = [(0.0, 1.79), (r + 0.9, 1.79), (r + 0.9, 2.3), (r + 0.5, 2.7), (r + 0.35, 3.1), (r + 0.6, 3.5), (r + 0.25, 3.9), (r, 4.3),
+            (r * 1.04, (4.3 + zc) * 0.38), (r * 0.88, zc - 0.4), (r + 0.1, zc - 0.2), (r + 0.1, zc + 0.15), (r * 0.9, zc + 0.4),
+            (r + 0.1, zc + 2.6), (r + 0.55, zc + 3.6), (r + 0.85, zc + 4.2)]
+    body = PW._revolve(prof, 48) + box([-(r + 1.2), -(r + 1.2), 0.0], [r + 1.2, r + 1.2, 1.8])
+    for k in range(16):
+        a = 360.0 * (k + 0.5) / 16
+        fl = box([r * 0.88 - 0.35, -0.3, 5.0], [r + 0.6, 0.3, zc - 1.6]).rotate([0, 0, a])
+        body = body - fl
+    body = body + PW._top(h, abacus / 2, zc + 4.2, r + 0.85, slot, seg=48)
+    for z0, z1, rr, off in ((zc + 0.4, zc + 2.0, r + 0.15, 0.0), (zc + 1.4, zc + 3.4, r + 0.5, math.pi / 8)):
+        for k in range(8):
+            a = 2 * math.pi * k / 8 + off
+            c, s = math.cos(a), math.sin(a)
+            body = body + M.hull_points([(c * (rr - 0.15) - s * 0.4, s * (rr - 0.15) + c * 0.4, z0), (c * (rr - 0.15) + s * 0.4, s * (rr - 0.15) - c * 0.4, z0),
+                                         (c * (rr + 0.35) - s * 0.4, s * (rr + 0.35) + c * 0.4, z1 - 0.4),
+                                         (c * (rr + 0.35) + s * 0.4, s * (rr + 0.35) - c * 0.4, z1 - 0.4), (c * (rr - 0.15), s * (rr - 0.15), z1)])
+    zt = zc + 4.2 + max(0.2, abacus / 2 * math.sqrt(2) - (r + 0.85))
+    sq = abacus / 2
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            d = np.array([sx, sy]) / math.sqrt(2)
+            cc = np.array([sx, sy]) * (sq - 0.5)
+            disc = circle((0.0, 0.0), 1.3, 24) ^ rect(-2, -2, 2, 0.0)
+            plate = M.extrude(disc, 0.6).translate([0, 0, -0.3])
+            A = np.array([[-d[1], 0.0, d[0], cc[0]], [d[0], 0.0, d[1], cc[1]], [0.0, 1.0, 0.0, zt]])
+            body = body + plate.transform(A)
+    return max(body.decompose(), key=lambda c: c.volume())          # (the flutes' ends leave specks)
+
+
+def baluster_invertedvase(h, seg=18):
+    """An inverted vase baluster: a slender stem rising from a ring on a square foot to a
+    swelling body high up under a neck and a square top (the Vanderlyn)."""
+    prof = [(0.0, 0.8), (0.34, 0.8), (0.34, 1.0), (0.24, 1.3), (0.24, h * 0.4), (0.4, h * 0.52), (0.52, h * 0.62), (0.46, h * 0.72),
+            (0.28, h * 0.8), (0.28, h - 1.0), (0.36, h - 0.8)]
+    body = PW._revolve(prof, seg)
+    return body + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_regulae(u0, u1, v_bot, v_top):
+    """A portico's architrave: a fascia under the beam with a regula and six guttae under every
+    triglyph above (the Vanderlyn)."""
+    cells = [rect(u0, v_top - 1.6, u1, v_top + 0.05)]
+    L = u1 - u0
+    n = max(1, int(L / 5.0))
+    for k in range(n):
+        x = u0 + L * (k + 0.5) / n
+        cells.append(rect(x - 1.2, v_top - 2.0, x + 1.2, v_top - 1.59))
+        cells += [circle((x + dx, v_top - 2.15), 0.28, 8) for dx in np.linspace(-0.95, 0.95, 4)]
+    return cs_union(cells)
+
+
+def edge_triglyphs(L, z0, zc):
+    """Portico fascia (the Vanderlyn): a Doric frieze of triglyphs (three bars) and metopes
+    each with a rosette, under the crown."""
+    out = [rect(0.3, zc - 0.5, L - 0.3, zc)]
+    pu = 4.4
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    for k in range(n + 1):
+        x = u0 + pu * k
+        out += [rect(x - 1.0 + 0.7 * j, z0 + 0.4, x - 0.6 + 0.7 * j, zc - 0.45) for j in range(3)]
+        if k < n:
+            c = (x + pu / 2, zc - 0.5 - 0.7)
+            out.append(cs_union([circle((c[0] + 0.5 * math.cos(a), c[1] + 0.5 * math.sin(a)), 0.32, 10) for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)]))
+    return cs_union(out) ^ rect(0.3, -1e3, L - 0.3, 1e3), 0.6
+
+
+def skirt_dadopanels(reg, d=1.2):
+    """A stylobate skirt: long sunk dado panels between die blocks, a moulded cap (the
+    Vanderlyn)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, d * 0.75)]
+    pw = 12.0
+    n = max(1, int((u1 - u0) / pw))
+    p = (u1 - u0) / n
+    for k in range(n):
+        a, b = u0 + p * k + 1.2, u0 + p * (k + 1) - 1.2
+        if b - a > 2.0 and v1 - v0 > 4.0:
+            out[0] = out[0] - ext(rect(a, v0 + 1.4, b, v1 - 1.8), d * 0.45, d)
+    out.append(ext(rect(u0 - 1, v1 - 1.0, u1 + 1, v1 + 1), d * 0.74, d))
+    return union(out) ^ M.extrude(reg, d + 0.5)
+
+
+def pediment_vanderlyn(w, depth, rise, t=1.2):
+    """The portico's pediment, standing on its roof: a raking cornice and a horizontal one with
+    dentils, a tympanum holding a cartouche between garlands, acroteria (a palmette at the apex,
+    urns at the feet). Local as features.entry_pediment (u across, v up from the porch roof's
+    top, w out from the house, the face at w = depth); prints upright on its base."""
+    face = poly([(-w / 2, 0.0), (0.0, rise), (w / 2, 0.0)])
+    parts = [M.extrude(face, depth)]
+    parts.append(ext(face - face.offset(-1.2, MIT, 4.0), depth - 0.01, depth + t))
+    parts.append(ext(rect(-w / 2 + 1.0, 0.0, w / 2 - 1.0, 1.4), depth - 0.01, depth + t))
+    parts.append(ext(cs_union([rect(x - 0.3, 1.4, x + 0.3, 2.0) for x in np.arange(-w / 2 + 3.0, w / 2 - 2.8, 1.2)]) ^ face.offset(-1.2, MIT, 4.0),
+                     depth - 0.01, depth + t * 0.7))
+    tym = face.offset(-1.2, MIT, 4.0) ^ rect(-50, 2.0, 50, 50)
+    c = (0.0, 2.0 + (rise - 3.2) * 0.42)
+    car = oval(c, min(3.2, w * 0.08), min(2.4, (rise - 3.2) * 0.32), 28)
+    parts.append(ext(car ^ tym, depth - 0.01, depth + t * 0.6))
+    parts.append(ext((car - car.offset(-0.6, RND)) ^ tym, depth + t * 0.59, depth + t))
+    for sg in (-1, 1):
+        g = swag(sg * 3.6, sg * w * 0.32, c[1] + 0.8, 1.6, width=0.8)
+        parts.append(ext(g ^ tym, depth - 0.01, depth + t * 0.65))
+    out = union(parts)
+    pal = cs_union([_lens((0.0 + 1.6 * math.sin(a), rise + 1.6 * math.cos(a) - 1.0), 2.4, 0.7, math.pi / 2 - a) for a in (-0.6, 0.0, 0.6)] +
+                   [rect(-1.0, rise - 1.2, 1.0, rise)])
+    out = out + ext(pal, depth - 2.0, depth)
+    for sg in (-1, 1):
+        out = out + ext(urn_cs(sg * (w / 2 - 1.4), 0.0, 4.6, 2.4), depth - 2.0, depth)
+    return out.transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+
+
+def chimney_vanderlyn(w=11.0, d=9.0, h=24.0):
+    """A Beaux-Arts stack: a stone shaft with a sunk panel on each face, a cornice, and a cap
+    with a small pediment on each face over a capping slab. Prints upright."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 6.4
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        T = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2], [0, 1.0, 0, 0]])
+        body = body - (M.extrude(rect(-L / 2 + 1.4, 2.4, L / 2 - 1.4, sh - 1.8), 0.45).translate([0, 0, -0.44]).transform(T)).rotate([0, 0, rot])
+    def ring(e0, e1, z0, z1):
+        return M.hull_points([(x, y, z0) for x in (-w / 2 - e0, w / 2 + e0) for y in (-d / 2 - e0, d / 2 + e0)] +
+                             [(x, y, z1) for x in (-w / 2 - e1, w / 2 + e1) for y in (-d / 2 - e1, d / 2 + e1)])
+    body = body + ring(0.0, 0.8, sh - 0.01, sh + 0.8) + ring(0.8, 0.8, sh + 0.79, sh + 1.6)
+    zc = sh + 1.59
+    body = body + box([-w / 2 + 0.2, -d / 2 + 0.2, zc], [w / 2 - 0.2, d / 2 - 0.2, zc + 2.4])
+    for (L, D, rot) in ((w - 0.4, d - 0.4, 0), (d - 0.4, w - 0.4, 90), (w - 0.4, d - 0.4, 180), (d - 0.4, w - 0.4, 270)):
+        T = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2 - 0.01], [0, 1.0, 0, zc + 2.39]])
+        ped = poly([(-L / 2, 0.0), (L / 2, 0.0), (0.0, 1.8)])
+        body = body + (M.extrude(ped, 0.6).transform(T)).rotate([0, 0, rot])
+    body = body + ring(0.0, 0.6, zc + 2.39, zc + 3.2) + ring(0.6, 0.6, zc + 3.19, zc + 4.8)
+    return body
+
+
+CO.FRIEZE_EXTRA.update(anthemion=frieze_anthemion, bucrania=frieze_bucrania)
+CO.COURSE_EXTRA.update(rosettebeads=course_rosettebeads)
+TW.BRACKET_EXTRA.update(garlandconsole=bracket_garlandconsole)
+TW.PIERCED = TW.PIERCED + ("garlandconsole",)
+TW.FOUNDATION_EXTRA.update(dadopodium=foundation_dadopodium)
+SH.CORNER_EXTRA.update(vanderlyn=corner_vanderlyn)
+PW.POSTS.update(composite=post_composite)
+PW.BALUSTERS.update(invertedvase=(baluster_invertedvase, 1.6))
+PW.FRIEZES.update(regulae=frieze_regulae)
+PW.SKIRTS.update(dadopanels=skirt_dadopanels)
+FT.EDGE_EXTRA.update(triglyphs=edge_triglyphs)
