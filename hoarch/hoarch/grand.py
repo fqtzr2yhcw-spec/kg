@@ -4126,3 +4126,505 @@ PW.BALUSTERS.update(mashrabiya=(baluster_mashrabiya, 1.6))
 PW.FRIEZES.update(horseshoearcade=frieze_horseshoearcade)
 PW.SKIRTS.update(girih=skirt_girih)
 FT.EDGE_EXTRA.update(starfringe=edge_starfringe)
+
+
+# ================================================================== the Thornbury (house 97)
+# Richardsonian Romanesque, 1887: a ground storey of rock-faced red sandstone in random courses
+# on a chamfered plinth, an upper storey of long thin Roman brick, rock-faced quoins; deep
+# round-arched windows of long voussoirs below, ribbon windows of three lights on colonnettes
+# above, a cornice of deeply cut Byzantine leaves on roll corbels between nailhead courses, an
+# interlace band at the storey joint. A round tower on the front corner rises a stage over the
+# eave to a steep cone; the steep slate roof carries eyebrow dormers and stops at a crested top
+# with foliate cresting; the entrance porch is a low Syrian arch on squat columns with cushion
+# capitals carved in interlace, its portal recessed in orders.
+
+TB_LEVELS = dict(hi=40.0)      # the building sets it: the brick storey's foot over the block's base
+
+
+def slate_keybands(k, j):
+    """The Thornbury's slating: square slates with a band of key-butted slates every sixth
+    course and a course of saw-cut ones under it."""
+    m = k % 6
+    return "key" if m == 3 else ("saw" if m == 4 else "square")
+
+
+def _rough(u0, v0, u1, v1, d, seed, jit=0.18):
+    """A rock-faced block: a hull of its bevelled margin and a few jittered points on its face,
+    so each stone bulges unevenly (pitched face). The margin is 45 degrees."""
+    rng = np.random.default_rng(seed)
+    pts = [(x, y, 0.0) for x in (u0, u1) for y in (v0, v1)]
+    m = min(d * 0.7, (v1 - v0) * 0.3, (u1 - u0) * 0.2)
+    pts += [(x, y, d * 0.55) for x in (u0 + m, u1 - m) for y in (v0 + m, v1 - m)]
+    for _ in range(5):
+        x = rng.uniform(u0 + m * 1.6, u1 - m * 1.6) if u1 - u0 > 4 * m else (u0 + u1) / 2
+        y = rng.uniform(v0 + m * 1.6, v1 - m * 1.6) if v1 - v0 > 4 * m else (v0 + v1) / 2
+        pts.append((x, y, d * (0.75 + rng.uniform(0.0, jit) / d * 0.5)))
+    return M.hull_points(pts)
+
+
+def rockfaced(region, datum=0.0, d=0.55, joint=0.35, seed=7):
+    """Rock-faced ashlar in random courses: courses of two heights in an irregular rhythm, stones
+    of random length, every face pitched to an uneven bulge (the Thornbury's ground storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed)
+    out = []
+    v = datum + math.floor((v0 - datum) / 5.4) * 5.4 - 5.4
+    k = 0
+    while v < v1:
+        hc = (2.2, 3.2, 2.2, 2.2, 3.2)[k % 5]
+        a, b = v + joint / 2, v + hc - joint / 2
+        if b > v0 - 1:
+            u = u0 - rng.uniform(0.0, 4.0)
+            while u < u1 + 1:
+                Ls = rng.uniform(3.2, 7.4)
+                out.append(_rough(u + joint / 2, a, u + Ls - joint / 2, b, d, int(rng.integers(1e9))))
+                u += Ls
+        v += hc
+        k += 1
+    return union(out) ^ M.extrude(region, d + 0.3)
+
+
+def brick_roman(region, datum=0.0, bl=3.8, bh=0.6, mortar=0.4, bed=0.2, d=0.22):
+    """Roman brick: long thin bricks in running bond, broken a third, with deep horizontal beds
+    (the Thornbury's upper storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    cells = []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        u = u0 - 2 * bl + (k % 3) * bl / 3
+        while u < u1 + bl:
+            cells.append(rect(u + mortar / 2, v, u + bl - mortar / 2, v + bh - bed))
+            u += bl
+        k += 1
+    return M.extrude(cs_union(cells) ^ region, d)
+
+
+def corner_thornbury(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Thornbury's corners: rock-faced quoins long and short, up both storeys."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    parts = []
+    v, k = max(qa, 0.3), 0
+    while v < qb - 1.8:
+        leg = 5.0 if k % 2 == 0 else 3.2
+        top = min(v + 3.0, qb - 0.2)
+        a, b = span(-t - 0.3, leg)
+        parts.append(_rough(min(a, b), v, max(a, b), top, t + 0.25, 1000 + k * 7 + (0 if at_start else 3)))
+        v += 3.3
+        k += 1
+    return union(parts) if parts else M()
+
+
+def foundation_chamfercourse(reg, seed=0):
+    """A plinth of two great chamfered courses, the upper set back over the lower (the
+    Thornbury)."""
+    b = reg.bounds()
+    hgt = b[3] - b[1]
+    out = [M.extrude(reg, 0.3)]
+    mid = b[1] + hgt * 0.55
+    lo = rect(b[0] - 1, b[1], b[2] + 1, mid) ^ reg
+    hi = rect(b[0] - 1, mid, b[2] + 1, b[3]) ^ reg
+    for r_, d in ((lo, 1.1), (hi, 0.75)):
+        if not r_.is_empty():
+            bb = r_.bounds()
+            out.append(M.hull_points([(x, bb[1], 0.0) for x in (bb[0], bb[2])] + [(x, bb[1], d) for x in (bb[0], bb[2])] +
+                                     [(x, bb[3] - d + 0.3, d) for x in (bb[0], bb[2])] + [(x, bb[3], 0.29) for x in (bb[0], bb[2])]))
+    return union(out)
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_nailhead(L, h, b, pitch, margin, p):
+    """Nailhead: a row of little pyramids, each a square studded up to a point (the
+    Thornbury)."""
+    pu = 1.5
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    out = [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.15)]
+    s = min(0.6, h * 0.36)
+    for k in range(n):
+        u = u0 + pu * (k + 0.5)
+        out.append(M.hull_points([(u + dx, h / 2 + dy, 0.0) for dx in (-s, s) for dy in (-s, s)] + [(u, h / 2, 0.5)]).translate([0, 0, b + 0.14]))
+    return out
+
+
+def frieze_interlace(L, h, b, pitch, margin, pair, half):
+    """Byzantine interlace: two bands weaving over and under in a running knot of circles and
+    figure-eights, a pellet in every eye (the Thornbury's storey joint)."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    r = hh * 0.36
+    pu = r * 1.7
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    bands, pel = [], []
+    a1 = [(u, vm + r * 0.8 * math.sin((u - u0) / pu * math.pi)) for u in np.arange(u0, u0 + pu * n + 0.01, 0.4)]
+    a2 = [(u, vm - r * 0.8 * math.sin((u - u0) / pu * math.pi)) for u in np.arange(u0, u0 + pu * n + 0.01, 0.4)]
+    if len(a1) > 1:
+        bands.append(stroke(a1, 0.5))
+        bands.append(stroke(a2, 0.5))
+    for k in range(n):
+        pel.append(circle((u0 + pu * (k + 0.5), vm), 0.4, 10))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    frame_ = rect(0.2, v0, L - 0.2, v0 + 0.45) + rect(0.2, v1 - 0.45, L - 0.2, v1)
+    return [_st(frame_, b, 0.25), _st(cs_union(bands) ^ clip, b, 0.4), _st(cs_union(pel) ^ clip, b, 0.5)], []
+
+
+def frieze_byzantineleaf(L, h, b, pitch, margin, pair, half):
+    """Richardson's Byzantine leaf: a running band of deeply cut acanthus, each leaf a spray of
+    pointed lobes curling from a central stem, the sprays alternating up and down (the
+    Thornbury's eave)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    pu = max(3.6, hh * 0.9)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    stems, lobes = [], []
+    pts = [(u, vm + hh * 0.12 * math.sin((u - u0) / pu * 2 * math.pi)) for u in np.arange(u0, u0 + pu * n + 0.01, 0.4)]
+    if len(pts) > 1:
+        stems.append(stroke(pts, 0.5))
+    for k in range(n):
+        u = u0 + pu * (k + 0.5)
+        sg = 1 if k % 2 == 0 else -1
+        base = (u, vm)
+        for j, a in enumerate((-0.9, -0.35, 0.25, 0.8)):
+            Lf = hh * (0.42 - 0.04 * abs(j - 1.5))
+            ang = math.pi / 2 * sg + a * sg
+            lobes.append(_lens((base[0] + Lf * 0.5 * math.cos(ang), base[1] + Lf * 0.5 * math.sin(ang)), Lf, 0.55, ang))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    return [_st(cs_union(stems) ^ clip, b, 0.3), _st(cs_union(lobes) ^ clip, b, 0.5)], []
+
+
+def bracket_rollcorbel(h, d, t):
+    """A Romanesque corbel: a block whose underside rolls round in a big half-round, a smaller
+    roll beneath it (side profile, top at v = 0; the Thornbury)."""
+    r1 = min(h * 0.45, d * 0.5)
+    pts = [(0.0, 0.0), (d, 0.0)]
+    for a in np.linspace(0.0, -math.pi / 2, 9):
+        pts.append((d - r1 + r1 * math.cos(a), -r1 + r1 * math.sin(a) + 0.0))
+    r2 = min(h * 0.25, d * 0.3)
+    for a in np.linspace(0.0, -math.pi / 2, 7):
+        pts.append((d - r1 - 0.2 + r2 * math.cos(a) - r2 * 0.2, -2 * r1 + r2 * math.sin(a) + 0.0))
+    pts += [(0.0, -2 * r1 - r2)]
+    return poly(pts)
+
+
+def pelletchain(L, h):
+    """A crest course: pellets threaded on a rod, between beads (the Thornbury's roof)."""
+    pu = 1.6
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    cells = [rect(0.2, 0.05, L - 0.2, h / 2 - 0.5), rect(0.2, h / 2 - 0.22, L - 0.2, h / 2 + 0.22)]
+    cells += [circle((u0 + pu * (k + 0.5), h / 2), min(0.62, h * 0.24), 12) for k in range(n)]
+    return [cs_union(cells) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def fence_thornbury(L, h):
+    """Thornbury cresting (drawn at half size for SE.printable): terracotta crockets, each a
+    curling leaf on a stem, rising from a moulded ridge band."""
+    pitch = 2.8
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    cells = [rect(0.0, 0.0, L, 0.9)]
+    for j in range(n):
+        m = p * j + p / 2
+        cells.append(rect(m - 0.3, 0.0, m + 0.3, h * 0.55))
+        cells.append(stroke([(m, h * 0.5), (m - 0.4, h * 0.75), (m + 0.3, h * 0.95), (m + 0.75, h * 0.72)], 0.5))
+        cells.append(_lens((m - 0.55, h * 0.45), 1.1, 0.55, math.pi / 2 + 0.6))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def fence_thornbury_parapet(L, h):
+    """A parapet as a dwarf gallery: a row of little round arches on stubby piers between a
+    plain base and a coping (the Thornbury's apse). Printed flat."""
+    pu = 3.0
+    n = max(1, int((L - 1.6) / pu))
+    u0 = (L - n * pu) / 2
+    holes = cs_union([O.opening_cs(pu - 1.1, h - 3.0, (pu - 1.1) / 2).translate((u0 + pu * (k + 0.5), 1.5)) for k in range(n)])
+    return rect(0.2, 0.0, L - 0.2, h) - holes
+
+
+def finial_thornbury(h=11.0):
+    """The tower's finial: a turned knop over a collar, a tall spike with a ring."""
+    prof = [(0.0, 0.0), (1.3, 0.0), (1.3, 0.6), (0.8, 1.0), (1.2, 1.5), (1.3, 2.2), (0.9, 2.8), (0.45, 3.2), (0.45, 3.6), (0.0, 3.6)]
+    body = PW._revolve(prof, 24) + M.cylinder(h - 3.5, 0.45, 0.32, 12).translate([0, 0, 3.5])
+    return body + _ball(0.6, 3.5 + (h - 3.5) * 0.45, neck=0.4)
+
+
+# ------------------------------------------------------------------ windows and doors
+def _longvous(w, h, A, n=9, crown=3.4, foot=2.6, gap=0.3):
+    """Long Richardsonian voussoirs round a round head: radial stones of nearly even length,
+    deepest at the key."""
+    r0 = w / 2 + A
+    cy = h - w / 2
+    blocks = []
+    for k in range(n):
+        a0 = math.pi * k / n + gap / 2 / r0
+        a1 = math.pi * (k + 1) / n - gap / 2 / r0
+        am = (a0 + a1) / 2
+        Lk = foot + (crown - foot) * math.sin(am)
+        pts = [(r0 * math.cos(a), cy + r0 * math.sin(a)) for a in np.linspace(a0, a1, 5)]
+        pts += [((r0 + Lk) * math.cos(a), cy + (r0 + Lk) * math.sin(a)) for a in np.linspace(a1, a0, 5)]
+        blocks.append(poly(pts))
+    return cs_union(blocks), cy + r0 + crown
+
+
+def window_thornbury_ground(w=8.6, h=20.0, A=0.6):
+    """The ground storey's window: a deep round-headed one-over-one sash under a ring of long
+    rock-faced voussoirs; a plain sill on two corbels."""
+    op = O.opening_cs(w, h, w / 2)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    sash = O.window_insert(w, h, w / 2, lites=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), MD.band(op.offset(A, RND), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vs, vt = _longvous(w, h, A)
+    parts.append(ext(vs, 0.0, 1.0))
+    sw = w / 2 + A + 1.0
+    parts.append(chamfer_box(-sw, -1.4, sw, 0.01, 0.0, 1.3, c=0.3, bottom=1.3))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.8, -2.8, sg * (w / 2) + 0.8, -1.39, 0.0, 1.0, c=0.3, bottom=1.0))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vt + 0.2, -2.8)
+
+
+def window_thornbury_ribbon(wl=5.2, h=16.0, n=3, col=1.4, A=0.8):
+    """The brick storey's ribbon window: three lights in a row parted by short colonnettes with
+    carved cushion capitals, under one stone lintel carved with Byzantine leaves; a sill course."""
+    W = n * wl + (n - 1) * col
+    op = rect(-W / 2, 0.0, W / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    mids = cs_union([rect(-W / 2 + wl * (k + 1) + col * k, -1, -W / 2 + wl * (k + 1) + col * (k + 1), h + 1) for k in range(n - 1)])
+    g = inner - mids
+    bars = cs_union([rect(-W, h * 0.5 - 0.3, W, h * 0.5 + 0.3)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], g, pl, bars, plug_cs) + [ext(mids ^ plug_cs, -pl, -0.2)]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-W - 10, 0.0, W + 10, h + 40) - op)]
+    for k in range(n - 1):
+        x = -W / 2 + wl * (k + 1) + col * k + col / 2
+        prof = [(0.0, 0.0), (0.6, 0.0), (0.6, h - 2.2), (0.95, h - 1.6), (0.95, h - 0.6), (0.0, h - 0.6)]
+        parts.append(PW._revolve(prof, 16).rotate([-90, 0, 0]).translate([x, 0.0, 0.0]) ^ box([x - 2, 0.0, 0.0], [x + 2, h, 3.0]))
+    half = W / 2 + A + 0.6
+    lin = rect(-half, h + A - 0.01, half, h + A + 3.0)
+    parts.append(ext(lin, 0.0, 0.8))
+    lv = []
+    for k, x in enumerate(np.arange(-half + 1.4, half - 1.0, 2.0)):
+        sg = 1 if k % 2 == 0 else -1
+        lv.append(_lens((x, h + A + 1.5), 2.2, 0.6, math.pi / 2 + 0.6 * sg))
+    parts.append(ext(cs_union(lv) ^ lin.offset(-0.3, MIT, 4.0), 0.79, 1.2))
+    parts.append(chamfer_box(-half, -1.2, half, 0.01, 0.0, 1.1, c=0.3, bottom=1.1))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 3.2, -1.2)
+
+
+def window_thornbury_tower(w=6.0, h=14.0, A=0.6):
+    """A tower light: round-headed, in a ring of long voussoirs."""
+    op = O.opening_cs(w, h, w / 2)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    sash = O.window_insert(w, h, w / 2, lites=(1, 1), bare=True)["insert"]
+    vs, vt = _longvous(w, h, A, n=7, crown=2.4, foot=1.8)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A + 0.06, RND) - op, 0.0, 0.6), ext(vs, 0.0, 0.9)]
+    parts.append(chamfer_box(-w / 2 - A - 0.6, -1.2, w / 2 + A + 0.6, 0.01, 0.0, 1.0, c=0.3, bottom=1.0))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vt + 0.2, -1.2)
+
+
+def door_thornbury(w=11.0, h=22.0, orders=3):
+    """The Thornbury's portal: a pair of heavy plank leaves strapped with iron hinges under a
+    round fanlight, set deep in a round arch of three orders, each ring stepping in over a nook
+    shaft with a cushion capital."""
+    r = w / 2
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    spring = h - r
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    dh = spring - 0.4
+    ja = r - O.CLR - 0.5
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(-ja, 0.5, ja, dh), -pl, -0.8)]
+    for x in np.arange(-ja + 0.9, ja - 0.5, 1.4):
+        body.append(ext(rect(x - 0.15, 0.6, x + 0.15, dh - 0.1), -0.81, -0.6))
+    for v in (dh * 0.25, dh * 0.75):
+        for sg in (-1, 1):
+            body.append(ext(rect(min(sg * ja, sg * 0.4), v - 0.35, max(sg * ja, sg * 0.4), v + 0.35), -0.81, -0.45))
+    fan = inner ^ rect(-w, dh + 0.5, w, h + 2)
+    fc = (0.0, dh + 0.5)
+    rays = cs_union([stroke([fc, (fc[0] + w * math.cos(t_), fc[1] + w * math.sin(t_))], RIB) for t_ in np.linspace(0.6, math.pi - 0.6, 3)])
+    sash = _glazed(body, fan, pl, rays, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    for k in range(orders):
+        e0, e1 = 0.4 + k * 1.6, 0.4 + (k + 1) * 1.6
+        ring = O.opening_cs(w + 2 * e1, h + e1, r + e1) - O.opening_cs(w + 2 * e0, h + e0, r + e0)
+        parts.append(ext(ring ^ rect(-50, spring, 50, 60), 0.0, 1.2 + 0.4 * (orders - k - 1)))
+        for sg in (-1, 1):
+            x = sg * (r + (e0 + e1) / 2)
+            prof = [(0.0, 0.0), (0.6, 0.0), (0.6, spring - 1.6), (0.95, spring - 1.1), (0.95, spring), (0.0, spring)]
+            parts.append(PW._revolve(prof, 16).rotate([-90, 0, 0]).translate([x, 0.0, 0.0]) ^ box([x - 2, 0.0, 0.0], [x + 2, spring, 3.0]))
+    half = r + 0.4 + orders * 1.6 + 0.6
+    parts.append(ext(rect(-half, -0.6, half, 0.01), 0.0, 1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 0.4 + orders * 1.6 + 0.2, -0.6)
+
+
+def addin_eyebrow(w=9.0, h=4.6, A=0.7):
+    """An eyebrow dormer for the steep roof (an add-in): a low wide light under a segmental
+    head, its frame and the plug's roof one smooth wave that dies into the slope at each end."""
+    op = arch_cs(-w / 2, w / 2, 0.0, h - 1.4, rise=1.4, seg=24)
+    bars = cs_union([rect(-RIB / 2 + x, -1.0, RIB / 2 + x, h + 1.0) for x in (-w / 6, w / 6)])
+    wave = [(-w / 2 - 4.0, -0.2)] + [(x, h + 1.0 - (x / (w / 2 + 4.0)) ** 2 * (h + 1.2)) for x in np.linspace(-w / 2 - 3.6, w / 2 + 3.6, 21)] + [(w / 2 + 4.0, -0.2)]
+    body = poly(wave)
+    parts = [ext(body - op, 0.0, 0.5), MD.band(op.offset(A, RND), A, MD.CASING, clip=rect(-30, 0.0, 30, 30) - op)]
+    parts.append(MD.run(-w / 2 - A - 0.4, w / 2 + A + 0.4, 0.0, MD.SILL, 0.9, up=False))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.3, RND) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=h + 1.6, bottom=-0.9)
+
+
+# ------------------------------------------------------------------ the porch
+def post_cushion(h, collar=None, abacus=4.4, slot=(1.2, 1.0)):
+    """A squat Romanesque column: a broad base with spurs at its corners, a stout shaft, a cushion
+    capital (round below, square above) carved with an interlace ring, a thick abacus (the
+    Thornbury's porch)."""
+    zc = h - 4.6
+    r = 1.6
+    prof = [(0.0, 1.39), (2.05, 1.39), (2.05, 1.7), (1.8, 2.0), (1.9, 2.3), (r, 2.7), (r * 1.04, zc * 0.5), (r * 0.96, zc - 0.3),
+            (1.85, zc), (1.85, zc + 0.3), (r, zc + 0.5)]
+    body = PW._revolve(prof, 28) + PW._plinth(4.2, ph=1.4)
+    body = body + PW._top(h, abacus / 2, zc + 0.5, r, slot, seg=28, shape="round")
+    return body
+
+
+def baluster_spindleknop(h, seg=16):
+    """A short stout spindle with a knop at its middle, between square blocks (the
+    Thornbury)."""
+    prof = [(0.0, 0.8), (0.36, 0.8), (0.36, 1.1), (0.28, 1.5), (0.28, h * 0.42), (0.5, h * 0.5), (0.28, h * 0.58), (0.28, h - 1.2), (0.36, h - 0.8)]
+    return PW._revolve(prof, seg) + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_syrianarch(u0, u1, v_bot, v_top):
+    """A porch's Syrian arch: one broad round arch springing low between the posts, a ring of
+    long voussoirs round it (the Thornbury)."""
+    L = u1 - u0
+    um = (u0 + u1) / 2
+    rise = min(L / 2, v_top - v_bot - 1.0)
+    solid = rect(u0, v_bot, u1, v_top + 0.05)
+    hole = arch_cs(u0 + 0.3, u1 - 0.3, v_bot - 1.0, v_top - 1.0 - rise, rise=rise, seg=40)
+    out = solid - hole
+    n = max(5, int(L / 2.2)) | 1
+    cy = v_top - 1.0 - rise
+    r0 = L / 2 - 0.3
+    joints = cs_union([stroke([(um + (r0 - 0.1) * math.cos(t), cy + (rise - 0.1) * math.sin(t)),
+                               (um + (r0 + 2.4) * math.cos(t), cy + (rise + 2.4) * math.sin(t))], 0.4)
+                       for t in np.linspace(0.0, math.pi, n + 1)[1:-1]])
+    return out - (joints ^ rect(u0 + 0.7, v_bot - 2.0, u1 - 0.7, v_top - 0.7))
+
+
+def edge_corbeltable(L, z0, zc):
+    """Porch fascia (the Thornbury): a corbel table, little round arches hung between corbel
+    knobs under the crown."""
+    out = [rect(0.3, zc - 0.6, L - 0.3, zc)]
+    pu = 2.4
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    band = rect(0.3, zc - 1.6, L - 0.3, zc - 0.55)
+    holes = cs_union([O.opening_cs(pu - 0.7, 1.4, (pu - 0.7) / 2).translate((u0 + pu * (k + 0.5), zc - 2.0)) for k in range(n)])
+    out.append(band - holes)
+    out += [circle((u0 + pu * k, zc - 1.7), 0.38, 10) for k in range(n + 1)]
+    return cs_union(out) ^ rect(0.3, -1e3, L - 0.3, 1e3), 0.6
+
+
+def skirt_rockwall(reg, d=1.2):
+    """The porch's base between the piers: a solid wall of rock-faced stone under a chamfered
+    sill, with a little round-arched vent at the middle (the Thornbury)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, d * 0.4)]
+    body = rect(u0 - 1, v0 - 1, u1 + 1, v1 - 1.0) ^ reg
+    out.append(rockfaced(body, datum=v0, d=0.5, seed=int(abs(u0) * 7 + abs(v0) * 3) % 97 + 5).translate([0, 0, d * 0.4 - 0.05]))
+    out.append(ext(rect(u0 - 1, v1 - 1.0, u1 + 1, v1 + 1) ^ reg, d * 0.4 - 0.01, d * 0.85))
+    vw = min(2.4, (u1 - u0) * 0.3)
+    if v1 - v0 > 4.0 and vw > 1.2:
+        um = (u0 + u1) / 2
+        vent = O.opening_cs(vw, 2.6, vw / 2).translate((um, v0 + 0.8))
+        out = [o - ext(vent, -1.0, 5.0) for o in out]
+    return union(out) ^ M.extrude(reg, d + 0.5)
+
+
+def entry_thornbury(w, depth, rise, t=1.0):
+    """The Thornbury's porch entry: a steep gable of rock-faced stone standing on the porch roof
+    over the steps, a moulded coping on its rakes stopping on kneelers, and in its tympanum a
+    roundel of Byzantine leaves round a boss over a nailhead string. Local as entry_wyndham
+    (u across, v up from the porch roof top, w out from the house, the face at w = depth);
+    prints upright on its base."""
+    face = poly([(-w / 2, 0.0), (0.0, rise), (w / 2, 0.0)])
+    parts = [M.extrude(face, depth)]
+    cop = (face - face.offset(-1.1, MIT, 4.0)) ^ rect(-w, 1.6, w, rise + 1)
+    parts.append(ext(cop, depth - 0.01, depth + t))
+    parts.append(ext(cop.offset(-0.35, MIT, 4.0) ^ face.offset(-0.2, MIT, 4.0), depth + t - 0.01, depth + t + 0.3))
+    for sg in (-1, 1):
+        kn = rect(min(sg * w / 2, sg * (w / 2 - 2.6)), 0.0, max(sg * w / 2, sg * (w / 2 - 2.6)), 2.4) ^ face.offset(0.3, MIT, 4.0)
+        parts.append(ext(kn, depth - 0.01, depth + t + 0.2))
+    tym = face.offset(-1.4, MIT, 4.0) ^ rect(-w, 1.2, w, rise)
+    lo = tym ^ rect(-w, 1.2, w, rise * 0.24)
+    parts.append(rockfaced(lo, datum=1.2, d=0.45, seed=53).translate([0, 0, depth - 0.05]))
+    s = rect(-w, rise * 0.24, w, rise * 0.24 + 1.0) ^ tym
+    parts.append(ext(s, depth - 0.01, depth + 0.5))
+    for x in np.arange(-w / 2 + 2.0, w / 2 - 1.9, 1.3):
+        if (rect(x - 0.45, rise * 0.24 + 0.05, x + 0.45, rise * 0.24 + 0.95) - tym).is_empty():
+            parts.append(M.hull_points([(x + dx, rise * 0.24 + 0.5 + dy, 0.0) for dx in (-0.4, 0.4) for dy in (-0.4, 0.4)] +
+                                       [(x, rise * 0.24 + 0.5, 0.4)]).translate([0, 0, depth + 0.49]))
+    c = (0.0, rise * 0.24 + 1.0 + (rise * 0.76 - 2.6) * 0.42)
+    R_ = min((rise * 0.76 - 2.6) * 0.42, w * 0.2)
+    ring = circle(c, R_, 40) - circle(c, R_ - 0.7, 40)
+    parts.append(ext(ring, depth - 0.01, depth + 0.7))
+    lv = []
+    for k in range(8):
+        a = math.pi / 8 + k * math.pi / 4
+        lv.append(_lens((c[0] + (R_ - 0.7) * 0.55 * math.cos(a), c[1] + (R_ - 0.7) * 0.55 * math.sin(a)), (R_ - 0.7) * 0.9, 0.55, a))
+    parts.append(ext(cs_union(lv) ^ circle(c, R_ - 0.75, 40), depth - 0.01, depth + 0.45))
+    parts.append(ext(circle(c, R_ * 0.22, 20), depth - 0.01, depth + 0.8))
+    return union(parts).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+
+
+def chimney_thornbury(w=12.0, d=9.0, h=26.0):
+    """A massive stack: rock-faced to the cap, a corbel table of little arches, a projecting cap,
+    two flues each with a round pot. Prints upright."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 7.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    stones = []
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        T = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2 - 0.05], [0, 1.0, 0, 0]])
+        reg = rect(-L / 2, 0.0, L / 2, sh - 2.0)
+        stones.append((rockfaced(reg, d=0.45, seed=31 + rot).transform(T)).rotate([0, 0, rot]))
+    body = body + union(stones)
+
+    def ring(e0, e1, z0, z1):
+        return M.hull_points([(x, y, z0) for x in (-w / 2 - e0, w / 2 + e0) for y in (-d / 2 - e0, d / 2 + e0)] +
+                             [(x, y, z1) for x in (-w / 2 - e1, w / 2 + e1) for y in (-d / 2 - e1, d / 2 + e1)])
+    body = body + ring(0.0, 1.0, sh - 2.01, sh - 1.0) + ring(1.0, 1.0, sh - 1.01, sh + 1.0)
+    for (L, D, rot) in ((w + 2.0, d + 2.0, 0), (d + 2.0, w + 2.0, 90), (w + 2.0, d + 2.0, 180), (d + 2.0, w + 2.0, 270)):
+        n = max(2, int(L / 2.2))
+        arches = cs_union([O.opening_cs(L / n - 0.7, 1.4, (L / n - 0.7) / 2).translate((-L / 2 + L * (k + 0.5) / n, 0.0)) for k in range(n)])
+        T = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2], [0, 1.0, 0, sh - 0.9]])
+        body = body - (M.extrude(arches, 0.4).translate([0, 0, -0.39]).transform(T)).rotate([0, 0, rot])
+    body = body + ring(1.0, 1.4, sh + 0.99, sh + 1.4) + ring(1.4, 1.4, sh + 1.39, sh + 2.4)
+    for sx in (-1, 1):
+        x = sx * w * 0.25
+        pot = M.cylinder(3.6, 1.6, 1.3, 24).translate([x, 0.0, sh + 2.39]) + M.cylinder(0.4, 1.3, 1.7, 24).translate([x, 0, sh + 5.98]) + \
+            M.cylinder(0.6, 1.7, 1.7, 24).translate([x, 0, sh + 6.37])
+        body = body + pot - M.cylinder(5.0, 0.8, 0.8, 16).translate([x, 0, sh + 2.8])
+    return body
+
+
+CO.FRIEZE_EXTRA.update(interlace=frieze_interlace, byzantineleaf=frieze_byzantineleaf)
+CO.COURSE_EXTRA.update(nailhead=course_nailhead)
+TW.BRACKET_EXTRA.update(rollcorbel=bracket_rollcorbel)
+TW.FOUNDATION_EXTRA.update(chamfercourse=foundation_chamfercourse)
+SH.CORNER_EXTRA.update(thornbury=corner_thornbury)
+PW.POSTS.update(cushion=post_cushion)
+PW.BALUSTERS.update(spindleknop=(baluster_spindleknop, 1.6))
+PW.FRIEZES.update(syrianarch=frieze_syrianarch)
+PW.SKIRTS.update(rockwall=skirt_rockwall)
+FT.EDGE_EXTRA.update(corbeltable=edge_corbeltable)
