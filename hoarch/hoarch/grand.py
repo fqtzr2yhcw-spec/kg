@@ -2391,3 +2391,558 @@ PW.BALUSTERS.update(squarebellied=(baluster_squarebellied, 1.6))
 PW.FRIEZES.update(archivoltarcade=frieze_archivoltarcade)
 PW.SKIRTS.update(medallion=skirt_medallion)
 FT.EDGE_EXTRA.update(eggedge=edge_eggedge)
+
+
+# ================================================================== the Chantilly (house 94)
+# Châteauesque, 1892: a Loire château brought to an American lawn. A ground storey of fine
+# limestone ashlar on a plinth of diamond-point blocks, an upper storey of red brick in header
+# bond with tabled stone quoins; a cornice of ermine spots on machicolation corbels; a steep
+# slated roof with tall stone wall dormers (lucarnes) stopping at a flat crested top with lead
+# fleuron cresting. Two round towers stand on the front corners under candle-snuffer cones with
+# lead finials (épis); a basket-arched door between candelabra pilasters; stone cross windows
+# below, demi-croisées under shell pediments above; a balustraded terrace across the front.
+# The ornament is François I's and Anne de Bretagne's: salamanders, ermines, the knotted cord.
+
+CH_LEVELS = dict(hi=40.0)      # the building sets it: the brick storey's foot over the block's base
+
+
+def slate_hexbands(k, j):
+    """The Chantilly's slating: square slates with every fourth and fifth course hexagonal
+    (clipped corners), a double band of honeycomb round the roof."""
+    return "hex" if k % 6 in (3, 4) else "square"
+
+
+def stone_fine(region, datum=0.0, course=2.6, block=7.2, joint=0.32, d=0.3):
+    """Fine limestone ashlar (pierre de taille): long blocks broken a third in each course, every
+    joint a shallow V (each block bevelled at 45 degrees all round) (the Chantilly)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1 + course:
+        a, b = datum + k * course + joint / 2, datum + (k + 1) * course - joint / 2
+        if b > v0 - 1 and a < v1 + 1:
+            u = u0 - block + (k % 3) * block / 3
+            while u < u1 + block:
+                out.append(chamfer_box(u + joint / 2, a, u + block - joint / 2, b, 0.0, d, c=0.24, bottom=d))
+                u += block
+        k += 1
+    return union(out) ^ M.extrude(region, d + 0.1)
+
+
+def brick_header(region, datum=0.0, bh=0.8, hw=1.15, mortar=0.45, bed=0.2, d=0.25):
+    """Header bond: every brick laid end on, each course broken half a header (the Chantilly's
+    upper storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    cells = []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        u = u0 - 2 * hw + (k % 2) * hw / 2
+        while u < u1 + hw:
+            cells.append(rect(u + mortar / 2, v, u + hw - mortar / 2 + 0.25, v + bh - bed))
+            u += hw + 0.25
+        k += 1
+    return M.extrude(cs_union(cells) ^ region, d)
+
+
+def corner_chantilly(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Chantilly's corners: on the ashlar storey long and short blocks in its courses; on the
+    brick storey tabled stone quoins (a sunk table in every face), long and short in turn."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    hi = CH_LEVELS["hi"]
+    parts = []
+    v, k = qa, 0
+    while v < min(qb, hi) - 1.6:
+        leg = 4.4 if k % 2 == 0 else 2.6
+        top = min(v + 2.4, min(qb, hi) - 0.2)
+        a, b = span(-0.5, leg)
+        parts.append(chamfer_box(a, v + 0.15, b, top, 0.0, t * 0.7, c=0.24, bottom=t * 0.7, square=("u0",) if at_start else ("u1",)))
+        v += 2.6
+        k += 1
+    v, k = max(qa, hi), 0
+    while v < qb - 2.0:
+        leg = 4.8 if k % 2 == 0 else 3.0
+        top = min(v + 2.6, qb - 0.2)
+        a, b = span(-t - 0.3, leg)
+        blk = chamfer_box(a, v, b, top, 0.0, t + 0.2, c=0.2, bottom=t + 0.2, square=("u0",) if at_start else ("u1",))
+        fa, fb = span(0.6, leg - 0.6)
+        if fb - fa > 0.9 and top - v > 1.6:
+            blk = blk - ext(rect(min(fa, fb), v + 0.6, max(fa, fb), top - 0.6), t - 0.05, t + 1.0)
+        parts.append(blk)
+        v += 3.0
+        k += 1
+    return union(parts) if parts else M()
+
+
+def foundation_diamondpoint(reg, seed=0):
+    """A plinth of diamond-point blocks (each face a low pyramid drawn to a ridge) under a
+    bevelled cap (the Chantilly)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.25)]
+    hc = 1.2
+    u = b[0] + 0.3
+    while u < b[2] - 0.6:
+        u1 = min(u + 5.6, b[2] - 0.3)
+        v0, v1 = b[1] + 0.3, b[3] - hc - 0.3
+        if u1 - u > 1.6 and v1 - v0 > 1.2:
+            vm = (v0 + v1) / 2
+            r = min((v1 - v0) / 2, 0.8)
+            out.append(M.hull_points([(x, y, 0.24) for x in (u, u1) for y in (v0, v1)] +
+                                     [(x, vm, 0.24 + r) for x in (u + r, u1 - r)]))
+        u = u1 + 0.3
+    cap = rect(b[0] - 1, b[3] - hc, b[2] + 1, b[3]) ^ reg
+    if not cap.is_empty():
+        cb = cap.bounds()
+        out.append(M.hull_points([(x, cb[1], 0.24) for x in (cb[0], cb[2])] + [(x, cb[1] + 0.5, 0.75) for x in (cb[0], cb[2])] +
+                                 [(x, cb[3], 0.75) for x in (cb[0], cb[2])] + [(x, cb[3], 0.24) for x in (cb[0], cb[2])]))
+    return union(out)
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_cordelette(L, h, b, pitch, margin, p):
+    """The knotted cord (cordelière): a twisted cord of slanting strands, tied every 6 mm in a
+    figure-of-eight knot (the Chantilly's storey joint)."""
+    cord = rect(0.2, h * 0.32, L - 0.2, h * 0.68)
+    pu = 0.8
+    strands = cs_union([poly([(u, h * 0.32), (u + 0.35, h * 0.32), (u + 0.75, h * 0.68), (u + 0.4, h * 0.68)])
+                        for u in np.arange(0.4, L - 1.0, pu)]) ^ cord
+    knots = []
+    for u in np.arange(3.0, L - 2.0, 6.0):
+        r = h * 0.24
+        for dx in (-r * 0.8, r * 0.8):
+            knots.append(circle((u + dx, h / 2), r, 16) - circle((u + dx, h / 2), max(0.15, r - 0.42), 12))
+    out = [_st(cord, b, 0.2), _st(strands, b + 0.2, 0.18)]
+    if knots:
+        out.append(_st(cs_union(knots) ^ rect(0.2, 0.05, L - 0.2, h - 0.05), b, 0.45))
+    return out
+
+
+def frieze_salamanders(L, h, b, pitch, margin, pair, half):
+    """François I's salamander: in every bay a crowned salamander, its body in an S over a bed
+    of flames, its tail curled (the Chantilly's storey joint)."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        s = min(wd * 0.42, 5.2)
+        if s < 2.4:
+            continue
+        vb = v0 + hh * 0.42
+        body = [(uc - s, vb + 0.2), (uc - s * 0.55, vb + hh * 0.18), (uc - s * 0.1, vb - 0.1), (uc + s * 0.35, vb + hh * 0.16),
+                (uc + s * 0.7, vb + hh * 0.3)]
+        tail = [(uc - s, vb + 0.2), (uc - s * 1.05, vb + hh * 0.3), (uc - s * 0.85, vb + hh * 0.38)]
+        head = oval((uc + s * 0.82, vb + hh * 0.34), 0.55, 0.42, 14)
+        crown = cs_union([poly([(uc + s * 0.82 + dx - 0.18, vb + hh * 0.34 + 0.35), (uc + s * 0.82 + dx + 0.18, vb + hh * 0.34 + 0.35),
+                                (uc + s * 0.82 + dx, vb + hh * 0.34 + 0.95)]) for dx in (-0.32, 0.0, 0.32)])
+        legs = cs_union([stroke([(uc + x, vb + hh * 0.08 + 0.1 * k), (uc + x + 0.3, vb - hh * 0.12)], 0.45) for k, x in
+                         enumerate((-s * 0.55, -s * 0.2, s * 0.2, s * 0.5))])
+        flames = cs_union([_lens((uc + x, v0 + hh * 0.18), hh * 0.36, 0.6, math.pi / 2 + 0.25 * math.sin(x)) for x in
+                           np.linspace(-s * 0.8, s * 0.8, 5)])
+        out.append(_st(_clip_v(flames, v0, v1), b, 0.3))
+        out.append(_st(_clip_v(stroke(body, 0.75) + stroke(tail, 0.5) + legs, v0, v1), b, 0.42))
+        out.append(_st(_clip_v(head + crown, v0, v1), b, 0.5))
+    return out, []
+
+
+def frieze_ermines(L, h, b, pitch, margin, pair, half):
+    """Ermine spots strewn in a lozenge net over the frieze, each three dots over a flared
+    tail (Anne de Bretagne's ermine; the Chantilly's eave)."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    spots = []
+    pu, pv = 2.8, max(2.2, hh / 2)
+    rows = max(1, int(round(hh / pv)))
+    for r in range(rows):
+        vc = v0 + hh * (r + 0.5) / rows
+        off = (r % 2) * pu / 2
+        for u in np.arange(1.2 + off, L - 1.0, pu):
+            sp = cs_union([circle((u + dx, vc + 0.55), 0.26, 10) for dx in (-0.42, 0.0, 0.42)] +
+                          [poly([(u - 0.25, vc + 0.25), (u + 0.25, vc + 0.25), (u + 0.55, vc - 0.75), (u, vc - 0.45), (u - 0.55, vc - 0.75)])])
+            spots.append(sp)
+    return [_st(_clip_v(cs_union(spots), v0, v1) ^ rect(0.2, -1, L - 0.2, h + 1), b, 0.4)], []
+
+
+def frieze_machiarches(L, h, b, pitch, margin, pair, half):
+    """A blind arcade of small round arches with a drop under every springing, under a band
+    (the Chantilly's towers)."""
+    v0, v1 = 0.6, h - 0.6
+    pu = 2.6
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    band = rect(0.2, v1 - 0.8, L - 0.2, v1)
+    arches = cs_union([O.opening_cs(pu - 0.6, v1 - 0.8 - v0 - 0.4, (pu - 0.6) / 2).translate((u0 + pu * (k + 0.5), v0 + 0.4))
+                       for k in range(n)])
+    field = rect(0.2, v0, L - 0.2, v1 - 0.79) - arches
+    drops = cs_union([circle((u0 + pu * k, v0 + 0.5), 0.36, 10) for k in range(n + 1)])
+    return [_st(band, b, 0.4), _st(field ^ rect(0.2, v0, L - 0.2, v1), b, 0.3), _st(drops ^ rect(0.2, 0, L - 0.2, h), b, 0.4)], []
+
+
+def bracket_machicolation(h, d, t):
+    """A machicolation corbel: three quarter-rounds stepped out one over another (side profile,
+    top at v = 0; the Chantilly's eave)."""
+    pts = [(0.0, 0.0), (d, 0.0)]
+    steps = 3
+    for k in range(steps):
+        x_out = d * (steps - k) / steps
+        x_in = d * (steps - k - 1) / steps
+        v_top = -h * k / steps
+        v_bot = -h * (k + 1) / steps
+        r = min(x_out - x_in, v_top - v_bot)
+        for a in np.linspace(0.0, -math.pi / 2, 7):
+            pts.append((x_in + r * math.cos(a) + (x_out - x_in - r), v_top + r * math.sin(a) - 0.0))
+        pts.append((x_in, v_bot))
+    pts.append((0.0, -h))
+    return poly(pts)
+
+
+def lozengechain(L, h):
+    """A crest course: a chain of open lozenges on a fillet (the Chantilly's roof and towers)."""
+    pu = 2.4
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    vm = h / 2 + 0.1
+    lz = []
+    for k in range(n):
+        u = u0 + pu * (k + 0.5)
+        outer = poly([(u - 1.15, vm), (u, vm + h * 0.42), (u + 1.15, vm), (u, vm - h * 0.42)])
+        lz.append(outer - outer.offset(-0.45, MIT, 4.0))
+    base = rect(0.2, 0.05, L - 0.2, 0.35)
+    return [cs_union(lz + [base]) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def fence_chantilly(L, h):
+    """Chantilly cresting (drawn at half size for SE.printable): lead fleurons, each a
+    three-lobed bloom on a stem between two scrolls, and between them small trefoils on stalks,
+    all on a rail."""
+    pitch = 3.4
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, h * 0.3, L, h * 0.3 + 0.4)]
+    for j in range(n + 1):
+        u = min(max(p * j, 0.4), L - 0.4)
+        cells.append(rect(u - 0.25, 0.0, u + 0.25, h - 1.4))
+        cells.append(_lens((u, h - 0.85), 1.6, 0.75, math.pi / 2))
+        cells.append(_lens((u - 0.45, h - 1.25), 1.1, 0.5, math.pi / 2 + 0.7))
+        cells.append(_lens((u + 0.45, h - 1.25), 1.1, 0.5, math.pi / 2 - 0.7))
+        if j < n:
+            m = p * j + p / 2
+            cells.append(rect(m - 0.25, h * 0.3, m + 0.25, h * 0.62))
+            cells.append(_trefoil((m, h * 0.62 + 0.35), 0.32))
+            for sg in (-1, 1):
+                cells.append(stroke([(m + sg * 0.3, 0.55), (m + sg * 0.95, h * 0.18), (m + sg * 0.55, h * 0.3)], 0.42))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def fence_chantilly_terrace(L, h):
+    """The terrace's stone parapet seen face on (printed flat, full size): a plinth and a capped
+    rail, square dies every 15 mm or so, and between them squares each pierced with a
+    quatrefoil, Gothic fashion."""
+    nseg = max(1, int(round(L / 15.0)))
+    seg = L / nseg
+    cells = [rect(0.0, 0.0, L, 1.0), rect(0.0, h - 1.2, L, h - 0.4), rect(0.0, h - 0.41, L, h)]
+    for j in range(nseg + 1):
+        u = min(max(seg * j, 1.1), L - 1.1)
+        cells.append(rect(u - 1.1, 0.0, u + 1.1, h + 0.5))
+        cells.append(poly([(u - 1.1, h + 0.49), (u + 1.1, h + 0.49), (u, h + 1.6)]))
+        if j < nseg:
+            a, b = u + 1.1, min(max(seg * (j + 1), 1.1), L - 1.1) - 1.1
+            field = rect(a, 0.95, b, h - 1.15)
+            s = h - 2.15
+            nq = max(1, int(round((b - a) / (s + 0.2))))
+            qw = (b - a) / nq
+            holes = []
+            for k in range(nq):
+                c = (a + qw * (k + 0.5), (0.95 + h - 1.15) / 2)
+                r = min(qw, s) * 0.2
+                if r > 0.5:
+                    holes.append(_quatrefoil(c, r, 14))
+            cells.append(field - cs_union(holes) if holes else field)
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.7)
+
+
+def finial_epi(h=12.0):
+    """A lead épi: a moulded base, a gadrooned bulb, a collar, a vase and a spike carrying a
+    ball (the Chantilly's towers and lucarnes)."""
+    prof = [(0.0, 0.0), (1.5, 0.0), (1.5, 0.5), (1.0, 1.0), (0.7, 1.4), (1.3, 2.0), (1.45, 2.8), (1.2, 3.6), (0.6, 4.2), (0.9, 4.5),
+            (0.9, 4.8), (0.5, 5.1), (0.85, 5.8), (0.95, 6.6), (0.6, 7.3), (0.4, 7.6), (0.0, 7.6)]
+    body = PW._revolve(prof, 24)
+    body = body + M.cylinder(h - 7.5, 0.45, 0.35, 12).translate([0, 0, 7.5])
+    return body + _ball(0.7, 7.5 + (h - 7.5) * 0.6, neck=0.4)
+
+
+# ------------------------------------------------------------------ windows and doors
+def _larmier(half, v, A=1.0, drop=2.4):
+    """A dripstone over a head: a moulded label across it that turns down at each end into a
+    short return ending on a carved boss."""
+    out = [MD.run(-half - 0.6, half + 0.6, v + 1.1, MD.CROWN, 1.1, up=False)]
+    for sg in (-1, 1):
+        x = sg * (half + 0.1)
+        out.append(ext(rect(x - 0.5, v - drop, x + 0.5, v + 0.02), 0.0, 1.0))
+        out.append(ext(circle((x, v - drop), 0.6, 14), 0.0, 1.25))
+    return out
+
+
+def window_chantilly_croisee(w=9.6, h=20.0, A=1.0):
+    """The ashlar storey's stone cross window (croisée): a mullion and a transom crossing in the
+    light, the lower lights barred in three, the upper in diamond leading; a moulded frame, a
+    dripstone with carved bosses, an allège panel with a lozenge under the sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    ib = inner.bounds()
+    vt = h * 0.64
+    body = [ext(plug_cs, -pl, -0.6)]
+    cross = cs_union([rect(-0.55, -1, 0.55, h + 1), rect(-w, vt - 0.55, w, vt + 0.55)])
+    lights = inner - cross
+    bars = [rect(-w, ib[1] + (vt - ib[1]) * k / 3 - RIB / 2, w, ib[1] + (vt - ib[1]) * k / 3 + RIB / 2) for k in (1, 2)]
+    top = rect(-w, vt + 0.55, w, ib[3])
+    for s in np.arange(-w, w, 2.2):
+        bars.append(stroke([(s, vt), (s + 6.0, vt + 6.0)], RIB) ^ top)
+        bars.append(stroke([(s + 6.0, vt), (s, vt + 6.0)], RIB) ^ top)
+    sash = _glazed(body, lights, pl, cs_union(bars), plug_cs) + [ext(cross ^ plug_cs, -pl, 0.0)]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts += _larmier(w / 2 + A, h + A)
+    sw = w / 2 + A + 0.5
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    ap = rect(-w / 2 - 0.2, -3.6, w / 2 + 0.2, -0.79)
+    parts.append(ext(ap, 0.0, 0.45))
+    lz = poly([(0.0, -3.3), (w * 0.3, -2.2), (0.0, -1.1), (-w * 0.3, -2.2)])
+    parts.append(ext(lz - lz.offset(-0.5, MIT, 4.0), 0.44, 0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.4, -3.6)
+
+
+def window_chantilly_upper(w=8.6, h=18.0, A=0.9):
+    """The brick storey's demi-croisée: a light parted by a transom, framed by candelabra
+    pilasters (a vase of rising leaves sunk up each shaft), under an entablature and a
+    triangular pediment holding a scallop shell; a sill on blocks."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    vt = h * 0.68
+    body = [ext(plug_cs, -pl, -0.6)]
+    tr = rect(-w, vt - 0.5, w, vt + 0.5)
+    sash = _glazed(body, inner - tr, pl, cs_union([rect(-RIB / 2, -1, RIB / 2, vt), rect(-RIB / 2, vt, RIB / 2, h + 1)]), plug_cs) + \
+        [ext(tr ^ plug_cs, -pl, -0.2)]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    pw = 1.8
+    xs = w / 2 + A + pw / 2
+    for sg in (-1, 1):
+        x = sg * xs
+        parts.append(ext(rect(x - pw / 2, 0.0, x + pw / 2, h + A), 0.0, 1.0))
+        cand = cs_union([oval((x, 2.6), 0.5, 0.7, 12), rect(x - 0.22, 3.2, x + 0.22, h + A - 1.4)] +
+                        [_lens((x + sg2 * 0.35, v), 1.0, 0.36, math.pi / 2 - sg2 * 0.5) for v in np.arange(4.4, h + A - 2.0, 2.4) for sg2 in (-1, 1)])
+        parts[-1] = parts[-1] - ext(cand ^ rect(x - pw / 2 + 0.3, 1.0, x + pw / 2 - 0.3, h + A - 0.8), 0.75, 1.2)
+        parts.append(chamfer_box(x - pw / 2 - 0.3, -0.2, x + pw / 2 + 0.3, 1.4, 0.0, 1.3, c=0.25))
+    half = xs + pw / 2 + 0.2
+    ve = h + A
+    parts.append(ext(rect(-half, ve - 0.01, half, ve + 1.6), 0.0, 1.0))
+    vc = ve + 1.6 + 0.9
+    parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 0.9, up=False))
+    rise = half * 0.42
+    ped = poly([(-half - 0.3, vc - 0.01), (half + 0.3, vc - 0.01), (0.0, vc + rise)])
+    parts.append(ext(ped - ped.offset(-0.8, MIT, 4.0), 0.0, 1.0))
+    parts.append(ext(ped.offset(-0.8, MIT, 4.0), 0.0, 0.4))
+    sc = (0.0, vc + 0.3)
+    shell = circle(sc, rise * 0.62, 24) ^ rect(-50, vc + 0.3, 50, 100)
+    ribs = cs_union([stroke([sc, (sc[0] + 4 * math.cos(a), sc[1] + 4 * math.sin(a))], 0.32) for a in np.linspace(0.35, math.pi - 0.35, 5)])
+    parts.append(ext((shell - ribs) ^ ped.offset(-0.85, MIT, 4.0), 0.39, 0.85))
+    sw = half
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + rise + 0.2, -1.4)
+
+
+def window_chantilly_tower(w=6.4, h=15.0, A=0.8):
+    """A tower light: one light parted by a transom in a chamfered stone frame, under a
+    dripstone on bosses; a sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    vt = h * 0.66
+    tr = rect(-w, vt - 0.45, w, vt + 0.45)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner - tr, pl, None, plug_cs) + [ext(tr ^ plug_cs, -pl, -0.2)]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts += _larmier(w / 2 + A, h + A, drop=2.0)
+    parts.append(MD.run(-w / 2 - A - 0.4, w / 2 + A + 0.4, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.4, -1.0)
+
+
+def _basket(w, spring, rise, seg=28):
+    """A basket (three-centred) arch head as a semi-ellipse of half-span w/2 and ``rise``,
+    over straight jambs from 0 to the springing."""
+    pts = [(-w / 2, 0.0)] + [(w / 2 * math.cos(t), spring + rise * math.sin(t)) for t in np.linspace(math.pi, 0.0, seg)] + [(w / 2, 0.0)]
+    return poly(pts)
+
+
+def door_chantilly(w=14.0, h=24.0, A=1.1):
+    """The Chantilly's entrance: two leaves of linenfold panels under glazed lights, a basket
+    arch over them glazed as a fan; a moulded arch frame between candelabra pilasters, an
+    entablature, and over it a little pediment flanked by pinnacles, a shell at its heart."""
+    rise = w * 0.28
+    spring = h - rise
+    op = _basket(w, spring, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    dh = spring - 0.4
+    mid = 0.6
+    lw = (ib[2] - ib[0] - mid) / 2
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    ul = ib[0]
+    for i in range(2):
+        body.append(ext(rect(ul, 0.5, ul + lw, dh), -pl, -0.8))
+        pan = rect(ul + 0.7, 1.2, ul + lw - 0.7, dh * 0.5)
+        body.append(_panel(pan))
+        pb = pan.bounds()
+        for x in np.linspace(pb[0] + 0.7, pb[2] - 0.7, 3):
+            body.append(ext(rect(x - 0.22, pb[1] + 0.6, x + 0.22, pb[3] - 0.6), -0.5, -0.15))
+        lights.append(rect(ul + 0.8, dh * 0.5 + 0.8, ul + lw - 0.8, dh - 0.8))
+        ul += lw + mid
+    fan = inner ^ rect(-w, dh + 0.5, w, h + 2)
+    fc = (0.0, dh + 0.5)
+    rays = cs_union([stroke([fc, (fc[0] + w * math.cos(a), fc[1] + w * math.sin(a))], RIB) for a in np.linspace(0.5, math.pi - 0.5, 4)])
+    sash = _glazed(body, cs_union(lights) + fan, pl, rays, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    pw = 2.0
+    xs = w / 2 + A + pw / 2 + 0.2
+    vtop = h + A + 0.6
+    for sg in (-1, 1):
+        x = sg * xs
+        shaft = ext(rect(x - pw / 2, 0.0, x + pw / 2, vtop), 0.0, 1.1)
+        cand = cs_union([oval((x, 3.0), 0.55, 0.8, 12), rect(x - 0.24, 3.6, x + 0.24, vtop - 1.6)] +
+                        [_lens((x + s2 * 0.38, v), 1.1, 0.4, math.pi / 2 - s2 * 0.5) for v in np.arange(5.0, vtop - 2.2, 2.6) for s2 in (-1, 1)])
+        parts.append(shaft - ext(cand ^ rect(x - pw / 2 + 0.3, 1.0, x + pw / 2 - 0.3, vtop - 1.0), 0.85, 1.3))
+        parts.append(chamfer_box(x - pw / 2 - 0.3, -0.2, x + pw / 2 + 0.3, 2.0, 0.0, 1.5, c=0.25))
+    half = xs + pw / 2 + 0.3
+    parts.append(ext(rect(-half, vtop - 0.01, half, vtop + 2.0), 0.0, 1.1))
+    vc = vtop + 2.0 + 1.0
+    parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 1.0, up=False))
+    for sg in (-1, 1):
+        x = sg * xs
+        parts.append(ext(cs_union([rect(x - 0.7, vc - 0.01, x + 0.7, vc + 1.2), poly([(x - 0.7, vc + 1.19), (x + 0.7, vc + 1.19), (x, vc + 4.2)])]), 0.0, 1.0))
+    pr = 3.6
+    ped = poly([(-xs + 1.2, vc - 0.01), (xs - 1.2, vc - 0.01), (0.0, vc + pr)])
+    parts.append(ext(ped - ped.offset(-0.8, MIT, 4.0), 0.0, 1.0))
+    sc = (0.0, vc + 0.3)
+    shell = circle(sc, pr * 0.6, 24) ^ rect(-50, vc + 0.3, 50, 100)
+    ribs = cs_union([stroke([sc, (sc[0] + 5 * math.cos(a), sc[1] + 5 * math.sin(a))], 0.34) for a in np.linspace(0.35, math.pi - 0.35, 5)])
+    parts.append(ext(ped.offset(-0.79, MIT, 4.0), 0.0, 0.4))
+    parts.append(ext((shell - ribs) ^ ped.offset(-0.85, MIT, 4.0), 0.39, 0.8))
+    parts.append(ext(rect(-xs - 1.4, -0.6, xs + 1.4, 0.01), 0.0, 1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + 4.4, -0.6)
+
+
+def door_chantilly_back(w=10.0, h=23.0, A=0.9):
+    """The garden door: a single leaf of linenfold panels under a light, a basket-arched fanlight,
+    a moulded frame and a dripstone on bosses."""
+    rise = w * 0.26
+    spring = h - rise
+    op = _basket(w, spring, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    dh = spring - 0.4
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(ib[0], 0.5, ib[2], dh), -pl, -0.8)]
+    pan = rect(ib[0] + 0.8, 1.2, ib[2] - 0.8, dh * 0.5)
+    body.append(_panel(pan))
+    pb = pan.bounds()
+    for x in np.linspace(pb[0] + 0.8, pb[2] - 0.8, 4):
+        body.append(ext(rect(x - 0.22, pb[1] + 0.6, x + 0.22, pb[3] - 0.6), -0.5, -0.15))
+    light = rect(ib[0] + 0.9, dh * 0.5 + 0.8, ib[2] - 0.9, dh - 0.8)
+    fan = inner ^ rect(-w, dh + 0.5, w, h + 2)
+    sash = _glazed(body, light + fan, pl, cs_union([rect(-RIB / 2, dh * 0.5, RIB / 2, h + 2)]), plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    parts += _larmier(w / 2 + A, h + A, drop=3.0)
+    parts.append(ext(rect(-w / 2 - A - 0.4, -0.6, w / 2 + A + 0.4, 0.01), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.4, -0.6)
+
+
+def addin_chantilly(w=6.0, h=11.0, A=0.8, grand=False):
+    """A lucarne for the steep roof (an add-in): a light parted by a cross, a stone frame
+    between pilasters with pinnacles, an entablature, and a tall gable with a finial and an
+    oculus, scrolls (ailerons) at its foot either side. ``grand``: the frontispiece's, wider,
+    with two lights."""
+    if grand:
+        w, h = w * 1.8, h * 1.15
+    op = rect(-w / 2, 0.0, w / 2, h)
+    vt = h * 0.64
+    bars = cs_union([rect(-w, vt - 0.5, w, vt + 0.5), rect(-0.5, -1.0, 0.5, h + 1.0)])
+    pw = 1.4
+    xs = w / 2 + A + pw / 2
+    ve = h + A
+    half = xs + pw / 2 + 0.2
+    gh = half * (1.3 if grand else 1.15)
+    gable = poly([(-half, ve + 1.39), (half, ve + 1.39), (0.0, ve + 1.4 + gh)])
+    body = cs_union([rect(-half, -0.2, half, ve + 1.4), gable])
+    parts = [ext(body - op, 0.0, 0.6),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-30, 0.0, 30, 60) - op)]
+    for sg in (-1, 1):
+        x = sg * xs
+        parts.append(ext(rect(x - pw / 2, -0.2, x + pw / 2, ve + 1.4), 0.0, 1.1))
+        parts.append(ext(cs_union([rect(x - 0.45, ve + 1.39, x + 0.45, ve + 2.6), poly([(x - 0.45, ve + 2.59), (x + 0.45, ve + 2.59), (x, ve + 4.6)])]), 0.0, 1.0))
+        sc = cs_union([stroke([(sg * (half + 0.2), -0.2), (sg * (half + 1.6), ve * 0.35), (sg * (half + 0.7), ve * 0.6), (sg * (half - 0.1), ve * 0.62)], 0.6),
+                       circle((sg * (half + 1.6), ve * 0.35), 0.55, 12)])
+        parts.append(ext(sc, 0.0, 0.8))
+    parts.append(ext(rect(-half, ve - 0.01, half, ve + 1.4), 0.0, 1.0))
+    parts.append(ext(gable - gable.offset(-0.75, MIT, 4.0), 0.0, 1.0))
+    oc = (0.0, ve + 1.4 + gh * 0.36)
+    ro = min(1.2, gh * 0.2)
+    parts.append(ext(circle(oc, ro + 0.5, 20) - circle(oc, ro, 18), 0.0, 1.0))
+    parts.append(ext(cs_union([rect(-0.4, ve + 1.4 + gh - 1.2, 0.4, ve + 1.4 + gh + 0.8), _trefoil((0.0, ve + 1.4 + gh + 1.2), 0.45)]), 0.0, 1.0))
+    sw = half
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.4, MIT, 4.0) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=ve + 1.4 + gh + 1.8, bottom=-1.0)
+
+
+def chimney_chantilly(w=11.0, d=8.0, h=30.0):
+    """A château stack: a stone shaft with a sunk panel holding a raised lozenge on each face, a
+    moulded cornice, an attic band arcaded with little round arches, and a capping slab."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 6.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        T = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2], [0, 1.0, 0, 0]])
+        pan = rect(-L / 2 + 1.3, 3.0, L / 2 - 1.3, sh - 2.0)
+        body = body - (M.extrude(pan, 0.5).translate([0, 0, -0.49]).transform(T)).rotate([0, 0, rot])
+        lzw = (L - 2.6) * 0.42
+        lc = (sh + 1.0) / 2
+        lz = poly([(0.0, lc - lzw * 1.6), (lzw, lc), (0.0, lc + lzw * 1.6), (-lzw, lc)])
+        body = body + (M.extrude(lz ^ pan.offset(-0.4, MIT, 4.0), 0.4).translate([0, 0, -0.5]).transform(T)).rotate([0, 0, rot])
+    def ring(e0, e1, z0, z1):
+        return M.hull_points([(x, y, z0) for x in (-w / 2 - e0, w / 2 + e0) for y in (-d / 2 - e0, d / 2 + e0)] +
+                             [(x, y, z1) for x in (-w / 2 - e1, w / 2 + e1) for y in (-d / 2 - e1, d / 2 + e1)])
+    body = body + ring(0.0, 0.8, sh - 0.01, sh + 0.8) + ring(0.8, 0.8, sh + 0.79, sh + 1.4)
+    za = sh + 1.39
+    att = box([-w / 2 - 0.3, -d / 2 - 0.3, za], [w / 2 + 0.3, d / 2 + 0.3, za + 3.2])
+    for (L, D, rot) in ((w + 0.6, d + 0.6, 0), (d + 0.6, w + 0.6, 90), (w + 0.6, d + 0.6, 180), (d + 0.6, w + 0.6, 270)):
+        n = max(2, int(L / 2.4))
+        arches = cs_union([O.opening_cs(L / n - 0.8, 2.2, (L / n - 0.8) / 2).translate((-L / 2 + L * (k + 0.5) / n, 0.5)) for k in range(n)])
+        T = np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2], [0, 1.0, 0, za]])
+        att = att - (M.extrude(arches, 0.4).translate([0, 0, -0.39]).transform(T)).rotate([0, 0, rot])
+    body = body + att + ring(0.3, 1.0, za + 3.19, za + 3.9) + ring(1.0, 1.0, za + 3.89, za + 4.6)
+    return body
+
+
+CO.FRIEZE_EXTRA.update(salamanders=frieze_salamanders, ermines=frieze_ermines, machiarches=frieze_machiarches)
+CO.COURSE_EXTRA.update(cordelette=course_cordelette)
+TW.BRACKET_EXTRA.update(machicolation=bracket_machicolation)
+TW.FOUNDATION_EXTRA.update(diamondpoint=foundation_diamondpoint)
+SH.CORNER_EXTRA.update(chantilly=corner_chantilly)
