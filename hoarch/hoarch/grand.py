@@ -5762,3 +5762,491 @@ PW.POSTS.update(carringtonionic=post_carringtonionic)
 PW.FRIEZES.update(festoonarchitrave=frieze_festoonarchitrave)
 PW.SKIRTS.update(carrington=skirt_carrington)
 FT.EDGE_EXTRA.update(dentilegg=edge_dentilegg)
+
+
+# ================================================================== the Ravenhurst (house 100)
+# Castellated Gothic Revival, 1868: a Hudson River castle-villa in the manner of A. J. Davis. A
+# ground storey of grey squared rubble brought to course with little snecks, an upper storey of
+# knapped flint chequered with limestone squares (East Anglian flushwork), stepped angle
+# buttresses at every corner. Every roof is flat behind battlements pierced with cross loops; a
+# square tower on the front corner rises two stages over the roof to its own battlements, a
+# pepperpot turret with a slate spire at each of its corners. Tudor-arched windows of two cusped
+# lights under square label moulds below, single traceried lights above, a great three-light
+# window of panel tracery in the tower; the oak door is set in a four-centred arch. A vaulted
+# porch of clustered piers and Tudor arches carries a battlemented roof; tall clustered chimneys
+# of twisted brick rise from the roof. Cornices of dogtooth, blind quatrefoil panels, grotesque
+# corbel heads.
+
+RV_LEVELS = dict(hi=40.0)
+
+
+def _tudor(w, vs, rise, seg=10):
+    """A four-centred (Tudor) arch outline: jambs from 0 to the springing vs, then two short arcs
+    of small radius turning into two long flat arcs meeting in a low point ``rise`` over vs."""
+    r1 = w * 0.2
+    pts = [(w / 2, 0.0), (w / 2, vs)]
+    for a in np.linspace(0.0, math.radians(55.0), seg):
+        pts.append((w / 2 - r1 + r1 * math.cos(a), vs + r1 * math.sin(a)))
+    x1, y1 = pts[-1]
+    pts.append((x1 * 0.45, y1 + (rise - (y1 - vs)) * 0.8))
+    pts.append((0.0, vs + rise))
+    right = pts
+    left = [(-x, y) for x, y in reversed(right[1:-1])]
+    return poly(right + left + [(-w / 2, 0.0)])
+
+
+def _label(x0, x1, v_top, drop, d=1.0):
+    """A square label (hood) mould over an opening: a moulded bar along v_top returned down
+    ``drop`` at each end onto a square stop. A list of solids in the (u, v, w) frame."""
+    out = [chamfer_box(x0 - 0.9, v_top - 0.01, x1 + 0.9, v_top + 1.0, 0.0, d, c=0.3, bottom=d)]
+    for x in (x0 - 0.9, x1 + 0.1):
+        out.append(chamfer_box(x, v_top - drop, x + 0.8, v_top + 0.01, 0.0, d, c=0.25, bottom=d))
+        out.append(chamfer_box(x - 0.2, v_top - drop - 1.0, x + 1.0, v_top - drop + 0.01, 0.0, d + 0.2, c=0.25, bottom=d + 0.2))
+    return out
+
+
+# ------------------------------------------------------------------ wall skins, corners, foundation
+def rubble_coursed(region, datum=0.0, course=5.6, joint=0.35, d=0.4, seed=23):
+    """Squared rubble brought to course every 5.6 mm: within each course stones of the full height,
+    or two stacked, or a big one with a little square sneck beside it; every stone's face
+    chamfered (the Ravenhurst's ground storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed)
+    out = []
+    v = datum + math.floor((v0 - datum) / course) * course - course
+    while v < v1:
+        if v + course > v0 - 1:
+            u = u0 - rng.uniform(0.0, 4.0)
+            while u < u1 + 1:
+                kind = rng.integers(0, 3)
+                Ls = rng.uniform(3.6, 7.6)
+                if kind == 0:
+                    out.append(chamfer_box(u + joint / 2, v + joint / 2, u + Ls - joint / 2, v + course - joint / 2, 0.0, d, c=0.2))
+                elif kind == 1:
+                    hs = rng.uniform(2.0, course - 2.0)
+                    out.append(chamfer_box(u + joint / 2, v + joint / 2, u + Ls - joint / 2, v + hs - joint / 2, 0.0, d, c=0.2))
+                    L2 = rng.uniform(2.6, Ls)
+                    out.append(chamfer_box(u + joint / 2, v + hs + joint / 2, u + L2 - joint / 2, v + course - joint / 2, 0.0, d, c=0.2))
+                    if L2 < Ls - 1.4:
+                        out.append(chamfer_box(u + L2 + joint / 2, v + hs + joint / 2, u + Ls - joint / 2, v + course - joint / 2, 0.0, d, c=0.2))
+                else:
+                    sn = 1.6
+                    out.append(chamfer_box(u + joint / 2, v + joint / 2, u + Ls - joint / 2, v + course - sn - joint / 2, 0.0, d, c=0.2))
+                    out.append(chamfer_box(u + joint / 2, v + course - sn + joint / 2, u + sn * 1.4 - joint / 2, v + course - joint / 2, 0.0, d, c=0.2))
+                    out.append(chamfer_box(u + sn * 1.4 + joint / 2, v + course - sn + joint / 2, u + Ls - joint / 2, v + course - joint / 2, 0.0, d, c=0.2))
+                u += Ls
+        v += course
+    return union(out) ^ M.extrude(region, d + 0.2)
+
+
+def flint_chequer(region, datum=0.0, s=3.2, d=0.3, seed=29):
+    """Flushwork: a chequer of smooth limestone squares and squares of knapped flint, each flint
+    square a cluster of little rounded nodules (the Ravenhurst's upper storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed)
+    stones, nods = [], []
+    j0 = math.floor((v0 - datum) / s) - 1
+    for j in range(j0, int((v1 - datum) / s) + 2):
+        v = datum + j * s
+        k0 = math.floor(u0 / s) - 1
+        for k in range(k0, int(u1 / s) + 2):
+            u = k * s
+            if (j + k) % 2 == 0:
+                stones.append(rect(u + 0.12, v + 0.12, u + s - 0.12, v + s - 0.12))
+            else:
+                for a in range(3):
+                    for b in range(3):
+                        cx = u + s * (a + 0.5) / 3 + rng.uniform(-0.15, 0.15)
+                        cy = v + s * (b + 0.5) / 3 + rng.uniform(-0.15, 0.15)
+                        nods.append(circle((cx, cy), s / 6 - 0.05, 8))
+    out = []
+    if stones:
+        out.append(M.extrude(cs_union(stones) ^ region, d))
+    if nods:
+        out.append(M.extrude(cs_union(nods) ^ region, d * 0.6))
+    return union(out) if out else M()
+
+
+def corner_ravenhurst(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Ravenhurst's corners: an angle buttress on each face, 2.4 mm wide, standing 2.2 out at
+    its foot and stepping back to 1.2 at a 45 degree set-off halfway up, its head weathered back
+    to the wall at 45 degrees under the cornice."""
+    if qb - qa < 8.0:
+        return M()
+    bw = 2.6
+    u0, u1 = (0.3, 0.3 + bw) if at_start else (L - 0.3 - bw, L - 0.3)
+    zm = qa + (qb - qa) * 0.5
+    lo = M.hull_points([(u, qa, w_) for u in (u0, u1) for w_ in (-0.02, 2.2)] + [(u, zm, w_) for u in (u0, u1) for w_ in (-0.02, 2.2)] +
+                       [(u, zm + 1.0, w_) for u in (u0, u1) for w_ in (-0.02, 1.2)])
+    hi = M.hull_points([(u, zm + 0.99, w_) for u in (u0, u1) for w_ in (-0.02, 1.2)] + [(u, qb - 1.2, w_) for u in (u0, u1) for w_ in (-0.02, 1.2)] +
+                       [(u, qb, -0.02) for u in (u0, u1)])
+    return lo + hi
+
+
+def foundation_quatrefoilplinth(reg, seed=0):
+    """A plinth of plain ashlar carrying a band of blind quatrefoils in square panels under a
+    chamfered bench table (the Ravenhurst)."""
+    b = reg.bounds()
+    hgt = b[3] - b[1]
+    out = [M.extrude(reg, 0.4)]
+    top = rect(b[0] - 1, b[3] - 1.2, b[2] + 1, b[3]) ^ reg
+    if not top.is_empty():
+        tb = top.bounds()
+        out.append(M.hull_points([(x, tb[1], 0.0) for x in (tb[0], tb[2])] + [(x, tb[1] + 0.4, 1.0) for x in (tb[0], tb[2])] +
+                                 [(x, tb[3], 1.0) for x in (tb[0], tb[2])] + [(x, tb[3], 0.39) for x in (tb[0], tb[2])]))
+    if hgt > 5.0:
+        s = min(3.6, hgt - 2.6)
+        vm = b[1] + 0.8 + s / 2
+        cells, qf = [], []
+        for u in np.arange(b[0] + 1.0, b[2] - s, s + 0.6):
+            sq = rect(u, vm - s / 2, u + s, vm + s / 2)
+            cells.append(sq - sq.offset(-0.4, MIT, 4.0))
+            q = _quatrefoil((u + s / 2, vm), s * 0.16)
+            qf.append(q - q.offset(-0.35, MIT, 4.0))
+        if cells:
+            out.append(M.extrude(cs_union(cells + qf) ^ reg, 0.75))
+    return union(out)
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_dogtooth(L, h, b, pitch, margin, p):
+    """Dogtooth: a row of four-leaved pyramids, each a square set on its point with its leaves
+    rising to a sharp middle (Early English; the Ravenhurst)."""
+    pu = 1.6
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    out = [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.12)]
+    s = min(0.72, h * 0.42)
+    for k in range(n):
+        u = u0 + pu * (k + 0.5)
+        out.append(M.hull_points([(u + s, h / 2, 0.0), (u - s, h / 2, 0.0), (u, h / 2 + s, 0.0), (u, h / 2 - s, 0.0), (u, h / 2, 0.55)])
+                   .translate([0, 0, b + 0.11]))
+    return out
+
+
+def frieze_panelquatrefoils(L, h, b, pitch, margin, pair, half):
+    """Blind panelling: a row of square panels, each framing a quatrefoil with a flower at its
+    heart (Perpendicular; the Ravenhurst's storey joint)."""
+    v0, v1 = 0.5, h - 0.5
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    s = hh * 0.92
+    pu = s + 0.6
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    frames, qf, fl = [], [], []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        sq = rect(uc - s / 2, vm - s / 2, uc + s / 2, vm + s / 2)
+        frames.append(sq - sq.offset(-0.4, MIT, 4.0))
+        q = _quatrefoil((uc, vm), s * 0.17)
+        qf.append(q - q.offset(-0.38, MIT, 4.0))
+        fl.append(circle((uc, vm), 0.45, 12))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    return [_st(cs_union(frames) ^ clip, b, 0.35), _st(cs_union(qf) ^ clip, b, 0.45), _st(cs_union(fl) ^ clip, b, 0.6)], []
+
+
+def frieze_grotesques(L, h, b, pitch, margin, pair, half):
+    """A corbel table of grotesque heads: little cusped arches springing from carved heads (a
+    brow, two hollow eyes, a grinning mouth), a fillet over all (the Ravenhurst's eave)."""
+    v0, v1 = 0.5, h - 0.5
+    hh = v1 - v0
+    pu = max(3.4, hh * 0.8)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    top = rect(0.2, v1 - 0.6, L - 0.2, v1)
+    arcs, heads, eyes = [], [], []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        o = arch_cs(uc - pu / 2 + 0.75, uc + pu / 2 - 0.75, v0 + hh * 0.42, v1 - 1.4, rise=(pu - 1.5) / 2, seg=16)
+        oo = arch_cs(uc - pu / 2 + 0.3, uc + pu / 2 - 0.3, v0 + hh * 0.42, v1 - 0.9, rise=(pu - 0.6) / 2, seg=16)
+        arcs.append((oo - o) ^ rect(-1e3, v0 + hh * 0.42, 1e3, 1e3))
+    for k in range(n + 1):
+        u = u0 + pu * k
+        c = (u, v0 + hh * 0.3)
+        heads.append(oval(c, 0.75, hh * 0.28, 16))
+        eyes.append(circle((u - 0.28, c[1] + hh * 0.06), 0.16, 8) + circle((u + 0.28, c[1] + hh * 0.06), 0.16, 8) +
+                    rect(u - 0.35, c[1] - hh * 0.14, u + 0.35, c[1] - hh * 0.1))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    hd = cs_union(heads) ^ clip
+    return [_st(top, b, 0.35), _st(cs_union(arcs) ^ clip, b, 0.42), _st(hd - cs_union(eyes), b, 0.65)], []
+
+
+def bracket_corbelhead(h, d, t):
+    """A Gothic corbel: a moulded block over a rounded head, stepped back under it (side
+    profile, top at v = 0; the Ravenhurst)."""
+    pts = [(0.0, 0.0), (d, 0.0), (d, -h * 0.22), (d - 0.3, -h * 0.3)]
+    r = min(h * 0.32, d * 0.4)
+    cx, cy = d - 0.3 - r, -h * 0.3 - r
+    for a in np.linspace(0.0, -math.pi * 0.75, 9):
+        pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    pts += [(d * 0.25, -h), (0.0, -h)]
+    return poly(pts)
+
+
+def fence_ravenhurst_battlements(L, h):
+    """Battlements (drawn at full size, printed flat): merlons with a cross loop in each and a
+    moulded coping, embrasures between them, on a solid parapet."""
+    mw, ew = 3.6, 2.6
+    pu = mw + ew
+    n = max(1, int((L - 0.4 + ew) / pu))
+    u0 = (L - (n * pu - ew)) / 2
+    base = h * 0.52
+    out = [rect(0.2, 0.0, L - 0.2, base)]
+    loops = []
+    for k in range(n):
+        x = u0 + pu * k
+        out.append(rect(x, base - 0.1, x + mw, h - 0.5))
+        out.append(rect(x - 0.3, h - 0.6, x + mw + 0.3, h))
+        cx = x + mw / 2
+        loops.append(rect(cx - 0.32, base - 1.6, cx + 0.32, h - 1.4) + rect(cx - 1.0, h * 0.72 - 0.3, cx + 1.0, h * 0.72 + 0.3))
+    if u0 > 0.8:
+        out.append(rect(0.2, base - 0.1, u0 - 0.6, h - 0.5))
+    if L - (u0 + n * pu - ew) > 0.8:
+        out.append(rect(u0 + n * pu - ew + 0.6, base - 0.1, L - 0.2, h - 0.5))
+    out.append(rect(0.2, base - 0.6, L - 0.2, base))
+    return (cs_union(out) - cs_union(loops)) ^ rect(0.2, 0.0, L - 0.2, h)
+
+
+def bartizan_ravenhurst(r=4.2, h=10.0, spire=9.0):
+    """A pepperpot turret for a corner of the tower's top: an octagonal turret on a two-step
+    moulded base, a cross loop in each face, a moulded string, and a slate spire with a finial
+    ball. Local: its axis at the origin, its flat base at z = 0 (it stands on the tower's deck
+    and prints upright on that base); one filament change at the spire's foot. Returns (solid,
+    the spire's foot height)."""
+    oc = circle((0.0, 0.0), r, 8).rotate(22.5)
+    body = M.extrude(oc.offset(0.5, MIT, 4.0), 0.6) + M.extrude(oc.offset(0.25, MIT, 4.0), 0.6).translate([0, 0, 0.59])
+    body = body + M.extrude(oc, h).translate([0, 0, 1.18])
+    zt = round((1.18 + h) / 0.2) * 0.2
+    body = body + M.extrude(oc.offset(0.4, MIT, 4.0), 0.8).translate([0, 0, zt - 0.8])
+    ap = r * math.cos(math.pi / 8)
+    for k in range(8):
+        a = math.pi / 8 + k * math.pi / 4 + math.pi / 8
+        cx, cy = ap * math.cos(a), ap * math.sin(a)
+        loop = (box([-0.3, -0.6, -1.8], [0.3, 0.6, 1.8]) + box([-1.0, -0.6, -0.3], [1.0, 0.6, 0.3])).rotate([0, 0, math.degrees(a) + 90])
+        body = body - loop.translate([cx, cy, 1.2 + h * 0.5])
+    sp = M.extrude(oc.offset(0.4, MIT, 4.0), spire, 0, 0.0, (0.08, 0.08)).translate([0, 0, zt - 0.01])
+    body = body + sp + _ball(0.55, zt + spire + 0.3, neck=0.25)
+    return body, zt
+
+
+# ------------------------------------------------------------------ windows and doors
+def window_ravenhurst_ground(wl=3.8, h=15.0, mull=1.0, A=0.7):
+    """The ground storey's window: two lights, each under a cusped Tudor arch, parted by a stone
+    mullion, a transom across, in a chamfered frame under a square label on stops."""
+    W = 2 * wl + mull
+    op = rect(-W / 2, 0.0, W / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.4, MIT, 4.0)
+    xs = (-(wl + mull) / 2, (wl + mull) / 2)
+    vs = h - wl * 0.42
+    lights = cs_union([_tudor(wl, vs, wl * 0.36).translate((x, 0.0)) for x in xs])
+    bars = (inner - lights) + rect(-W, h * 0.48 - RIB / 2, W, h * 0.48 + RIB / 2)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.7)]
+    spand = cs_union([rect(x - wl / 2, vs, x + wl / 2, h) for x in xs]) - lights
+    parts.append(ext(spand ^ op, -0.6, 0.35))
+    parts += _label(-W / 2 - A, W / 2 + A, h + A, 3.0)
+    parts.append(chamfer_box(-W / 2 - A - 0.4, -1.2, W / 2 + A + 0.4, 0.01, 0.0, 1.1, c=0.3, bottom=1.1))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.2, -1.2)
+
+
+def window_ravenhurst_upper(w=5.6, h=15.0, A=0.7):
+    """The upper storey's window: one Tudor-arched light filled with tracery (two cusped sub-
+    lights and a quatrefoil), in a chamfered frame under a label mould that follows the arch."""
+    rise = w * 0.32
+    vs = h - rise
+    op = _tudor(w, vs, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.4, MIT, 4.0)
+    subs = cs_union([_tudor(w / 2 - 0.7, vs - 1.4, (w / 2 - 0.7) * 0.4).translate((sg * (w / 4), 0.0)) for sg in (-1, 1)])
+    quat = _quatrefoil((0.0, vs + rise * 0.15), 0.55)
+    glass_ = (subs + quat) ^ inner
+    bars = (inner - glass_) + rect(-w, h * 0.45 - RIB / 2, w, h * 0.45 + RIB / 2)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.7)]
+    hood = (op.offset(A + 1.0, MIT, 4.0) - op.offset(A - 0.05, MIT, 4.0)) ^ rect(-50, vs - 0.3, 50, 100)
+    parts.append(ext(hood, 0.0, 1.0))
+    for sg in (-1, 1):
+        x = sg * (w / 2 + A + 0.5)
+        parts.append(chamfer_box(x - 0.6, vs - 1.6, x + 0.6, vs - 0.29, 0.0, 1.1, c=0.25, bottom=1.1))
+    parts.append(chamfer_box(-w / 2 - A - 0.4, -1.2, w / 2 + A + 0.4, 0.01, 0.0, 1.1, c=0.3, bottom=1.1))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.2, -1.2)
+
+
+def window_ravenhurst_great(n=3, wl=3.2, mull=0.9, h=22.0, A=0.8):
+    """The tower's great window: a tall pointed arch of three lights with a transom, the head
+    filled with panel tracery (mullions running up into it, a row of cusped panels and a
+    quatrefoil at the point), a hood mould on carved stops."""
+    W = n * wl + (n - 1) * mull
+    ap = _apex(W, W * 0.75)
+    vs = h - ap
+    op = _lancet(-W / 2, W / 2, vs, r=W * 0.75, seg=16)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.4, MIT, 4.0)
+    xs = [-W / 2 + wl / 2 + k * (wl + mull) for k in range(n)]
+    lights = cs_union([_tudor(wl, vs - 0.6, wl * 0.35).translate((x, 0.0)) for x in xs])
+    panels = cs_union([_lancet(x - wl / 2 + 0.2, x + wl / 2 - 0.2, vs + ap * 0.15, v0=vs + 0.5, r=wl * 0.5) for x in xs])
+    quat = _quatrefoil((0.0, vs + ap * 0.68), min(0.8, ap * 0.12))
+    glass_ = (lights + panels + quat) ^ inner
+    bars = (inner - glass_) + rect(-W, vs * 0.5 - RIB / 2, W, vs * 0.5 + RIB / 2)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.8)]
+    hood, top = _hood_lancet(op, A, vs, W, crockets=2)
+    parts += hood
+    parts.append(chamfer_box(-W / 2 - A - 0.5, -1.4, W / 2 + A + 0.5, 0.01, 0.0, 1.2, c=0.3, bottom=1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 0.2, -1.4)
+
+
+def door_ravenhurst(w=10.0, h=21.0, A=1.0, back=False):
+    """The Ravenhurst's portal: a pair of boarded oak leaves on long strap hinges with a wicket
+    grille, in a four-centred arch of two chamfered orders, shields carved in the spandrels under
+    a square label on stops. The back door (``back``) has one order and no shields."""
+    rise = w * 0.3
+    vs = h - rise
+    op = _tudor(w, vs, rise, seg=12)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    ja = w / 2 - O.CLR - 0.5
+    dh = vs + rise * 0.4
+    body = [ext(plug_cs, -pl, -1.0), ext(op.offset(-O.CLR - 0.5, MIT, 4.0), -pl, -0.8)]
+    grooves = cs_union([rect(x - 0.15, 0.6, x + 0.15, h) for x in np.arange(-ja + 1.0, ja, 1.3)]) ^ op.offset(-O.CLR - 0.6, MIT, 4.0)
+    body = [b_ - ext(grooves, -0.81, 0.0) if k == 1 else b_ for k, b_ in enumerate(body)]
+    for v in (dh * 0.22, dh * 0.62):
+        for sg in (-1, 1):
+            x0, x1 = sorted((sg * 0.5, sg * (ja - 0.1)))
+            body.append(ext(rect(x0, v - 0.3, x1, v + 0.3), -0.81, -0.45))
+            body.append(ext(circle((sg * (ja - 0.4), v), 0.45, 10), -0.81, -0.4))
+    grille = rect(-1.4, dh * 0.72, 1.4, dh * 0.72 + 2.4)
+    gb = cs_union([rect(x - 0.2, dh * 0.72, x + 0.2, dh * 0.72 + 2.4) for x in (-0.7, 0.0, 0.7)])
+    body.append(ext(grille - grille.offset(-0.35, MIT, 4.0) + gb, -0.81, -0.4))
+    body.append(ext(rect(-0.25, 0.5, 0.25, dh), -0.81, -0.5))
+    sash = body + [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0)]
+    orders = 1 if back else 2
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    for k in range(orders):
+        e0, e1 = A * 0.2 + k * 1.3, A * 0.2 + (k + 1) * 1.3
+        ring = (op.offset(e1, MIT, 4.0) - op.offset(e0, MIT, 4.0)) ^ rect(-50, -0.6, 50, 100)
+        parts.append(ext(ring, 0.0, 0.9 + 0.4 * (orders - k - 1)))
+    X = w / 2 + A * 0.2 + orders * 1.3
+    top = h + A * 0.2 + orders * 1.3 + 0.8
+    if not back:
+        sp = rect(-X, vs, X, top) - op.offset(X - w / 2, MIT, 4.0)
+        parts.append(ext(sp, 0.0, 0.5))
+        for sg in (-1, 1):
+            c = (sg * (X - 1.6), top - 1.9)
+            sh = poly([(c[0] - 0.9, c[1] + 0.9), (c[0] + 0.9, c[1] + 0.9), (c[0] + 0.9, c[1] - 0.1), (c[0], c[1] - 1.0), (c[0] - 0.9, c[1] - 0.1)])
+            parts.append(ext(sh, 0.49, 0.95))
+    parts += _label(-X, X, top, 4.0, d=1.3)
+    parts.append(ext(rect(-X - 1.0, -0.6, X + 1.0, 0.01), 0.0, 1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 1.2, -0.6)
+
+
+# ------------------------------------------------------------------ the porch
+def post_clusterpier(h, collar=None, abacus=4.0, slot=(1.2, 1.0)):
+    """A clustered Gothic pier: four round shafts round a core, each with a moulded base and a
+    bell capital, under a shared octagonal abacus (the Ravenhurst's porch)."""
+    zc = h - 3.2
+    body = PW._plinth(3.6, ph=1.4) + M.cylinder(zc - 1.39, 1.05, 1.05, 24).translate([0, 0, 1.39])
+    for k in range(4):
+        a = math.pi / 4 + k * math.pi / 2
+        x, y = 0.95 * math.cos(a), 0.95 * math.sin(a)
+        prof = [(0.0, 1.39), (0.75, 1.39), (0.75, 1.6), (0.6, 1.9), (0.55, 2.1), (0.55, zc - 0.5), (0.7, zc - 0.3), (0.7, zc), (0.55, zc + 0.1)]
+        body = body + PW._revolve(prof, 16).translate([x, y, 0.0])
+    body = body + PW._top(h, abacus / 2, zc, 1.75, slot, seg=24, shape="round")
+    return body
+
+
+def frieze_tudorarch(u0, u1, v_bot, v_top):
+    """The porch's arcade: a four-centred Tudor arch between every two piers, a pierced
+    quatrefoil in each spandrel where there is room (the Ravenhurst)."""
+    L = u1 - u0
+    um = (u0 + u1) / 2
+    hh = v_top - v_bot
+    rise = min(hh - 1.4, (L - 0.6) * 0.3)
+    vs = v_top - 1.0 - rise
+    solid = rect(u0, v_bot, u1, v_top + 0.05)
+    hole = _tudor(L - 0.6, vs - (v_bot - 1.0), rise).translate((um, v_bot - 1.0))
+    out = solid - hole
+    rq = min(0.9, (v_top - 1.0 - (vs + rise * 0.5)) * 0.35)
+    if rq > 0.45 and L > 8.0:
+        for sg in (-1, 1):
+            out = out - _quatrefoil((um + sg * (L / 2 - 1.9), v_top - 1.0 - rise * 0.35), rq * 0.6)
+    return out
+
+
+def edge_crenelfascia(L, z0, zc):
+    """Porch fascia (the Ravenhurst): a fillet under the crown with a row of little square
+    crenellations hanging below it."""
+    out = [rect(0.3, zc - 0.7, L - 0.3, zc)]
+    pu = 1.6
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    out += [rect(u0 + pu * k + 0.2, zc - 1.5, u0 + pu * k + 1.0, zc - 0.65) for k in range(n)]
+    return cs_union(out) ^ rect(0.3, -1e3, L - 0.3, 1e3), 0.6
+
+
+def skirt_ravenhurst(reg, d=1.2):
+    """The porch's base between the piers: ashlar with a band of blind quatrefoils in squares."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, d * 0.45)]
+    s = min(3.4, v1 - v0 - 1.4)
+    if s > 1.6:
+        vm = (v0 + v1) / 2
+        cells = []
+        for u in np.arange(u0 + 0.6, u1 - s, s + 0.5):
+            sq = rect(u, vm - s / 2, u + s, vm + s / 2)
+            cells.append(sq - sq.offset(-0.35, MIT, 4.0))
+            q = _quatrefoil((u + s / 2, vm), s * 0.16)
+            cells.append(q - q.offset(-0.33, MIT, 4.0))
+        if cells:
+            out.append(ext(cs_union(cells) ^ reg, d * 0.45 - 0.01, d * 0.85))
+    out.append(ext(rect(u0 - 1, v1 - 0.8, u1 + 1, v1 + 1) ^ reg, d * 0.45 - 0.01, d * 0.9))
+    return union(out) ^ M.extrude(reg, d + 0.5)
+
+
+def chimney_ravenhurst(w=11.0, d=6.0, h=30.0, n=3):
+    """A clustered Tudor chimney: a plain base with a moulded set-off, ``n`` tall octagonal shafts
+    of brick twisting one turn in their height, joined at their heads by a corbelled cap of three
+    oversailing courses. Prints upright."""
+    h = round(h / 0.2) * 0.2
+    zb = round(h * 0.34 / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zb])
+    body = body + M.hull_points([(x, y, zb - 0.01) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)] +
+                                [(x, y, zb + 0.6) for x in (-w / 2 + 0.6, w / 2 - 0.6) for y in (-d / 2 + 0.6, d / 2 - 0.6)])
+    zc = h - 2.4
+    rs = min(d / 2 - 0.4, w / (2 * n) - 0.2)
+    oc = cs_union([circle((rs * 0.25 * math.cos(a), rs * 0.25 * math.sin(a)), rs * 0.8, 8) for a in (0.0, 2.094, 4.189)])
+    oc = circle((0.0, 0.0), rs, 8).rotate(22.5) ^ oc.offset(0.15, MIT, 4.0) + circle((0.0, 0.0), rs * 0.82, 16)
+    for k in range(n):
+        x = -w / 2 + w * (k + 0.5) / n
+        shaft = M.extrude(oc, zc - zb - 0.4, int((zc - zb) / 0.4), 360.0).translate([x, 0, zb + 0.4])
+        body = body + shaft + M.cylinder(0.6, rs + 0.3, rs + 0.3, 16).translate([x, 0, zb + 0.4])
+    z = zc - 0.01
+    for k in range(3):
+        g = 0.3 * (k + 1)
+        body = body + box([-w / 2 - g + 0.4, -d / 2 - g + 0.4, z], [w / 2 + g - 0.4, d / 2 + g - 0.4, z + 0.8])
+        z += 0.8
+    for k in range(n):
+        x = -w / 2 + w * (k + 0.5) / n
+        body = body - M.cylinder(3.0, rs * 0.5, rs * 0.5, 12).translate([x, 0, h - 1.6])
+    return body
+
+
+CO.FRIEZE_EXTRA.update(panelquatrefoils=frieze_panelquatrefoils, grotesques=frieze_grotesques)
+CO.COURSE_EXTRA.update(dogtoothleaf=course_dogtooth)
+TW.BRACKET_EXTRA.update(corbelhead=bracket_corbelhead)
+TW.FOUNDATION_EXTRA.update(quatrefoilplinth=foundation_quatrefoilplinth)
+SH.CORNER_EXTRA.update(ravenhurst=corner_ravenhurst)
+PW.POSTS.update(clusterpier=post_clusterpier)
+PW.FRIEZES.update(tudorarch=frieze_tudorarch)
+PW.SKIRTS.update(ravenhurst=skirt_ravenhurst)
+FT.EDGE_EXTRA.update(crenelfascia=edge_crenelfascia)

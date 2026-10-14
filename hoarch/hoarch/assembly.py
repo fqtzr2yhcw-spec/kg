@@ -1604,6 +1604,21 @@ tower decks change once, from lead to Istrian white, just above the seams, for t
  10. Portico (round the bow): """ + top_porch() + """; the PORCH-rail strips (the balustrade) into the slots round the portico's roof;
      STOOP-back at the back door.
 """, addin_note("ADDIN", "white", "The CREST changes once from white to yellow.")),
+    "ravenhurst": ("THE RAVENHURST - CASTELLATED GOTHIC REVIVAL VILLA", "  1. FOUNDATION (plinth with blind quatrefoils).\n" + jointed(
+        " (the first storey of the house, the tower and the bay)", " (the second storey of all of them and the tower's two stages over the roof)") + """
+  5. The CORNICE-E parts round the eave band of the house, the tower and the bay (the pieces round
+     the tower fit on from the side): the course first, then -lower, then -upper on top.
+  6. ROOF-deck (the flat lead roof, seams up) onto the walls inside the eave, round the tower; the
+     ROOF-batt strips (the battlements) into the slots along its edge; the CHIMNEYs (the twisted
+     stacks) in their pockets.
+  7. Tower: the CORNICE-T parts round its top band; TOWER-deck onto the tower's top; a BARTIZAN
+     (the pepperpot turrets) on each corner of the deck, glued by its flat base; the TOWER-batt
+     strips into the slots between them.
+  8. Porch: """ + top_porch() + """; the PORCH-batt strips (its battlements) into the slots round its roof; STOOP-back at the back
+     door.
+""", """Walls, decks, turrets and chimneys print upright. Windows and doors print face up with supports
+under their frames only. The BARTIZANs change once, from limestone to slate, at the spire's foot.
+"""),
     "thornbury": ("THE THORNBURY - RICHARDSONIAN ROMANESQUE", "  1. FOUNDATION (two chamfered courses).\n" + jointed(
         " (the first storey of the house, the tower and the apse)",
         " (the second storey of all of them and the tower's top stage)") + """

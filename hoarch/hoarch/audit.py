@@ -30,7 +30,7 @@ HOUSES = ["beaumont", "villa", "harcourt", "fowler", "whitby", "delancey", "ardm
           "marigold", "primrose", "rosecroft", "twins", "larkspur", "juniper", "camellia", "wisteria", "hawthorn",
           "magnolia", "whitmore", "pennock", "oakhurst", "vantassel", "hathaway", "chatham", "winthrop", "westbrook", "ellsworth", "fairhaven",
           "prescott", "bellerive", "pinckney", "randolph", "stauffer", "porter", "pingree", "alvarado", "brenton", "ridgely", "arroyo", "hollister", "wrightwood", "ashcombe", "capistrano", "kittredge", "pullman", "lindenwald", "stickley", "sandoval", "millbrook", "brendan", "harmon", "engine3", "montclair", "lafayette", "delacroix", "belcourt", "valcour", "chevalier", "marchand", "rochambeau", "beauvais", "fontaine",
-          "wyndham", "evangeline", "bellosguardo", "chantilly", "vanderlyn", "zenobia", "thornbury", "foscari", "carrington"]
+          "wyndham", "evangeline", "bellosguardo", "chantilly", "vanderlyn", "zenobia", "thornbury", "foscari", "carrington", "ravenhurst"]
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "out")
 BED = 256.0
