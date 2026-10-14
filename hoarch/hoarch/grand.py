@@ -26,6 +26,14 @@ def _clip_v(cs, v0, v1):
     return cs ^ rect(-1e4, v0, 1e4, v1)
 
 
+def _ball(r, zc, neck=0.4, seg=24):
+    """A ball turned on a stem (axis z, centre zc), its underside drawn in to 45 degrees down to
+    the stem, so it prints upright with nothing hanging (a plain sphere's lower half did)."""
+    z0 = zc - r - (r - neck)
+    prof = [(0.0, z0), (neck, z0)] + [(r * math.sin(t), zc - r * math.cos(t)) for t in np.linspace(0.25, math.pi - 0.05, 16)]
+    return PW._revolve(prof + [(0.0, zc + r)], seg)
+
+
 def _chrys(c, r, n=12, half=False, disc=0.55, petal_w=0.55):
     """A chrysanthemum seen face on, as CrossSections: (petals, centre). ``n`` pointed petals
     radiating from a disc to radius ``r`` (``half``: n petals over the upper half only, for a
@@ -491,7 +499,7 @@ def finial_wyndham(h=16.0):
     body = PW._revolve(prof, 28)
     body = body + M.cylinder(h - 5.8, 0.55, 0.4, 14).translate([0, 0, 5.85])
     for z, r in ((7.6, 1.0), (10.0, 0.8), (12.2, 0.62)):
-        body = body + M.sphere(r, 24).translate([0, 0, z])
+        body = body + _ball(r, z, neck=0.45)
     return body
 
 
@@ -1180,7 +1188,7 @@ def finial_evangeline(h=14.0):
             (1.25, 3.4), (1.5, 4.0), (1.35, 4.7), (0.9, 5.3), (0.55, 5.8), (0.45, 6.2), (0.0, 6.2)]
     body = PW._revolve(prof, 28)
     body = body + M.cylinder(h - 6.1, 0.5, 0.4, 14).translate([0, 0, 6.1])
-    body = body + M.sphere(0.85, 24).translate([0, 0, 6.1 + (h - 6.1) * 0.55])
+    body = body + _ball(0.85, 6.1 + (h - 6.1) * 0.55, neck=0.45)
     return body
 
 
@@ -1331,7 +1339,7 @@ def _ogee(x0, v0, H, n=16):
     return pts
 
 
-def door_evangeline(w=15.0, h=31.0, A=1.2):
+def door_evangeline(w=15.0, h=28.0, A=1.2, hx=4.0):
     """The Evangeline's entrance: a pair of leaves, each a raised panel under a glazed lancet
     light, under a lancet head of bar tracery (two sub-lancets and a quatrefoil); an architrave
     between clustered colonnettes on blocks, and over all an ogee hood rising in a crocketed
@@ -1390,7 +1398,7 @@ def door_evangeline(w=15.0, h=31.0, A=1.2):
             col = PW._revolve(prof, 18).rotate([-90, 0, 0]).translate([x + dx, 2.19, 0.0]) ^ box([x - 3, 0.0, 0.0], [x + 3, vt, 5.0])
             parts.append(col)
     # the ogee hood: a band along an ogee from over the capitals to a point, crockets, finial
-    H = ap + 6.4
+    H = ap + hx
     cl = _ogee(xc, vt + 1.4, H)
     band = cs_union([stroke(cl, 1.2), stroke([(-x, v) for x, v in cl], 1.2)])
     parts.append(ext(band, 0.0, 1.3))
@@ -1634,20 +1642,20 @@ def stair_horseshoe(H, n=13, fw=7.0, tread=2.6, land=(16.0, 8.0), cheek=1.6, wal
         # the outer cheek wall (front), its coping sloping with the flight, a pier at its foot
         xa, xb = sg * LW / 2, sg * (LW / 2 + run)
         pts = [(xa, 0.0), (xb, 0.0), (xb, 4.2), (xa, H + 5.2)]
-        cw = M.extrude(poly(pts), cheek).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])).translate([0, 0, LD - cheek])
+        cw = M.extrude(poly(pts), cheek).translate([0, 0, LD - cheek])
         parts.append(cw)
         xp = xb + sg * 1.4
         parts.append(box([min(xp - 1.8, xp + 1.8), 0.0, LD - cheek - 0.6], [max(xp - 1.8, xp + 1.8), 6.4, LD + 0.6]))
-        parts.append(M.hull_points([(xp + dx, LD - cheek / 2 + dz, 6.39) for dx in (-1.8, 1.8) for dz in (-1.4, 1.4)] +
-                                   [(xp + dx, LD - cheek / 2 + dz, 7.4) for dx in (-1.3, 1.3) for dz in (-0.9, 0.9)]))
-        parts.append(M.sphere(1.3, 24).translate([xp, LD - cheek / 2, 8.5]))
+        parts.append(M.hull_points([(xp + dx, 6.39, LD - cheek / 2 + dz) for dx in (-1.8, 1.8) for dz in (-1.4, 1.4)] +
+                                   [(xp + dx, 7.4, LD - cheek / 2 + dz) for dx in (-1.3, 1.3) for dz in (-0.9, 0.9)]))
+        parts.append(_ball(1.3, 9.0, neck=0.8).rotate([-90, 0, 0]).translate([xp, 0.0, LD - cheek / 2]))
         # the back cheek (against the gallery) as a low wall
         parts.append(box([min(xa, xb) - 0.01, 0.0, 0.0], [max(xa, xb) + 0.01, 3.0, LD - fw - cheek + 0.01]))
     body = union(parts)
     # the parapet's door opening, a blind lancet arch under the landing
     body = body - box([-LW / 2 + cheek, H - 0.5, LD - cheek - 1], [LW / 2 - cheek, H + 6, LD + 1])
     nich = _lancet(-3.0, 3.0, H - 9.0 - _apex(6.0), v0=2.0)
-    body = body - M.extrude(nich, 0.8).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]])).translate([0, 0, LD - 0.79])
+    body = body - M.extrude(nich, 0.8).translate([0, 0, LD - 0.79])
     return body
 
 
@@ -1661,7 +1669,7 @@ def cistern_evangeline(r=9.0, hb=12.0, ht=30.0):
     base = base + M.hull_points([(p[0] * 1.0, p[1] * 1.0, hb - 1.21) for p in oc.offset(0.0, MIT, 4.0).to_polygons()[0]] +
                                 [(p[0], p[1], hb) for p in oc.offset(0.6, MIT, 4.0).to_polygons()[0]])
     for k in range(8):
-        a = math.pi / 4 * k + math.pi / 8
+        a = math.pi / 4 * k
         arch = _lancet(-2.0, 2.0, 5.0, v0=1.4, r=4.0, seg=8)
         A = np.array([[-math.sin(a), 0, math.cos(a), (r + 2.4) * math.cos(math.pi / 8) * math.cos(a)],
                       [math.cos(a), 0, math.sin(a), (r + 2.4) * math.cos(math.pi / 8) * math.sin(a)],
@@ -1681,7 +1689,7 @@ def cistern_evangeline(r=9.0, hb=12.0, ht=30.0):
     prof = [(0.0, 0.0), (r + 0.2, 0.0), (r - 0.2, 1.0), (r - 1.2, 2.6), (r - 3.0, 4.6), (r * 0.42, 6.4), (r * 0.26, 8.0),
             (r * 0.2, 9.0), (0.9, 9.6), (0.6, 10.2), (0.0, 10.2)]
     dome = PW._revolve(prof, 48).translate([0, 0, zc - 0.01])
-    dome = dome + M.sphere(1.2, 24).translate([0, 0, zc + 11.2])
+    dome = dome + _ball(1.2, zc + 11.2, neck=0.6)
     return base, tank, dome
 
 
