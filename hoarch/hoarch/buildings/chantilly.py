@@ -77,7 +77,7 @@ D_TOP = round(DK - 1.2 - (RH - 1.2) / math.tan(math.radians(68.0)), 1)
 ROOF = [(DK, ZW), (DK - 1.2, ZW + 1.2), (D_TOP, ZR1)]
 SLATE = dict(pitch=1.7, wtab=2.0, d=0.4, shape=G.slate_hexbands)
 Z_ADD = ZW + 1.0
-ZT = ZW + 14.0                                   # the towers' top stage over the eave
+ZT = ZW + 18.0                                   # the towers' top stage over the eave
 ZTW = ZT + CO.band_height(TOWER_C)
 DT = TOWER_C["layers"][-1]["P"] + 0.2
 CONE_H = 40.0
@@ -143,7 +143,7 @@ def _openings():
         for e in (0, side):
             add_face(T, e, V1 + 3.0, tw, f"{tag}{e}-1")
             add_face(T, e, V2 + 2.0, tw, f"{tag}{e}-2")
-        add_face(T, 0, ZW - ZF + 1.8, G.window_chantilly_tower(w=5.2, h=6.6), f"{tag}0-3")
+        add_face(T, 0, ZW - ZF + 2.0, G.window_chantilly_tower(w=5.6, h=9.6), f"{tag}0-3")
     return L
 
 

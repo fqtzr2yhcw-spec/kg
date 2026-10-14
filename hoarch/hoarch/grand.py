@@ -3581,3 +3581,548 @@ PW.BALUSTERS.update(invertedvase=(baluster_invertedvase, 1.6))
 PW.FRIEZES.update(regulae=frieze_regulae)
 PW.SKIRTS.update(dadopanels=skirt_dadopanels)
 FT.EDGE_EXTRA.update(triglyphs=edge_triglyphs)
+
+
+# ================================================================== the Zenobia (house 96)
+# Oriental Revival, 1861: an octagon villa of the kind the Natchez cotton planters dreamed of,
+# its walls of ablaq (courses of smooth and of scored stone in turn) below and rope-beaded lap
+# above, wrapped on every face by a two-tier gallery of slender Moorish colonnettes, horseshoe
+# arches cusped into lobes, mashrabiya railings and a fringe of stars. Over a muqarnas cornice a
+# steep octagonal roof rises to a crested deck, and from it a twelve-sided drum of horseshoe
+# lights under merlons carries a gilt onion dome with a tulip finial. Windows are horseshoe arches
+# in alfiz frames below and paired ajimez lights above; the stacks are little domed turrets.
+
+ZN_LEVELS = dict(hi=40.0)      # the building sets it: the lap storey's foot over the block's base
+
+
+def _horseshoe(a, vs_jamb, kick=1.18, seg=28):
+    """A horseshoe-arch opening: straight jambs 2a apart from v = 0 up to vs_jamb, then a circle of
+    radius kick*a whose centre stands over the jambs, so the arch swells past them before it
+    closes. Returns (outline, centre v, radius)."""
+    R_ = a * kick
+    vc = vs_jamb + math.sqrt(R_ * R_ - a * a)
+    th0 = math.atan2(vs_jamb - vc, a)
+    pts = [(-a, 0.0), (a, 0.0)]
+    for t in np.linspace(th0, math.pi - th0, seg):
+        pts.append((R_ * math.cos(t), vc + R_ * math.sin(t)))
+    return poly(pts), vc, R_
+
+
+def _lobes(outline, vc, R_, n=7, r=None):
+    """Cusp a horseshoe arch's head into lobes: small circles taken out of the arch's ring just
+    inside it (for a frame's inner edge)."""
+    r = R_ * 0.22 if r is None else r
+    return cs_union([circle((R_ * 0.98 * math.cos(t), vc + R_ * 0.98 * math.sin(t)), r, 12) for t in np.linspace(0.15, math.pi - 0.15, n)])
+
+
+def _octostar(c, ro, ri=None):
+    return _star(c, ro, ro * 0.62 if ri is None else ri, n=8, rot=0.0)
+
+
+def slate_zenobia(k, j):
+    """The Zenobia's roof: square slates, every fifth course swallow-tailed and the next pointed
+    (chisel), a band of arrowheads round the octagon."""
+    m = k % 5
+    return "swallow" if m == 2 else ("chisel" if m == 3 else "square")
+
+
+def ablaq(region, datum=0.0, course=2.4, joint=0.4, d=0.32):
+    """Ablaq: courses of smooth ashlar and courses scored with fine vertical lines in turn, the
+    smooth ones standing a little prouder, every course bevelled top and bottom (the Zenobia's
+    ground storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = []
+    k = math.floor((v0 - datum) / course) - 1
+    while datum + k * course < v1 + course:
+        a, b = datum + k * course + joint / 2, datum + (k + 1) * course - joint / 2
+        if b > v0 - 1 and a < v1 + 1:
+            dd = d if k % 2 == 0 else d * 0.6
+            out.append(M.hull_points([(x, a, 0.0) for x in (u0 - 1, u1 + 1)] + [(x, a + dd, dd) for x in (u0 - 1, u1 + 1)] +
+                                     [(x, b - dd * 0.4, dd) for x in (u0 - 1, u1 + 1)] + [(x, b, 0.0) for x in (u0 - 1, u1 + 1)]))
+            if k % 2 == 1:
+                sc = cs_union([rect(u, a + 0.3, u + 0.25, b - 0.3) for u in np.arange(u0 - 1, u1 + 1, 0.9)])
+                out[-1] = out[-1] - ext(sc, dd - 0.15, dd + 0.5)
+        k += 1
+    return union(out) ^ M.extrude(region, d + 0.1)
+
+
+def lap_ropebead(region, datum=0.0, pitch=1.8, d=0.34, every=4):
+    """Lap boards 1.8 mm to the weather, every fourth butt dressed with a twisted rope bead
+    (the Zenobia's upper storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    k1 = math.ceil((v1 - datum) / pitch) + 1
+    pts = [(datum + k0 * pitch, 0.0)]
+    for k in range(k0, k1):
+        vk = datum + k * pitch
+        pts += [(vk, d), (vk + pitch, 0.06)]
+    pts.append((datum + k1 * pitch, 0.0))
+    strip = M.extrude(poly(pts), (u1 - u0) + 2).transform(frame([u0 - 1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]))
+    ropes = []
+    for k in range(k0, k1):
+        if k % every:
+            continue
+        vk = datum + k * pitch
+        cells = cs_union([poly([(u, vk + 0.05), (u + 0.3, vk + 0.05), (u + 0.62, vk + 0.5), (u + 0.32, vk + 0.5)])
+                          for u in np.arange(u0 - 1, u1 + 1, 0.55)])
+        ropes.append(ext(cells, d - 0.06, d + 0.2))
+    out = strip + (union(ropes) if ropes else M())
+    return out ^ M.extrude(region, d + 0.4).translate([0, 0, -0.1])
+
+
+def corner_zenobia(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Zenobia's octagon corners (where the turn is sharp enough for dressing): an engaged
+    colonnette on a block, ringed thrice, under a cushion capital."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    if qb - qa < 8.0:
+        return M()
+    x = span(0.0, 0.0)[0]
+    rc = 0.7
+    prof = [(0.0, 0.0), (rc, 0.0)]
+    for f in (0.3, 0.55, 0.8):
+        z = (qb - qa - 3.4) * f
+        prof += [(rc, z), (rc + 0.2, z + 0.2), (rc + 0.2, z + 0.4), (rc, z + 0.6)]
+    prof += [(rc, qb - qa - 3.2), (0.0, qb - qa - 3.2)]
+    col = PW._revolve(prof, 18).rotate([-90, 0, 0]).translate([x, qa + 1.79, 0.0]) ^ box([x - 3, qa, 0.0], [x + 3, qb, 3.0])
+    a, b = span(-0.6, 1.6)
+    out = col + chamfer_box(a, qa, b, qa + 1.8, 0.0, 1.0, c=0.2, bottom=1.0) + chamfer_box(a, qb - 1.6, b, qb, 0.0, 1.1, c=0.3, bottom=1.1)
+    return out
+
+
+def foundation_starplinth(reg, seed=0):
+    """A plinth faced in tiles, each with a raised eight-pointed star, under a bevelled cap (the
+    Zenobia)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.3)]
+    s = 3.0
+    v0, v1 = b[1] + 0.3, b[3] - 1.4
+    if v1 - v0 > 2.0:
+        stars = []
+        for v in np.arange(v0 + s / 2, v1 - s / 2 + 0.01, s):
+            for u in np.arange(b[0] + s / 2, b[2] - s / 2 + 0.01, s):
+                stars.append(_octostar((u, v), s * 0.36))
+        if stars:
+            out.append(ext(cs_union(stars) ^ reg, 0.29, 0.6))
+    cap = rect(b[0] - 1, b[3] - 1.4, b[2] + 1, b[3]) ^ reg
+    if not cap.is_empty():
+        cb = cap.bounds()
+        out.append(M.hull_points([(x, cb[1], 0.29) for x in (cb[0], cb[2])] + [(x, cb[1] + 0.5, 0.8) for x in (cb[0], cb[2])] +
+                                 [(x, cb[3], 0.8) for x in (cb[0], cb[2])] + [(x, cb[3], 0.29) for x in (cb[0], cb[2])]))
+    return union(out)
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_octostars(L, h, b, pitch, margin, p):
+    """A row of eight-pointed stars on a fillet, a bead between every two (the Zenobia)."""
+    pu = 2.4
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    stars = cs_union([_octostar((u0 + pu * (k + 0.5), h / 2), min(0.85, h * 0.46)) for k in range(n)])
+    beads = cs_union([circle((u0 + pu * k, h / 2), 0.3, 10) for k in range(n + 1)])
+    clip = rect(0.2, 0.0, L - 0.2, h)
+    return [_st(rect(0.2, 0.2, L - 0.2, h - 0.2), b, 0.18), _st(stars ^ clip, b + 0.18, 0.32), _st(beads ^ clip, b + 0.18, 0.22)]
+
+
+def frieze_arabesque(L, h, b, pitch, margin, pair, half):
+    """Strapwork: a band of interlaced straps knotting into eight-pointed stars, one star in
+    every 5 mm, a boss at each heart (the Zenobia's storey joint)."""
+    v0, v1 = 0.7, h - 0.7
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    pu = max(4.2, hh * 1.05)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    straps, bosses = [], []
+    for k in range(n):
+        c = (u0 + pu * (k + 0.5), vm)
+        ro = hh * 0.44
+        st_ = _octostar(c, ro, ro * 0.66)
+        straps.append(st_ - st_.offset(-0.45, MIT, 4.0))
+        bosses.append(circle(c, 0.5, 12))
+        if k < n - 1:
+            x0, x1 = c[0] + ro * 0.75, c[0] + pu - ro * 0.75
+            straps.append(stroke([(x0, vm + hh * 0.22), (x1, vm - hh * 0.22)], 0.45))
+            straps.append(stroke([(x0, vm - hh * 0.22), (x1, vm + hh * 0.22)], 0.45))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    return [_st(cs_union(straps) ^ clip, b, 0.38), _st(cs_union(bosses) ^ clip, b, 0.55)], []
+
+
+def frieze_muqarnas(L, h, b, pitch, margin, pair, half):
+    """Muqarnas: stalactite vaulting seen face on, three tiers of little pointed niches each
+    stepped out over the one below, a pendant under every second (the Zenobia's eave)."""
+    v0, v1 = 0.5, h - 0.5
+    hh = v1 - v0
+    tiers = 3
+    th = hh / tiers
+    out = []
+    for t in range(tiers):
+        vb, vt = v0 + th * t, v0 + th * (t + 1)
+        pu = 2.0
+        n = max(1, int((L - 0.6) / pu))
+        u0 = (L - n * pu) / 2 + (t % 2) * pu / 2
+        band = rect(0.2, vb, L - 0.2, vt)
+        niches = cs_union([_lancet(u0 + pu * k + 0.25, u0 + pu * (k + 1) - 0.25, vt - 0.5 - _apex(pu - 0.5, (pu - 0.5) * 0.7), v0=vb - 0.5,
+                                   r=(pu - 0.5) * 0.7, seg=6) for k in range(-1, n + 1)])
+        out.append(_st((band - niches) ^ rect(0.2, v0, L - 0.2, v1), b + 0.3 * t, 0.3))
+        out.append(_st(band ^ rect(0.2, v0, L - 0.2, v1), b + 0.3 * t - 0.01, 0.06))
+    for k, u in enumerate(np.arange(1.2, L - 1.0, 4.0)):
+        out.append(_st(circle((u, v0 + 0.35), 0.35, 10) ^ rect(0.2, v0, L - 0.2, v1), b + 0.3, 0.3))
+    return out, []
+
+
+def frieze_merlons(L, h, b, pitch, margin, pair, half):
+    """A band of stepped Moorish merlons in relief, each pierced (sunk) with a small star (the
+    Zenobia's drum)."""
+    v0, v1 = 0.6, h - 0.6
+    hh = v1 - v0
+    pu = max(3.0, hh * 0.9)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    cells, stars = [rect(0.2, v0, L - 0.2, v0 + hh * 0.25)], []
+    for k in range(n):
+        u = u0 + pu * (k + 0.5)
+        hw = pu * 0.36
+        cells.append(poly([(u - hw, v0), (u + hw, v0), (u + hw, v0 + hh * 0.55), (u + hw * 0.55, v0 + hh * 0.55),
+                           (u + hw * 0.55, v0 + hh * 0.8), (u, v1), (u - hw * 0.55, v0 + hh * 0.8), (u - hw * 0.55, v0 + hh * 0.55),
+                           (u - hw, v0 + hh * 0.55)]))
+        stars.append(_octostar((u, v0 + hh * 0.42), min(0.6, hw * 0.55)))
+    mer = cs_union(cells) ^ rect(0.2, v0, L - 0.2, v1)
+    return [_st(mer, b, 0.45)], [ext(cs_union(stars), b + 0.2, b + 1.0)]
+
+
+def bracket_lotusconsole(h, d, t):
+    """A console ending in a hanging lotus bud: a body sweeping out from the wall to the soffit's
+    front, and from its toe a bud of three petals (side profile, top at v = 0; the Zenobia)."""
+    body = poly([(0.0, 0.0), (d, 0.0), (d, -0.9), (d * 0.45, -h * 0.55), (0.9, -h + 0.6), (0.0, -h + 0.6)])
+    bud = cs_union([_lens((d - 0.45, -1.4), 1.6, 0.8, math.pi / 2), _lens((d - 0.85, -1.2), 1.2, 0.5, math.pi / 2 + 0.5)])
+    return cs_union([body, bud])
+
+
+def kufic(L, h):
+    """A crest course: a Kufic-like square fret, a band folding up into battlement steps at
+    every 3 mm (the Zenobia's deck)."""
+    pu = 3.0
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    lo, hi = 0.35, h - 0.35
+    pts = []
+    for k in range(n):
+        u = u0 + pu * k
+        pts += [(u, lo), (u + 0.9, lo), (u + 0.9, hi), (u + 2.1, hi), (u + 2.1, lo)]
+    pts.append((u0 + pu * n, lo))
+    return [cs_union([stroke(pts, 0.46, caps=False), rect(0.2, 0.05, L - 0.2, 0.3)]) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def fence_zenobia(L, h):
+    """Zenobia cresting (drawn at half size for SE.printable): stepped merlons pierced with
+    stars, and between them slender spires each tipped with a little crescent of leaf, on a
+    rail."""
+    pitch = 3.6
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    cells = [rect(0.0, 0.0, L, 0.6)]
+    holes = []
+    for j in range(n):
+        m = p * j + p / 2
+        hw = p * 0.32
+        cells.append(poly([(m - hw, 0.0), (m + hw, 0.0), (m + hw, h * 0.5), (m + hw * 0.55, h * 0.5), (m + hw * 0.55, h * 0.72),
+                           (m, h * 0.92), (m - hw * 0.55, h * 0.72), (m - hw * 0.55, h * 0.5), (m - hw, h * 0.5)]))
+        holes.append(_octostar((m, h * 0.36), min(0.55, hw * 0.5)))
+    for j in range(n + 1):
+        u = min(max(p * j, 0.3), L - 0.3)
+        cells.append(rect(u - 0.25, 0.0, u + 0.25, h * 0.8))
+        cells.append(_lens((u, h * 0.82), 0.9, 0.6, math.pi / 2))
+    return (cs_union(cells) - cs_union(holes)) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def finial_tulip(h=14.0):
+    """The onion's finial: a turned collar, a slender spire carrying a tulip bud (its swell
+    drawn in at 45 degrees below), then a point."""
+    prof = [(0.0, 0.0), (1.4, 0.0), (1.4, 0.5), (0.9, 1.0), (0.6, 1.3), (0.9, 1.7), (0.5, 2.1), (0.45, 6.0), (0.95, 7.0),
+            (1.05, 7.8), (0.8, 8.6), (0.45, 9.2), (0.4, 9.6), (0.0, 9.6)]
+    body = PW._revolve(prof, 24)
+    return body + M.cylinder(h - 9.5, 0.4, 0.3, 12).translate([0, 0, 9.5])
+
+
+def onion_zenobia(r0=15.0, h=34.0):
+    """The gilt onion dome, solid, printed upright: from the drum's rim it swells out at 45
+    degrees (no more, so nothing hangs), turns, and draws in on an ogee to its point. Local: foot
+    at z = 0 on the axis."""
+    prof = [(0.0, 0.0), (r0, 0.0), (r0 + 0.6, 0.6), (r0 * 1.22, r0 * 0.22 + 0.6), (r0 * 1.24, h * 0.3), (r0 * 1.18, h * 0.42),
+            (r0 * 0.98, h * 0.55), (r0 * 0.66, h * 0.68), (r0 * 0.36, h * 0.8), (r0 * 0.16, h * 0.9), (0.5, h * 0.97), (0.3, h), (0.0, h)]
+    body = PW._revolve(prof, 64)
+    ribs = PW._revolve([(0.0, 0.0)] + [(rr + 0.35, z) for rr, z in prof[2:-1]] + [(0.0, h)], 64)
+    for k in range(16):
+        sl = box([0.0, -0.3, 0.6], [r0 * 1.5, 0.3, h]).rotate([0, 0, 360.0 * k / 16])
+        body = body + (ribs ^ sl)
+    return body
+
+
+# ------------------------------------------------------------------ windows and doors
+def _alfiz(half, top, v0, t=0.9):
+    """An alfiz: a rectangular moulded frame enclosing a horseshoe arch's head, from the
+    springing up past the crown."""
+    o = rect(-half, v0, half, top)
+    return ext(o - o.offset(-t, MIT, 4.0), 0.0, 0.9)
+
+
+def window_zenobia_ground(w=8.6, h=21.0, A=0.9):
+    """The ground storey's window: a horseshoe-arched light (two lights below a transom, the head
+    glazed in a fan) in a frame whose head is cusped into lobes, set in an alfiz with a star in
+    each spandrel; a sill on a panelled apron."""
+    a = w / 2
+    op, vc, R_ = _horseshoe(a, h - a * 1.18 - a * 0.6)
+    ob = op.bounds()
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    body = [ext(plug_cs, -pl, -0.6)]
+    vt = vc - R_ * 0.3
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, vt), rect(-w, vt - 0.35, w, vt + 0.35)] +
+                    [stroke([(0.0, vt), (R_ * 1.5 * math.cos(t_), vt + R_ * 1.5 * math.sin(t_))], RIB) for t_ in np.linspace(0.5, math.pi - 0.5, 3)])
+    sash = _glazed(body, inner, pl, bars, plug_cs)
+    ring = op.offset(A, RND) - op
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(ring, 0.0, 0.8),
+             ext(_lobes(op, vc, R_ + A * 0.5, n=9, r=0.42) ^ (op.offset(A, RND) - op.offset(-0.01, RND)), 0.0, 1.05)]
+    half = R_ + A + 1.0
+    top = ob[3] + A + 1.2
+    parts.append(_alfiz(half, top, vc - R_ * 0.35))
+    for sg in (-1, 1):
+        parts.append(ext(_octostar((sg * (half - 1.4), top - 1.6), 0.7), 0.0, 1.0))
+    parts.append(ext(rect(-half, vc - R_ * 0.35 - 0.01, half, vc - R_ * 0.35 + 0.9) - op.offset(A, RND), 0.0, 0.9))
+    sw = half
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts.append(ext(rect(-a, -3.2, a, -0.79), 0.0, 0.45))
+    parts.append(ext(_octostar((0.0, -2.0), 1.0), 0.44, 0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 0.2, -3.2)
+
+
+def window_zenobia_upper(w=11.0, h=18.0, A=0.8):
+    """The upper storey's ajimez: two horseshoe-arched lights sharing a slender central
+    colonnette, under one alfiz with a lozenge between the heads; a sill."""
+    sw_ = (w - 1.2) / 2
+    a = sw_ / 2
+    lights, cents = [], []
+    for sg in (-1, 1):
+        o, vc, R_ = _horseshoe(a, h - a * 1.18 - a * 0.6)
+        lights.append(o.translate((sg * (a + 0.6), 0.0)))
+        cents.append((sg * (a + 0.6), vc, R_))
+    op = cs_union(lights)                         # two lights: the wall between them stands solid to the sill
+    ob = op.bounds()
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = cs_union([l.offset(-O.CLR - 0.5, MIT, 4.0) for l in lights])
+    body = [ext(plug_cs, -pl, -0.6)]
+    bars = cs_union([rect(-w, h * 0.45 - 0.3, w, h * 0.45 + 0.3)])
+    sash = _glazed(body, inner, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext(cs_union([l.offset(A, RND) - l for l in lights]) - op, 0.0, 0.8)]
+    prof = [(0.0, 0.0), (0.55, 0.0), (0.55, cents[0][1] - 1.4), (0.8, cents[0][1] - 0.9), (0.8, cents[0][1] - 0.3), (0.0, cents[0][1] - 0.3)]
+    parts.append(PW._revolve(prof, 16).rotate([-90, 0, 0]) ^ box([-2, 0.0, 0.0], [2, h, 3.0]))
+    half = w / 2 + A + 0.9
+    top = ob[3] + A + 1.0
+    parts.append(_alfiz(half, top, cents[0][1] - cents[0][2] * 0.3))
+    lz = poly([(0.0, top - 0.9 - 2.0), (1.0, top - 0.9 - 1.0), (0.0, top - 0.9), (-1.0, top - 0.9 - 1.0)])
+    parts.append(ext(lz, 0.0, 1.0))
+    parts.append(MD.run(-half, half, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 0.2, -1.0)
+
+
+def window_zenobia_drum(w=6.0, h=13.0, A=0.7):
+    """A drum light: a horseshoe arch in a plain ring with a keystone star; a sill."""
+    a = w / 2
+    op, vc, R_ = _horseshoe(a, h - a * 1.18 - a * 0.6)
+    ob = op.bounds()
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, cs_union([rect(-RIB / 2, -1, RIB / 2, h + 2)]), plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, RND) - op, 0.0, 0.8),
+             ext(_octostar((0.0, ob[3] + A * 0.5), 0.75), 0.0, 1.1)]
+    parts.append(MD.run(-a - A - 0.4, a + A + 0.4, 0.0, MD.SILL, 0.9, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, ob[3] + A + 1.0, -0.9)
+
+
+def door_zenobia(w=12.0, h=25.0, A=1.1):
+    """The Zenobia's portal: a pair of studded leaves (raised panels set with rows of nail
+    heads) under a horseshoe fanlight of radiating bars, a frame cusped into lobes, an alfiz with
+    stars in the spandrels and a band of stars across its head."""
+    a = w / 2
+    op, vc, R_ = _horseshoe(a, h - a * 1.18 - a * 0.6)
+    ob = op.bounds()
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ib = inner.bounds()
+    dh = vc - R_ * 0.55
+    mid = 0.6
+    lw = (2 * a - 2 * O.CLR - 1.0 - mid) / 2
+    body = [ext(plug_cs, -pl, -1.0)]
+    ul = -a + O.CLR + 0.5
+    for i in range(2):
+        body.append(ext(rect(ul, 0.5, ul + lw, dh), -pl, -0.8))
+        pan = rect(ul + 0.7, 1.2, ul + lw - 0.7, dh - 0.8)
+        body.append(_panel(pan))
+        pb = pan.bounds()
+        for v in np.arange(pb[1] + 1.2, pb[3] - 0.8, 2.4):
+            for x in np.linspace(pb[0] + 0.8, pb[2] - 0.8, 3):
+                body.append(ext(circle((x, v), 0.3, 8), -0.45, -0.1))
+        ul += lw + mid
+    fan = inner ^ rect(-w, dh + 0.5, w, h + 5)
+    fc = (0.0, dh + 0.5)
+    rays = cs_union([stroke([fc, (fc[0] + w * math.cos(t_), fc[1] + w * math.sin(t_))], RIB) for t_ in np.linspace(0.45, math.pi - 0.45, 5)])
+    sash = _glazed(body, fan, pl, rays, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, RND) - op, 0.0, 0.9),
+             ext(_lobes(op, vc, R_ + A * 0.5, n=11, r=0.45) ^ (op.offset(A, RND) - op.offset(-0.01, RND)), 0.0, 1.15)]
+    half = R_ + A + 1.6
+    top = ob[3] + A + 1.6
+    parts.append(_alfiz(half, top, vc - R_ * 0.4, t=1.1))
+    for sg in (-1, 1):
+        parts.append(ext(_octostar((sg * (half - 1.7), top - 2.0), 0.9), 0.0, 1.1))
+    parts.append(ext(rect(-half, top - 0.01, half, top + 1.8), 0.0, 0.8))
+    parts.append(ext(cs_union([_octostar((x, top + 0.9), 0.6) for x in np.arange(-half + 1.2, half - 0.9, 2.0)]), 0.79, 1.2))
+    parts.append(ext(rect(-half, -0.6, half, 0.01), 0.0, 1.1))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 2.0, -0.6)
+
+
+def door_zenobia_back(w=9.0, h=22.0, A=0.9):
+    """The garden door: one leaf of studded panels under a horseshoe fanlight, a plain ring and
+    an alfiz."""
+    a = w / 2
+    op, vc, R_ = _horseshoe(a, h - a * 1.18 - a * 0.6)
+    ob = op.bounds()
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    ja = a - O.CLR - 0.5                         # the leaf between the jambs (not the arch's swell)
+    dh = vc - R_ * 0.55
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(-ja, 0.5, ja, dh), -pl, -0.8)]
+    pan = rect(-ja + 0.8, 1.2, ja - 0.8, dh - 0.8)
+    body.append(_panel(pan))
+    pb = pan.bounds()
+    for v in np.arange(pb[1] + 1.2, pb[3] - 0.8, 2.4):
+        for x in np.linspace(pb[0] + 0.8, pb[2] - 0.8, 3):
+            body.append(ext(circle((x, v), 0.3, 8), -0.45, -0.1))
+    fan = inner ^ rect(-w, dh + 0.5, w, h + 5)
+    sash = _glazed(body, fan, pl, cs_union([rect(-RIB / 2, dh, RIB / 2, h + 5)]), plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.52) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, RND) - op, 0.0, 0.9)]
+    half = R_ + A + 1.0
+    top = ob[3] + A + 1.2
+    parts.append(_alfiz(half, top, vc - R_ * 0.4))
+    parts.append(ext(rect(-half, -0.6, half, 0.01), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, top + 0.2, -0.6)
+
+
+# ------------------------------------------------------------------ gallery parts
+def post_moorish(h, collar=None, abacus=3.0, slot=(1.2, 1.0)):
+    """A Moorish colonnette: a square base, a slender shaft ringed at its foot and below its
+    capital, a cushion capital (a cube rounded underneath) and a tall impost block (cimacio)
+    over it (the Zenobia's galleries)."""
+    zc = h - 4.4
+    r = 0.78
+    prof = [(0.0, 1.19), (1.0, 1.19), (1.0, 1.4), (r, 1.7), (r, zc - 0.8), (1.0, zc - 0.6), (1.0, zc - 0.3), (r, zc - 0.1), (r, zc), (1.4, zc + 0.6),
+            (1.45, zc + 1.2)]
+    body = PW._revolve(prof, 24) + PW._plinth(2.6)
+    body = body + PW._top(h, abacus / 2, zc + 1.2, 1.45, slot, seg=24, shape="square")
+    return body
+
+
+def baluster_mashrabiya(h, seg=14):
+    """A mashrabiya spindle: a stack of turned balls and rings on a slender core, on a square
+    foot under a square top (the Zenobia)."""
+    prof = [(0.0, 0.8), (0.26, 0.8)]
+    z = 0.9
+    k = 0
+    while z < h - 1.6:
+        prof += [(0.26, z), (0.46 if k % 2 == 0 else 0.36, z + 0.4), (0.26, z + 0.8)]
+        z += 0.9
+        k += 1
+    prof += [(0.26, h - 0.8)]
+    body = PW._revolve(prof, seg)
+    return body + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+
+
+def frieze_horseshoearcade(u0, u1, v_bot, v_top):
+    """A gallery frieze: one horseshoe arch filling the bay from post to post, its head cusped
+    into lobes, a star in each spandrel (the Zenobia)."""
+    L = u1 - u0
+    hh = v_top - v_bot
+    um = (u0 + u1) / 2
+    a = L / 2 - 0.4
+    R_ = a * 1.12
+    vc = v_top - 1.2 - R_
+    pts = []
+    th0 = math.asin(max(-1.0, min(1.0, (v_bot - 1.0 - vc) / R_)))
+    for t in np.linspace(th0, math.pi - th0, 32):
+        pts.append((um + R_ * math.cos(t), vc + R_ * math.sin(t)))
+    hole = poly(pts) - cs_union([circle((um + R_ * math.cos(t), vc + R_ * math.sin(t)), 0.5, 10) for t in np.linspace(0.3, math.pi - 0.3, 7)])
+    solid = rect(u0, v_bot, u1, v_top + 0.05) - hole
+    stars = cs_union([_octostar((x, v_top - 1.6), 0.55) for x in (u0 + 1.5, u1 - 1.5)])
+    return solid - stars
+
+
+def edge_starfringe(L, z0, zc):
+    """Gallery fascia (the Zenobia): a fillet under the crown hung with a row of small
+    eight-pointed stars."""
+    out = [rect(0.3, zc - 0.5, L - 0.3, zc)]
+    pu = 1.8
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    out += [_octostar((u0 + pu * (k + 0.5), zc - 1.05), 0.68) for k in range(n)]
+    return cs_union(out) ^ rect(0.3, -1e3, L - 0.3, 1e3), 0.6
+
+
+def skirt_girih(reg, d=1.2):
+    """A gallery skirt of girih: a lattice of interlaced octagons and stars in relief (the
+    Zenobia)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, d * 0.4)]
+    s = 3.4
+    cells = []
+    for v in np.arange(v0 + s / 2, v1, s):
+        for u in np.arange(u0 + s / 2, u1, s):
+            st_ = _octostar((u, v), s * 0.42)
+            cells.append(st_ - st_.offset(-0.45, MIT, 4.0))
+    if cells:
+        out.append(ext(cs_union(cells) ^ reg, d * 0.4 - 0.01, d * 0.75))
+    out.append(ext(rect(u0 - 1, v1 - 0.9, u1 + 1, v1 + 1), d * 0.4 - 0.01, d * 0.75))
+    return union(out) ^ M.extrude(reg, d + 0.5)
+
+
+def chimney_zenobia(r=4.6, h=24.0):
+    """A stack as a little turret: an octagonal shaft with a horseshoe niche in every other face,
+    a ring of merlon-cut corbelling, and a little onion cap with a point. Prints upright."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 8.0
+    oc = circle((0.0, 0.0), r, 8).rotate(22.5)
+    body = M.extrude(oc, sh)
+    ap = r * math.cos(math.pi / 8)
+    for k in range(0, 8, 2):
+        a = 2 * math.pi * k / 8
+        nich, _, _ = _horseshoe(1.0, sh * 0.5)
+        T = np.array([[-math.sin(a), 0, math.cos(a), ap * math.cos(a)], [math.cos(a), 0, math.sin(a), ap * math.sin(a)], [0, 1.0, 0, sh * 0.2]])
+        body = body - ext(nich, -0.5, 1.0).transform(T)
+    body = body + M.extrude(circle((0.0, 0.0), r + 0.6, 8).rotate(22.5), 0.6).translate([0, 0, sh - 0.01])
+    body = body + M.hull_points([(p[0], p[1], sh - 0.61) for p in oc.to_polygons()[0]] +
+                                [(p[0], p[1], sh) for p in circle((0.0, 0.0), r + 0.6, 8).rotate(22.5).to_polygons()[0]])
+    cap = onion_zenobia(r * 0.95, 7.4).translate([0, 0, sh + 0.59])
+    return body + cap
+
+
+CO.FRIEZE_EXTRA.update(arabesque=frieze_arabesque, muqarnas=frieze_muqarnas, merlons=frieze_merlons)
+CO.COURSE_EXTRA.update(octostars=course_octostars)
+TW.BRACKET_EXTRA.update(lotusconsole=bracket_lotusconsole)
+TW.FOUNDATION_EXTRA.update(starplinth=foundation_starplinth)
+SH.CORNER_EXTRA.update(zenobia=corner_zenobia)
+PW.POSTS.update(moorish=post_moorish)
+PW.BALUSTERS.update(mashrabiya=(baluster_mashrabiya, 1.6))
+PW.FRIEZES.update(horseshoearcade=frieze_horseshoearcade)
+PW.SKIRTS.update(girih=skirt_girih)
+FT.EDGE_EXTRA.update(starfringe=edge_starfringe)
