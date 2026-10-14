@@ -1,0 +1,852 @@
+"""The grand batch (houses 91 to 100): Gilded Age mansions that blend the collection's three
+families: Victorian massing and ornament (towers, bays, wraparound porches, brackets), Colonial
+order (porticoes, Palladian windows, fanlit entrances, symmetry) and the mansard batch's layered
+roof storeys (deep eaves, add-ins, crests, cresting). They build on the mansard batch's roof
+system (``hoarch.secondempire``: ``addin``, ``crest_ring``, ``cresting_strips``, ``bell_profile``,
+``bell_cap``) and register their own cornice ornaments, brackets, corners, foundations and porch
+parts on import; nothing in one house's section is shared with another building.
+"""
+import math
+
+import numpy as np
+from manifold3d import JoinType, Manifold as M
+
+from .core import RIB, arch_cs, box, circle, cs_union, frame, poly, rect, union
+from .ornament import chamfer_box, ext, keystone, oval, stroke, swag, urn_cs
+from . import cornice as CO, features as FT, moulding as MD, openings as O, porchwork as PW
+from . import shell as SH, trimwork as TW
+from .colonial import _lens, _st
+from .colonial4 import _glazed, _panel
+
+MIT = JoinType.Miter
+RND = JoinType.Round
+
+
+def _clip_v(cs, v0, v1):
+    return cs ^ rect(-1e4, v0, 1e4, v1)
+
+
+def _chrys(c, r, n=12, half=False, disc=0.55, petal_w=0.55):
+    """A chrysanthemum seen face on, as CrossSections: (petals, centre). ``n`` pointed petals
+    radiating from a disc to radius ``r`` (``half``: n petals over the upper half only, for a
+    tympanum or a transom)."""
+    if half:
+        angs = [math.pi * (i + 0.5) / n for i in range(n)]
+    else:
+        angs = [2 * math.pi * i / n for i in range(n)]
+    pet = cs_union([_lens((c[0] + r * 0.55 * math.cos(a), c[1] + r * 0.55 * math.sin(a)), r * 0.9, petal_w, a)
+                    for a in angs])
+    centre = circle(c, disc, 16)
+    if half:
+        keep = rect(c[0] - r - 1, c[1], c[0] + r + 1, c[1] + r + 1)
+        pet, centre = pet ^ keep, centre ^ keep
+    return pet, centre
+
+
+# ================================================================== the Wyndham (house 91)
+# The batch's flagship, 1889: a Gilded Age mansion of pressed brick in Sussex bond below and
+# beaded narrow-and-wide lap above, brownstone dressings, cream trim and gold accents. Queen Anne
+# massing (a great octagonal tower on the front-east corner rising a storey over the eave to a
+# tall bell cap, a two-storey bow on the west), a Second Empire roof (a straight mansard slated in
+# a trellis of diamond slates, a taller pavilion mansard over the front pavilion, crests and
+# sunflower cresting) and a Colonial Revival heart (the pavilion's tripartite window and Palladian
+# add-in, a fanlit entrance between fluted pilasters, a porch of Scamozzi Ionic columns round the
+# tower with a balustrade on its roof). The ornament is the Aesthetic Movement's: chrysanthemums,
+# peacock feathers, lilies, bamboo and pagoda hoods.
+
+WY_LEVELS = dict(lo=42.0, hi=52.6)      # the building sets them: the brick storey's top and the lap storey's foot,
+                                        # in a block's own heights (from its foot)
+
+
+def slate_trellis(k, j, P=7):
+    """The Wyndham's slating: square slates crossed by two families of diagonals of diamond-cut
+    slates, a trellis seven slates to the mesh."""
+    u = j + 0.5 * (k % 2)
+    a, b = int(round(u - 0.5 * k)), int(round(u + 0.5 * k))
+    return "diamond" if a % P == 0 or b % P == 0 else "square"
+
+
+# ------------------------------------------------------------------ wall skins, corners, foundation
+def brick_sussex(region, datum=0.0, bl=2.4, bh=0.8, mortar=0.5, bed=0.2, d=0.25):
+    """Sussex bond: three stretchers and a header in every course, each course's header over
+    the middle stretcher of the course below (the Wyndham's brick storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    unit = 3 * bl + bl / 2
+    cells = []
+    k = math.floor((v0 - datum) / bh) - 1
+    while datum + k * bh < v1:
+        v = datum + k * bh
+        top = v + bh - bed
+        u = u0 - 2 * unit + (k % 2) * unit / 2
+        while u < u1 + unit:
+            for a, b in ((0.0, bl), (bl, 2 * bl), (2 * bl, 3 * bl), (3 * bl, unit)):
+                cells.append(rect(u + a + mortar / 2, v, u + b - mortar / 2, top))
+            u += unit
+        k += 1
+    return M.extrude(cs_union(cells) ^ region, d)
+
+
+def lap_beadnarrow(region, datum=0.0, wide=1.6, narrow=1.0, d=0.34):
+    """Narrow-and-wide lap: a wide bevel board, then a narrow board with a bead at its butt,
+    in turn (the Wyndham's upper storey). Every butt is a short square step (it prints clean
+    upright) and the bead swells at 31 degrees."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    p = wide + narrow
+    k0 = math.floor((v0 - datum) / p) - 1
+    k1 = math.ceil((v1 - datum) / p) + 1
+    pts = [(datum + k0 * p, 0.0)]
+    for k in range(k0, k1):
+        vk = datum + k * p
+        vn = vk + wide
+        pts += [(vk, d), (vn, 0.06), (vn, d - 0.06), (vn + 0.2, d + 0.06), (vn + 0.4, d - 0.06), (vn + 0.5, 0.22),
+                (vn + narrow, 0.06)]
+    pts.append((datum + k1 * p, 0.0))
+    strip = M.extrude(poly(pts), (u1 - u0) + 2).transform(frame([u0 - 1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0]))
+    return strip ^ M.extrude(region, d + 0.3).translate([0, 0, -0.1])
+
+
+def corner_wyndham(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Wyndham's corners: moulded-brick quoins on the brick storey (long and short, each
+    block chamfered, a raised field on its face, a 45 degree bevel underneath), and on
+    the lap storey a pilaster board (a flute between a plinth and a capital block with a
+    45 degree bed)."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    lo, hi = WY_LEVELS["lo"], WY_LEVELS["hi"]
+    parts = []
+    v = max(qa, 1.8)
+    k = 0
+    while v < min(qb, lo) - 1.8:
+        leg = 4.6 if k % 2 == 0 else 2.8
+        top = min(v + 2.0, lo - 0.2)
+        a, b = span(-t - 0.3, leg)
+        parts.append(chamfer_box(a, v, b, top, 0.0, t + 0.45, c=0.25, bottom=0.45, square=("u0",) if at_start else ("u1",)))
+        fa, fb = span(0.5, leg - 0.5)
+        if fb - fa > 0.9:
+            parts.append(ext(rect(min(fa, fb), v + 0.6, max(fa, fb), top - 0.5), t + 0.44, t + 0.62))
+        v += 2.4
+        k += 1
+    z0 = max(qa, hi)
+    if qb - z0 > 6.0:
+        a, b = span(0.0, w)
+        fa, fb = span(w / 2 - 0.3, w / 2 + 0.3)
+        flute = ext(rect(fa, z0 + 2.4, fb, qb - 2.6), t - 0.25, t + 0.5)
+        parts.append(box([a, z0, 0.0], [b, qb, t]) - flute)
+        pa, pb = span(-0.2, w + 0.2)
+        parts.append(chamfer_box(pa, z0, pb, z0 + 1.6, 0.0, t + 0.3, c=0.2, bottom=t + 0.3))
+        parts.append(chamfer_box(pa, qb - 1.8, pb, qb, 0.0, t + 0.45, c=0.2, bottom=t + 0.45))
+    return union(parts) if parts else M()
+
+
+def foundation_panelplinth(reg, seed=0):
+    """A brownstone plinth of raised panels between pilaster strips, under a bevelled cap with a
+    roll (the Wyndham)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.25)]
+    u = b[0] + 1.2
+    while u < b[2] - 1.0:
+        out.append(ext(rect(u, b[1] + 0.4, u + 1.6, b[3] - 2.2) ^ reg, 0.24, 0.75))
+        if u + 14.0 < b[2] - 1.0:
+            pan = rect(u + 2.4, b[1] + 1.4, u + 13.2, b[3] - 3.2) ^ reg
+            if not pan.is_empty():
+                pb = pan.bounds()
+                if pb[2] - pb[0] > 2.0 and pb[3] - pb[1] > 2.0:
+                    out.append(chamfer_box(pb[0], pb[1], pb[2], pb[3], 0.24, 0.42, c=0.3, bottom=0.42))
+        u += 14.0
+    cap = rect(b[0] - 1, b[3] - 2.0, b[2] + 1, b[3]) ^ reg
+    if not cap.is_empty():
+        cb = cap.bounds()
+        out.append(M.hull_points([(x, cb[1], 0.24) for x in (cb[0], cb[2])] + [(x, cb[1] + 0.6, 0.85) for x in (cb[0], cb[2])] +
+                                 [(x, cb[3], 0.85) for x in (cb[0], cb[2])] + [(x, cb[3], 0.24) for x in (cb[0], cb[2])]))
+        out.append(ext(rect(cb[0], cb[1] + 0.9, cb[2], cb[1] + 1.5), 0.84, 1.05))
+    return union(out)
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_bamboo(L, h, b, pitch, margin, p):
+    """A bamboo stalk along the course, ringed at every node, a leaf sprouting from every
+    fourth node (the Wyndham's storey joint)."""
+    out = [_st(rect(0.2, 0.35, L - 0.2, h - 0.35), b, 0.3)]
+    us = list(np.arange(1.3, L - 1.0, 2.6))
+    out.append(_st(cs_union([rect(u - 0.3, 0.1, u + 0.3, h - 0.1) for u in us]), b, 0.45))
+    leaves = [_lens((u + 0.95, h * 0.55), 1.5, 0.55, 0.3) for u in us[1::4] if u + 2.0 < L - 0.4]
+    if leaves:
+        out.append(_st(cs_union(leaves) ^ rect(0.2, 0.05, L - 0.2, h - 0.05), b + 0.3, 0.25))
+    return out
+
+
+def course_pearlribbon(L, h, b, pitch, margin, p):
+    """A ribbon wound slantwise round a rod, a pearl in every turn (the Wyndham's eave)."""
+    pu = 2.4
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    rod = rect(0.2, 0.3, L - 0.2, h - 0.3)
+    bands = cs_union([poly([(u0 + pu * k, 0.3), (u0 + pu * k + 0.6, 0.3), (u0 + pu * (k + 0.5) + 0.6, h - 0.3),
+                            (u0 + pu * (k + 0.5), h - 0.3)]) for k in range(n)]) ^ rod
+    pearls = cs_union([circle((u0 + pu * (k + 0.75) + 0.3, h / 2), 0.32, 12) for k in range(n)]) ^ rod
+    return [_st(rod, b, 0.25), _st(bands, b + 0.25, 0.2), _st(pearls, b + 0.25, 0.3)]
+
+
+def frieze_chrysanthemums(L, h, b, pitch, margin, pair, half):
+    """Chrysanthemum roundels, a ringed disc in a ring of pointed petals, one in every bay; at
+    every station between them a bamboo cane with a pointed leaf either side (the Wyndham's
+    storey joint)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    vm = (v0 + v1) / 2
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        r = min(hh * 0.48, wd * 0.38, 2.4)
+        if r < 1.2:
+            continue
+        pet, centre = _chrys((uc, vm), r, n=11, petal_w=0.6)
+        out.append(_st(_clip_v(pet, v0, v1), b, 0.35))
+        out.append(_st(centre, b, 0.6))
+    for u in CO._us(L, pitch, margin, 0.0):
+        if 0.8 < u < L - 0.8:
+            cane = rect(u - 0.3, v0 + 0.1, u + 0.3, v1 - 0.1)
+            leaves = cs_union([_lens((u + sg * 0.7, vm + 0.4), 1.6, 0.5, sg * 0.9) for sg in (-1, 1)])
+            out.append(_st(_clip_v(cane + leaves, v0, v1) ^ rect(0.2, -1, L - 0.2, h + 1), b, 0.4))
+    return out, []
+
+
+def frieze_peacocks(L, h, b, pitch, margin, pair, half):
+    """Peacock feathers: in every bay between the bracket pairs three feathers fanning up from a
+    knot, each a stem ending in an eye (an outer ring round a raised heart) (the Wyndham's
+    eave)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 3.0:
+            continue
+        angs = (-0.5, 0.0, 0.5) if wd >= 5.6 else (0.0,)
+        base = (uc, v0 + 0.3)
+        Lf = hh - 1.5
+        stems, rings, hearts = [], [], []
+        for a in angs:
+            ca, sa = math.sin(a), math.cos(a)
+            tip = (base[0] + Lf * ca * (0.8 if a else 1.0), base[1] + Lf * sa * (0.8 if a else 1.0))
+            stems.append(stroke([base, ((base[0] + tip[0]) / 2 + 0.2 * a, (base[1] + tip[1]) / 2), tip], 0.5))
+            rings.append(oval(tip, 0.62, 0.85, 20))
+            hearts.append(oval((tip[0], tip[1] + 0.05), 0.3, 0.42, 14))
+        out.append(_st(_clip_v(cs_union(stems), v0, v1), b, 0.3))
+        out.append(_st(_clip_v(cs_union(rings), v0, v1), b, 0.45))
+        out.append(_st(_clip_v(cs_union(hearts), v0, v1), b + 0.45, 0.2))
+        out.append(_st(circle(base, 0.5, 12), b, 0.5))
+    return out, []
+
+
+def frieze_lilies(L, h, b, pitch, margin, pair, half):
+    """Lilies: in every bay a stem rising in a gentle S from a pair of long leaves to a
+    trumpet flower of three pointed petals (the Wyndham's tower)."""
+    v0, v1 = 0.8, h - 0.8
+    hh = v1 - v0
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 3.0:
+            continue
+        top = (uc, v0 + hh * 0.66)
+        stem = stroke([(uc, v0 + 0.2), (uc + 0.35, v0 + hh * 0.3), (uc - 0.25, v0 + hh * 0.5), top], 0.5)
+        leaves = cs_union([_lens((uc + sg * 0.75, v0 + hh * 0.28), hh * 0.5, 0.55, math.pi / 2 - sg * 0.55) for sg in (-1, 1)])
+        petals = cs_union([_lens((top[0] + 0.75 * math.sin(a), top[1] + 0.75 * math.cos(a)), 1.7, 0.6, math.pi / 2 - a)
+                           for a in (-0.65, 0.0, 0.65)])
+        out.append(_st(_clip_v(stem + leaves, v0, v1), b, 0.35))
+        out.append(_st(_clip_v(petals, v0, v1), b, 0.5))
+    return out, []
+
+
+def bracket_fiddlehead(h, d, t):
+    """A fiddlehead console: a body tapering from the wall up and out to a fern head curled
+    under the soffit's front edge, three leaflets along its underside and a sunk eye in the
+    curl (side profile, top at v = 0; the Wyndham)."""
+    r = min(0.3 * h, 0.42 * d, 1.25)
+    c = (d - r, -r)
+    pts = [(0.0, 0.0), (d - r, 0.0)]
+    for t_ in np.linspace(0.0, 1.0, 12):
+        a = math.pi / 2 - t_ * math.pi * 1.25
+        pts.append((c[0] + r * math.cos(a), c[1] + r * math.sin(a)))
+    pts += [(d * 0.5, -h * 0.5), (0.8, -h + 0.5), (0.0, -h + 0.5)]
+    body = poly(pts)
+    leaf = []
+    for k, s in enumerate((0.3, 0.52, 0.74)):
+        x = d - r * 1.2 - (d - r * 1.2 - 0.9) * s
+        y = -r * 1.6 - (h - r * 1.6 - 0.6) * s
+        leaf.append(circle((x - 0.1, y - 0.25), 0.36, 10))
+    prof = cs_union([body, circle(c, r, 20)] + leaf)
+    return prof - circle(c, min(0.5, r * 0.42), 12)
+
+
+def japanfret(L, h):
+    """A Japanese key fret as CrossSections: one line running along in square hooks, each
+    hook turned in once, on a fillet (the Wyndham's crests)."""
+    lw = 0.44
+    pu = 3.0
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    lo, hi = 0.35, h - 0.35
+    mid = (lo + hi) / 2
+    pts = []
+    for k in range(n):
+        u = u0 + pu * k
+        pts += [(u, lo), (u, hi), (u + 1.9, hi), (u + 1.9, mid), (u + 0.95, mid), (u + 0.95, lo)]
+    pts.append((u0 + pu * n, lo))
+    line = stroke(pts, lw, caps=False)
+    base = rect(0.2, 0.05, L - 0.2, 0.3)
+    return [cs_union([line, base]) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+# ------------------------------------------------------------------ the mansard's add-ins
+def _pagoda(half, v0, rise=2.4, tip=0.9, t=0.9):
+    """A pagoda hood's outline over a head ``half`` wide at v0: a low gable whose ends turn up
+    in little horns (the Wyndham's upper windows and add-ins)."""
+    pts = [(-half - 1.0, v0 - 0.01), (-half - 1.4, v0 + tip), (-half - 0.4, v0 + 0.55), (0.0, v0 + rise),
+           (half + 0.4, v0 + 0.55), (half + 1.4, v0 + tip), (half + 1.0, v0 - 0.01)]
+    out = poly(pts)
+    return out, out.offset(-t * 0.6, MIT, 4.0) ^ rect(-50, v0 + 0.3, 50, 50)
+
+
+def addin_wyndham(w=5.0, h=8.6, A=0.9):
+    """A Wyndham add-in: a round-headed light in a moulded architrave, a pagoda hood over it on
+    two small blocks, a sill (its plug's roof a gable)."""
+    r = w / 2
+    op = O.opening_cs(w, h, r)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, h - r - RIB / 2, w, h - r + RIB / 2)])
+    half = w / 2 + A + 0.4
+    vt = h + A + 0.4
+    body = cs_union([rect(-half, -0.2, half, vt), circle((0.0, h - r), r + A + 0.2, 32)])
+    hood, inner = _pagoda(half, vt - 0.01, rise=2.4)
+    parts = [ext(body - op, 0.0, 0.6),
+             MD.band(op.offset(A, RND), A, MD.ARCHITRAVE, clip=rect(-20, 0.0, 20, 40) - op),
+             ext(hood, 0.0, 1.0), ext(inner, 0.99, 1.3)]
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * half - 0.6, vt - 1.6, sg * half + 0.6, vt, 0.0, 1.1, c=0.25))
+    sw = half + 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = cs_union([body, hood]).offset(-0.4, RND) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=vt + 2.4, bottom=-1.0)
+
+
+def addin_wyndham_palladian(wc=5.4, hc=10.4, ws=2.4, hs=6.6, mul=1.0, A=0.9):
+    """The pavilion's Palladian add-in: a round-headed centre light between two flat-headed side
+    lights, mullions with capital blocks under an entablature that runs across the side lights, an archivolt
+    with a keystone over the centre, a balustered apron under the sill."""
+    r = wc / 2
+    xs = r + mul + ws / 2
+    centre = O.opening_cs(wc, hc, r)
+    sides = [rect(sg * xs - ws / 2, 0.0, sg * xs + ws / 2, hs) for sg in (-1, 1)]
+    light = cs_union([centre] + sides)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, hc + 1.0), rect(-wc, hc - r - RIB / 2, wc, hc - r + RIB / 2)] +
+                    [rect(sg * xs - ws, hs * 0.5 - RIB / 2, sg * xs + ws, hs * 0.5 + RIB / 2) for sg in (-1, 1)])
+    half = xs + ws / 2 + mul
+    ve = hs + 1.4
+    body = cs_union([rect(-half, -0.2, half, ve), circle((0.0, hc - r), r + A + 0.5, 40)])
+    parts = [ext(body - light, 0.0, 0.6)]
+    parts.append(MD.band(centre.offset(A, RND), A, MD.ARCHITRAVE, clip=rect(-20, hs + 0.6, 20, 40) - centre))
+    parts.append(keystone(0.0, hc - 0.3, A + 1.2, 1.1, 1.6, 0.0, 1.3))
+    for sg in (-1, 1):
+        for x in (sg * (r + mul / 2), sg * (half - mul / 2)):
+            parts.append(ext(rect(x - mul / 2, 0.0, x + mul / 2, hs), 0.0, 0.9))
+            parts.append(chamfer_box(x - mul / 2 - 0.2, hs - 0.01, x + mul / 2 + 0.2, hs + 0.6, 0.0, 1.1, c=0.2))
+        ea, eb = sorted((sg * (r + mul + 0.1), sg * (half + 0.3)))
+        parts.append(ext(rect(ea, hs + 0.59, eb, hs + 1.4), 0.0, 0.8))
+        parts.append(MD.run(ea - 0.1, eb + 0.1, hs + 1.4 + 0.8, MD.CROWN, 0.8, up=False))
+    sw = half + 0.3
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    ap = [rect(-half + 0.4, -2.8, half - 0.4, -2.3), rect(-half + 0.4, -1.3, half - 0.4, -0.79)]
+    for x in np.linspace(-half + 1.2, half - 1.2, 7):
+        ap.append(cs_union([rect(x - 0.25, -2.4, x + 0.25, -1.2), oval((x, -1.85), 0.42, 0.42, 12)]))
+    parts.append(ext(cs_union(ap), 0.0, 0.7))
+    parts = [p - ext(light, -1.0, 5.0) for p in parts]
+    outline = body.offset(-0.4, RND) ^ rect(-50, 0.2, 50, 100)
+    top = hc + A + 0.5 + 0.4
+    return dict(light=light, bars=bars, frame=parts, outline=outline, top=top, bottom=-2.8)
+
+
+def addin_wyndham_tower(rx=1.9, ry=2.8, A=0.8):
+    """The tower cap's add-in: an upright oval light in a moulded frame under a little pagoda
+    hood, on a sill."""
+    c = (0.0, ry + 0.6)
+    light = oval(c, rx, ry, 32)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, 2 * ry + 2), rect(-rx - 1, c[1] - RIB / 2, rx + 1, c[1] + RIB / 2)])
+    body = cs_union([oval(c, rx + A + 0.4, ry + A + 0.4, 36), rect(-rx - A - 0.4, -0.2, rx + A + 0.4, c[1])])
+    vt = c[1] + ry + A + 0.2
+    hood, inner = _pagoda(rx + A, vt - 0.6, rise=1.8, tip=0.8)
+    parts = [ext(body - light, 0.0, 0.6), MD.band(light.offset(A, RND), A, MD.CASING, clip=rect(-20, -1, 20, 40) - light),
+             ext(hood, 0.0, 0.9)]
+    sw = rx + A + 0.6
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 0.9, up=False))
+    parts = [p - ext(light, -1.0, 5.0) for p in parts]
+    outline = cs_union([body, hood]).offset(-0.4, RND) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=light, bars=bars, frame=parts, outline=outline, top=vt + 1.8, bottom=-1.0)
+
+
+# ------------------------------------------------------------------ chimney, cresting, finial
+def chimney_wyndham(w=11.0, d=9.0, h=26.0):
+    """A Queen Anne stack: a plinth, a shaft with corner pilaster strips framing a sunk panel on
+    every face that holds a raised sunflower roundel, a cap corbelled out in three steps over a
+    band of blind arches, a slab, and two octagonal pots."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 6.0
+    body = box([-w / 2 - 0.5, -d / 2 - 0.5, 0.0], [w / 2 + 0.5, d / 2 + 0.5, 2.0])
+    body = body + M.hull_points([(x, y, 1.99) for x in (-w / 2 - 0.5, w / 2 + 0.5) for y in (-d / 2 - 0.5, d / 2 + 0.5)] +
+                                [(x, y, 2.5) for x in (-w / 2, w / 2) for y in (-d / 2, d / 2)])
+    body = body + box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for (L, D, rot) in ((w, d, 0), (d, w, 90), (w, d, 180), (d, w, 270)):
+        pan = box([-L / 2 + 1.5, D / 2 - 0.5, 3.6], [L / 2 - 1.5, D / 2 + 0.1, sh - 1.6])
+        body = body - pan.rotate([0, 0, rot])
+        zc = (3.6 + sh - 1.6) / 2
+        rr = min(L / 2 - 2.2, 2.2)
+        pet, cen = _chrys((0.0, zc), rr, n=10, petal_w=0.6)
+        disc = (M.extrude(pet, 0.35) + M.extrude(cen, 0.55)).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2 - 0.51],
+                                                                                 [0, 1.0, 0, 0]]))
+        body = body + disc.rotate([0, 0, rot])
+    # the cap: a frieze band (bevelled out from the shaft) sunk with a row of blind arches, a
+    # corbel stepped out three times at 45 degrees, then the slab
+    fb = 0.6
+
+    def ring(e0, e1, z0, z1):
+        return M.hull_points([(x, y, z0) for x in (-w / 2 - e0, w / 2 + e0) for y in (-d / 2 - e0, d / 2 + e0)] +
+                             [(x, y, z1) for x in (-w / 2 - e1, w / 2 + e1) for y in (-d / 2 - e1, d / 2 + e1)])
+    body = body + ring(0.0, fb, sh - fb - 0.01, sh) + ring(fb, fb, sh - 0.01, sh + 2.4)
+    for (L, D, rot) in ((w + 2 * fb, d + 2 * fb, 0), (d + 2 * fb, w + 2 * fb, 90),
+                        (w + 2 * fb, d + 2 * fb, 180), (d + 2 * fb, w + 2 * fb, 270)):
+        n = max(2, int(L / 2.2))
+        arches = cs_union([arch_cs(-L / 2 + L * (i + 0.2) / n, -L / 2 + L * (i + 0.8) / n, 0.0, 0.6) for i in range(n)])
+        band = M.extrude(arches, 0.3).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, D / 2 - 0.29], [0, 1.0, 0, sh + 0.45]]))
+        body = body - band.rotate([0, 0, rot])
+    for k in range(3):
+        e, z = fb + 0.4 * k, sh + 2.4 + 0.8 * k
+        body = body + ring(e, e + 0.4, z - 0.01, z + 0.4) + ring(e + 0.4, e + 0.4, z + 0.39, z + 0.8)
+    zt = sh + 4.8
+    body = body + ring(fb + 1.2, fb + 1.2, zt - 0.01, zt + 1.2)
+    zp = zt + 1.19
+    for sx in (-1, 1):
+        x = sx * w * 0.24
+        pot = (M.cylinder(3.2, 1.7, 1.35, 8).translate([x, 0.0, zp]) + M.cylinder(0.41, 1.35, 1.7, 8).translate([x, 0, zp + 3.19])
+               + M.cylinder(0.4, 1.7, 1.7, 8).translate([x, 0, zp + 3.59]))
+        pot = pot - M.cylinder(4.8, 0.85, 0.85, 8).translate([x, 0, zp + 0.4])
+        body = body + pot
+    return body          # (solid: a sealed flue would print as a hidden cavity)
+
+
+def fence_wyndham(L, h):
+    """Wyndham cresting (drawn at half size for SE.printable): spears with arrow heads, and
+    between every two a sunflower on a stem, a ring of six petals round a ringed disc."""
+    pitch = 3.2
+    n = max(1, int(round(L / pitch)))
+    p = L / n
+    rail = h * 0.28
+    cells = [rect(0.0, 0.0, L, 0.6), rect(0.0, rail, L, rail + 0.45)]
+    for j in range(n + 1):
+        u = p * j
+        cells.append(rect(u - 0.25, 0.0, u + 0.25, h - 0.6))
+        cells.append(poly([(u - 0.6, h - 0.75), (u + 0.6, h - 0.75), (u, h + 0.2)]))
+        if j < n:
+            m = u + p / 2
+            vc = rail + 0.45 + (h - rail - 0.45) * 0.55
+            rr = min(0.85, p / 2 - 0.55)
+            # the stem runs up to the disc, so the disc hangs on it inside its ring
+            cells.append(rect(m - 0.26, rail + 0.4, m + 0.26, vc))
+            cells.append(circle((m, vc), rr, 18) - circle((m, vc), rr - 0.36, 14))
+            cells.append(circle((m, vc), 0.24, 10))
+            for a in np.linspace(0, 2 * math.pi, 6, endpoint=False) + math.pi / 6:
+                tipx, tipy = m + (rr + 0.55) * math.cos(a), vc + (rr + 0.55) * math.sin(a)
+                bx, by = m + (rr - 0.1) * math.cos(a), vc + (rr - 0.1) * math.sin(a)
+                nx, ny = -math.sin(a) * 0.23, math.cos(a) * 0.23
+                cells.append(poly([(bx + nx, by + ny), (tipx, tipy), (bx - nx, by - ny)]))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.0)
+
+
+def fence_wyndham_balustrade(L, h):
+    """A wooden balustrade seen face on (printed flat): a plinth, a moulded hand rail, square
+    newels with ball caps every 14 mm or so, and between them bottle balusters (full size)."""
+    nseg = max(1, int(round(L / 14.0)))
+    seg = L / nseg
+    cells = [rect(0.0, 0.0, L, 0.9), rect(0.0, h - 1.1, L, h - 0.35), rect(0.25, h - 0.36, L - 0.25, h)]
+    for j in range(nseg + 1):
+        u = min(max(seg * j, 0.85), L - 0.85)
+        cells.append(rect(u - 0.85, 0.0, u + 0.85, h + 0.2))
+        cells.append(circle((u, h + 0.75), 0.62, 16))
+        if j < nseg:
+            a, b = u + 0.85, min(max(seg * (j + 1), 0.85), L - 0.85) - 0.85
+            nb = max(1, int((b - a) / 1.75))
+            for k in range(nb):
+                x = a + (b - a) * (k + 0.5) / nb
+                cells.append(cs_union([rect(x - 0.3, 0.85, x + 0.3, h - 1.05), oval((x, 0.85 + (h - 1.9) * 0.33), 0.48, 0.8, 14),
+                                       rect(x - 0.45, h - 1.5, x + 0.45, h - 1.05)]))
+    return cs_union(cells) ^ rect(0.0, 0.0, L, h + 1.5)
+
+
+def finial_wyndham(h=16.0):
+    """The tower's finial: a turned base, an urn with a lid, then a slender spire threaded with
+    three orbs that diminish upward, ending in a point no thinner than 0.8 mm."""
+    prof = [(0.0, 0.0), (1.7, 0.0), (1.7, 0.6), (1.2, 1.1), (0.75, 1.6), (0.75, 2.2), (1.35, 3.0), (1.55, 3.9), (1.3, 4.8),
+            (0.8, 5.2), (1.05, 5.5), (0.55, 5.9), (0.0, 5.9)]
+    body = PW._revolve(prof, 28)
+    body = body + M.cylinder(h - 5.8, 0.55, 0.4, 14).translate([0, 0, 5.85])
+    for z, r in ((7.6, 1.0), (10.0, 0.8), (12.2, 0.62)):
+        body = body + M.sphere(r, 24).translate([0, 0, z])
+    return body
+
+
+# ------------------------------------------------------------------ windows and doors
+PULVIN = [(0.0, 0.5), (0.25, 0.9), (0.5, 1.0), (0.75, 0.9), (1.0, 0.5)]
+
+
+def window_wyndham_lower(w=9.0, h=23.0, A=1.0, qa=True):
+    """Wyndham ground floor: a Queen Anne sash (the upper sash a big light ringed by small
+    border lights) in an architrave eared at its head, a pulvinated frieze, a cornice and a
+    segmental pediment holding a half chrysanthemum; a sill over a panelled apron with a boss."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(1, 1), qa=qa, bare=True)["insert"]
+    half = w / 2 + A + 0.7
+    outer = cs_union([op.offset(A, MIT, 4.0), rect(-half, h - 1.6, half, h + A)])
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(outer, A + 0.7, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    vf = h + A
+    parts.append(MD.run(-half, half, vf - 0.01, PULVIN, 1.6, up=True))
+    vc = vf + 1.6 + 0.96                                 # the cornice overlaps the frieze
+    parts.append(MD.run(-half - 0.6, half + 0.6, vc, MD.CROWN, 1.0, up=False))
+    rise = 2.6
+    seg = arch_cs(-half - 0.6, half + 0.6, vc - 0.01, vc - 0.01, rise=rise, seg=40)
+    rim = seg - seg.offset(-0.8, MIT, 4.0)
+    parts.append(ext(rim ^ rect(-50, vc - 0.01, 50, 50), 0.0, 1.1))
+    parts.append(ext(seg.offset(-0.8, MIT, 4.0) ^ rect(-50, vc, 50, 50), 0.0, 0.5))
+    pet, cen = _chrys((0.0, vc + 0.1), rise - 0.95, n=9, half=True, disc=0.6, petal_w=0.55)
+    parts.append(ext(pet ^ seg.offset(-0.85, MIT, 4.0), 0.49, 0.9))
+    parts.append(ext(cen ^ seg.offset(-0.85, MIT, 4.0), 0.49, 1.1))
+    sw = w / 2 + A + 0.4
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    ap = rect(-w / 2 - 0.2, -3.6, w / 2 + 0.2, -0.79)
+    parts.append(ext(ap, 0.0, 0.5))
+    parts.append(chamfer_box(-w / 2 + 0.6, -3.0, w / 2 - 0.6, -1.4, 0.49, 0.35, c=0.2))
+    parts.append(ext(oval((0.0, -2.2), 1.0, 0.55, 20), 0.83, 1.15))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vc + rise + 0.2, -3.6)
+
+
+def window_wyndham_upper(w=8.6, h=20.0, A=0.9):
+    """Wyndham upper floor: a one-over-one sash in a plain architrave, a bamboo bar across its
+    head, and a pagoda hood (a low gable turned up at its ends) on two consoles; a sill on two
+    blocks."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    sash = O.window_insert(w, h, 0, lites=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A
+    vb = h + A
+    parts.append(ext(rect(-half, vb - 0.01, half, vb + 1.0), 0.0, 0.6))
+    nodes = cs_union([rect(u - 0.3, vb - 0.01, u + 0.3, vb + 1.0) for u in np.linspace(-half + 0.8, half - 0.8, 4)])
+    parts.append(ext(nodes, 0.0, 0.9))
+    vh = vb + 1.0
+    hood, inner = _pagoda(half + 0.4, vh, rise=2.6, tip=1.0)
+    parts.append(ext(hood, 0.0, 1.2))
+    parts.append(ext(inner, 1.19, 1.5))
+    for sg in (-1, 1):
+        x = sg * (half + 0.2)
+        parts.append(ext(cs_union([rect(x - 0.55, vb - 2.6, x + 0.55, vh), circle((x, vb - 2.6), 0.55, 12)]), 0.0, 1.0))
+    sw = half + 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2) - 0.7, -1.8, sg * (w / 2) + 0.7, -0.8, 0.0, 0.9, c=0.25))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, vh + 2.7, -1.8)
+
+
+def window_wyndham_tripartite(wc=8.4, ws=3.4, h=23.0, mul=1.6, A=1.0):
+    """The pavilion's Colonial Revival tripartite window: a two-over-two sash between narrow
+    one-over-one side lights, fluted mullion pilasters on plinths, a full entablature (an
+    architrave, a frieze of three swags, a cornice) and a balustered apron."""
+    W = wc + 2 * ws + 2 * mul
+    op = rect(-W / 2, 0.0, W / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    u0, v0, u1, v1 = inner.bounds()
+    vm = (v0 + v1) / 2
+    meet = 0.6
+    lights = []
+    for a, b in ((u0, -wc / 2 - mul + 0.3), (-wc / 2 + 0.3, wc / 2 - 0.3), (wc / 2 + mul - 0.3, u1)):
+        lights.append(rect(a, v0, b, vm - meet / 2))
+        lights.append(rect(a, vm + meet / 2, b, v1))
+    g = cs_union(lights)
+    bars = cs_union([rect(-RIB / 2, v0 - 1, RIB / 2, v1 + 1)])
+    body = [ext(plug_cs, -pl, -0.6)]
+    sash = _glazed(body, g, pl, bars, plug_cs) + [ext(rect(u0, vm - meet / 2 - 0.01, u1, vm + meet / 2 + 0.01), -pl, -0.3)]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-W - 10, 0.0, W + 10, h + 40) - op)]
+    for sg in (-1, 1):
+        x = sg * (wc / 2 + mul / 2)
+        pil = rect(x - mul / 2, 0.0, x + mul / 2, h)
+        parts.append(ext(pil, 0.0, 1.0) - ext(rect(x - 0.25, 2.0, x + 0.25, h - 2.0), 0.7, 1.1))
+        parts.append(chamfer_box(x - mul / 2 - 0.2, 0.0, x + mul / 2 + 0.2, 1.6, 0.0, 1.2, c=0.2))
+        parts.append(chamfer_box(x - mul / 2 - 0.2, h - 1.2, x + mul / 2 + 0.2, h, 0.0, 1.2, c=0.2))
+    half = W / 2 + A + 0.3
+    va = h + A
+    parts.append(ext(rect(-half, va - 0.01, half, va + 0.8), 0.0, 0.9))
+    vf = va + 0.8
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 2.2), 0.0, 0.5))
+    sw_ = cs_union([swag(-half + 0.8 + k * (2 * half - 1.6) / 3, -half + 0.8 + (k + 1) * (2 * half - 1.6) / 3, vf + 1.9, 1.0,
+                         width=0.6) for k in range(3)])
+    parts.append(ext(_clip_v(sw_, vf + 0.2, vf + 2.1), 0.49, 0.95))
+    vc = vf + 2.2 + 1.2
+    parts.append(MD.run(-half - 0.7, half + 0.7, vc, MD.CROWN, 1.2, up=False))
+    sw = half + 0.2
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    apr = [rect(-W / 2, -3.2, W / 2, -2.7), rect(-W / 2, -1.3, W / 2, -0.79)]
+    for x in np.linspace(-W / 2 + 0.9, W / 2 - 0.9, 9):
+        apr.append(cs_union([rect(x - 0.25, -2.8, x + 0.25, -1.2), oval((x, -2.0), 0.45, 0.45, 12)]))
+    parts.append(ext(cs_union(apr), 0.0, 0.7))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vc + 0.2, -3.2)
+
+
+def window_wyndham_tower(w=8.2, h=20.0, A=0.9):
+    """The tower's top storey: a round-headed one-over-one sash with a fan of three panes,
+    under an archivolt with a keystone between ringed colonnettes on blocks; a sill."""
+    r = w / 2
+    spring = h - r
+    op = O.opening_cs(w, h, r)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    sash = O.window_insert(w, h, r, lites=(1, 1), bare=True)["insert"]
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, RND), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op),
+             MD.band(op.offset(A + 0.9, RND), 0.9, MD.CROWN, clip=rect(-w - 10, spring - 0.4, w + 10, h + 40))]
+    parts.append(keystone(0.0, h - 0.3, A + 1.6, 1.2, 1.8, 0.0, 1.5))
+    rc = 0.75
+    xc = r + A + 0.9 + rc
+    vt = spring - 0.2
+    for sg in (-1, 1):
+        x = sg * xc
+        parts.append(ext(rect(x - rc - 0.2, 0.0, x + rc + 0.2, vt), 0.0, 0.5))
+        parts.append(chamfer_box(x - rc - 0.35, -0.2, x + rc + 0.35, 2.0, 0.0, 1.3, c=0.25))
+        parts.append(chamfer_box(x - rc - 0.35, vt - 0.01, x + rc + 0.35, vt + 1.2, 0.0, 1.3, c=0.25))
+        prof = [(0.0, 0.0), (rc, 0.0)]
+        z = 0.4
+        while z < vt - 2.0 - 0.9:
+            prof += [(rc, z), (rc + 0.18, z + 0.2), (rc + 0.18, z + 0.4), (rc, z + 0.6)]
+            z += 2.2
+        prof += [(rc, vt - 2.0), (0.0, vt - 2.0)]
+        col = PW._revolve(prof, 20).rotate([-90, 0, 0]).translate([x, 1.99, 0.0]) ^ box([x - 3, 0.0, 0.0], [x + 3, vt, 5.0])
+        parts.append(col)
+    sw = xc + rc + 0.5
+    parts.append(MD.run(-sw, sw, 0.0, MD.SILL, 1.0, up=False))
+    return O._one_piece([sash], parts, op, plug_cs, O.PLUG, h + A + 1.8, -0.2)
+
+
+def door_wyndham(w=15.2, h=27.0, A=1.2, sl=2.4, rise=3.6):
+    """The Wyndham's entrance (Colonial Revival): a pair of leaves, each an upright oval light
+    over a raised panel, between leaded side lights, all under one elliptical fanlight of
+    radiating bars; fluted pilasters with capital blocks, an entablature with a frieze of swags
+    round a chrysanthemum medallion, and a cornice."""
+    op = O.opening_cs(w, h, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    spring = h - rise
+    mid = 0.5
+    u0, u1 = -w / 2 + O.CLR + 0.5, w / 2 - O.CLR - 0.5
+    dw = w - 2 * O.CLR - 1.0 - 2 * (sl + 0.7)
+    dh = spring - 0.5
+    lw = (dw - mid) / 2
+    body, lights = [ext(plug_cs, -pl, -1.0)], []
+    ul = -dw / 2
+    for i in range(2):
+        body.append(ext(rect(ul, 0.5, ul + lw, dh), -pl, -0.8))
+        cy = dh * 0.62
+        lights.append(oval((ul + lw / 2, cy), lw / 2 - 0.8, dh * 0.22, 28))
+        body.append(_panel(rect(ul + 0.8, 1.2, ul + lw - 0.8, cy - dh * 0.22 - 1.0)))
+        ul += lw + mid
+    for sg in (-1, 1):
+        a, b = sorted((sg * (dw / 2 + 0.7), sg * (dw / 2 + 0.7 + sl)))
+        lights.append(rect(a, 1.2, b, dh))
+        body.append(ext(rect(a, 0.5, b, 1.2), -pl, -0.8))
+    fan = plug_cs.offset(-0.5, MIT, 4.0) ^ rect(-w, spring + 0.2, w, h + 2)
+    rays = []
+    fc = (0.0, spring + 0.2)
+    for a in np.linspace(0.45, math.pi - 0.45, 4):
+        rays.append(stroke([fc, (fc[0] + w * math.cos(a), fc[1] + w * math.sin(a))], RIB))
+    tracery = cs_union(rays + [rect(-w, spring + 0.2, w, spring + 0.7), circle(fc, 1.6, 20) - circle(fc, 1.6 - RIB, 20)])
+    side_bars = cs_union([rect(sg * (dw / 2 + 0.7 + sl / 2) - RIB / 2, 1.0, sg * (dw / 2 + 0.7 + sl / 2) + RIB / 2, dh)
+                          for sg in (-1, 1)] if sl > 4.0 else [rect(-w, dh * 0.5 - RIB / 2, -dw / 2, dh * 0.5 + RIB / 2),
+                                                               rect(dw / 2, dh * 0.5 - RIB / 2, w, dh * 0.5 + RIB / 2)])
+    sash = _glazed(body, cs_union(lights) + fan, pl, tracery + side_bars, plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, spring + 0.2) ^ plug_cs, -pl, -0.5))
+    for sg in (-1, 1):
+        x = sg * (dw / 2 + 0.35)
+        sash.append(ext(rect(x - 0.35, 0.4, x + 0.35, spring + 0.2), -pl, -0.6))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    pw = 1.8
+    xs = w / 2 + A + 0.2 + pw / 2
+    vcap = h + A + 0.4
+    for sg in (-1, 1):
+        x = sg * xs
+        parts.append(ext(rect(x - pw / 2, 0.0, x + pw / 2, vcap), 0.0, 1.1) - ext(rect(x - 0.3, 3.0, x + 0.3, vcap - 2.4), 0.8, 1.2))
+        parts.append(chamfer_box(x - pw / 2 - 0.3, 0.0, x + pw / 2 + 0.3, 2.6, 0.0, 1.5, c=0.25))
+        parts.append(chamfer_box(x - pw / 2 - 0.3, vcap - 1.8, x + pw / 2 + 0.3, vcap, 0.0, 1.5, c=0.25))
+        parts.append(ext(circle((x - 0.55, vcap - 0.9), 0.42, 12) + circle((x + 0.55, vcap - 0.9), 0.42, 12), 1.49, 1.8))
+    half = xs + pw / 2 + 0.3
+    parts.append(ext(rect(-half, vcap - 0.01, half, vcap + 0.8), 0.0, 1.0))
+    vf = vcap + 0.8
+    parts.append(ext(rect(-half, vf - 0.01, half, vf + 2.6), 0.0, 0.6))
+    sws = cs_union([swag(-half + 0.8 + k * (half - 3.2) / 2, -half + 0.8 + (k + 1) * (half - 3.2) / 2, vf + 2.3, 1.0, width=0.6)
+                    for k in range(2)] +
+                   [swag(2.4 + k * (half - 3.2) / 2, 2.4 + (k + 1) * (half - 3.2) / 2, vf + 2.3, 1.0, width=0.6) for k in range(2)])
+    parts.append(ext(_clip_v(sws, vf + 0.2, vf + 2.5), 0.59, 1.0))
+    pet, cen = _chrys((0.0, vf + 1.3), 1.25, n=10, petal_w=0.5)
+    parts.append(ext(_clip_v(pet, vf + 0.1, vf + 2.5), 0.59, 1.0))
+    parts.append(ext(cen, 0.59, 1.3))
+    vk = vf + 2.6 + 1.3
+    parts.append(MD.run(-half - 0.8, half + 0.8, vk, MD.CROWN, 1.3, up=False))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vk + 0.2, 0.0)
+
+
+def door_wyndham_back(w=10.0, h=25.0, A=1.0):
+    """The back door: one leaf with a light over two raised panels, a transom with a half
+    chrysanthemum, an architrave and a pagoda hood on two consoles."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    dh = h - 5.0
+    u0, u1 = -w / 2 + O.CLR + 0.5, w / 2 - O.CLR - 0.5
+    gv0 = dh * 0.5
+    gp = (gv0 - 0.8 - 1.2) / 2
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(u0, 0.5, u1, dh), -pl, -0.8),
+            _panel(rect(u0 + 0.8, 1.2, u1 - 0.8, 1.2 + gp - 0.2)), _panel(rect(u0 + 0.8, 1.2 + gp + 0.2, u1 - 0.8, gv0 - 0.8))]
+    light = rect(u0 + 0.9, gv0, u1 - 0.9, dh - 0.8)
+    tran = rect(u0, dh + 0.6, u1, h - O.CLR - 0.5)
+    pet, cen = _chrys((0.0, dh + 0.6), min(3.4, h - dh - 1.2), n=7, half=True, disc=0.7, petal_w=0.6)
+    bars = cs_union([rect(-w, dh + 0.6, w, dh + 1.0), pet, cen])
+    sash = _glazed(body, light + tran, pl, bars + rect(-RIB / 2, gv0, RIB / 2, dh), plug_cs)
+    sash.append(ext(rect(-w, dh - 0.01, w, dh + 0.62) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    half = w / 2 + A
+    vh = h + A
+    hood, inner = _pagoda(half + 0.4, vh, rise=2.6, tip=1.0)
+    parts += [ext(hood, 0.0, 1.2), ext(inner, 1.19, 1.5)]
+    for sg in (-1, 1):
+        x = sg * (half + 0.2)
+        parts.append(ext(cs_union([rect(x - 0.55, vh - 2.6, x + 0.55, vh), circle((x, vh - 2.6), 0.55, 12)]), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 2.7, 0.0)
+
+
+# ------------------------------------------------------------------ porch
+def post_scamozzi(h, collar=None, abacus=3.4, slot=(1.2, 1.0)):
+    """A Scamozzi Ionic column: an Attic base, a plain shaft with entasis, an astragal, an
+    echinus, and a square abacus with a volute under each corner (a half disc hanging flat side
+    up, so it stands on the abacus when the porch top prints upside down) (the Wyndham)."""
+    z1 = h - 3.0
+    r = 1.0
+    prof = [(0.0, 1.19), (1.5, 1.19), (1.5, 1.4), (1.3, 1.6), (1.18, 1.8), (1.3, 2.0), (1.12, 2.3), (r, 2.6),
+            (r * 1.05, (2.6 + z1) * 0.4), (r * 0.9, z1 - 0.3), (1.08, z1 - 0.1), (1.08, z1 + 0.15), (r * 0.9, z1 + 0.35),
+            (1.2, z1 + 0.75), (1.4, z1 + 1.05)]
+    body = PW._revolve(prof, 32) + PW._plinth(3.0)
+    body = body + PW._top(h, abacus / 2, z1 + 1.05, 1.4, slot, seg=32)
+    zt = z1 + 1.05 + max(0.2, abacus / 2 * math.sqrt(2) - 1.4)
+    sq = abacus / 2
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            d = np.array([sx, sy]) / math.sqrt(2)
+            c = np.array([sx, sy]) * (sq - 0.25)
+            disc = (circle((0.0, 0.0), 0.75, 20) ^ rect(-1, -1, 1, 0.0))
+            plate = M.extrude(disc, 0.5).translate([0, 0, -0.25])
+            A = np.array([[-d[1], 0.0, d[0], c[0]], [d[0], 0.0, d[1], c[1]], [0.0, 1.0, 0.0, zt]])
+            body = body + plate.transform(A)
+    return body
+
+
+def baluster_bottleblock(h, seg=18):
+    """A bottle baluster: a swelling body on a ring, a square block at its waist, a slender
+    neck and a top block (the Wyndham)."""
+    prof = [(0.0, 0.8), (0.32, 0.8), (0.32, 1.0), (0.5, h * 0.2), (0.52, h * 0.3), (0.3, h * 0.42), (0.26, h * 0.5),
+            (0.26, h * 0.58), (0.3, h * 0.66), (0.3, h - 0.8)]
+    body = PW._revolve(prof, seg) + box([-0.55, -0.55, 0.0], [0.55, 0.55, 0.81]) + box([-0.55, -0.55, h - 0.81], [0.55, 0.55, h])
+    return body + box([-0.48, -0.48, h * 0.5 - 0.3], [0.48, 0.48, h * 0.5 + 0.3])
+
+
+def frieze_ballspindle(u0, u1, v_bot, v_top):
+    """A porch frieze: a beam over a row of spindles each threaded with a ball, on a bottom rail,
+    and a quarter sunburst pierced with three rays at each post (the Wyndham)."""
+    vb = v_top - 3.8
+    cells = [rect(u0, v_top - 1.0, u1, v_top + 0.05), rect(u0, vb, u1, vb + 0.6)]
+    L = u1 - u0
+    n = max(1, int((L - 6.0) / 1.7))
+    for k in range(n):
+        x = u0 + 3.0 + (L - 6.0) * (k + 0.5) / n
+        cells.append(rect(x - 0.27, vb + 0.5, x + 0.27, v_top - 0.9))
+        cells.append(circle((x, (vb + v_top) / 2 - 0.2), 0.45, 12))
+    for x0, sg in ((u0, 1), (u1, -1)):
+        q = circle((x0, v_top - 1.0), 3.2, 32) ^ rect(min(x0, x0 + sg * 3.3), v_top - 4.4, max(x0, x0 + sg * 3.3), v_top - 1.0)
+        rays = cs_union([stroke([(x0 + sg * 0.9 * math.cos(a), v_top - 1.0 - 0.9 * math.sin(a)),
+                                 (x0 + sg * 2.6 * math.cos(a), v_top - 1.0 - 2.6 * math.sin(a))], 0.55) for a in (0.35, 0.8, 1.25)])
+        cells.append(q - rays)
+    return cs_union(cells)
+
+
+def skirt_sunpanels(reg, d=1.2):
+    """A porch skirt of framed panels, each holding a raised half sunburst rising from its foot
+    (the Wyndham)."""
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, d * 0.4)]
+    pw = 7.0
+    n = max(1, int((u1 - u0) / pw))
+    p = (u1 - u0) / n
+    for k in range(n):
+        a, b = u0 + p * k, u0 + p * (k + 1)
+        out.append(ext(rect(a, v0, a + 0.7, v1), d * 0.4 - 0.01, d * 0.7))
+        c = ((a + b) / 2, v0 + 0.6)
+        R_ = min((b - a) / 2 - 1.0, v1 - v0 - 1.6)
+        if R_ > 1.2:
+            fan = circle(c, R_, 28) ^ rect(-1e3, c[1], 1e3, 1e3)
+            rays = cs_union([stroke([c, (c[0] + R_ * 1.2 * math.cos(t), c[1] + R_ * 1.2 * math.sin(t))], 0.5)
+                             for t in np.linspace(0.35, math.pi - 0.35, 4)])
+            out.append(ext((fan - rays) - circle(c, 0.7, 16), d * 0.4 - 0.01, d * 0.62))
+            out.append(ext(circle(c, 0.6, 16) ^ rect(-1e3, c[1], 1e3, 1e3), d * 0.4 - 0.01, d * 0.7))
+    out.append(ext(rect(u0 - 1, v1 - 0.8, u1 + 1, v1 + 1), d * 0.4 - 0.01, d * 0.7))
+    return union(out) ^ M.extrude(reg, d + 0.5)
+
+
+def edge_ballfringe(L, z0, zc):
+    """Porch fascia (the Wyndham): a fillet under the crown hung with balls on stems, long and
+    short in turn."""
+    out = [rect(0.3, zc - 0.45, L - 0.3, zc)]
+    for i, x in enumerate(np.arange(1.0, L - 0.8, 1.3)):
+        ln = 1.3 if i % 2 == 0 else 0.7
+        out.append(rect(x - 0.25, zc - 0.45 - ln + 0.3, x + 0.25, zc - 0.4))
+        out.append(circle((x, zc - 0.45 - ln), 0.4, 12))
+    return cs_union(out), 0.6
+
+
+def entry_wyndham(w, depth, rise, t=1.0):
+    """The Wyndham's porch entry: a triangular pediment standing on the porch roof over the
+    steps, a raised rim round its face and a half chrysanthemum in the tympanum on a ringed
+    disc; its back a lean-to. Local as features.entry_pediment (u across, v up from the porch
+    roof top, w out from the house, the face at w = depth); prints upright on its base."""
+    face = poly([(-w / 2, 0.0), (0.0, rise), (w / 2, 0.0)])
+    parts = [M.extrude(face, depth)]
+    parts.append(ext(face - face.offset(-0.8, MIT, 4.0), depth - 0.01, depth + t))
+    parts.append(ext(rect(-w / 2 + 0.8, 0.0, w / 2 - 0.8, 0.8), depth - 0.01, depth + t * 0.6))
+    pet, cen = _chrys((0.0, 0.8), rise * 0.62, n=11, half=True, disc=0.9, petal_w=0.6)
+    tym = face.offset(-1.0, MIT, 4.0)
+    parts.append(ext(pet ^ tym, depth - 0.01, depth + t * 0.5))
+    parts.append(ext(cen ^ tym, depth - 0.01, depth + t * 0.8))
+    return union(parts).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+
+
+CO.FRIEZE_EXTRA.update(chrysanthemums=frieze_chrysanthemums, peacocks=frieze_peacocks, lilies=frieze_lilies)
+CO.COURSE_EXTRA.update(bamboo=course_bamboo, pearlribbon=course_pearlribbon)
+TW.BRACKET_EXTRA.update(fiddlehead=bracket_fiddlehead)
+TW.PIERCED = TW.PIERCED + ("fiddlehead",)
+TW.FOUNDATION_EXTRA.update(panelplinth=foundation_panelplinth)
+SH.CORNER_EXTRA.update(wyndham=corner_wyndham)
+PW.POSTS.update(scamozzi=post_scamozzi)
+PW.BALUSTERS.update(bottleblock=(baluster_bottleblock, 1.6))
+PW.FRIEZES.update(ballspindle=frieze_ballspindle)
+PW.SKIRTS.update(sunpanels=skirt_sunpanels)
+FT.EDGE_EXTRA.update(ballfringe=edge_ballfringe)

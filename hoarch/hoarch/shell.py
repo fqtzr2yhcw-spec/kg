@@ -170,10 +170,10 @@ def wall_shell(blocks, openings, t=3.0, pitch=1.2, sid_d=0.3, belt=None, quoins=
             bs, be = bead[i], bead[(i + 1) % len(facs)]
             if bs:
                 keep.append(rect(-1, -1, 1.0, H + 1))
-                dress.append(f.place(box([0, 1.8, 0], [1.0, H, 0.55])))
+                dress.append(f.place(box([0, 1.8, -0.02], [1.0, H, 0.55])))      # sunk a hair: one solid
             if be:
                 keep.append(rect(f.L - 1.0, -1, f.L + 1, H + 1))
-                dress.append(f.place(box([f.L - 1.0, 1.8, 0], [f.L, H, 0.55])))
+                dress.append(f.place(box([f.L - 1.0, 1.8, -0.02], [f.L, H, 0.55])))
             for bl in belts:
                 if H > bl[1]:
                     keep.append(rect(-1, bl[0], f.L + 1, bl[1]))
