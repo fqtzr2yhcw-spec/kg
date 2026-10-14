@@ -71,6 +71,13 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
   - Big enough that their windows aren't tiny.
   - Not too many windows (a tower top was "too many windows").
   - A porch round a tower is liked.
+- Layouts must be new too, not just the trim:
+  - Start each new house from a real building's plan and massing: plan shape, roof form,
+    towers, porches, the ground it stands on.
+  - No two houses share a layout. The same box with a corner tower, a front porch and new
+    ornament is not a new house.
+  - Every batch balances building on what's done with genuinely new real-world architecture.
+  - Show plain massing renders (no ornament) for review before detailing.
 
 ## Fixes already asked for (don't regress them)
 - The Ashby floors were 35-40% smaller than the pink house. All houses were too skinny and
@@ -85,6 +92,9 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
 - Camellia: fewer tower windows; the gable window must not be covered.
 - Marigold: no bicycle.
 - Wisteria: fewer porch posts.
+- Houses 91-100 (the grand batch) reused one chassis: a rectangle, the mansard batch's roof
+  generator or a flat deck, a corner tower and a front porch, with only the ornament new.
+  Don't repeat that.
 - Cornice brackets are solid and 1.6 mm thick. No hole goes through a bracket; a sunk eye
   is fine. The Camellia's pierced 0.8 mm ring brackets printed as strings.
 - Zips are versioned (`<Name>_Print_Files_v1.1.zip`). Every update adds a line to
