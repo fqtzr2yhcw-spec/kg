@@ -16,8 +16,10 @@ bell cap. Eyebrow dormers roll out of both slopes; two rubble chimneys with clay
 through them. A kitchen lean-to runs along the back; a stone terrace with steps lies in front of
 the loggia, boulders at its ends.
 
-- Storey joint (the jetty's girt and, at the sides, the cornice under the roof): an oxblood
-  frieze of daisies on a wavy vine, a cream course of chevrons and beads, a cream ovolo.
+- Storey joint (the jetty's girt): an oxblood frieze of daisies on a wavy vine, a cream course
+  of chevrons and beads, a cream ovolo.
+- Eave (on the girt, under both eaves and across the gable feet: a double cornice): an oxblood
+  course of chevrons and beads, a cream cavetto.
 - The bay's cornice under its cap, and the lean-to's: the same daisies and chevrons.
 
 usage: python3 -m hoarch.buildings.sakonnet [check] [export]
@@ -58,14 +60,19 @@ SMALL = dict(pitch=9.0, margin=2.5, layers=[
     dict(kind="frieze", h=3.6, b=1.2, orn="skdaisies", role="Oxblood"),
     dict(kind="course", h=1.2, b=1.2, orn="skchevronbead", role="Cream"),
     dict(kind="crown", h=2.0, b=1.2, P=3.4, orn="ovolo", role="Cream")])
+EAVE = dict(pitch=12.0, margin=4.0, layers=[
+    dict(kind="course", h=1.4, b=1.4, orn="skchevronbead", role="Oxblood"),
+    dict(kind="crown", h=2.2, b=1.4, P=4.6, orn="cavetto", role="Cream")])
 RJ = round((LEDGE + 0.4 + CO.band_height(JOINT)) / 0.2) * 0.2
 HS = CO.band_height(SMALL)
+HE = CO.band_height(EAVE)
 
 # ------------------------------------------------------------------ levels and plan (front = -y)
 ZF = 8.0
 S1 = ZF + 36.0
 ZU = S1 + RJ                                   # the upper storey's foot (on the girt)
-ZK = ZU + 3.6                                  # the knee under the eaves (the girt's lip below, the roof's corbel above)
+ZK = ZU + HE                                   # the knee under the eaves, wrapped by the eave cornice (the girt's lip
+                                               # below, the roof's corbel above)
 FASCIA = 1.6
 Z_EAVE = ZK + FASCIA
 S_ROOF, D_EAVE, RAKE, SKIN = 0.8, 7.0, 6.0, 1.8
@@ -152,6 +159,8 @@ def _openings():
 OPEN1, OPEN2, OPEN_B, OPEN_L = _openings()
 OPEN_BL = [o for o in OPEN_B if o.block is BAYL]
 OPEN_BU = [o for o in OPEN_B if o.block is BAYU]
+OPENINGS = OPEN1 + OPEN2 + OPEN_B + OPEN_L
+BLOCKS = [LOW, UP, BAYL, BAYU, LN]
 
 
 def _place_inserts(kit, ops, keep):
@@ -228,7 +237,8 @@ def build(kit=None):
     print("ground storey", round(time.time() - t0, 1))
 
     # --- the upper shell: the two gables, the knee under the eaves, the bay's upper storey
-    undress = [slab(offset(bay_cs, 8.0), BZE - LEDGE - 0.6, BZW + 0.01) - slab(offset(UP.cs, -0.2), 0, 999)]
+    undress = [slab(offset(bay_cs, 8.0), BZE - LEDGE - 0.6, BZW + 0.01) - slab(offset(UP.cs, -0.2), 0, 999),
+               slab(offset(up_cs, 8.0), ZU - 0.1, ZK + 0.01)]
     w2 = wall_shell([UP], OPEN2, t=3.0, belt=None, corners="none", water_table=False, siding=_shingles,
                     gables=gables, undress=undress)
     # the bay's upper storey: its own full ring, so it closes behind where it rises through the roof
@@ -239,6 +249,8 @@ def build(kit=None):
     w2 = w2 + ((_corbel(UP.cs, 3.0, ZK) + lip_ring(UP.cs, 3.0, ZK)) - no_lip - bay_env)
     w2 = w2 + (CO.ledge(BAYU.pts, BZE, LEDGE) - solid_env)
     kit.add("WALLS-2", "Cedar", w2, group="walls")
+    erings, _ = CO.level(up_path, ZU, EAVE)
+    CO.add_level(kit, erings, "CORNICE-E", "cornice")
     _place_inserts(kit, OPEN2 + OPEN_BU, ins_keep)
     print("upper shell", round(time.time() - t0, 1))
 
@@ -338,9 +350,15 @@ def build(kit=None):
     e, u = LN.locate(90.0, D + 20.0)
     fb = LN.facades()[e]
     A = fb.A.copy()
-    A[:, 3] = fb.world(u, -ZF, 1.6)
-    kit.add("STOOP-back", "Boulder", FT.steps(14.0, ZF - 0.6, 3).transform(A), group="lean")
-    FT.key_into(kit, "STOOP-back", ["LEAN-FOUNDATION"], (0, -1, 0), depth=0.8, conform=True)
+    A[:, 3] = fb.world(u, -ZF, 0.0)
+    stoop = FT.steps(14.0, ZF - 0.6, 3).transform(A)
+    # the base is cut back flat behind the step, so the step's back glues over its whole face
+    sb = stoop.bounding_box()
+    pp = {p_.name: p_ for p_ in kit.parts}
+    pp["LEAN-FOUNDATION"].solid = pp["LEAN-FOUNDATION"].solid - box([sb[0] - 0.1, D + 20.0, -1.0], [sb[3] + 0.1, sb[4] + 1.0, ZF - 0.5])
+    pp["LEAN-FOUNDATION"].solid = pp["LEAN-FOUNDATION"].solid - stoop
+    pp["LEAN-WALLS"].solid = pp["LEAN-WALLS"].solid - stoop
+    kit.add("STOOP-back", "Boulder", stoop, group="lean")
     print("lean-to", round(time.time() - t0, 1))
     print("specks dropped:", kit.drop_specks())
     print("done", round(time.time() - t0, 1))
