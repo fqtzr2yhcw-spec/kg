@@ -49,16 +49,16 @@ PALETTE = {"granite": ["#9C7D6E", 0.9, 0.0], "brick": ["#8A3826", 0.85, 0.0], "s
 # ------------------------------------------------------------------ cornices (unique to the Thornbury)
 LEDGE = 1.4
 JOINT = dict(pitch=14.0, margin=4.0, layers=[
-    dict(kind="course", h=1.6, b=1.0, orn="nailhead", role="Brownstone"),
-    dict(kind="frieze", h=5.2, b=1.2, orn="interlace", role="Sandstone"),
+    dict(kind="course", h=1.6, b=1.0, orn="nailheadstud", role="Brownstone"),
+    dict(kind="frieze", h=5.2, b=1.2, orn="byzantineknot", role="Sandstone"),
     dict(kind="crown", h=2.0, b=1.4, P=3.4, orn="torus", role="Brownstone")])
 EAVE = dict(pitch=6.4, margin=3.0, layers=[
-    dict(kind="course", h=1.6, b=1.0, orn="nailhead", role="Brownstone"),
+    dict(kind="course", h=1.6, b=1.0, orn="nailheadstud", role="Brownstone"),
     dict(kind="frieze", h=6.4, b=1.2, orn="byzantineleaf", role="Sandstone"),
     dict(kind="bed", h=3.4, b=1.4, P=7.2, role="Brownstone", brackets=dict(style="rollcorbel", t=1.6, reach=0.6)),
     dict(kind="crown", h=2.6, b=1.4, P=8.0, orn="bevel", role="Brownstone")])
 TOWER_C = dict(pitch=5.6, margin=1.6, layers=[
-    dict(kind="frieze", h=4.4, b=1.2, orn="interlace", role="Sandstone"),
+    dict(kind="frieze", h=4.4, b=1.2, orn="byzantineknot", role="Sandstone"),
     dict(kind="bed", h=2.6, b=1.4, P=5.8, role="Brownstone", brackets=dict(style="rollcorbel", t=1.6, reach=0.5)),
     dict(kind="crown", h=2.4, b=1.4, P=6.4, orn="bevel", role="Brownstone")])
 CREST_COURSE = dict(h=2.6, b=0.6, orn=G.pelletchain, role="Brownstone")

@@ -1590,6 +1590,20 @@ Windows and doors print face up with supports under their frames only.
 on its planks). Windows and doors print face up with supports under their frames only. The
 tower decks change once, from lead to Istrian white, just above the seams, for the pinnacles.
 """),
+    "carrington": ("THE CARRINGTON - SOUTHERN COLONIAL REVIVAL MANSION", "  1. FOUNDATION (red brick with grilled vents).\n" + jointed(
+        " (the first storey and the bow)", " (the second storey and the bow)") + """
+  5. The CORNICE-E parts round the eave band of the house and the bow: the course first, then
+     -lower, then -upper on top.
+  6. Bow: BOW-deck onto the bow's eave, its back against the roof's foot; the BOW-rail strips
+     (the balustrade) into the slots round it.
+  7. ROOF (upside down) down over the walls onto the eave's crown. """ + ADDIN_STEP + """ (the
+     pedimented dormers).
+  8. """ + CREST_STEP.replace("the CREST-iron strips into the slots along\n     the crest", "the CREST-walk strips (the widow's walk balustrade) into the slots\n     along the crest") + """.
+  9. Balcony: BALCONY (the curved iron balcony floor) onto the storey cornice's crown round the
+     bow, its consoles under the free edge; the BALCONY-rail strips into the slots along its edge.
+ 10. Portico (round the bow): """ + top_porch() + """; the PORCH-rail strips (the balustrade) into the slots round the portico's roof;
+     STOOP-back at the back door.
+""", addin_note("ADDIN", "white", "The CREST changes once from white to yellow.")),
     "thornbury": ("THE THORNBURY - RICHARDSONIAN ROMANESQUE", "  1. FOUNDATION (two chamfered courses).\n" + jointed(
         " (the first storey of the house, the tower and the apse)",
         " (the second storey of all of them and the tower's top stage)") + """

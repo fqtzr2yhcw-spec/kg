@@ -124,7 +124,7 @@ def _openings():
         L.append(Opening(block, e, f.L / 2, v0, sp, name, "window"))
 
     lo, up = G.window_chantilly_croisee(), G.window_chantilly_upper()
-    tw = G.window_chantilly_tower(w=5.6, h=14.0)
+    tw = G.window_chantilly_tower(w=6.0, h=14.0)
     add(MAIN, XC, 0.0, 1.0, G.door_chantilly(), "front-door", "door")
     for x in (32.0, 50.0, 86.0, 104.0):
         add(MAIN, x, 0.0, V1, lo, f"S{x:.0f}-1")
@@ -143,7 +143,7 @@ def _openings():
         for e in (0, side):
             add_face(T, e, V1 + 3.0, tw, f"{tag}{e}-1")
             add_face(T, e, V2 + 2.0, tw, f"{tag}{e}-2")
-        add_face(T, 0, ZW - ZF + 2.0, G.window_chantilly_tower(w=5.6, h=9.6), f"{tag}0-3")
+        add_face(T, 0, ZW - ZF + 2.0, G.window_chantilly_tower(w=6.0, h=9.6), f"{tag}0-3")
     return L
 
 

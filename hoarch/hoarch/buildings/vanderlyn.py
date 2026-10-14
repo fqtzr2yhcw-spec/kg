@@ -45,7 +45,7 @@ PALETTE = {"marble": ["#ECE9E1", 0.55, 0.0], "brick": ["#D6BC8C", 0.85, 0.0], "a
 LEDGE = 1.4
 JOINT = dict(pitch=12.0, margin=4.0, layers=[
     dict(kind="course", h=1.8, b=1.0, orn="rosettebeads", role="Marble"),
-    dict(kind="frieze", h=5.4, b=1.2, orn="anthemion", role="Ochre"),
+    dict(kind="frieze", h=5.4, b=1.2, orn="anthemionlotus", role="Ochre"),
     dict(kind="crown", h=2.0, b=1.4, P=3.4, orn="ovolo", role="Marble")])
 EAVE = dict(pitch=11.0, margin=4.0, layers=[
     dict(kind="course", h=1.8, b=1.0, orn="rosettebeads", role="Marble"),

@@ -47,16 +47,16 @@ PALETTE = {"stone": ["#E2D6BC", 0.75, 0.0], "brownstone": ["#7A5643", 0.9, 0.0],
 # ------------------------------------------------------------------ cornices (unique to the Bellosguardo)
 LEDGE = 1.4
 JOINT = dict(pitch=14.0, margin=4.0, layers=[
-    dict(kind="course", h=1.8, b=1.0, orn="guilloche", role="Stone"),
+    dict(kind="course", h=1.8, b=1.0, orn="guillocheroses", role="Stone"),
     dict(kind="frieze", h=5.0, b=1.2, orn="olivebranch", role="Olive"),
     dict(kind="crown", h=2.0, b=1.4, P=3.4, orn="bevel", role="Stone")])
 EAVE = dict(pitch=16.0, margin=5.0, pair=3.0, layers=[
-    dict(kind="course", h=1.8, b=1.0, orn="eggdart", role="Stone"),
+    dict(kind="course", h=1.8, b=1.0, orn="eggdartfine", role="Stone"),
     dict(kind="frieze", h=7.2, b=1.2, orn="rosettecoffers", role="Olive"),
     dict(kind="bed", h=3.0, b=1.4, P=8.6, role="Stone", brackets=dict(style="pendantscroll", t=1.6, reach=0.6)),
     dict(kind="crown", h=3.0, b=1.4, P=9.4, orn="cyma", role="Stone")])
 TOWER_J = dict(pitch=12.0, margin=3.0, layers=[
-    dict(kind="course", h=1.8, b=1.0, orn="guilloche", role="Stone"),
+    dict(kind="course", h=1.8, b=1.0, orn="guillocheroses", role="Stone"),
     dict(kind="crown", h=1.8, b=1.2, P=3.0, orn="bevel", role="Stone")])
 TOWER_C = dict(pitch=11.0, margin=3.5, pair=2.6, layers=[
     dict(kind="frieze", h=5.4, b=1.2, orn="wreathribbons", role="Olive"),

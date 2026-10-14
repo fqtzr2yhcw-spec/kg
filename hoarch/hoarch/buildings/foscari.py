@@ -50,7 +50,7 @@ PALETTE = {"stone": ["#E9E3D4", 0.65, 0.0], "stucco": ["#D49C8B", 0.85, 0.0], "a
 LEDGE = 1.4
 JOINT = dict(pitch=12.0, margin=4.0, layers=[
     dict(kind="course", h=1.6, b=1.0, orn="dentello", role="Istrian"),
-    dict(kind="frieze", h=5.6, b=1.2, orn="paterae", role="Verona"),
+    dict(kind="frieze", h=5.6, b=1.2, orn="pateraeformelle", role="Verona"),
     dict(kind="crown", h=2.0, b=1.4, P=3.4, orn="ovolo", role="Istrian")])
 EAVE = dict(pitch=6.0, margin=3.0, layers=[
     dict(kind="course", h=1.6, b=1.0, orn="dentello", role="Istrian"),
@@ -268,7 +268,7 @@ def build(kit=None):
     H_floor = ZF - 1.0
     post_h = S1 - 2.4 - H_floor - 5.0
     P = FT.porch_turned(pts, runs, H_floor, post_h, steps_at=[(0, ud, 8.0)], planks=dict(pitch=1.6, border=1.8),
-                        post="foscari", rail="foscaritwist", arcade="ogeearcade", skirt="foscari", pier_tex="stone",
+                        post="foscari", rail="foscaritwist", arcade="venetianogee", skirt="foscari", pier_tex="stone",
                         roof_edge="dentello", drop=9.0, top=True)
     f = Facade(np.array(runs[0]["a"]), np.array(runs[0]["b"]), 0.0)
     where = [f.p0 + f.u * u - f.n * 1.6 for u in posts]

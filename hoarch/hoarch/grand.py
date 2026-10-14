@@ -2022,13 +2022,13 @@ def finial_pigna(h=8.0):
     z = 1.7
     r = 1.25
     k = 0
-    while r > 0.35:
+    while r > 0.6 and z < h - 1.6:
         prof += [(r, z), (r - 0.15, z + 0.35), (r - 0.05, z + 0.45)]
         z += 0.6
         r = 1.25 * (1 - (z - 1.7) / (h - 1.7)) + 0.1 * (k % 2)
         k += 1
-    prof += [(0.3, h), (0.0, h)]
-    return PW._revolve(prof, 24)
+    prof += [(0.5, z), (0.45, h - 0.9), (0.0, h - 0.9)]       # (the tip ends in a ball: a bare spike is
+    return PW._revolve(prof, 24) + _ball(0.58, h - 0.58, neck=0.0)   # too thin to print)
 
 
 # ------------------------------------------------------------------ windows and doors
@@ -2381,7 +2381,7 @@ def chimney_bellosguardo(w=10.0, d=8.0, h=26.0):
 
 
 CO.FRIEZE_EXTRA.update(olivebranch=frieze_olivebranch, rosettecoffers=frieze_rosettecoffers, wreathribbons=frieze_wreathribbons)
-CO.COURSE_EXTRA.update(guilloche=course_guilloche, eggdart=course_eggdart)
+CO.COURSE_EXTRA.update(guillocheroses=course_guilloche, eggdartfine=course_eggdart)
 TW.BRACKET_EXTRA.update(pendantscroll=bracket_pendantscroll)
 TW.PIERCED = TW.PIERCED + ("pendantscroll",)
 TW.FOUNDATION_EXTRA.update(talusvent=foundation_talusvent)
@@ -3570,7 +3570,7 @@ def chimney_vanderlyn(w=11.0, d=9.0, h=24.0):
     return body
 
 
-CO.FRIEZE_EXTRA.update(anthemion=frieze_anthemion, bucrania=frieze_bucrania)
+CO.FRIEZE_EXTRA.update(anthemionlotus=frieze_anthemion, bucrania=frieze_bucrania)
 CO.COURSE_EXTRA.update(rosettebeads=course_rosettebeads)
 TW.BRACKET_EXTRA.update(garlandconsole=bracket_garlandconsole)
 TW.PIERCED = TW.PIERCED + ("garlandconsole",)
@@ -4618,8 +4618,8 @@ def chimney_thornbury(w=12.0, d=9.0, h=26.0):
     return body
 
 
-CO.FRIEZE_EXTRA.update(interlace=frieze_interlace, byzantineleaf=frieze_byzantineleaf)
-CO.COURSE_EXTRA.update(nailhead=course_nailhead)
+CO.FRIEZE_EXTRA.update(byzantineknot=frieze_interlace, byzantineleaf=frieze_byzantineleaf)
+CO.COURSE_EXTRA.update(nailheadstud=course_nailhead)
 TW.BRACKET_EXTRA.update(rollcorbel=bracket_rollcorbel)
 TW.FOUNDATION_EXTRA.update(chamfercourse=foundation_chamfercourse)
 SH.CORNER_EXTRA.update(thornbury=corner_thornbury)
@@ -5223,13 +5223,542 @@ def altana_foscari(w, d, h, post=1.4):
     return union(out)
 
 
-CO.FRIEZE_EXTRA.update(paterae=frieze_paterae, archetti=frieze_archetti)
+CO.FRIEZE_EXTRA.update(pateraeformelle=frieze_paterae, archetti=frieze_archetti)
 CO.COURSE_EXTRA.update(dentello=course_dentello)
 TW.BRACKET_EXTRA.update(mensola=bracket_mensola)
 TW.FOUNDATION_EXTRA.update(foscari=foundation_foscari)
 SH.CORNER_EXTRA.update(foscari=corner_foscari)
 PW.POSTS.update(foscari=post_foscari)
 PW.BALUSTERS.update(foscaritwist=(baluster_foscaritwist, 1.4))
-PW.FRIEZES.update(ogeearcade=frieze_ogeearcade)
+PW.FRIEZES.update(venetianogee=frieze_ogeearcade)
 PW.SKIRTS.update(foscari=skirt_foscari)
 FT.EDGE_EXTRA.update(dentello=edge_dentello)
+
+
+# ================================================================== the Carrington (house 99)
+# Southern Colonial Revival, 1906: a cotton factor's mansion. Two storeys of butter-yellow
+# bevelled clapboard on a red brick base with arched iron-grilled vents, panelled corner
+# pilasters, every window a six-over-six sash between louvered plantation shutters. At the
+# middle of the front a bowed bay, and round it a colossal portico of six Ionic columns on a
+# curved plan carrying a full entablature and a balustrade; inside it, at the second floor, a
+# curved cast-iron balcony on consoles. The front door has a leaded elliptical fanlight and
+# sidelights between fluted pilasters; over it a Palladian window. A hipped slate roof with
+# pedimented dormers rises to a widow's walk; tall panelled brick chimneys stand at each end.
+# Cornices of ribbon-bound reeds, swags hung from bow-knots, Prince-of-Wales plumes and volute
+# modillions.
+
+CR_LEVELS = dict(hi=40.0)
+
+
+def lap_carrington(region, datum=0.0, ch=1.6, d=0.36, joint_every=34.0, seed=5):
+    """Bevelled clapboard: every course a wedge, thick at its butt and feathered at its top, so
+    the shadow line falls under each butt; the boards butt-jointed at random, staggered course to
+    course (the Carrington's walls)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed)
+    out = []
+    k = math.floor((v0 - datum) / ch) - 1
+    while datum + k * ch < v1 + ch:
+        v = datum + k * ch
+        out.append(M.hull_points([(x, v, z) for x in (u0 - 1, u1 + 1) for z in (0.0,)] + [(x, v, d) for x in (u0 - 1, u1 + 1)] +
+                                 [(x, v + ch, 0.0) for x in (u0 - 1, u1 + 1)] + [(x, v + ch - 0.01, 0.1) for x in (u0 - 1, u1 + 1)]))
+        k += 1
+    body = union(out)
+    cuts = []
+    k = math.floor((v0 - datum) / ch) - 1
+    while datum + k * ch < v1 + ch:
+        v = datum + k * ch
+        u = u0 - rng.uniform(0.0, joint_every)
+        while u < u1 + 1:
+            cuts.append(box([u - 0.1, v + 0.05, 0.12], [u + 0.1, v + ch - 0.05, 1.0]))
+            u += rng.uniform(joint_every * 0.6, joint_every * 1.4)
+        k += 1
+    if cuts:
+        body = body - union(cuts)
+    return body ^ M.extrude(region, d + 0.1)
+
+
+def corner_carrington(L, at_start, qa, qb, w=2.4, t=0.65):
+    """The Carrington's corners: a panelled pilaster on each face, a sunk panel between a base
+    block and a moulded capital, one per storey's height (it stops under the cornices)."""
+    def span(a, b):
+        return (a, b) if at_start else (L - b, L - a)
+    pw = 2.8
+    u0, u1 = span(-0.65, pw)
+    if qb - qa < 6.0:
+        return M()
+    parts = [box([u0, qa, 0.0], [u1, qb, 0.65])]
+    p0, p1 = span(0.55, pw - 0.6)
+    parts = [parts[0] - box([p0, qa + 2.6, 0.45], [p1, qb - 2.6, 1.0])]
+    b0, b1 = span(-0.85, pw + 0.2)
+    parts.append(chamfer_box(b0, qa, b1, qa + 1.8, 0.0, 0.85, c=0.2))
+    parts.append(chamfer_box(b0, qb - 1.4, b1, qb, 0.0, 0.85, c=0.2, bottom=0.85))
+    parts.append(chamfer_box(min(span(-0.65, pw)), qb - 2.0, max(span(-0.65, pw)), qb - 1.39, 0.0, 0.75, c=0.15, bottom=0.75))
+    return union(parts)
+
+
+def foundation_carrington(reg, seed=0):
+    """A red brick base in stretcher bond under a moulded water table, an arched vent with an
+    iron grille every 22 mm (the Carrington)."""
+    b = reg.bounds()
+    out = [M.extrude(reg, 0.3)]
+    cells = []
+    for k, v in enumerate(np.arange(b[1], b[3] - 1.2, 0.8)):
+        off = 0.0 if k % 2 == 0 else 1.0
+        for u in np.arange(b[0] - 2.0 + off, b[2] + 1.0, 2.0):
+            cells.append(rect(u + 0.1, v + 0.1, u + 1.9, v + 0.7))
+    if cells:
+        out.append(M.extrude(cs_union(cells) ^ reg, 0.5))
+    top = rect(b[0] - 1, b[3] - 1.2, b[2] + 1, b[3]) ^ reg
+    if not top.is_empty():
+        tb = top.bounds()
+        out.append(M.hull_points([(x, tb[1], 0.0) for x in (tb[0], tb[2])] + [(x, tb[1] + 0.3, 0.9) for x in (tb[0], tb[2])] +
+                                 [(x, tb[3], 0.9) for x in (tb[0], tb[2])] + [(x, tb[3], 0.3) for x in (tb[0], tb[2])]))
+    body = union(out)
+    hgt = b[3] - b[1]
+    if hgt > 4.0:
+        for u in np.arange(b[0] + 11.0, b[2] - 6.0, 22.0):
+            vent = O.opening_cs(3.0, min(3.2, hgt - 2.4), 1.5).translate((u, b[1] + 0.8))
+            body = body - M.extrude(vent, 2.0).translate([0, 0, 0.0])
+            bars = cs_union([rect(x - 0.22, b[1] + 0.6, x + 0.22, b[3]) for x in (u - 0.75, u, u + 0.75)]) ^ vent
+            body = body + M.extrude(vent, 0.15) + M.extrude(bars, 0.25)
+    return body
+
+
+# ------------------------------------------------------------------ cornice ornaments
+def course_ribbonreed(L, h, b, pitch, margin, p):
+    """Ribbon and reed: a bundle of three reeds bound by a ribbon crossing them on the diagonal
+    every 3 mm (the Carrington)."""
+    reeds = [rect(0.2, h * f - 0.18, L - 0.2, h * f + 0.18) for f in (0.25, 0.5, 0.75)]
+    pu = 3.0
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    rib = cs_union([poly([(u0 + pu * k - 0.25, 0.1), (u0 + pu * k + 0.35, 0.1), (u0 + pu * k + 0.95, h - 0.1), (u0 + pu * k + 0.35, h - 0.1)])
+                    for k in range(n + 1)])
+    clip = rect(0.2, 0.0, L - 0.2, h)
+    return [_st(rect(0.2, 0.1, L - 0.2, h - 0.1), b, 0.12), _st(cs_union(reeds) ^ clip, b + 0.11, 0.3), _st(rib ^ clip, b + 0.11, 0.45)]
+
+
+def frieze_bowknotswags(L, h, b, pitch, margin, pair, half):
+    """Swags and bow-knots: drapery swags, each of two folds, hung between ribbon bow-knots with
+    tails falling below them (the Carrington's storey joint)."""
+    v0, v1 = 0.5, h - 0.5
+    hh = v1 - v0
+    pu = max(5.0, hh * 1.4)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    sw, knots = [], []
+    vt = v1 - hh * 0.22
+    for k in range(n):
+        a, c = u0 + pu * k, u0 + pu * (k + 1)
+        sw.append(swag(a + 0.4, c - 0.4, vt, hh * 0.42, width=0.6))
+        sw.append(swag(a + 0.8, c - 0.8, vt - 0.2, hh * 0.24, width=0.45))
+    for k in range(n + 1):
+        u = u0 + pu * k
+        knots.append(cs_union([_lens((u - 0.5, vt + 0.25), 1.2, 0.6, 0.35), _lens((u + 0.5, vt + 0.25), 1.2, 0.6, -0.35),
+                               circle((u, vt), 0.35, 10), stroke([(u - 0.15, vt), (u - 0.45, vt - hh * 0.55)], 0.35),
+                               stroke([(u + 0.15, vt), (u + 0.45, vt - hh * 0.5)], 0.35)]))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    return [_st(cs_union(sw) ^ clip, b, 0.42), _st(cs_union(knots) ^ clip, b, 0.55)], []
+
+
+def frieze_plumes(L, h, b, pitch, margin, pair, half):
+    """Prince of Wales plumes: three ostrich feathers bound in a little coronet, the outer two
+    curling out, between small hanging festoons (the Carrington's eave)."""
+    v0, v1 = 0.5, h - 0.5
+    hh = v1 - v0
+    pu = max(5.0, hh * 0.95)
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    feathers, crowns, fest = [], [], []
+    for k in range(n):
+        u = u0 + pu * (k + 0.5)
+        base = v0 + hh * 0.18
+        feathers.append(_lens((u, base + hh * 0.42), hh * 0.72, 1.0, math.pi / 2))
+        for sg in (-1, 1):
+            pts = [(u + sg * (0.3 + 1.6 * t_ ** 1.2) * (hh / 5.0), base + hh * 0.62 * math.sin(t_ * math.pi * 0.62) + 0.2)
+                   for t_ in np.linspace(0.0, 1.0, 9)]
+            feathers.append(stroke(pts, 0.75))
+        crowns.append(rect(u - 0.8, base - 0.5, u + 0.8, base + 0.25))
+        if k < n - 1:
+            fest.append(swag(u + 1.6, u + pu - 1.6, v1 - 0.4, hh * 0.3, width=0.5))
+    clip = rect(0.2, v0, L - 0.2, v1)
+    return [_st(cs_union(feathers) ^ clip, b, 0.45), _st(cs_union(crowns) ^ clip, b, 0.6), _st(cs_union(fest) ^ clip, b, 0.35)], []
+
+
+def bracket_volutemod(h, d, t):
+    """A volute modillion: a long block ending in a front volute, its underside curling back in a
+    smaller reverse scroll (side profile, top at v = 0; the Carrington)."""
+    r1 = min(h * 0.48, d * 0.3)
+    pts = [(0.0, 0.0), (d - r1, 0.0)]
+    cx, cy = d - r1, -r1
+    for a in np.linspace(math.pi / 2, -math.pi, 14):
+        pts.append((cx + r1 * math.cos(a), cy + r1 * math.sin(a)))
+    pts += [(d - 2 * r1, -h * 0.62)]
+    r2 = h * 0.2
+    for a in np.linspace(0.0, -math.pi / 2, 6):
+        pts.append((d * 0.3 + r2 * math.cos(a) * 1.4, -h + r2 + r2 * math.sin(a)))
+    pts += [(0.0, -h)]
+    return poly(pts)
+
+
+def festoonchain(L, h):
+    """A crest course: little festoons hung between beads on a fillet (the Carrington's
+    roof)."""
+    pu = 2.4
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    cells = [rect(0.2, 0.05, L - 0.2, 0.45), rect(0.2, h - 0.65, L - 0.2, h - 0.05)]
+    cells += [swag(u0 + pu * k + 0.35, u0 + pu * (k + 1) - 0.35, h - 0.6, h * 0.42, width=0.5) for k in range(n)]
+    cells += [circle((u0 + pu * k, h - 0.9), 0.42, 10) for k in range(n + 1)]
+    cells += [rect(u0 + pu * k - 0.22, 0.3, u0 + pu * k + 0.22, h - 0.6) for k in range(n + 1)]
+    return [cs_union(cells) ^ rect(0.2, 0.05, L - 0.2, h - 0.05)]
+
+
+def fence_carrington_balustrade(L, h):
+    """The Carrington's balustrade (printed flat): turned balusters in silhouette between a rail
+    and a plinth, a panelled pedestal every 14 mm with a ball on it."""
+    pr = 0.7
+    out = [rect(0.2, 0.0, L - 0.2, pr), rect(0.2, h - 1.6, L - 0.2, h - 0.8)]
+    npd = max(1, int((L - 1.0) / 14.0))
+    peds = [0.9 + (L - 1.8) * k / npd for k in range(npd + 1)]
+    for x in peds:
+        out.append(rect(x - 0.9, 0.0, x + 0.9, h - 0.6))
+        out.append(rect(x - 1.1, h - 0.8, x + 1.1, h - 0.3))
+        out.append(circle((x, h + 0.4), 0.75, 16))
+        out.append(rect(x - 0.3, h - 0.4, x + 0.3, h + 0.0))
+    for a, c in zip(peds[:-1], peds[1:]):
+        m = max(1, int((c - a - 1.8) / 1.8))
+        for x in np.linspace(a + 0.9 + (c - a - 1.8) / (2 * m), c - 0.9 - (c - a - 1.8) / (2 * m), m):
+            out.append(rect(x - 0.46, pr - 0.05, x + 0.46, h - 1.55))
+            out.append(oval((x, pr + (h - pr - 1.6) * 0.32), 0.68, (h - pr - 1.6) * 0.22, 16))
+    return cs_union(out)
+
+
+def fence_carrington_iron(L, h):
+    """The balcony's cast-iron railing (drawn at half size for SE.printable, so every bar comes
+    out 0.9 mm or more): a Greek-key band over a row of anthemion panels between a top rail and
+    a bottom bar."""
+    bw = 0.46
+    out = [rect(0.1, 0.0, L - 0.1, bw), rect(0.1, h - bw, L - 0.1, h), rect(0.1, h * 0.68 - bw / 2, L - 0.1, h * 0.68 + bw / 2)]
+    pu = 2.4
+    n = max(1, int((L - 0.4) / pu))
+    u0 = (L - n * pu) / 2
+    for k in range(n + 1):
+        x = u0 + pu * k
+        out.append(rect(x - bw / 2, 0.0, x + bw / 2, h))
+    for k in range(n):
+        x = u0 + pu * (k + 0.5)
+        out.append(_lens((x, h * 0.36), h * 0.62, 0.5, math.pi / 2))
+        for sg in (-1, 1):
+            out.append(stroke([(x, bw), (x + sg * 0.42, h * 0.2), (x + sg * 0.62, h * 0.42)], bw))
+        y0, y1 = h * 0.68, h - bw / 2
+        if y1 - y0 > 1.4:
+            out.append(stroke([(x - 0.75, y0), (x - 0.75, y1 - 0.2), (x + 0.45, y1 - 0.2), (x + 0.45, (y0 + y1) / 2), (x - 0.15, (y0 + y1) / 2)], bw))
+    return cs_union(out) ^ rect(0.1, 0.0, L - 0.1, h)
+
+
+# ------------------------------------------------------------------ windows, doors, dormers
+def shutter_plantation(w, h, t=0.8):
+    """A plantation shutter: two louvered fields parted by a centre rail, its top rail cut in a
+    shallow arch (the Carrington). Local as features.shutter (back at w = 0; face up)."""
+    st = 0.6
+    web = 0.4
+    out = [ext(rect(0, 0, w, h) - rect(st, st, w - st, h - st), 0.0, t)]
+    rv = round(h * 0.45 / 0.2) * 0.2
+    out.append(ext(rect(st, rv - 0.35, w - st, rv + 0.35), 0.0, t))
+    top = rect(st, h - st - 0.9, w - st, h - st) - oval((w / 2, h - st - 0.9), (w - 2 * st) / 2 - 0.1, 0.6, 24)
+    out.append(ext(top, 0.0, t))
+    for v0_, v1_ in ((st, rv - 0.35), (rv + 0.35, h - st - 0.9)):
+        field = rect(st, v0_, w - st, v1_)
+        out.append(ext(field, 0.0, web))
+        n = max(1, int((v1_ - v0_ - 0.3) / 0.9))
+        pitch = (v1_ - v0_ - 0.3) / n
+        slats = [rect(st - 0.05, v0_ + 0.3 + k * pitch, w - st + 0.05, v0_ + 0.3 + k * pitch + min(RIB + 0.05, pitch - 0.3)) for k in range(n)]
+        out.append(ext(cs_union(slats) ^ field.offset(0.05), web - 0.01, t - 0.2))
+    return union(out)
+
+
+def _shutters(w, h, sw, gap=-0.05):
+    """A pair of plantation shutters beside an opening ``w`` wide, ``h`` tall."""
+    return [shutter_plantation(sw, h).translate([-(w / 2 + gap + sw), 0, 0]), shutter_plantation(sw, h).translate([w / 2 + gap, 0, 0])]
+
+
+def _sixsix(w, h, pl, plug_cs):
+    """A six-over-six sash in the plug: muntins over the glass, a meeting rail."""
+    inner = plug_cs.offset(-0.55, MIT, 4.0)
+    ib = inner.bounds()
+    bars = [rect(-w, (ib[1] + ib[3]) / 2 - 0.35, w, (ib[1] + ib[3]) / 2 + 0.35)]
+    for x in (ib[0] + (ib[2] - ib[0]) / 3, ib[0] + 2 * (ib[2] - ib[0]) / 3):
+        bars.append(rect(x - RIB / 2, -1.0, x + RIB / 2, h + 1))
+    for f_ in (0.25, 0.75):
+        v = ib[1] + (ib[3] - ib[1]) * f_
+        bars.append(rect(-w, v - RIB / 2, w, v + RIB / 2))
+    return _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, cs_union(bars), plug_cs)
+
+
+def window_carrington_lower(w=7.6, h=17.0, A=0.8):
+    """The ground storey's window: a six-over-six sash in a moulded architrave between plantation
+    shutters, under a cornice cap with a frieze tablet carved with a small festoon; a sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sixsix(w, h, pl, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    X = w / 2 + A
+    parts.append(ext(rect(-X, h + A - 0.01, X, h + A + 2.2), 0.0, 0.6))
+    parts.append(ext(swag(-X + 1.2, X - 1.2, h + A + 1.9, 1.0, width=0.5) + circle((-X + 1.2, h + A + 1.9), 0.4, 10) + circle((X - 1.2, h + A + 1.9), 0.4, 10),
+                     0.59, 0.95))
+    parts.append(chamfer_box(-X - 0.8, h + A + 2.19, X + 0.8, h + A + 3.0, 0.0, 1.1, c=0.3, bottom=1.1))
+    parts.append(chamfer_box(-X - 1.2, h + A + 2.99, X + 1.2, h + A + 3.6, 0.0, 1.4, c=0.3, bottom=0.5))
+    parts += _shutters(w + 2 * A, h, 3.6)
+    parts.append(chamfer_box(-X - 0.6, -1.0, X + 0.6, 0.01, 0.0, 1.2, c=0.3, bottom=1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 3.8, -1.0)
+
+
+def window_carrington_upper(w=7.6, h=15.6, A=0.8):
+    """The upper storey's window: a six-over-six sash between plantation shutters under a flat
+    arch of splayed voussoirs with a raised keystone; a sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sixsix(w, h, pl, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-w - 10, 0.0, w + 10, h + 40) - op)]
+    X = w / 2 + A
+    ha = 2.6
+    arch = poly([(-X, h + A - 0.01), (X, h + A - 0.01), (X + 1.2, h + A + ha), (-X - 1.2, h + A + ha)])
+    joints = cs_union([stroke([(x, h + A), (x * 1.25, h + A + ha + 0.2)], 0.22) for x in np.linspace(-X + 1.0, X - 1.0, 6) if abs(x) > 1.0])
+    parts.append(ext(arch, 0.0, 0.7) - ext(joints, 0.5, 1.0))
+    parts.append(chamfer_box(-0.9, h + A - 0.4, 0.9, h + A + ha + 0.6, 0.0, 1.2, c=0.25))
+    parts += _shutters(w + 2 * A, h, 3.6)
+    parts.append(chamfer_box(-X - 0.6, -1.0, X + 0.6, 0.01, 0.0, 1.2, c=0.3, bottom=1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + ha + 0.8, -1.0)
+
+
+def window_carrington_palladian(wc=6.4, ws=3.2, h=16.0, A=0.7):
+    """The Palladian window over the front door: a round-headed six-light centre between two
+    narrow side lights under an entablature, fluted pilasters between, a keystone."""
+    W = wc + 2 * ws + 2 * 1.4
+    hs = h - wc / 2 - 0.8
+    op = cs_union([O.opening_cs(wc, h, wc / 2), rect(-W / 2, 0.0, W / 2, hs)])
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    mull = cs_union([rect(sg * (wc / 2 + 0.7) - 0.7, -1.0, sg * (wc / 2 + 0.7) + 0.7, hs + 0.1) for sg in (-1, 1)])
+    bars = [mull, rect(-W, hs * 0.5 - RIB / 2, W, hs * 0.5 + RIB / 2), rect(-RIB / 2, -1.0, RIB / 2, h + 1),
+            rect(-W, hs - 0.35, W, hs + 0.35)]
+    spring = h - wc / 2
+    for t_ in (0.6, math.pi / 2, math.pi - 0.6):
+        bars.append(stroke([(0.0, spring), (wc * math.cos(t_), spring + wc * math.sin(t_))], RIB))
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, cs_union(bars), plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.CASING, clip=rect(-W - 10, 0.0, W + 10, h + 40) - op)]
+    for sg in (-1, 1):
+        x = sg * (wc / 2 + 0.7)
+        parts.append(ext(rect(x - 0.65, 0.0, x + 0.65, hs), 0.0, 0.8) - ext(cs_union([rect(x - 0.35 + k * 0.35 - 0.08, 0.8, x - 0.35 + k * 0.35 + 0.08, hs - 0.8) for k in range(3)]), 0.6, 1.0))
+    parts.append(chamfer_box(-0.8, h + A - 0.6, 0.8, h + A + 1.6, 0.0, 1.2, c=0.25))
+    parts.append(chamfer_box(-W / 2 - A - 0.6, -1.0, W / 2 + A + 0.6, 0.01, 0.0, 1.2, c=0.3, bottom=1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.8, -1.0)
+
+
+def door_carrington(w=9.0, h=21.0, side=2.6, A=1.0, back=False):
+    """The Carrington's entrance: a six-panel door between leaded sidelights under an elliptical
+    fanlight of radiating leading, fluted pilasters on plinths each side, and over all an
+    entablature with a pulvinated frieze and a dentilled cornice. The back door (``back``) has
+    no sidelights and a plain transom."""
+    sd = 0.0 if back else side + 0.8
+    W = w + 2 * sd
+    rise = 0.0 if back else 3.6
+    hd = h - rise
+    op = rect(-W / 2, 0.0, W / 2, hd) + (oval((0.0, hd), W / 2, rise, 48) ^ rect(-W, hd - 0.01, W, h + 1) if rise else rect(0, 0, 0, 0))
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    dh = hd - (0.6 if rise else 3.0)
+    ja = w / 2 - 0.5
+    body = [ext(plug_cs, -pl, -1.0), ext(rect(-ja, 0.5, ja, dh), -pl, -0.8)]
+    for cx in (-ja / 2, ja / 2):
+        for v0_, v1_ in ((1.2, dh * 0.32), (dh * 0.36, dh * 0.62), (dh * 0.66, dh - 0.7)):
+            pan = rect(cx - ja / 2 + 0.6, v0_, cx + ja / 2 - 0.6, v1_)
+            body.append(ext(pan - pan.offset(-0.4, MIT, 4.0), -0.81, -0.5))
+    g = inner - rect(-ja - 0.3, -1.0, ja + 0.3, dh + 0.3)
+    bars = []
+    if not back:
+        for sg in (-1, 1):
+            x = sg * (w / 2 + sd / 2)
+            for v in np.arange(2.0, dh, 2.4):
+                bars.append(stroke([(x - sd / 2, v), (x, v + 1.2), (x + sd / 2, v)], RIB))
+        c0 = (0.0, hd)
+        for t_ in np.linspace(0.25, math.pi - 0.25, 7):
+            bars.append(stroke([c0, (c0[0] + W * math.cos(t_), c0[1] + W * math.sin(t_))], RIB))
+        bars.append(oval(c0, W * 0.22, rise * 0.4, 24) - oval(c0, W * 0.22 - RIB, rise * 0.4 - RIB, 24))
+    else:
+        bars.append(rect(-RIB / 2, dh, RIB / 2, h + 1))
+    sash = _glazed(body, g, pl, cs_union(bars) if bars else None, plug_cs)
+    sash.append(ext(rect(-w / 2, dh - 0.01, w / 2, dh + 0.5) ^ plug_cs, -pl, -0.5))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             MD.band(op.offset(A, MIT, 4.0), A, MD.ARCHITRAVE, clip=rect(-W - 10, 0.0, W + 10, h + 40) - op)]
+    X = W / 2 + A
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * X, sg * (X + 2.0)))
+        parts.append(chamfer_box(x0, 0.0, x1, 2.0, 0.0, 1.3, c=0.25))
+        parts.append(ext(rect(x0 + 0.2, 1.99, x1 - 0.2, h + 0.2), 0.0, 1.0) -
+                     ext(cs_union([rect(x0 + 0.6 + k * 0.4 - 0.1, 3.0, x0 + 0.6 + k * 0.4 + 0.1, h - 1.0) for k in range(3)]), 0.8, 1.2))
+    et = h + A
+    parts.append(ext(rect(-X - 2.3, et - 0.01, X + 2.3, et + 1.2), 0.0, 1.0))
+    parts.append(M.hull_points([(x, et + 1.19, 0.0) for x in (-X - 2.3, X + 2.3)] + [(x, et + 2.4, 0.0) for x in (-X - 2.3, X + 2.3)] +
+                               [(x, et + 1.8, 1.4) for x in (-X - 2.3, X + 2.3)]))
+    parts.append(chamfer_box(-X - 2.8, et + 2.39, X + 2.8, et + 3.2, 0.0, 1.8, c=0.3, bottom=1.0))
+    dent = cs_union([rect(x - 0.3, et + 2.4, x + 0.3, et + 2.95) for x in np.arange(-X - 2.2, X + 2.3, 1.0)])
+    parts.append(ext(dent, 1.79, 2.2))
+    parts.append(ext(rect(-X - 2.3, -0.6, X + 2.3, 0.01), 0.0, 1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, et + 3.4, -0.6)
+
+
+def addin_carrington(w=5.6, h=8.4, A=0.8):
+    """A pedimented dormer for the hipped roof (an add-in): a six-light sash between pilasters
+    under a triangular pediment with a raking cornice; a sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-10, h / 3 - RIB / 2, 10, h / 3 + RIB / 2), rect(-10, 2 * h / 3 - RIB / 2, 10, 2 * h / 3 + RIB / 2)])
+    X = w / 2 + A + 0.9
+    parts = [ext(rect(-X, 0.0, X, h + A) - op, 0.0, 0.8)]
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * (w / 2 + 0.1), sg * X))
+        parts.append(ext(rect(x0 + 0.2, 0.4, x1 - 0.2, h + A - 0.4), 0.79, 1.1))
+    ped = poly([(-X - 0.7, h + A - 0.01), (X + 0.7, h + A - 0.01), (0.0, h + A + 3.4)])
+    parts.append(ext(ped, 0.0, 0.9))
+    rake = ped - ped.offset(-0.7, MIT, 4.0)
+    parts.append(ext(rake, 0.89, 1.3))
+    parts.append(MD.run(-X - 0.4, X + 0.4, 0.0, MD.SILL, 0.9, up=False))
+    parts = [p - ext(op, -1.0, 5.0) for p in parts]
+    outline = (rect(-X - 0.7, 0.2, X + 0.7, h + A) + ped).offset(-0.3, RND) ^ rect(-50, 0.2, 50, 100)
+    return dict(light=op, bars=bars, frame=parts, outline=outline, top=h + A + 3.6, bottom=-0.9)
+
+
+# ------------------------------------------------------------------ the portico
+def post_carringtonionic(h, collar=None, abacus=6.2, slot=(1.2, 1.0), r=2.5):
+    """A colossal Ionic column: an Attic base on a square plinth, a plain shaft with entasis, an
+    astragal, an egg-and-dart echinus, and on each face a pair of volutes joined across the sides
+    by the cushion (pulvinus), under a thin abacus (the Carrington's portico)."""
+    zc = h - 4.6
+    prof = [(0.0, 1.59), (r + 0.8, 1.59), (r + 0.8, 2.0), (r + 0.45, 2.4), (r + 0.3, 2.7), (r + 0.55, 3.1), (r + 0.2, 3.5), (r, 3.9),
+            (r * 1.05, (3.9 + zc) * 0.35), (r * 0.86, zc - 0.5), (r + 0.05, zc - 0.3), (r + 0.05, zc), (r * 0.88, zc + 0.2),
+            (r * 0.95, zc + 0.6), (r + 0.4, zc + 1.4)]
+    body = PW._revolve(prof, 48) + box([-(r + 1.1), -(r + 1.1), 0.0], [r + 1.1, r + 1.1, 1.6])
+    body = body + PW._top(h, abacus / 2, zc + 1.4, r + 0.4, slot, seg=48)
+    zv = zc + 1.0
+    rv = 1.15
+    for sy in (-1, 1):
+        for sx in (-1, 1):
+            c = (sx * (abacus / 2 - 0.5), zv)
+            disc = circle((0.0, 0.0), rv, 28) - circle((0.0, 0.0), rv * 0.42, 16) + circle((0.0, 0.0), 0.3, 10)
+            spiral = stroke([(rv * (0.95 - 0.55 * t_) * math.cos(6.0 * t_), rv * (0.95 - 0.55 * t_) * math.sin(6.0 * t_)) for t_ in np.linspace(0.0, 1.0, 20)], 0.22)
+            plate = M.extrude(disc, 0.7) + M.extrude(spiral ^ circle((0, 0), rv, 28), 0.95)
+            A = np.array([[1.0, 0.0, 0.0, c[0]], [0.0, 0.0, -sy, sy * (abacus / 2 - 0.6)], [0.0, 1.0, 0.0, c[1]]])
+            if sy < 0:
+                A = np.array([[1.0, 0.0, 0.0, c[0]], [0.0, 0.0, -1.0, -(abacus / 2 - 0.6)], [0.0, 1.0, 0.0, c[1]]])
+            else:
+                A = np.array([[1.0, 0.0, 0.0, c[0]], [0.0, 0.0, 1.0, abacus / 2 - 0.6], [0.0, 1.0, 0.0, c[1]]])
+            body = body + plate.transform(A)
+        cush = M.cylinder(abacus - 1.4, rv * 0.95, rv * 0.95, 24).rotate([90, 0, 0]).translate([sy * (abacus / 2 - 0.5), (abacus - 1.4) / 2, zv])
+        body = body + cush
+    return max(body.decompose(), key=lambda c: c.volume())
+
+
+def frieze_festoonarchitrave(u0, u1, v_bot, v_top):
+    """The portico's architrave between the columns: a solid beam, its soffit stepped up 0.6 mm
+    a little in from each column so the two fasciae read from below (the Carrington)."""
+    out = rect(u0, v_bot, u1, v_top + 0.05)
+    if u1 - u0 > 6.0 and v_top - v_bot > 1.6:
+        out = out - rect(u0 + 1.2, v_bot - 1.0, u1 - 1.2, v_bot + 0.6)
+    return out
+
+
+def edge_dentilegg(L, z0, zc):
+    """Portico fascia (the Carrington): a row of dentils under an egg-and-dart band below the
+    crown."""
+    out = [rect(0.3, zc - 0.6, L - 0.3, zc), rect(0.3, zc - 2.0, L - 0.3, zc - 1.5)]
+    pu = 1.2
+    n = max(1, int((L - 1.0) / pu))
+    u0 = (L - n * pu) / 2
+    out += [rect(u0 + pu * k + 0.15, zc - 1.51, u0 + pu * k + 0.85, zc - 0.59) for k in range(n)]
+    out += [oval((u0 + pu * (k + 0.5), zc - 2.4), 0.4, 0.55, 12) for k in range(n)]
+    return cs_union(out) ^ rect(0.3, -1e3, L - 0.3, 1e3), 0.6
+
+
+def skirt_carrington(reg, d=1.2):
+    """The portico's base between the column plinths: brick with an arched iron-grilled vent in
+    the middle of each bay, under a moulded cap."""
+    u0, v0, u1, v1 = reg.bounds()
+    cells = []
+    for k, v in enumerate(np.arange(v0, v1 - 0.8, 0.8)):
+        off = 0.0 if k % 2 == 0 else 1.0
+        for u in np.arange(u0 - 2.0 + off, u1 + 1.0, 2.0):
+            cells.append(rect(u + 0.1, v + 0.1, u + 1.9, v + 0.7))
+    out = [M.extrude(reg, d * 0.4)]
+    if cells:
+        out.append(ext(cs_union(cells) ^ reg, d * 0.4 - 0.01, d * 0.7))
+    out.append(ext(rect(u0 - 1, v1 - 0.8, u1 + 1, v1 + 1) ^ reg, d * 0.4 - 0.01, d * 0.9))
+    body = union(out)
+    if v1 - v0 > 4.0 and u1 - u0 > 5.0:
+        um = (u0 + u1) / 2
+        vent = O.opening_cs(2.6, min(3.0, v1 - v0 - 2.0), 1.3).translate((um, v0 + 0.6))
+        body = body - ext(vent, d * 0.15, 5.0)
+        body = body + ext(cs_union([rect(x - 0.2, v0, x + 0.2, v1) for x in (um - 0.65, um, um + 0.65)]) ^ vent, d * 0.15 - 0.01, d * 0.4)
+    return body ^ M.extrude(reg, d + 0.5)
+
+
+def balcony_carrington(region, z, t=1.2, consoles=()):
+    """The curved balcony's floor inside the portico: a slab over ``region`` (its back on the
+    storey cornice's crown) and under its free edge a scrolled console at each of ``consoles`` =
+    [(x, y, angle)], the console's deep end toward the house. World coords; printed upside down."""
+    body = M.extrude(region, t).translate([0, 0, z - t])
+    for x, y, a in consoles:
+        prof = poly([(0.0, 0.0), (3.0, 0.0), (3.0, -0.6), (2.2, -1.2), (1.2, -2.6), (0.4, -3.4), (0.0, -3.4)])
+        con = M.extrude(prof, 1.4).translate([0, 0, -0.7]).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, 0]]))
+        con = con.rotate([0, 0, math.degrees(a)]).translate([x, y, z - t + 0.01])
+        body = body + con
+    return body
+
+
+def chimney_carrington(w=12.0, d=7.0, h=30.0):
+    """A tall Colonial end stack: running-bond brick with a sunk panel on each broad face, a
+    four-course corbelled cap under a stone coping, two round clay pots. Prints upright."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 5.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    for sy in (-1, 1):
+        body = body - box([-w / 2 + 1.6, sy * d / 2 - 0.4, 3.0], [w / 2 - 1.6, sy * d / 2 + 0.4, sh - 3.6])
+    courses = []
+    for k, z in enumerate(np.arange(0.0, sh - 0.4, 0.8)):
+        for sy in (-1, 1):
+            for x in np.arange(-w / 2 - (0.0 if k % 2 == 0 else 1.0), w / 2, 2.0):
+                courses.append(box([max(x + 0.1, -w / 2), sy * d / 2 - 0.01 if sy > 0 else -d / 2 - 0.2, z + 0.1],
+                                   [min(x + 1.9, w / 2), d / 2 + 0.2 if sy > 0 else -d / 2 + 0.01, z + 0.7]))
+    body = body + union(courses) - union([box([-w / 2 + 1.6, sy * d / 2 - 0.4 if sy > 0 else -d / 2 - 1.0, 3.0],
+                                              [w / 2 - 1.6, d / 2 + 1.0 if sy > 0 else -d / 2 + 0.4, sh - 3.6]) for sy in (-1, 1)])
+    z = sh
+    for k in range(4):
+        g = 0.25 * (k + 1)
+        body = body + box([-w / 2 - g, -d / 2 - g, z - 0.01], [w / 2 + g, d / 2 + g, z + 0.6])
+        z += 0.6
+    body = body + box([-w / 2 - 1.3, -d / 2 - 1.3, z - 0.01], [w / 2 + 1.3, d / 2 + 1.3, z + 0.8])
+    for sx in (-1, 1):
+        body = body + M.cylinder(2.4, 1.2, 1.0, 20).translate([sx * w / 4, 0, z + 0.79]) + M.cylinder(0.4, 1.3, 1.3, 20).translate([sx * w / 4, 0, z + 3.18])
+        body = body - M.cylinder(4.0, 0.6, 0.6, 12).translate([sx * w / 4, 0, z + 1.2])
+    return body
+
+
+CO.FRIEZE_EXTRA.update(bowknotswags=frieze_bowknotswags, plumes=frieze_plumes)
+CO.COURSE_EXTRA.update(ribbonreed=course_ribbonreed)
+TW.BRACKET_EXTRA.update(volutemod=bracket_volutemod)
+TW.FOUNDATION_EXTRA.update(carrington=foundation_carrington)
+SH.CORNER_EXTRA.update(carrington=corner_carrington)
+PW.POSTS.update(carringtonionic=post_carringtonionic)
+PW.FRIEZES.update(festoonarchitrave=frieze_festoonarchitrave)
+PW.SKIRTS.update(carrington=skirt_carrington)
+FT.EDGE_EXTRA.update(dentilegg=edge_dentilegg)
