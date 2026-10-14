@@ -1331,17 +1331,25 @@ def key_into(kit, name, into, d, depth=1.2, clr=0.12, conform=False, step=0.2, b
     L = gap + depth
     sweep = union([pt.solid.translate(list(d * t)) for t in np.arange(step, L + 1e-9, step)] + [pt.solid.translate(list(d * L))])
     sweep.num_vert()
-    strip = union([tgt.translate(list(-d * t)) for t in np.arange(0.0, gap + 0.25, 0.1)])
-    strip.num_vert()
-    tongue = (sweep + pt.solid) ^ strip                   # overlaps the part, so the union fuses
-    if band is not None:
-        tongue = tongue ^ box([pb[0] - 9, pb[1] - 9, pb[2] + band[0]], [pb[3] + 9, pb[4] + 9, pb[2] + band[1]])
-    keep = [c for c in tongue.decompose() if c.volume() > 1e-3 and (c ^ pt.solid).volume() > 1e-4]
-    tongue = union(keep) if keep else M()                  # only what joins the part
+    def run_on(reach):
+        strip = union([tgt.translate(list(-d * t)) for t in np.arange(0.0, reach, 0.1)])
+        strip.num_vert()
+        tongue = (sweep + pt.solid) ^ strip               # overlaps the part, so the union fuses
+        if band is not None:
+            tongue = tongue ^ box([pb[0] - 9, pb[1] - 9, pb[2] + band[0]], [pb[3] + 9, pb[4] + 9, pb[2] + band[1]])
+        keep = [c for c in tongue.decompose() if c.volume() > 1e-3 and (c ^ pt.solid).volume() > 1e-4]
+        return union(keep) if keep else M()              # only what joins the part
+
+    tongue = run_on(gap + 0.25)
     if conform:
-        # cut back to their shape, the run-on can leave a strip loose in front of a board's
-        # face (the Lindenwald's steps): keep only what stays joined to the part
+        n0 = len([c for c in pt.solid.decompose() if c.volume() > 1e-3])
         out = (pt.solid + tongue) - tgt
+        if len([c for c in out.decompose() if c.volume() > 1e-3]) > n0:
+            # where their face steps back from the nearest point (the Lindenwald's rim board
+            # 0.35 behind its deck's nosing), the run-on cut back to their shape stood loose
+            # in front of it: reach on to that face too, so it joins the part
+            tongue = run_on(gap + 0.85)
+            out = (pt.solid + tongue) - tgt
         keep = [c for c in out.decompose() if (c ^ pt.solid).volume() > 1e-4]
         pt.solid = union(keep) if keep else out
     else:

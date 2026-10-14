@@ -301,8 +301,9 @@ _FIX_1014 = {
     "walls": ("Culvert headwall: the tips that held it up off the plate are trimmed, so it sits flat on the plate. "
               "Reprint the Culvert-headwall."),
 }
-STEPS_STRIP = ("Steps: where the steps key against the house, a 0.3 mm strip stood 0.05 mm off their back face, "
-               "loose and starting in mid air; it is gone. Reprint the {}.")
+STEPS_STRIP = ("Steps: where the steps key against the house, the key in front of the face set back behind the "
+               "nosing stood 0.05 mm off the steps as a loose 0.3 mm strip, starting in mid air. The steps now run "
+               "on to that face in one piece, so they glue over it. Reprint the {}.")
 _FIX_1014["lindenwald"] += " " + STEPS_STRIP.format("PORCH-steps-0")
 _FIX_1014.update({
     "greenfield": STEPS_STRIP.format("STEPS-0"), "hollister": STEPS_STRIP.format("PORCH-steps-0"),
