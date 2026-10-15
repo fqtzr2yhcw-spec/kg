@@ -2176,3 +2176,388 @@ def chimney_marigny(w=7.0, d=12.0, h=30.0):
         pot = M.cylinder(3.2, 1.25, 1.0, 8).translate([0, y, z - 0.01]) + M.cylinder(0.6, 1.3, 1.3, 8).translate([0, y, z + 3.0])
         body = body + pot - M.cylinder(4.0, 0.7, 0.7, 8).translate([0, y, z + 0.6])
     return body
+
+
+# ================================================================== the Paloma (house 108)
+# After the Larkin House, Monterey, California (1835), the first Monterey Colonial, and the
+# adobes round it: a two-storey adobe whose low hipped roof of redwood shingles runs out over a
+# two-tier gallery (a corredor below, a balcony above) on slender posts with carved zapatas;
+# two one-storey adobe wings come forward from it round a courtyard open to the street, each
+# with a corredor facing the court and a window caged in a turned wooden reja to the street; a
+# garden wall with a tile coping and an arched gate closes the court; a well in the court.
+
+def adobe_paloma(region, datum=0.0, seed=0, dado=5.0):
+    """Lime-washed adobe: plaster laid on thick with trowel patches standing a hair proud, a
+    painted dado band at the foot, and here and there a patch where the plaster has fallen away
+    to show the adobe bricks and their mud joints."""
+    if region.is_empty():
+        return M()
+    rng = np.random.default_rng(seed)
+    u0, v0, u1, v1 = region.bounds()
+    out = [M.extrude(region, 0.05)]
+    pat = []
+    for _ in range(int((u1 - u0) * (v1 - v0) / 140.0)):
+        c = (rng.uniform(u0, u1), rng.uniform(v0, v1))
+        r = rng.uniform(1.8, 3.4)
+        pat.append(poly([(c[0] + r * rng.uniform(0.6, 1.0) * math.cos(a), c[1] + r * 0.6 * rng.uniform(0.6, 1.0) * math.sin(a))
+                         for a in np.linspace(0, 2 * math.pi, 9, endpoint=False)]))
+    spall = []
+    for _ in range(max(1, int((u1 - u0) / 45.0))):
+        c = (rng.uniform(u0 + 4, max(u0 + 5, u1 - 4)), rng.uniform(v0 + dado + 3, max(v0 + dado + 4, v1 - 5)))
+        r = rng.uniform(2.4, 3.6)
+        spall.append(poly([(c[0] + r * rng.uniform(0.7, 1.1) * math.cos(a), c[1] + r * 0.75 * rng.uniform(0.7, 1.1) * math.sin(a))
+                           for a in np.linspace(0, 2 * math.pi, 10, endpoint=False)]))
+    spall = cs_union(spall) ^ region
+    plaster = region - spall.offset(0.25, RND)
+    if pat:
+        out.append(M.extrude((cs_union(pat) ^ plaster) - rect(u0 - 1, v0 - 1, u1 + 1, v0 + dado + 0.4), 0.13))
+    out.append(M.extrude(plaster ^ rect(u0 - 1, v0 - 1, u1 + 1, v0 + dado), 0.3))                        # the dado
+    if not spall.is_empty():                                                                     # bricks in the spalls
+        bricks = []
+        for k, v in enumerate(np.arange(v0 - 2.0, v1, 1.3)):
+            off = (k % 2) * 1.9
+            for u in np.arange(u0 - 4.0 + off, u1, 3.8):
+                bricks.append(rect(u + 0.15, v + 0.15, u + 3.65, v + 1.15))
+        out.append(M.extrude(cs_union(bricks) ^ spall, 0.12).translate([0, 0, -0.25]))
+        out[0] = M.extrude(region - spall, 0.05)
+        out.append(M.extrude(spall, 0.05).translate([0, 0, -0.3]))
+    return union(out)
+
+
+def foundation_plstone(reg, seed=0):
+    """The adobes' footing: a low course of rough Monterey sandstone under a lime wash line."""
+    u0, v0, u1, v1 = reg.bounds()
+    st = ashlar(rect(u0, v0, u1, v1 - 0.6), course=(1.6, 2.4), length=(2.6, 5.6), d=0.45, seed=seed + 21, rough=0.25, bevel=0.3)
+    return st + M.extrude(rect(u0, v1 - 0.6, u1, v1), 0.25)
+
+
+TW.FOUNDATION_EXTRA.update(plstone=foundation_plstone)
+
+
+# ---- cornice ornaments
+def frieze_plwave(L, h, b, pitch, margin, pair, half):
+    """The balcony joint's frieze: a running Vitruvian scroll (waves curling over) between two
+    fillets."""
+    v0, v1 = 0.35, h - 0.35
+    out = [_st(rect(0.2, v0, L - 0.2, v0 + 0.45) + rect(0.2, v1 - 0.45, L - 0.2, v1), b, 0.3)]
+    H = v1 - v0 - 1.0
+    pw = H * 1.6
+    n = max(1, int((L - 0.8) / pw))
+    u0 = (L - n * pw) / 2
+    waves = []
+    for k in range(n):
+        a = u0 + k * pw
+        pts = [(a, v0 + 0.5)]
+        for t in np.linspace(0, 1, 14):
+            ang = math.pi * 1.6 * t
+            r = H * 0.45 * (1 - 0.55 * t)
+            pts.append((a + pw * 0.55 + r * math.sin(ang) - r * 0.2, v0 + 0.5 + H * 0.5 - r * math.cos(ang)))
+        waves.append(stroke(pts, 0.45))
+        waves.append(stroke([(a, v0 + 0.5), (a + pw, v0 + 0.5)], 0.45))
+    out.append(_st(_clean(cs_union(waves), 0.18) ^ rect(0.2, v0 + 0.3, L - 0.2, v1 - 0.4), b, 0.3))
+    return out, []
+
+
+def frieze_plrosette(L, h, b, pitch, margin, pair, half):
+    """The eave's frieze under the gallery roof: chip-carved rosettes (six-point stars in rings)
+    in square panels, a plain stile between each."""
+    v0, v1 = 0.3, h - 0.3
+    s = v1 - v0
+    n = max(1, int((L - 0.6) / (s + 0.8)))
+    st_ = (L - 0.6) / n
+    out = []
+    for k in range(n):
+        uc = 0.3 + st_ * (k + 0.5)
+        sq = rect(uc - s / 2, v0, uc + s / 2, v1)
+        out.append(_st(sq - sq.offset(-0.4, MIT, 4.0), b, 0.3))
+        r = s / 2 - 0.65
+        if r > 0.6:
+            ring = circle((uc, (v0 + v1) / 2), r, 20) - circle((uc, (v0 + v1) / 2), r - 0.35, 20)
+            star = cs_union([poly([(uc + r * 0.85 * math.cos(a), (v0 + v1) / 2 + r * 0.85 * math.sin(a)),
+                                   (uc + r * 0.3 * math.cos(a + math.pi / 6), (v0 + v1) / 2 + r * 0.3 * math.sin(a + math.pi / 6)),
+                                   (uc, (v0 + v1) / 2),
+                                   (uc + r * 0.3 * math.cos(a - math.pi / 6), (v0 + v1) / 2 + r * 0.3 * math.sin(a - math.pi / 6))])
+                             for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)])
+            out.append(_st(_clean(ring + star, 0.15), b, 0.3))
+    return out, []
+
+
+def course_pltooth(L, h, b, pitch, margin, p):
+    """A dogtooth course: a row of little four-sided pyramids point outward, set tip to tip."""
+    s = h - 0.3
+    n = max(1, int((L - 0.4) / s))
+    st_ = (L - 0.4) / n
+    teeth = [poly([(0.2 + st_ * k, h / 2), (0.2 + st_ * (k + 0.5), 0.15), (0.2 + st_ * (k + 1), h / 2), (0.2 + st_ * (k + 0.5), h - 0.15)])
+             for k in range(n)]
+    out = [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.12)]
+    for d_ in (0.12, 0.24):
+        out.append(_st(cs_union([t_.offset(-d_ * 1.4, MIT, 4.0) for t_ in teeth]), b + d_, 0.13))
+    return out
+
+
+CO.FRIEZE_EXTRA.update(plwave=frieze_plwave, plrosette=frieze_plrosette)
+CO.COURSE_EXTRA.update(pltooth=course_pltooth)
+
+
+# ---- windows, doors, shutters
+def _sash_lights(w, h, pl, plug_cs, cols, rows_lo, rows_hi, meet=0.6):
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    u0, v0, u1, v1 = inner.bounds()
+    vm = v0 + (v1 - v0) * rows_lo / (rows_lo + rows_hi)
+    lo, hi = rect(u0, v0, u1, vm - meet / 2), rect(u0, vm + meet / 2, u1, v1)
+    bars = (_muntins(lo, cols, rows_lo) ^ lo) + (_muntins(hi, cols, rows_hi) ^ hi)
+    return _glazed([ext(plug_cs, -pl, -0.6)], lo + hi, pl, bars, plug_cs)
+
+
+def window_plmain(w=10.0, h=19.0, A=1.1):
+    """The house's ground-floor window, deep in the adobe: nine over six, a plain casing with a
+    frieze board and a moulded cap over it, a thick wooden sill on two corbels."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash_lights(w, h, pl, plug_cs, 3, 2, 3)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    vh = h + A - 0.01
+    parts.append(ext(rect(-X, vh, X, vh + 1.8), 0.0, 0.8))
+    parts.append(chamfer_box(-X - 0.7, vh + 1.79, X + 0.7, vh + 2.5, 0.0, 1.3, c=0.3, bottom=0.6))
+    parts.append(chamfer_box(-X - 0.5, vh + 2.49, X + 0.5, vh + 3.0, 0.0, 1.0, c=0.3, bottom=0.4))
+    parts.append(chamfer_box(-X - 0.9, -1.6, X + 0.9, 0.01, 0.0, 1.8, c=0.3, bottom=1.8))
+    for sg in (-1, 1):
+        u = sg * (X - 0.8)
+        parts.append(ext(poly([(u - 0.7, -1.59), (u + 0.7, -1.59), (u + 0.4, -3.2), (u - 0.4, -3.2)]), 0.0, 1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 3.0, -3.2)
+
+
+def door_plfrench(w=12.0, h=23.0, A=1.1):
+    """The upper storey's doors onto the balcony: a pair of glazed doors (three lights over a
+    panel each) under a two-light transom, a casing crowned with a low triangular pediment."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    vt = h - 3.2
+    tr = rect(-w / 2 + 0.6, vt + 0.5, w / 2 - 0.6, h - 0.6)
+    lights = []
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.5, sg * (w / 2 - 0.9)))
+        lights.append(rect(a, vt * 0.32, c_, vt - 0.9))
+    glass = cs_union(lights) + tr
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(glass, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    bars = [rect(-RIB / 2, vt, RIB / 2, h)]
+    for lt in lights:
+        lb = lt.bounds()
+        for k in (1, 2):
+            v = lb[1] + (lb[3] - lb[1]) * k / 3
+            bars.append(rect(lb[0] - 1, v - RIB / 2, lb[2] + 1, v + RIB / 2))
+    parts_s.append(ext(cs_union(bars) ^ glass.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    parts_s.append(ext(rect(-0.3, 0.0, 0.3, vt + 0.5), -0.65, -0.1))                     # the meeting stiles
+    parts_s.append(ext(rect(-w / 2 + 0.4, vt - 0.1, w / 2 - 0.4, vt + 0.5), -0.65, -0.1))
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.5, sg * (w / 2 - 0.9)))
+        pan = rect(a, 1.0, c_, vt * 0.32 - 0.9)
+        parts_s.append(ext(pan - pan.offset(-0.45, MIT, 4.0), -0.65, -0.2))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    vh = h + A - 0.01
+    ped = poly([(-X - 0.9, vh), (X + 0.9, vh), (0.0, vh + 3.4)])
+    parts.append(ext(ped - ped.offset(-0.8, MIT, 4.0), 0.0, 1.2))
+    parts.append(ext(ped.offset(-0.8, MIT, 4.0), 0.0, 0.6))
+    parts.append(chamfer_box(-X - 1.0, vh - 0.6, X + 1.0, vh + 0.01, 0.0, 1.3, c=0.3, bottom=0.5))
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, vh + 3.4, 0.0)
+
+
+def door_plmain(w=12.0, h=24.0, A=1.4):
+    """The house's door to the court: a pair of heavy leaves, each of six raised panels with
+    iron nail heads at the rails, under a carved lintel (a scroll each end, a shell in the
+    middle) on two plain jambs."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s.append(ext(rect(-0.3, 0.0, 0.3, h - 0.5), -0.65, -0.1))
+    ph = (h - 2.0) / 3
+    for j in range(3):
+        for sg in (-1, 1):
+            vb = 1.0 + j * ph
+            pan = rect(min(sg * 0.6, sg * (w / 2 - 0.9)), vb, max(sg * 0.6, sg * (w / 2 - 0.9)), vb + ph - 0.7)
+            parts_s.append(ext(pan - pan.offset(-0.45, MIT, 4.0), -0.65, -0.2))
+            parts_s.append(chamfer_box(*pan.offset(-0.9, MIT, 4.0).bounds(), -0.65, 0.35, c=0.2))
+        vr = 1.0 + j * ph - 0.35
+        for x in np.linspace(-w / 2 + 1.0, w / 2 - 1.0, 6):
+            parts_s.append(ext(circle((x, vr), 0.3, 8), -0.65, -0.05))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, h + 0.01), 0.0, 1.0)]
+    vh = h - 0.01
+    lin = rect(-X - 1.6, vh, X + 1.6, vh + 3.4)
+    parts.append(ext(lin, 0.0, 1.0))
+    carve = [circle((sg * (X + 0.4), vh + 1.7), 1.1, 18) - circle((sg * (X + 0.4), vh + 1.7), 0.55, 14) for sg in (-1, 1)]
+    carve.append(cs_union([stroke([(0.0, vh + 0.6), (2.2 * math.cos(a), vh + 0.6 + 2.2 * math.sin(a))], 0.4)
+                           for a in np.linspace(0.35, math.pi - 0.35, 7)]))
+    carve.append(stroke([(-X + 1.2, vh + 1.7), (-2.6, vh + 1.7)], 0.45))
+    carve.append(stroke([(2.6, vh + 1.7), (X - 1.2, vh + 1.7)], 0.45))
+    parts.append(ext(_clean(cs_union(carve), 0.15) ^ lin.offset(-0.3, MIT, 4.0), 0.99, 1.3))
+    parts.append(chamfer_box(-X - 2.0, vh + 3.39, X + 2.0, vh + 4.2, 0.0, 1.5, c=0.3, bottom=0.8))
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, vh + 4.2, 0.0)
+
+
+def window_plreja(w=8.0, h=12.0, A=0.9, dep=2.6):
+    """A wing's window to the street, caged in a reja: a grille of turned wooden spindles
+    standing out from the wall in a box frame, a little shingled hood over it on two brackets,
+    two casements behind."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    bars = cs_union([rect(-0.4, -1.0, 0.4, h + 1.0), rect(-w, h / 2 - RIB / 2, w, h / 2 + RIB / 2)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.8)]
+    # the reja: a sill box and a head rail standing out, spindles between them
+    parts.append(chamfer_box(-X - 0.4, -1.6, X + 0.4, 0.4, 0.0, dep + 0.6, c=0.3, bottom=dep + 0.6))
+    parts.append(ext(rect(-X - 0.4, h + A - 0.6, X + 0.4, h + A + 0.6), 0.0, dep + 0.6))
+    for x in np.linspace(-X + 0.4, X - 0.4, 7):
+        sp = cs_union([rect(x - 0.35, 0.39, x + 0.35, h + A - 0.59)] +
+                      [circle((x, v), 0.5, 12) for v in np.linspace(1.6, h + A - 1.8, 4)])
+        parts.append(ext(sp, dep - 0.35, dep + 0.35))
+    for sg in (-1, 1):                                             # the sides of the cage
+        x = sg * (X + 0.1)
+        parts.append(ext(rect(min(x, x - sg * 0.6), 0.39, max(x, x - sg * 0.6), h + A - 0.59), 0.0, dep + 0.35))
+    vh = h + A + 0.59
+    hood = poly([(-X - 1.2, vh), (X + 1.2, vh), (X + 1.2, vh + 0.6), (0.0, vh + 2.2), (-X - 1.2, vh + 0.6)])
+    parts.append(ext(hood, 0.0, dep + 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 2.2, -1.6)
+
+
+def window_plcourt(w=8.0, h=13.0, A=0.9):
+    """A wing's window to the court: a pair of casements of three lights each, a plain casing
+    with a drip cap, a sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    b = inner.bounds()
+    bars = cs_union([rect(-0.4, -1.0, 0.4, h + 1.0)] + [rect(-w, v - RIB / 2, w, v + RIB / 2) for v in (b[1] + (b[3] - b[1]) / 3, b[1] + 2 * (b[3] - b[1]) / 3)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    vh = h + A - 0.01
+    parts.append(chamfer_box(-X - 0.6, vh, X + 0.6, vh + 1.3, 0.0, 1.2, c=0.3, bottom=1.0))
+    parts.append(chamfer_box(-X - 0.5, -1.2, X + 0.5, 0.01, 0.0, 1.4, c=0.3, bottom=1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 1.3, -1.2)
+
+
+def door_plplank(w=8.4, h=19.0, A=1.0):
+    """A wing's door to the corredor: wide planks with rows of iron nail heads across them and
+    a ring pull, a plain heavy casing with a lintel."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    face = plug_cs.offset(-0.5, MIT, 4.0)
+    fb = face.bounds()
+    bds = cs_union([rect(x - 0.15, -1, x + 0.15, 100) for x in np.arange(fb[0] + 2.0, fb[2] - 0.8, 2.0)])
+    parts_s.append(ext(_clean(face - bds, 0.12), -0.65, -0.3))
+    for v in (fb[1] + 2.0, (fb[1] + fb[3]) / 2, fb[3] - 2.0):
+        for x in np.arange(fb[0] + 1.0, fb[2] - 0.5, 2.0):
+            parts_s.append(ext(circle((x, v), 0.3, 8), -0.31, -0.08))
+    parts_s.append(ext(circle((fb[2] - 1.4, (fb[1] + fb[3]) / 2 + 1.6), 0.7, 14) - circle((fb[2] - 1.4, (fb[1] + fb[3]) / 2 + 1.6), 0.35, 12), -0.31, -0.08))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, h + 0.01), 0.0, 1.0)]
+    parts.append(chamfer_box(-X - 0.8, h - 0.01, X + 0.8, h + 2.0, 0.0, 1.2, c=0.3, bottom=0.6))
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + 2.0, 0.0)
+
+
+def shutter_paloma(w, h, t=0.8, stile=0.6):
+    """The Paloma's shutter: two raised panels (the lower one shorter) in a frame, a long strap
+    hinge across each. Local frame as features.shutter (u 0..w, v 0..h, back at w = 0; prints
+    face-up)."""
+    from .colonial import _strap
+    rv = round(h * 0.4 / 0.2) * 0.2
+    parts = [ext(rect(0, 0, w, h), 0.0, t - 0.25)]
+    for f0, f1 in ((stile, rv - stile / 2), (rv + stile / 2, h - stile)):
+        pan = rect(stile, f0, w - stile, f1)
+        parts.append(ext(rect(0, 0, w, h) - pan, t - 0.26, t))
+        parts.append(chamfer_box(*pan.offset(-0.45, MIT, 4.0).bounds(), t - 0.26, 0.25, c=0.2))
+    parts.append(ext(rect(0, rv - stile / 2, w, rv + stile / 2), t - 0.26, t))
+    for v in (h * 0.15, h * 0.85):
+        parts.append(ext(_strap(0.05, w * 0.8, v) ^ rect(0, 0, w, h), t - 0.01, t + 0.2))
+    return union(parts)
+
+
+# ---- posts, zapatas, balusters, chimney
+def post_paloma(h, r=1.1):
+    """A gallery post: round and slender on a square plinth block (from z = 0 to h)."""
+    from .porchwork import _revolve
+    body = box([-1.5, -1.5, 0.0], [1.5, 1.5, 1.6]) + M.hull_points([(x, y, 1.59) for x in (-1.5, 1.5) for y in (-1.5, 1.5)] +
+                                                                   [(r * math.cos(a), r * math.sin(a), 2.2) for a in np.linspace(0, 2 * math.pi, 16, endpoint=False)])
+    return body + _revolve([(0.0, 2.1), (r, 2.1), (r * 0.92, h), (0.0, h)], seg=20)
+
+
+def zapata_paloma(L=7.0, H=1.6, D=2.2):
+    """A zapata: the carved bolster on a post's head under the beam, its ends cut in a double
+    scroll (a quarter round over a half round), in the frame u along the beam, v up, w across;
+    from v = 0 to H."""
+    hl = L / 2
+    prof = [(-hl, H), (hl, H)]
+    for a in np.linspace(0.0, math.pi / 2, 6):
+        prof.append((hl - 0.6 * (1 - math.cos(a)), H - 0.6 * math.sin(a)))
+    prof += [(hl - 1.0, H - 0.6), (hl - 1.0, 0.45)]
+    for a in np.linspace(0.0, math.pi, 7):
+        prof.append((hl - 1.45 - 0.45 * math.cos(a), 0.45 - 0.45 * math.sin(a)))
+    prof += [(-(hl - 1.9), 0.0)]
+    for a in np.linspace(0.0, math.pi, 7):
+        prof.append((-(hl - 1.45) - 0.45 * math.cos(a), 0.45 - 0.45 * math.sin(a)))
+    prof += [(-(hl - 1.0), 0.45), (-(hl - 1.0), H - 0.6)]
+    for a in np.linspace(math.pi / 2, 0.0, 6):
+        prof.append((-hl + 0.6 * (1 - math.cos(a)), H - 0.6 * math.sin(a)))
+    cs = poly(prof)
+    return M.extrude(cs, D).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, -D / 2], [0, 1.0, 0, 0]]))
+
+
+def baluster_paloma(h, seg=16):
+    """The balcony's baluster: turned, two vases back to back with a ring between."""
+    from .porchwork import _revolve
+    m = h / 2
+    prof = [(0.0, 0.0), (0.5, 0.0), (0.5, 0.4), (0.3, 0.6), (0.52, m - 1.0), (0.3, m - 0.3), (0.48, m - 0.15), (0.48, m + 0.15),
+            (0.3, m + 0.3), (0.52, m + 1.0), (0.3, h - 0.6), (0.5, h - 0.4), (0.5, h), (0.0, h)]
+    return _revolve(prof, seg=seg)
+
+
+def chimney_paloma(w=8.0, d=7.0, h=24.0):
+    """An adobe chimney (stands on z = 0, the floor of its roof pocket): lime-plastered, a
+    plain band near the top, and a hood of two curved tiles leaning together over the flue."""
+    h = round(h / 0.2) * 0.2
+    sh = h - 3.0
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, sh])
+    body = body + box([-w / 2 - 0.3, -d / 2 - 0.3, sh - 2.4], [w / 2 + 0.3, d / 2 + 0.3, sh - 1.4]) + TW._corbel_out(w, d, sh - 2.4, 0.3)
+    body = body - box([-w / 2 + 1.4, -d / 2 + 1.4, sh - 1.6], [w / 2 - 1.4, d / 2 - 1.4, sh + 1.0])
+    for sg in (-1, 1):                                       # the tile hood: a gable of two half-round tiles
+        tile = M.hull_points([(sg * (w / 2 - 0.2), y, sh - 0.01) for y in (-d / 2 + 0.6, d / 2 - 0.6)] +
+                             [(sg * 0.4, y, h) for y in (-d / 2 + 0.6, d / 2 - 0.6)] +
+                             [(sg * (w / 2 - 1.2), y, sh - 0.01) for y in (-d / 2 + 0.6, d / 2 - 0.6)])
+        body = body + tile
+    return body
+
+
+def window_plupper(w=9.0, h=16.0, A=1.0):
+    """The house's upper window: six over six under a low triangular pediment (as the doors
+    onto the balcony), a plain sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash_lights(w, h, pl, plug_cs, 3, 2, 2)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    vh = h + A - 0.01
+    ped = poly([(-X - 0.8, vh), (X + 0.8, vh), (0.0, vh + 3.0)])
+    parts.append(ext(ped - ped.offset(-0.75, MIT, 4.0), 0.0, 1.2))
+    parts.append(ext(ped.offset(-0.75, MIT, 4.0), 0.0, 0.6))
+    parts.append(chamfer_box(-X - 0.9, vh - 0.6, X + 0.9, vh + 0.01, 0.0, 1.3, c=0.3, bottom=0.5))
+    parts.append(chamfer_box(-X - 0.6, -1.3, X + 0.6, 0.01, 0.0, 1.5, c=0.3, bottom=1.5))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 3.0, -1.3)

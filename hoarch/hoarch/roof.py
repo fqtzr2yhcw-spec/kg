@@ -330,6 +330,21 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                     continue
                 bands.append(scallop_rows(row, pitch, wtab, d=d, shape="diamond" if j % 5 == 0 else "square", datum=j * pitch))
             tex = union(bands) if bands else M()
+        elif shape == "monterey":         # sawn redwood shingles: short courses, random widths, square butts in a dead
+            b = loc.bounds()              # straight line, keyways between, every third course doubled (the Paloma)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(int(abs(b[0]) * 7 + abs(b[2]) * 2 + i * 5) % 991)
+            rows, thick = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                u = b[0] - rng.uniform(0.0, 1.6)
+                while u < b[2]:
+                    wd = rng.uniform(0.9, 2.1)
+                    (thick if j % 3 == 0 else rows).append(rect(u + 0.1, v, u + wd - 0.1, v + pitch))
+                    u += wd
+            tex = M.extrude(cs_union(rows) ^ clip, d) if rows else M()
+            if thick:
+                tex = tex + M.extrude(cs_union(thick) ^ clip, d + 0.15)
         elif shape == "cypress":          # hand-riven cypress shakes: long boards of random width in courses, their butts
             b = loc.bounds()              # a little out of line, some split, two thicknesses (the Piney)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
