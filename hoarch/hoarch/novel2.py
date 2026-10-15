@@ -3000,3 +3000,432 @@ def chimney_severn(w=8.0, d=6.0, h=24.0):
     for y in (-d / 4, d / 4):
         body = body - box([-w / 2 + 1.2, y - d / 4 + 0.6, z - 1.5], [w / 2 - 1.2, y + d / 4 - 0.6, z + 1.0])
     return body
+
+
+# ================================================================== the Raquette (house 110)
+# After Sagamore, Raquette Lake, New York (1897, William West Durant), the great camp lodge: a
+# Swiss-chalet log lodge three storeys high under a steep front gable whose roof runs far out
+# over the gable front on great log brackets, stacked balconies across that front, a boulder
+# chimney climbing its side; a dining cabin at right angles reached by a covered walk.
+
+def _log_prism(u0, u1, vc, r, w0=0.0, full=False):
+    """A log lying along u from u0 to u1, its axis at height vc: round over the top, its under
+    side cut at 45 degrees so it prints upright with nothing hanging; a half log on the face
+    (from w0 out) or a full one (``full``)."""
+    pts = []
+    for a in np.linspace(-math.pi / 4, 5 * math.pi / 4, 12):
+        pts.append((r * math.cos(a), vc + r * math.sin(a)))
+    pts.append((0.0, vc - r * math.sqrt(2)))
+    prof = poly(pts)
+    if not full:
+        prof = prof ^ rect(0.0, vc - 2 * r, 2 * r, vc + 2 * r)
+    m = M.extrude(prof, u1 - u0)
+    return m.transform(np.array([[0, 0, 1.0, u0], [0, 1.0, 0, 0], [1.0, 0, 0, w0]]))
+
+
+def halflog_raquette(region, datum=0.0, pitch=2.8, L=None, shift=0.0, out=2.2):
+    """The lodge's walls: half-round logs laid up on the face, a chink between each, and at the
+    corners (``L``, the face's length) every other log running out past the corner as a full
+    round log with its end showing (the crossing wall's logs take the other courses: ``shift``
+    0 or 0.5)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    r = pitch / 2 - 0.12
+    logs, ends = [], []
+    k0 = math.floor((v0 - datum) / pitch - shift) - 1
+    for k in range(k0, int((v1 - datum) / pitch - shift) + 2):
+        vc = datum + (k + shift + 0.5) * pitch
+        logs.append(_log_prism(u0 - 1.0, u1 + 1.0, vc, r * 0.92))
+        if L is not None:
+            for a, b in ((-out, 0.2), (L - 0.2, L + out)):
+                # only where the face is dressed the log's whole height (none pokes into a
+                # cornice band, the floor or a joint)
+                test = rect(max(0.0, min(a, L - 1.0)), vc - r * 1.45, min(L, max(b, 1.0)), vc + r)
+                if (test - region).area() < 0.05:
+                    ends.append(_log_prism(a, b, vc, r, w0=-r * 0.95, full=True))
+    reg = M.extrude(region.offset(0.01, MIT, 4.0), 3.0).translate([0, 0, -1.0])
+    out_ = [M.extrude(region, 0.05), union(logs) ^ reg]
+    if ends:
+        out_.append(union(ends))
+    return union(out_)
+
+
+def bark_raquette(region, datum=0.0, seed=0):
+    """The gable's cedar-bark shingles: tall slabs of bark in courses, each slab's surface
+    ridged with the bark's long fibres, the butts uneven."""
+    if region.is_empty():
+        return M()
+    rng = np.random.default_rng(seed)
+    u0, v0, u1, v1 = region.bounds()
+    pitch = 3.2
+    slabs, fib = [], []
+    for j in range(int(math.floor((v0 - datum) / pitch)) - 1, int(math.ceil((v1 - datum) / pitch)) + 1):
+        v = datum + j * pitch
+        u = u0 - rng.uniform(0.0, 3.0)
+        while u < u1 + 1.0:
+            wd = rng.uniform(2.2, 4.0)
+            dv = rng.uniform(-0.3, 0.3)
+            slabs.append(poly([(u + 0.15, v + 0.2 + dv), (u + wd - 0.15, v + 0.2 - dv), (u + wd - 0.15, v + pitch + 0.2), (u + 0.15, v + pitch + 0.2)]))
+            for x in np.arange(u + 0.6, u + wd - 0.4, 0.75):
+                fib.append(rect(x - 0.12, v + 0.4, x + 0.12, v + pitch))
+            u += wd
+    s_ = cs_union(slabs) ^ region
+    out = [M.extrude(region, 0.05), M.extrude(s_, 0.3)]
+    f_ = cs_union(fib) ^ s_.offset(-0.2, MIT, 4.0)
+    if not f_.is_empty():
+        out.append(M.extrude(f_, 0.15).translate([0, 0, 0.29]))
+    return union(out)
+
+
+def foundation_rqboulder(reg, seed=0):
+    """The lodge's footing: round boulders laid up dry, each a low dome, small stones packed
+    between."""
+    rng = np.random.default_rng(seed + 31)
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, 0.1)]
+    v = v0 + 0.2
+    while v < v1 - 1.0:
+        h = rng.uniform(2.2, 3.4)
+        u = u0 + rng.uniform(-1.0, 0.5)
+        while u < u1:
+            wd = rng.uniform(2.6, 4.6)
+            c = (u + wd / 2, min(v + h / 2, v1 - 1.0))
+            ell = poly([(c[0] + wd / 2 * 0.95 * math.cos(a), c[1] + h / 2 * 0.9 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 14, endpoint=False)]) ^ reg
+            if not ell.is_empty():
+                for k, (o_, d_) in enumerate(((0.0, 0.25), (0.35, 0.22), (0.75, 0.18))):
+                    e2 = ell.offset(-o_, RND)
+                    if not e2.is_empty():
+                        out.append(M.extrude(e2, d_).translate([0, 0, 0.1 + sum(dd for _, dd in ((0.0, 0.25), (0.35, 0.22), (0.75, 0.18))[:k]) - 0.01 * k]))
+            u += wd
+        v += h
+    return union(out)
+
+
+TW.FOUNDATION_EXTRA.update(rqboulder=foundation_rqboulder)
+
+
+# ---- cornice ornaments
+def frieze_rqlogends(L, h, b, pitch, margin, pair, half):
+    """The storey joint's frieze: the floor logs' round ends in a row, each with its growth
+    rings, between two half-log rails."""
+    v0, v1 = 0.3, h - 0.3
+    vm = (v0 + v1) / 2
+    r = min((v1 - v0) / 2 - 0.55, 1.4)
+    out = [_st(rect(0.2, v0, L - 0.2, v0 + 0.5) + rect(0.2, v1 - 0.5, L - 0.2, v1), b, 0.35)]
+    sp = 2 * r + 0.8
+    n = max(1, int((L - 0.6) / sp))
+    u0 = (L - (n - 1) * sp) / 2
+    for k in range(n):
+        uc = u0 + k * sp
+        out.append(_st(circle((uc, vm), r, 20), b, 0.55))
+        out.append(_st(circle((uc, vm), r * 0.62, 18) - circle((uc, vm), r * 0.42, 16), b + 0.55, 0.12))
+    return out, []
+
+
+def course_rqtwig(L, h, b, pitch, margin, p):
+    """A twig course: two rails of round twigs with short twigs crossing between them in an X
+    every few millimetres."""
+    out = [_st(rect(0.2, 0.15, L - 0.2, 0.55) + rect(0.2, h - 0.55, L - 0.2, h - 0.15), b, 0.35)]
+    xs = []
+    st_ = 2.2
+    for u in np.arange(0.6, L - 1.6, st_):
+        xs.append(stroke([(u, 0.4), (u + st_ * 0.8, h - 0.4)], 0.4))
+        xs.append(stroke([(u, h - 0.4), (u + st_ * 0.8, 0.4)], 0.4))
+    out.append(_st(_clean(cs_union(xs), 0.15) ^ rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.3))
+    return out
+
+
+def frieze_rqmosaic(L, h, b, pitch, margin, pair, half):
+    """The eave's frieze: Adirondack twig mosaic, split twigs laid in nested diamonds, a
+    sunburst of twigs at each diamond's heart, between rails."""
+    v0, v1 = 0.3, h - 0.3
+    vm = (v0 + v1) / 2
+    H = (v1 - v0) / 2 - 0.4
+    out = [_st(rect(0.2, v0, L - 0.2, v0 + 0.45) + rect(0.2, v1 - 0.45, L - 0.2, v1), b, 0.3)]
+    dw = H * 2.2
+    n = max(1, int((L - 0.6) / dw))
+    u0 = (L - n * dw) / 2
+    tw = []
+    for k in range(n):
+        uc = u0 + dw * (k + 0.5)
+        for sc in (1.0, 0.55):
+            pts = [(uc - dw / 2 * sc, vm), (uc, vm + H * sc), (uc + dw / 2 * sc, vm), (uc, vm - H * sc), (uc - dw / 2 * sc, vm)]
+            tw.append(stroke(pts, 0.42))
+        tw.append(circle((uc, vm), 0.4, 10))
+    out.append(_st(_clean(cs_union(tw), 0.15) ^ rect(0.2, v0, L - 0.2, v1), b, 0.32))
+    return out, []
+
+
+CO.FRIEZE_EXTRA.update(rqlogends=frieze_rqlogends, rqmosaic=frieze_rqmosaic)
+CO.COURSE_EXTRA.update(rqtwig=course_rqtwig)
+
+
+# ---- windows and doors
+def _log_casing(parts, w, h, A=1.4, d=1.2, top=None):
+    """A casing of half logs round an opening, the head log running past the jambs (notched
+    over them), bark lines along each."""
+    X = w / 2 + A
+    hh = h if top is None else top
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * (w / 2), sg * X))
+        parts.append(chamfer_box(x0, -0.2, x1, hh, 0.0, d, c=0.45, square=("v0",)))
+    parts.append(chamfer_box(-X - 1.4, hh - 0.01, X + 1.4, hh + A, 0.0, d + 0.2, c=0.5, bottom=0.6))
+    parts.append(ext(cs_union([rect(x - 0.1, hh + 0.3, x + 0.1, hh + A - 0.3) for x in np.arange(-X - 0.8, X + 0.9, 1.1)]), d + 0.15, d + 0.3))
+    return X
+
+
+def window_rqlower(w=10.0, h=17.0):
+    """The lodge's ground-floor window: a pair of casements of six lights each in a casing of
+    half logs, the head log running past, a sill log."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    b = inner.bounds()
+    bars = cs_union([rect(-0.45, -1.0, 0.45, h + 1.0)] + [rect(x - RIB / 2, -1.0, x + RIB / 2, h + 1.0) for x in (-w / 4, w / 4)] +
+                    [rect(-w, v - RIB / 2, w, v + RIB / 2) for v in (b[1] + (b[3] - b[1]) / 3, b[1] + 2 * (b[3] - b[1]) / 3)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    X = _log_casing(parts, w, h)
+    parts.append(chamfer_box(-X - 0.8, -1.4, X + 0.8, 0.01, 0.0, 1.5, c=0.5, bottom=1.5))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 1.4, -1.4)
+
+
+def window_rqupper(w=9.0, h=15.0):
+    """The upper floors' window: a pair of four-light casements under a little hood of bark
+    shingles on two twig brackets, a log casing."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    bars = cs_union([rect(-0.45, -1.0, 0.45, h + 1.0), rect(-w, h / 2 - RIB / 2, w, h / 2 + RIB / 2)] +
+                    [rect(x - RIB / 2, -1.0, x + RIB / 2, h + 1.0) for x in (-w / 4, w / 4)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    X = _log_casing(parts, w, h, A=1.1, d=1.0)
+    vh = h + 1.1
+    hood = M.hull_points([(x, v, wv) for x in (-X - 1.6, X + 1.6) for (v, wv) in ((vh + 0.6, 0.0), (vh + 2.6, 0.0), (vh + 0.6, 2.6), (vh + 1.0, 2.6))])
+    parts.append(hood)
+    for sg in (-1, 1):
+        x = sg * (X + 0.4)
+        parts.append(ext(stroke([(x, vh - 2.4), (x + sg * 1.6, vh + 0.7)], 0.6), 0.0, 1.0))
+        parts.append(M.hull_points([(x + dx, v, wv) for dx in (-0.3, 0.3) for (v, wv) in ((vh - 2.4, 0.0), (vh - 2.4, 0.5), (vh + 0.7, 0.0), (vh + 0.7, 2.4))]))
+    parts.append(chamfer_box(-X - 0.6, -1.2, X + 0.6, 0.01, 0.0, 1.3, c=0.4, bottom=1.3))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 2.6, -2.4)
+
+
+def door_rqfront(w=12.0, h=24.0):
+    """The lodge's front door: two leaves of boards laid in a chevron, iron straps across, a
+    small square light high in each, in a casing of half logs under a heavy lintel log."""
+    from .colonial import _strap
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    lights = [rect(sg * w / 4 - 1.2, h * 0.68, sg * w / 4 + 1.2, h * 0.68 + 2.8) for sg in (-1, 1)]
+    glass = cs_union(lights)
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(glass, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    parts_s.append(ext(cs_union([lt.offset(0.5, MIT, 4.0) - lt for lt in lights]), -0.65, -0.2))
+    face = plug_cs.offset(-0.5, MIT, 4.0) - glass.offset(0.5, MIT, 4.0)
+    fb = face.bounds()
+    chev = []
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.3, sg * (w / 2 - 0.5)))
+        for v in np.arange(-w, h + w, 1.6):
+            chev.append(stroke([(a, v), (c_, v + sg * (c_ - a) * 0.8)], 0.22))
+    parts_s.append(ext(_clean(face - cs_union(chev), 0.1), -0.65, -0.3))
+    parts_s.append(ext(rect(-0.3, 0.0, 0.3, h - 0.5), -0.65, -0.1))
+    for v in (2.4, h * 0.5, h * 0.68 - 1.6):
+        for sg in (-1, 1):
+            parts_s.append(ext(_strap(sg * (w / 2 - 0.6), sg * 0.6, v) ^ face.offset(0.3, MIT, 4.0), -0.31, -0.08))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    X = _log_casing(parts, w, h, A=1.8, d=1.5)
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + 1.8, 0.0)
+
+
+def door_rqbalcony(w=9.0, h=20.0):
+    """A balcony door: glazed above (six lights) over two boarded panels, in a half-log casing."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    gl = rect(-w / 2 + 1.0, h * 0.42, w / 2 - 1.0, h - 1.0)
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(gl, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(gl, -pl, -pl + O.GLASS))
+    gb = gl.bounds()
+    bars = cs_union([rect(-RIB / 2, gb[1] - 1, RIB / 2, gb[3] + 1)] + [rect(gb[0] - 1, v - RIB / 2, gb[2] + 1, v + RIB / 2)
+                                                                     for v in (gb[1] + (gb[3] - gb[1]) / 3, gb[1] + 2 * (gb[3] - gb[1]) / 3)])
+    parts_s.append(ext(bars ^ gl.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.5, sg * (w / 2 - 1.0)))
+        pan = rect(a, 1.0, c_, h * 0.42 - 1.0)
+        parts_s.append(ext(pan - pan.offset(-0.45, MIT, 4.0), -0.65, -0.2))
+        parts_s.append(ext(cs_union([rect(x - 0.1, 1.5, x + 0.1, h * 0.42 - 1.5) for x in np.arange(a + 0.9, c_ - 0.5, 0.9)]), -0.65, -0.35))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    X = _log_casing(parts, w, h, A=1.2, d=1.1)
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + 1.2, 0.0)
+
+
+# ---- the rustic porch: posts, railings, log brackets; the boulder chimney
+def post_raquette(h, r=1.5, seed=0):
+    """A rustic post: a round cedar log with the bark on (long shallow fissures), a little
+    taper, and two branch stubs cut off short, angled upward (from z = 0 to h)."""
+    rng = np.random.default_rng(seed)
+    body = M.cylinder(h, r, r * 0.9, 20)
+    fis = []
+    for k in range(10):
+        a = 2 * math.pi * k / 10 + rng.uniform(-0.2, 0.2)
+        z0 = rng.uniform(0.5, h * 0.3)
+        fis.append(box([-0.12, -0.12, z0], [0.12, 0.12, z0 + rng.uniform(h * 0.4, h * 0.65)]).translate([r * 0.98, 0, 0]).rotate([0, 0, math.degrees(a)]))
+    body = body - union(fis)
+    for k in range(2):
+        z = h * rng.uniform(0.3, 0.7)
+        a = rng.uniform(0, 360)
+        stub = M.cylinder(1.6, 0.55, 0.45, 12).rotate([0, 45, 0]).translate([r * 0.6, 0, z]).rotate([0, 0, a])
+        body = body + stub
+    return body
+
+
+def rail_raquette(L, h=7.0, t=1.0):
+    """A rustic railing between two posts (u along it, v up, w across, standing on v = 0): a log
+    top rail and a bottom rail with crooked branches crossing between them in a run of Xs, a
+    short upright at each crossing; flat, printed with the frame."""
+    top, bot = rect(0.0, h - 1.2, L, h), rect(0.0, 0.0, L, 0.9)
+    n = max(1, int(round(L / (h * 1.1))))
+    br = []
+    for k in range(n):
+        a, c_ = L * k / n + 0.3, L * (k + 1) / n - 0.3
+        mid = (a + c_) / 2
+        br.append(stroke([(a, 0.8), (mid - 0.4, h * 0.5 + 0.5), (c_, h - 1.1)], 0.6))
+        br.append(stroke([(a, h - 1.1), (mid + 0.4, h * 0.5 - 0.5), (c_, 0.8)], 0.6))
+        br.append(rect(a - 0.3, 0.0, a + 0.3, h))
+    br.append(rect(L - 0.6, 0.0, L, h))
+    return ext(_clean(cs_union([top, bot] + br), 0.15) ^ rect(0.0, 0.0, L, h), -t / 2, t / 2)
+
+
+def bracket_raquette(H=24.0, D=15.0, r=1.5):
+    """A great log bracket under the front overhang (in its plane: y out from the wall, z up,
+    x across = its thickness): a post log down the wall, a knee brace log rising from it to the
+    tip of an outrigger log under the roof, and a curved branch tying the two; flat sided
+    (printed on its side), its faces rounded over to read as logs."""
+    post = rect(0.0, -H, 2 * r, 0.0)
+    arm = rect(0.0, -2 * r, D, 0.0)
+    brace = stroke([(r, -H + 2.0), (D - 2.0, -r)], 2 * r)
+    tie = stroke([(r * 2, -H * 0.55)] + [(r * 2 + (D * 0.5) * t, -H * 0.55 + (H * 0.42) * t ** 0.6) for t in np.linspace(0.1, 1.0, 6)], 1.0)
+    cs = cs_union([post, arm, brace, tie]) ^ rect(0.0, -H, D, 0.0)
+    m = M.extrude(cs.offset(-0.4, RND), 2 * r).translate([0, 0, -r]) + M.extrude(cs, 2 * r - 0.8).translate([0, 0, -r + 0.4])
+    return m.transform(np.array([[0, 0, 1.0, 0], [1.0, 0, 0, 0], [0, 1.0, 0, 0]]))
+
+
+def chimney_raquette(h=110.0, w0=30.0, d0=16.0, w1=16.0, d1=11.0, seed=0, boulders=True):
+    """The great boulder chimney (stands on z = 0, its back on the wall at local y = 0 and
+    running out to +y): a tapering shaft of round fieldstones, each a squashed dome, packed
+    with smaller ones, a flat stone cap; boulders heaped at its foot."""
+    rng = np.random.default_rng(seed)
+    body = M.hull_points([(x, y, z) for z, w, d in ((0.0, w0, d0), (h * 0.45, w0 * 0.78, d0 * 0.9), (h - 2.0, w1, d1))
+                          for x in (-w / 2, w / 2) for y in (0.0, d)])
+    stones = []
+    z = 0.4
+    while z < h - 4.0:
+        f = z / h
+        w = w0 + (w1 - w0) * f
+        d = d0 + (d1 - d0) * f
+        sh = rng.uniform(2.2, 3.6)
+        for face in range(3):
+            if face == 1:
+                u, ul = -w / 2, w
+            else:
+                u, ul = 0.0, d
+            x = u + rng.uniform(-0.5, 1.0)
+            while x < u + ul - 1.0:
+                sw = rng.uniform(2.4, 4.4)
+                cx = x + sw / 2
+                s_ = M.sphere(1.0, 14).scale([sw / 2, 0.75, sh / 2])
+                if face == 1:
+                    pos = [cx, d * 0.96 + 0.02, z + sh / 2]
+                    s_ = s_.translate(pos)
+                elif face == 0:
+                    s_ = s_.rotate([0, 0, 90]).translate([w / 2 * 0.96, cx, z + sh / 2])
+                else:
+                    s_ = s_.rotate([0, 0, 90]).translate([-w / 2 * 0.96, cx, z + sh / 2])
+                stones.append(s_)
+                x += sw
+        z += sh * 0.9
+    stones = union(stones) ^ box([-w0, 0.01, 0.0], [w0, d0 + 3, h])
+    cap = box([-w1 / 2 - 1.2, 0.0, h - 2.0], [w1 / 2 + 1.2, d1 + 1.2, h]) + M.hull_points(
+        [(x, y, h - 2.8) for x in (-w1 / 2, w1 / 2) for y in (0.0, d1)] + [(x, y, h - 2.0) for x in (-w1 / 2 - 1.2, w1 / 2 + 1.2) for y in (0.0, d1 + 1.2)])
+    flue = box([-w1 / 2 + 2.4, 2.2, h - 4.0], [w1 / 2 - 2.4, d1 - 2.2, h + 1.0])
+    out = body + stones + cap - flue
+    if boulders:
+        for k, (bx_, by, br) in enumerate(((-w0 / 2 - 4.0, d0 * 0.4, 6.0), (w0 / 2 + 3.0, d0 * 0.7, 5.0), (-w0 / 4, d0 + 4.0, 5.5))):
+            pts = []
+            for _ in range(22):
+                th = rng.uniform(0, 2 * math.pi)
+                ph = rng.uniform(0.05, math.pi / 2)
+                rr = br * rng.uniform(0.75, 1.05)
+                pts.append((bx_ + rr * math.cos(th) * math.cos(ph) * 1.2, by + rr * math.sin(th) * math.cos(ph), rr * math.sin(ph) * 0.8))
+            for th in np.linspace(0, 2 * math.pi, 8, endpoint=False):
+                pts.append((bx_ + br * 1.15 * math.cos(th), by + br * math.sin(th), 0.0))
+            out = out + M.hull_points(pts)
+        out = out ^ box([-200, 0.0, -1], [200, 200, h + 2])
+    return out
+
+
+def bracket_rqrafter(h, d, t):
+    """The lodge's eave: log rafter ends (side profile), each a log running out under the
+    soffit, its end cut round, a short knee of branch under it back to the wall; solid."""
+    hh = min(h, 2.4)
+    r = min(1.0, hh / 2)
+    beam = rect(0.0, -2 * r, d - r, 0.0)
+    end = circle((d - r, -r), r, 18)
+    knee = stroke([(0.45, -hh + 0.45), (d * 0.55, -2 * r + 0.3)], 0.9)
+    return cs_union([beam, end, knee, rect(0.0, -hh, 0.9, 0.0)]) ^ rect(0.0, -hh - 1.0, d + 1.0, 0.01)
+
+
+TW.BRACKET_EXTRA.update(rqrafter=bracket_rqrafter)
+
+
+def barge_raquette(L, s, W=3.4, t=1.2, finial=6.0):
+    """The front rake's bargeboard (in its plane: u across from the left eave end, v up from
+    the roof's under side there, w out from its back): a board following both rakes, its
+    lower edge bitten in a row of half rounds, a twig course of rails and crossed twigs on
+    its face, a turned pendant dropping from the apex. Back on w = 0; printed on its back."""
+    top = [(0.0, 0.6), (L / 2, s * L / 2 + 0.6), (L, 0.6)]
+    band = poly([(0.0, -W), (L / 2, s * L / 2 - W * 1.15), (L, -W), (L, 0.6), (L / 2, s * L / 2 + 0.6), (0.0, 0.6)])
+    bites = []
+    ang = math.atan(s)
+    Ls = math.hypot(L / 2, s * L / 2)
+    for side in (-1, 1):
+        for a in np.arange(2.4, Ls - 3.0, 2.6):
+            x = a * math.cos(ang)
+            u = x if side < 0 else L - x
+            v = s * x - W
+            bites.append(circle((u, v), 0.8, 14))
+    cs = band - cs_union(bites)
+    drop = cs_union([rect(L / 2 - 1.0, s * L / 2 - W - finial + 1.2, L / 2 + 1.0, s * L / 2), circle((L / 2, s * L / 2 - W - finial + 1.2), 1.2, 18),
+                     poly([(L / 2 - 1.4, s * L / 2 - W - 0.6), (L / 2 + 1.4, s * L / 2 - W - 0.6), (L / 2, s * L / 2 - W - 2.4)])])
+    cs = cs + drop
+    # the twigs: two thin rails along each rake, crossed twigs between
+    tw = []
+    for side in (-1, 1):
+        pts = []
+        for a in np.arange(0.8, Ls - 1.6, 2.2):
+            for b0, b1 in ((-W + 1.3, -0.5), (-0.5, -W + 1.3)):
+                p0 = (a * math.cos(ang), a * math.sin(ang) + b0)
+                p1 = ((a + 1.8) * math.cos(ang), (a + 1.8) * math.sin(ang) + b1)
+                if side > 0:
+                    p0, p1 = (L - p0[0], p0[1]), (L - p1[0], p1[1])
+                tw.append(stroke([p0, p1], 0.4))
+        for b in (-0.4, -W + 1.2):
+            q0, q1 = (0.3, b), (L / 2, s * L / 2 + b)
+            if side > 0:
+                q0 = (L - 0.3, b)
+            tw.append(stroke([q0, q1], 0.45))
+    tw = _clean(cs_union(tw), 0.15) ^ cs.offset(-0.3, MIT, 4.0)
+    out = ext(cs, 0.0, t)
+    if not tw.is_empty():
+        out = out + ext(tw, t - 0.01, t + 0.4)
+    out = out + ext(circle((L / 2, s * L / 2 - W - finial + 1.2), 0.7, 14), t - 0.01, t + 0.5)
+    return out

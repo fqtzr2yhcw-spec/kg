@@ -362,6 +362,22 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 v += p_
                 j += 1
             tex = M.extrude(cs_union(rows) ^ clip, d) if rows else M()
+        elif shape == "rqslab":           # hand-split slab shakes: wide and thick, each butt cut on a slant, the slants
+            b = loc.bounds()              # alternating so the butt line runs in a zigzag (the Raquette)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(int(abs(b[0]) * 11 + abs(b[2]) * 3 + i * 7) % 977)
+            layers = {0: [], 1: []}
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                u = b[0] - rng.uniform(0.0, 3.0)
+                k = 0
+                while u < b[2]:
+                    wd = rng.uniform(2.4, 3.8)
+                    dv = 0.45 if k % 2 == 0 else -0.45
+                    layers[k % 2].append(poly([(u + 0.12, v + 0.45 + dv), (u + wd - 0.12, v + 0.45 - dv), (u + wd - 0.12, v + pitch), (u + 0.12, v + pitch)]))
+                    u += wd
+                    k += 1
+            tex = union([M.extrude(cs_union(cs_) ^ clip, d + 0.1 * k) for k, cs_ in layers.items() if cs_])
         elif shape == "cypress":          # hand-riven cypress shakes: long boards of random width in courses, their butts
             b = loc.bounds()              # a little out of line, some split, two thicknesses (the Piney)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
