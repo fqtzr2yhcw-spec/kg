@@ -292,7 +292,7 @@ def build(kit=None):
     # --- the pens: one shell with the breezeway's floor; the gables over the end walls
     rf = G.gabled_roof([(RPTS, [0, 2], SL)], Z_EAVE, D_EAVE,
                        [dict(p0=(X1, Y0), p1=(X1, Y1), slope=SL), dict(p0=(X0, Y1), p1=(X0, Y0), slope=SL)],
-                       texture="riven", tex_kw=dict(pitch=2.4, d=0.35), skin=1.6, rake=RAKE,
+                       texture="cypress", tex_kw=dict(pitch=2.4, d=0.35), skin=1.6, rake=RAKE,
                        inner_cs=offset(poly(RPTS), -3.0), fascia=FASCIA, hollow=2.4)
     gables = [(PENE, 1, _gable_cs(rf["walls"][0], FASCIA).translate((0.0, Z_EAVE - ZS))),
               (PENW, 3, _gable_cs(rf["walls"][1], FASCIA).translate((0.0, Z_EAVE - ZS)))]
@@ -368,7 +368,7 @@ def build(kit=None):
     # --- the kitchen
     rk = G.gabled_roof([(KITB.pts, [1, 3], SLK)], ZK_EAVE, DK_EAVE,
                        [dict(p0=(KX0, KY0), p1=(KX1, KY0), slope=SLK), dict(p0=(KX1, KY1), p1=(KX0, KY1), slope=SLK)],
-                       texture="riven", tex_kw=dict(pitch=2.4, d=0.35), skin=1.6, rake=2.2,
+                       texture="cypress", tex_kw=dict(pitch=2.4, d=0.35), skin=1.6, rake=2.2,
                        inner_cs=offset(KITB.cs, -3.0), fascia=1.2, hollow=2.2)
     kg = [(KITB, 0, _gable_cs(rk["walls"][0], 1.2).translate((0.0, ZK_EAVE - ZS))), (KITB, 2, _gable_cs(rk["walls"][1], 1.2).translate((0.0, ZK_EAVE - ZS)))]
     kband = slab(offset(KITB.cs, 8.0), ZEK - LEDGE - 0.6, ZWK + 0.01)
@@ -416,7 +416,7 @@ def build(kit=None):
     wpts = [(WX0, Y1 + 0.4), (WX1, Y1 + 0.4), (WX1, WY1), (WX0, WY1)]
     rw = G.gabled_roof([(wpts, [1, 3], 0.6)], ZWP + 1.0, 1.4, [dict(p0=(WX0, Y1 + 0.4), p1=(WX1, Y1 + 0.4), slope=0.6),
                                                            dict(p0=(WX1, WY1), p1=(WX0, WY1), slope=0.6)],
-                       texture="riven", tex_kw=dict(pitch=2.2, d=0.3), skin=1.2, rake=1.6, inner_cs=offset(poly(wpts), -1.6),
+                       texture="cypress", tex_kw=dict(pitch=2.2, d=0.3), skin=1.2, rake=1.6, inner_cs=offset(poly(wpts), -1.6),
                        fascia=1.0, hollow=1.6)
     wroof = rw["body"] + rw["tex"] + rw["skins"] + rw["skin_tex"]
     for wl in rw["walls"]:                                       # board-and-batten gable ends

@@ -3,9 +3,9 @@ the new-layouts batch (hoarch.novel2), after the camelback doubles of the Faubou
 Bywater (1880s-90s).
 
 Its section is the new thing: one storey at the street and two at the back. The front house,
-two dwellings side by side each one room wide and five deep, sits under a hipped roof of 5V
-crimped tin; behind, the "camelback" rises a full second storey under its own higher hip (built
-so, the house was taxed as one storey). The double front: a door, two floor-length windows and
+two dwellings side by side each one room wide and five deep, sits under a hipped slate roof
+banded with pointed courses; behind, the "camelback" rises a full second storey under its own
+higher hip (built so, the house was taxed as one storey). The double front: a door, two floor-length windows and
 a door, every one under an Italianate hood on scroll consoles, the windows with louvered
 shutters, behind a deep gallery on four Eastlake turned columns with a spindle frieze and fan
 brackets, turned balusters and two flights of steps; the street front's boards channelled like
@@ -203,10 +203,10 @@ def build(kit=None):
     t0 = time.time()
 
     # --- the roofs first (the camel's siding keeps clear of the front one)
-    rf = G.gabled_roof([(FPTS, [0, 1, 3], S1R)], Z_EAVE1, D_EAVE1, [], texture="crimp", tex_kw=dict(seam_pitch=3.4, d=0.3),
+    rf = G.gabled_roof([(FPTS, [0, 1, 3], S1R)], Z_EAVE1, D_EAVE1, [], texture="bandslate", tex_kw=dict(pitch=1.5, wtab=2.0, d=0.33),
                        skin=1.6, inner_cs=offset(poly(FPTS), -3.0), fascia=FASCIA, hollow=2.4)
     froof = rf["body"] + rf["tex"]
-    rc = G.gabled_roof([(CAMEL.pts, [0, 1, 2, 3], S2R)], Z_EAVE2, D_EAVE2, [], texture="crimp", tex_kw=dict(seam_pitch=3.4, d=0.3),
+    rc = G.gabled_roof([(CAMEL.pts, [0, 1, 2, 3], S2R)], Z_EAVE2, D_EAVE2, [], texture="bandslate", tex_kw=dict(pitch=1.5, wtab=2.0, d=0.33),
                        skin=1.6, inner_cs=offset(CAMEL.cs, -3.0), fascia=FASCIA, hollow=2.4)
     croof = rc["body"] + rc["tex"]
     camel_env = CAMEL.solid(grow=0.15, dz0=-0.2, dz1=0.0)
