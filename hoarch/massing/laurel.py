@@ -1,11 +1,12 @@
 """Massing 113: a water-powered gristmill with the miller's house (after Mabry Mill, Blue
 Ridge Parkway, Virginia, about 1910, and the mountain mills like it).
 
-New: water and machinery. The base is a stream bank with the creek cut down into it; the mill
-stands on the bank with its end wall over the creek, an overshot wheel turning in a stone
-wheel pit, fed over the top by a wooden flume carried on trestles from upstream; a plank
-footbridge crosses the creek; the miller's cabin with its porch and stone chimney sits back on
-the bank. Front faces -y.
+New: water and machinery. The creek runs across the front of the base, cut down below the
+bank; the mill stands on the bank at the front corner with its front wall at the water, an
+overshot wheel turning in the creek against it, fed over the top by a wooden flume carried on
+trestles along the creek from upstream; a plank footbridge crosses to the miller's cabin, which
+sits back on the bank with its porch and stone chimney. Front faces -y (revised: the wheel and
+flume to the front corner, the owner's choice).
 """
 import math
 import sys
@@ -17,73 +18,73 @@ import numpy as np
 
 OUT = sys.argv[2]
 m = Model()
-ZB, ZW, ZBED = 16.0, 7.0, 3.0                    # bank top, water surface, creek bed
-CX0, CX1 = 168.0, 214.0                          # the creek
+ZB, ZW, ZBED, ZFAR = 16.0, 7.0, 3.0, 10.0          # bank top, water, creek bed, the far (front) bank
+CY0, CY1 = 12.0, 52.0                              # the creek, across the front
 
-# the ground: the bank on both sides of the creek, stone walls lining the wheel pit
-m.add("base", bx(0.0, 10.0, 0.0, CX0, 200.0, ZB) + bx(CX1, 10.0, 0.0, 240.0, 200.0, ZB))
-m.add("base", bx(CX0, 10.0, 0.0, CX1, 200.0, ZBED))
-m.add("glass", bx(CX0, 10.0, ZBED, CX1, 200.0, ZW))                             # the water
-m.add("chimney", bx(CX0, 72.0, ZBED, CX0 + 4.0, 128.0, ZB + 2.0) + bx(CX0 + 22.0, 72.0, ZBED, CX0 + 26.0, 128.0, ZB + 2.0))
-for i, (c, r) in enumerate((((CX1 + 4, 40.0), 6.0), ((CX0 + 6, 160.0), 5.0), ((CX1 - 3, 176.0), 7.0), ((CX0 + 3, 30.0), 4.0))):
+# the ground: the bank behind the creek, the low far bank in front, stone walls at the wheel
+m.add("base", bx(0.0, CY1, 0.0, 240.0, 200.0, ZB) + bx(0.0, 0.0, 0.0, 240.0, CY0, ZFAR))
+m.add("base", bx(0.0, CY0, 0.0, 240.0, CY1, ZBED))
+m.add("glass", bx(0.0, CY0, ZBED, 240.0, CY1, ZW))                               # the water
+for i, (c, r) in enumerate((((30.0, 20.0), 6.0), ((110.0, 46.0), 5.0), ((226.0, 30.0), 7.0), ((92.0, 16.0), 4.0))):
     m.add("base", boulder(c, r, squash=0.7, seed=20 + i).translate([0, 0, ZBED]))
 
-# the mill: two storeys of boards on the bank, its gable to the creek
-MX0, MX1, MY0, MY1 = 92.0, CX0, 70.0, 130.0
+# the mill on the bank at the front corner, its front wall at the creek, gable ends east and west
+MX0, MX1, MY0, MY1 = 146.0, 218.0, CY1, 116.0
 block(m, MX0, MY0, MX1, MY1, ZB, gable_x(MY0, MY1, ZB + 62.0, 0.75), over=4.0, rake=5.0)
-m.add("base", bx(MX0 - 1, MY0 - 1, ZB - 2, MX1, MY1 + 1, ZB + 2))
-m.add("upper", bx(MX0 + 14, MY0 - 12, ZB, MX0 + 40, MY0, ZB + 30))               # a loading shed on the front
-m.add("roof", skin_roof([(MX0 + 12, MY0 - 14), (MX0 + 42, MY0 - 14), (MX0 + 42, MY0 + 1), (MX0 + 12, MY0 + 1)],
-                        [[((0.0, MY0 - 14), (0, 1), ZB + 30.0, 0.4)]], th=1.6))
-for x in (MX0 + 8, MX1 - 22):
+m.add("chimney", bx(MX0, CY1 - 4.0, ZBED, MX1, CY1, ZB + 2.0))                    # the stone wall at the water
+m.add("upper", bx(MX0 - 12, MY0 + 18, ZB, MX0, MY0 + 46, ZB + 30))              # a loading shed on the west end
+m.add("roof", skin_roof([(MX0 - 14, MY0 + 16), (MX0 + 1, MY0 + 16), (MX0 + 1, MY0 + 48), (MX0 - 14, MY0 + 48)],
+                        [[((MX0 - 14, 0.0), (1, 0), ZB + 30.0, 0.4)]], th=1.6))
+for x in (MX0 + 8, MX1 - 18):
     m.add("glass", win_xz(x, x + 9, ZB + 10, ZB + 24, MY0))
     m.add("glass", win_xz(x, x + 9, ZB + 40, ZB + 54, MY0))
-m.add("glass", win_xz(MX0 + 20, MX0 + 34, ZB, ZB + 24, MY0 - 12))
-m.add("glass", win_yz(94.0, 104.0, ZB + 44, ZB + 56, MX1, out=1))
-m.add("glass", win_yz(94.0, 106.0, ZB + 72, ZB + 82, MX1, out=1))
+m.add("glass", win_yz(MY0 + 22, MY0 + 42, ZB, ZB + 24, MX0 - 12, out=-1))
+m.add("glass", win_yz(MY0 + 26, MY0 + 36, ZB + 40, ZB + 52, MX0, out=-1))
 
-# the overshot wheel in the pit, its axle into the mill
-WC, WR, WX0, WX1 = (100.0, ZBED + 30.0), 28.0, CX0 + 6.0, CX0 + 18.0
-
-
-def xaxis_cyl(h, r0, r1, seg=64):
-    return M.cylinder(h, r0, r1, seg).rotate([0, 90, 0])
+# the overshot wheel in the creek against the mill's front, its axle into the wall
+WX, WR = 196.0, 26.0
+WZ, WY0, WY1 = ZBED + 28.0, CY1 - 16.0, CY1 - 4.0
 
 
-wheel = xaxis_cyl(WX1 - WX0, WR, WR) - xaxis_cyl(WX1 - WX0 + 2, WR - 5, WR - 5).translate([-1, 0, 0])
+def yaxis_cyl(h, r0, r1, seg=64):
+    return M.cylinder(h, r0, r1, seg).rotate([-90, 0, 0])
+
+
+wheel = yaxis_cyl(WY1 - WY0, WR, WR) - yaxis_cyl(WY1 - WY0 + 2, WR - 5, WR - 5).translate([0, -1, 0])
 for k in range(8):
-    wheel = wheel + M.cube([WX1 - WX0, 2.4, 2 * WR - 4]).translate([0, -1.2, -WR + 2]).rotate([22.5 * k, 0, 0])
-wheel = wheel + xaxis_cyl(WX1 - WX0 + 10, 4.0, 4.0).translate([-8, 0, 0])
-m.add("trim", wheel.translate([WX0, WC[0], WC[1]]))
-# the flume on trestles, from upstream (the back) to just over the wheel's top
-FZ = WC[1] + WR + 4.0
-m.add("deck", bx(WX0 - 1, WC[0] - 2, FZ, WX1 + 1, 200.0, FZ + 2.0) +
-      bx(WX0 - 1, WC[0] - 2, FZ, WX0 + 0.5, 200.0, FZ + 6.0) + bx(WX1 - 0.5, WC[0] - 2, FZ, WX1 + 1, 200.0, FZ + 6.0))
-for y in np.arange(WC[0] + 34, 200.0, 22.0):
-    for x in (WX0 + 0.5, WX1 - 0.5):
+    wheel = wheel + M.cube([2.4, WY1 - WY0, 2 * WR - 4]).translate([-1.2, 0, -WR + 2]).rotate([0, 22.5 * k, 0])
+wheel = wheel + yaxis_cyl(WY1 - WY0 + 8, 4.0, 4.0)
+m.add("trim", wheel.translate([WX, WY0, WZ]))
+# the flume along the creek from upstream (the west) on trestles to just over the wheel's top
+FZ = WZ + WR + 4.0
+m.add("deck", bx(0.0, WY0 - 1, FZ, WX + 2, WY1 + 1, FZ + 2.0) + bx(0.0, WY0 - 1, FZ, WX + 2, WY0 + 0.5, FZ + 6.0) +
+      bx(0.0, WY1 - 0.5, FZ, WX + 2, WY1 + 1, FZ + 6.0))
+for x in np.arange(12.0, WX - 30, 24.0):
+    for y in (WY0 + 0.5, WY1 - 0.5):
         m.add("deck", bx(x - 1.0, y - 1.0, ZBED, x + 1.0, y + 1.0, FZ))
-    m.add("deck", bx(WX0 - 1, y - 0.8, FZ - 8, WX1 + 1, y + 0.8, FZ - 6))
+    m.add("deck", bx(x - 0.8, WY0 - 1, FZ - 8, x + 0.8, WY1 + 1, FZ - 6))
 
-# the footbridge across the creek in front
-m.add("deck", bx(CX0 - 6, 34.0, ZB - 1.0, CX1 + 6, 48.0, ZB + 0.4))
-rail_x(m, CX0 - 6, CX1 + 6, 34.6, ZB + 0.4, h=6.0)
-rail_x(m, CX0 - 6, CX1 + 6, 47.4, ZB + 0.4, h=6.0)
-posts(m, [(x, y) for x in (CX0 + 12, CX1 - 12) for y in (36.0, 46.0)], ZBED, ZB - 1.0, r=1.4, mat="deck")
+# the footbridge across the creek to the cabin
+m.add("deck", bx(56.0, 0.0, ZFAR - 1.0, 70.0, CY1 + 4, ZB + 0.4).warp(lambda v: v) if False else
+      M.hull_points([(x, y, z) for x in (56.0, 70.0) for y, z in ((2.0, ZFAR), (CY1 + 4, ZB), (2.0, ZFAR + 1.4), (CY1 + 4, ZB + 1.4))]))
+for x in (56.6, 69.4):
+    m.add("trim", M.hull_points([(x + dx, y, z) for dx in (-0.4, 0.4) for y, z in ((2.0, ZFAR + 6.4), (CY1 + 4, ZB + 6.4), (2.0, ZFAR + 7.2), (CY1 + 4, ZB + 7.2))]))
+posts(m, [(x, y) for x in (57.0, 69.0) for y in (20.0, 40.0)], ZBED, ZFAR + 3.0, r=1.4, mat="deck")
 
 # the miller's cabin back on the bank: a storey and a half, porch, stone end chimney
-HX0, HX1, HY0, HY1 = 18.0, 78.0, 118.0, 166.0
+HX0, HX1, HY0, HY1 = 26.0, 90.0, 120.0, 168.0
 block(m, HX0, HY0, HX1, HY1, ZB, gable_x(HY0, HY1, ZB + 30.0, 0.9), over=3.5, rake=3.0)
 m.add("deck", bx(HX0, HY0 - 14, ZB - 1.0, HX1, HY0, ZB + 0.4))
 posts(m, [(x, HY0 - 12.5) for x in np.linspace(HX0 + 2, HX1 - 2, 4)], ZB, ZB + 26.0, r=1.3)
 m.add("roof", skin_roof([(HX0 - 2, HY0 - 16), (HX1 + 2, HY0 - 16), (HX1 + 2, HY0 + 1), (HX0 - 2, HY0 + 1)],
                         [[((0.0, HY0 - 16), (0, 1), ZB + 25.0, 0.35)]], th=1.6))
-m.add("chimney", bx(HX0 - 9, 134.0, ZB, HX0 + 1, 150.0, ZB + 28) + bx(HX0 - 7, 137.0, ZB + 28, HX0 + 1, 147.0, ZB + 62))
-m.add("glass", win_xz(HX0 + 24, HX0 + 34, ZB, ZB + 22, HY0))
+m.add("chimney", bx(HX0 - 9, 136.0, ZB, HX0 + 1, 152.0, ZB + 28) + bx(HX0 - 7, 139.0, ZB + 28, HX0 + 1, 149.0, ZB + 62))
+m.add("glass", win_xz(HX0 + 26, HX0 + 36, ZB, ZB + 22, HY0))
 for x in (HX0 + 8, HX1 - 16):
     m.add("glass", win_xz(x, x + 9, ZB + 6, ZB + 20, HY0))
-m.add("glass", win_yz(130.0, 140.0, ZB + 34, ZB + 44, HX1, out=1))
-# a millstone leaning by the door, a path from the cabin to the mill
-m.add("base", xaxis_cyl(3.0, 9.0, 9.0).rotate([0, 0, 90]).rotate([0, 0, 0]).translate([MX0 + 50, MY0 - 8, ZB + 9.0]))
-m.add("deck", bx(HX1 - 10, 60.0, ZB, MX0 + 20, 70.0, ZB + 0.6) + bx(HX1 - 10, 60.0, ZB, HX1, HY0 - 14, ZB + 0.6))
+m.add("glass", win_yz(132.0, 142.0, ZB + 34, ZB + 44, HX1, out=1))
+# paths: footbridge to the cabin and along the bank to the mill; a millstone by the mill door
+m.add("deck", bx(57.0, CY1 + 4, ZB, 69.0, HY0 - 14, ZB + 0.6) + bx(69.0, 76.0, ZB, MX0 - 12, 86.0, ZB + 0.6))
+m.add("base", yaxis_cyl(3.0, 9.0, 9.0).rotate([0, 0, 90]).translate([MX0 - 16, MY0 + 10, ZB + 9.0]))
 lo, hi = m.save(OUT + ".npz", OUT + "_palette.json")
 print("bbox", np.round(lo, 1), np.round(hi, 1), "size", np.round(hi - lo, 1))

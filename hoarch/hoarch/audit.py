@@ -7,8 +7,8 @@ Per building it reports:
   size       the plan's long and short sides (a house should fill most of the 256 mm bed)
   windows    lights taller than 70% of their storey, and facade runs where the frames take more
              than half the wall (windows must not fill a storey or a wall)
-  towers     tower and turret storeys with lights on more than half the faces, and lights
-             under 6 mm wide (not too many, not tiny)
+  towers     tower and turret storeys whose lights take more than 70% of the way round (a ring
+             of glass), and lights under 6 mm wide (realistic, not tiny)
   cornices   a cornice at every level (a joint cornice on two-storey houses, an eave cornice),
              and none of its designs shared with another building
   colours    at most one colour change per part (from the export)
@@ -122,7 +122,8 @@ def audit(name, all_specs):
     n_win = len(ops)
     rep["windows"].append(f"{n_win} windows, max {max((sum(r.values()) for r in runs.values()), default=0):.0f} mm of "
                           "frames on one wall")
-    # tower storeys: lights on more than half the faces, or tiny lights
+    # tower storeys: a ring of glass (lights most of the way round), or tiny lights; otherwise
+    # windows are as a real tower would have them
     for b in _blocks(m):
         if not any(t in b.name for t in ("tower", "turret")):
             continue
@@ -131,9 +132,10 @@ def audit(name, all_specs):
         for o in ops:
             if o.block is b:
                 per[round(o.v0)].append(o.spec["cut"].bounds()[2] - o.spec["cut"].bounds()[0])
+        perim = sum(f.L for f in b.facades())
         for v0, ws in sorted(per.items()):
-            if len(ws) > faces / 2:
-                rep["FLAG"].append(f"{b.name}: {len(ws)} lights on {faces} faces at +{v0} mm (more than half)")
+            if sum(ws) > 0.7 * perim:
+                rep["FLAG"].append(f"{b.name}: lights {sum(ws):.0f} of {perim:.0f} mm round at +{v0} mm (a ring of glass)")
             if min(ws) < 6.0:
                 rep["FLAG"].append(f"{b.name}: lights {min(ws):.1f} mm wide at +{v0} mm (tiny)")
         rep["towers"].append(f"{b.name}: " + ", ".join(f"{len(ws)} lights at +{v0}" for v0, ws in sorted(per.items())))

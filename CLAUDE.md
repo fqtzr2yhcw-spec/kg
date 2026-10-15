@@ -69,7 +69,9 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
 - No white picket fences.
 - Towers and cupolas:
   - Big enough that their windows aren't tiny.
-  - Not too many windows (a tower top was "too many windows").
+  - Windows as a real tower of that style would have them, realistic in number, size and
+    shape (the owner, October 2026). The Rosecroft's crown, a ring of glass, was the one that
+    had too many.
   - A porch round a tower is liked.
 - Layouts must be new too, not just the trim:
   - Start each new house from a real building's plan and massing: plan shape, roof form,
