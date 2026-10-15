@@ -362,6 +362,20 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 v += p_
                 j += 1
             tex = M.extrude(cs_union(rows) ^ clip, d) if rows else M()
+        elif shape == "sbshingle":        # sawn cedar shingles in even courses, each tapering (a thick butt, a thinner
+            b = loc.bounds()              # upper part), the joints breaking course to course (the Sebago)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(int(abs(b[0]) * 7 + abs(b[2]) * 5 + i * 13) % 991)
+            butts, bodies = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                u = b[0] - (0.9 if j % 2 else 0.0) - rng.uniform(0.0, 0.6)
+                while u < b[2]:
+                    wd = rng.uniform(1.7, 3.1)
+                    butts.append(rect(u + 0.08, v, u + wd - 0.08, v + pitch * 0.42))
+                    bodies.append(rect(u + 0.08, v + pitch * 0.42 - 0.01, u + wd - 0.08, v + pitch))
+                    u += wd
+            tex = union([M.extrude(cs_union(butts) ^ clip, d), M.extrude(cs_union(bodies) ^ clip, d * 0.6)])
         elif shape == "rqslab":           # hand-split slab shakes: wide and thick, each butt cut on a slant, the slants
             b = loc.bounds()              # alternating so the butt line runs in a zigzag (the Raquette)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)

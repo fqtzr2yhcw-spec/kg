@@ -3429,3 +3429,613 @@ def barge_raquette(L, s, W=3.4, t=1.2, finial=6.0):
         out = out + ext(tw, t - 0.01, t + 0.4)
     out = out + ext(circle((L / 2, s * L / 2 - W - finial + 1.2), 0.7, 14), t - 0.01, t + 0.5)
     return out
+
+
+# ================================================================== the Sebago (house 111)
+# After the connected farms of Maine and New Hampshire ("big house, little house, back house,
+# barn", 1840s-80s): a two-storey Greek Revival big house with its pedimented gable to the
+# road, a storey-and-a-half kitchen ell with a porch onto the dooryard, a woodshed open in two
+# arched bays, and an English barn with its long side to the road and great sliding doors,
+# each lower and set further back than the last, all joined end to end.
+
+def clap_sebago(region, datum=0.0, L=None, ends=(True, True), pw=4.4, panel=True, base=False, cap=False):
+    """The farm's clapboards: narrow feather-edged boards in 1.25 mm courses, a little drip
+    under each butt. At the corners (``L``, the face's length) a Greek Revival pilaster (``pw``
+    wide, ``panel``: a sunk panel; ``base``: a plinth at the foot; ``cap``: a capital of three
+    fillets at the top), or with panel=False a plain corner board. Where a corner is free
+    (``ends``) the board runs past it by its depth, so the two faces' boards close the corner."""
+    from . import skins as SK
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    body = region
+    out = []
+    dp = 0.8 if panel else 0.6
+    if L is not None:
+        pil = (rect(-1.0, v0 - 1, pw, v1 + 1) + rect(L - pw, v0 - 1, L + 1.0, v1 + 1)) ^ region
+        for k, (a, b) in enumerate(((-dp, 0.0), (L, L + dp))):
+            if not ends[k]:
+                continue
+            band = region ^ (rect(0.0, v0 - 1, 0.6, v1 + 1) if k == 0 else rect(L - 0.6, v0 - 1, L, v1 + 1))
+            if not band.is_empty():
+                bb = band.bounds()
+                pil = pil + rect(a, bb[1], b, bb[3])
+        body = region - pil.offset(0.1, MIT, 4.0)
+        if not pil.is_empty():
+            p_ = M.extrude(pil, dp)
+            pb = pil.bounds()
+            if panel:
+                vlo, vhi = pb[1] + (2.8 if base else 0.9), pb[3] - (3.2 if cap else 0.9)
+                if vhi > vlo + 1.0:
+                    sunk = cs_union([rect(0.9, vlo, pw - 0.9, vhi), rect(L - pw + 0.9, vlo, L - 0.9, vhi)]) ^ pil.offset(-0.9, MIT, 4.0)
+                    if not sunk.is_empty():
+                        p_ = p_ - M.extrude(sunk, 1.0).translate([0, 0, dp - 0.3])
+                if base:
+                    p_ = p_ + M.extrude(pil ^ rect(-5, pb[1] - 1, L + 5, pb[1] + 2.2), dp + 0.35)
+                if cap:
+                    for dv, dd in ((3.0, 0.15), (2.0, 0.3), (1.0, 0.45)):
+                        p_ = p_ + M.extrude((pil ^ rect(-5, pb[3] - dv, L + 5, pb[3] - dv + 0.8)).offset(dd if dd < 0.4 else 0.4, MIT, 4.0) ^
+                                            rect(-5, pb[3] - dv, L + 5, pb[3] - dv + 0.8), dp + dd)
+            out.append(p_)
+    if not body.is_empty():
+        out.append(SK._lap(body, 1.25, [(0.0, 0.2), (0.12, 0.42), (1.24, 0.1)], datum))
+    return union(out)
+
+
+def flush_sebago(region, datum=0.0, pitch=1.8):
+    """The pediment's tympanum: flush boards laid level, a V joint between each."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = M.extrude(region, 0.35)
+    gr = cs_union([rect(u0 - 1, v - 0.13, u1 + 1, v + 0.13) for v in np.arange(datum + math.ceil((v0 - datum) / pitch) * pitch, v1, pitch)])
+    if not gr.is_empty():
+        out = out - M.extrude(gr, 1.0).translate([0, 0, 0.12])
+    return out
+
+
+def batten_sebago(region, datum=0.0, L=None, ends=(True, True), pitch=3.2):
+    """The barn's boards: wide vertical boards, a batten over every joint, plain corner boards
+    (closing the corner where it is free)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    body = region
+    out = []
+    if L is not None:
+        cb = (rect(-1.0, v0 - 1, 2.6, v1 + 1) + rect(L - 2.6, v0 - 1, L + 1.0, v1 + 1)) ^ region
+        for k, (a, b) in enumerate(((-0.7, 0.0), (L, L + 0.7))):
+            band = region ^ (rect(0.0, v0 - 1, 0.6, v1 + 1) if k == 0 else rect(L - 0.6, v0 - 1, L, v1 + 1))
+            if ends[k] and not band.is_empty():
+                bb = band.bounds()
+                cb = cb + rect(a, bb[1], b, bb[3])
+        body = region - cb.offset(0.1, MIT, 4.0)
+        if not cb.is_empty():
+            out.append(M.extrude(cb, 0.7))
+    if not body.is_empty():
+        out.append(M.extrude(body, 0.3))
+        bats = cs_union([rect(u - 0.45, v0 - 1, u + 0.45, v1 + 1) for u in np.arange(math.floor(u0 / pitch) * pitch, u1 + pitch, pitch)]) ^ body
+        joints = cs_union([rect(u + pitch / 2 - 0.1, v0 - 1, u + pitch / 2 + 0.1, v1 + 1) for u in np.arange(math.floor(u0 / pitch) * pitch, u1 + pitch, pitch)])
+        out[-1] = out[-1] - M.extrude(joints, 1.0).translate([0, 0, 0.15])
+        if not bats.is_empty():
+            out.append(M.extrude(bats, 0.65))
+    return union(out)
+
+
+def foundation_sbgranite(reg, seed=0):
+    """Split granite: long blocks in courses, their faces left rough (a raised field), the
+    feather-and-wedge drill marks showing along the top edge of the top course."""
+    rng = np.random.default_rng(seed + 57)
+    u0, v0, u1, v1 = reg.bounds()
+    H = v1 - v0
+    n = max(1, int(round(H / 3.8)))
+    ch = H / n
+    out = [M.extrude(reg, 0.1)]
+    for j in range(n):
+        vb = v0 + j * ch
+        u = u0 - rng.uniform(0.0, 6.0)
+        while u < u1:
+            Lb = rng.uniform(7.0, 14.0)
+            blk = rect(u + 0.15, vb + 0.15, u + Lb - 0.15, vb + ch - 0.15) ^ reg
+            if not blk.is_empty() and blk.area() > 1.0:
+                s_ = M.extrude(blk, 0.35)
+                f_ = blk.offset(-0.45, MIT, 4.0)
+                if not f_.is_empty():
+                    s_ = s_ + M.extrude(f_, 0.55)
+                if j == n - 1:
+                    marks = cs_union([rect(x - 0.17, vb + ch - 1.0, x + 0.17, vb + ch) for x in np.arange(u + 0.9, u + Lb - 0.6, 1.1)])
+                    s_ = s_ - M.extrude(marks, 1.0).translate([0, 0, 0.3])
+                out.append(s_)
+            u += Lb
+    return union(out)
+
+
+TW.FOUNDATION_EXTRA.update(sbgranite=foundation_sbgranite)
+
+
+# ---- cornice ornaments
+def course_sbfascia(L, h, b, pitch, margin, p):
+    """A Greek Revival architrave: two plain fasciae, the upper prouder, a bead over them."""
+    return [_st(rect(0.2, 0.15, L - 0.2, h * 0.45), b, 0.3), _st(rect(0.2, h * 0.45, L - 0.2, h - 0.5), b, 0.5),
+            _st(rect(0.2, h - 0.5, L - 0.2, h - 0.15), b, 0.75)]
+
+
+def course_sbreel(L, h, b, pitch, margin, p):
+    """Bead and reel on a fillet: long beads, a pair of thin reels between each."""
+    vm = h / 2
+    ry = min(0.6, h / 2 - 0.3)
+    out = [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.25)]
+    it = []
+    u = 0.6
+    while u < L - 1.6:
+        it.append(poly([(u + 0.85 + 0.8 * math.cos(a), vm + ry * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 16, endpoint=False)]))
+        it.append(rect(u + 1.8, vm - ry * 0.8, u + 2.05, vm + ry * 0.8))
+        it.append(rect(u + 2.3, vm - ry * 0.8, u + 2.55, vm + ry * 0.8))
+        u += 2.75
+    out.append(_st(cs_union(it), b + 0.24, 0.35))
+    return out
+
+
+def course_sbsaw(L, h, b, pitch, margin, p):
+    """The barn's eave board: a plain board, its lower edge sawn into a row of teeth."""
+    teeth = [poly([(u, 0.75), (u + 1.4, 0.75), (u + 0.7, 0.15)]) for u in np.arange(0.3, L - 1.6, 1.4)]
+    return [_st(rect(0.2, 0.7, L - 0.2, h - 0.15), b, 0.45), _st(cs_union(teeth), b, 0.4)]
+
+
+def frieze_sbwreath(L, h, b, pitch, margin, pair, half):
+    """A Greek Revival frieze: a plain board between fillets, laurel wreaths tied with
+    ribbons along it (after Minard Lafever's pattern books)."""
+    v0, v1 = 0.3, h - 0.3
+    vm = (v0 + v1) / 2
+    out = [_st(rect(0.2, v0, L - 0.2, v0 + 0.45) + rect(0.2, v1 - 0.45, L - 0.2, v1), b, 0.3)]
+    R = min((v1 - v0) / 2 - 0.75, 1.5)
+    n = max(1, int(round((L - 2.0) / 10.0)))
+    lv = []
+    for k in range(n):
+        uc = L * (k + 0.5) / n
+        for j in range(12):
+            a = 2 * math.pi * j / 12 + 0.3
+            c = (uc + R * math.cos(a), vm + R * math.sin(a))
+            ca, sa = math.cos(a + math.pi / 2), math.sin(a + math.pi / 2)
+            lv.append(poly([(c[0] + 0.55 * ca * math.cos(t) - 0.25 * sa * math.sin(t), c[1] + 0.55 * sa * math.cos(t) + 0.25 * ca * math.sin(t))
+                            for t in np.linspace(0, 2 * math.pi, 10, endpoint=False)]))
+        for sg in (-1, 1):
+            lv.append(stroke([(uc, vm - R), (uc + sg * 1.4, vm - R - 0.2), (uc + sg * 2.4, vm - R + 0.5), (uc + sg * 3.3, vm - R + 0.1)], 0.4))
+    out.append(_st(_clean(cs_union(lv), 0.12) ^ rect(0.3, v0 + 0.5, L - 0.3, v1 - 0.5), b, 0.4))
+    return out, []
+
+
+def bracket_sbmutule(h, d, t):
+    """A Doric mutule (side profile): a thin block under the soffit, its under side sloping a
+    little out, a row of guttae (drops) under it; solid."""
+    hh = min(h, 1.8)
+    body = poly([(0.0, 0.0), (d, 0.0), (d, -0.8), (0.0, -1.1)])
+    drops = cs_union([rect(x - 0.22, -hh, x + 0.22, -0.8) for x in np.linspace(d * 0.3, d - 0.5, 3)])
+    return cs_union([body, drops, rect(0.0, -hh, 0.6, 0.0)]) ^ rect(0.0, -hh - 1.0, d + 1.0, 0.01)
+
+
+CO.FRIEZE_EXTRA.update(sbwreath=frieze_sbwreath)
+CO.COURSE_EXTRA.update(sbfascia=course_sbfascia, sbreel=course_sbreel, sbsaw=course_sbsaw)
+TW.BRACKET_EXTRA.update(sbmutule=bracket_sbmutule)
+
+
+# ---- windows and doors
+def window_sblower(w=9.0, h=18.0, A=1.1):
+    """The big house's lower window: six over six in a Greek Revival eared architrave (the
+    casing's top corners stepping out), a backband, a frieze board and a cornice cap; a sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash_g(w, h, pl, plug_cs, 3, 2, 2)
+    X = w / 2 + A
+    vt = h + A
+    ears = cs_union([rect(-X - 0.8, vt - 2.4, -X + 0.01, vt), rect(X - 0.01, vt - 2.4, X + 0.8, vt)])
+    arch = ((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, vt - 0.01)) + ears
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(arch, 0.0, 0.7),
+             ext(arch - arch.offset(-0.35, MIT, 4.0), 0.69, 0.95),
+             ext(rect(-X - 0.8, vt - 0.01, X + 0.8, vt + 1.8), 0.0, 0.6),
+             chamfer_box(-X - 1.5, vt + 1.79, X + 1.5, vt + 2.7, 0.0, 1.5, c=0.3, bottom=1.5),
+             chamfer_box(-X - 0.6, -1.2, X + 0.6, 0.01, 0.0, 1.4, c=0.3, bottom=1.4)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, vt + 2.7, -1.2)
+
+
+def window_sbupper(w=9.0, h=15.0, A=1.0):
+    """The upper window: six over six in a plain architrave with a backband under a shallow
+    pedimented lintel; a sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash_g(w, h, pl, plug_cs, 3, 2, 2)
+    X = w / 2 + A
+    vt = h + A
+    arch = (op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, vt + 0.01)
+    ped = poly([(-X - 1.0, vt), (X + 1.0, vt), (0.0, vt + 2.4)])
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(arch, 0.0, 0.7),
+             ext(arch - arch.offset(-0.35, MIT, 4.0), 0.69, 0.95),
+             ext(ped, 0.0, 0.7), ext(ped - ped.offset(-0.5, MIT, 4.0), 0.69, 1.1),
+             chamfer_box(-X - 1.2, vt - 0.01, X + 1.2, vt + 0.5, 0.0, 1.2, c=0.25, bottom=1.2),
+             chamfer_box(-X - 0.5, -1.1, X + 0.5, 0.01, 0.0, 1.3, c=0.3, bottom=1.3)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, vt + 2.4, -1.1)
+
+
+def window_sbattic(w=11.0, h=5.6, A=0.9):
+    """The pediment's light: three panes in a row in a plain casing with a sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    bars = cs_union([rect(x - RIB / 2, -1.0, x + RIB / 2, h + 1.0) for x in (-w / 6, w / 6)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.7),
+             chamfer_box(-X - 0.4, -1.0, X + 0.4, 0.01, 0.0, 1.2, c=0.3, bottom=1.2)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A, -1.0)
+
+
+def window_sbfrieze(w=12.0, h=5.0, A=0.8):
+    """The ell's knee-wall light (a 'lie-on-your-stomach' window): one long pane behind a
+    cast-iron grille of three palmettes in a frame."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    ib = inner.bounds()
+    bars = []
+    n = 3
+    cw = (ib[2] - ib[0]) / n
+    for k in range(n):
+        uc = ib[0] + cw * (k + 0.5)
+        if k:
+            bars.append(rect(ib[0] + cw * k - 0.25, -1.0, ib[0] + cw * k + 0.25, h + 1.0))
+        bars.append(stroke([(uc, ib[1] - 0.5), (uc, ib[3] - 0.5)], 0.45))
+        for sg in (-1, 1):
+            bars.append(stroke([(uc, ib[1] + 0.4), (uc + sg * cw * 0.22, ib[1] + 1.5), (uc + sg * cw * 0.32, ib[3] - 0.6)], 0.42))
+        bars.append(stroke([(uc - cw * 0.3, ib[1] + 0.2), (uc, ib[1] + 0.9), (uc + cw * 0.3, ib[1] + 0.2)], 0.42))
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, cs_union(bars), plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.6),
+             ext(op.offset(A, MIT, 4.0) - op.offset(A - 0.3, MIT, 4.0), 0.59, 0.85)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A, -A)
+
+
+def window_sbbarn(w=6.0, h=7.0, A=0.9):
+    """The barn and woodshed light: four panes in a plain board casing under a drip cap."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, h / 2 - RIB / 2, w, h / 2 + RIB / 2)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.6),
+             chamfer_box(-X - 0.5, h + A - 0.01, X + 0.5, h + A + 0.7, 0.0, 1.1, c=0.3, bottom=1.1),
+             chamfer_box(-X - 0.3, -1.0, X + 0.3, 0.01, 0.0, 1.0, c=0.3, bottom=1.0)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 0.7, -1.0)
+
+
+def _sb_panels(parts_s, a, c_, v0, v1, n, w0=-0.65):
+    """n raised panels stacked between u = a..c_ and v0..v1 on a door leaf."""
+    ph = (v1 - v0) / n
+    for j in range(n):
+        pan = rect(a, v0 + j * ph + 0.4, c_, v0 + (j + 1) * ph - 0.4)
+        parts_s.append(ext(pan - pan.offset(-0.45, MIT, 4.0), w0, -0.2))
+        f_ = pan.offset(-0.9, MIT, 4.0)
+        if not f_.is_empty():
+            parts_s.append(chamfer_box(*f_.bounds(), w0, 0.35, c=0.2))
+
+
+def door_sbhall(w=8.0, h=20.0, sl=2.6, A=1.6):
+    """The big house's entrance: a two-panel door between sidelights of leaded panes under a
+    five-light transom, flanked by panelled pilasters carrying an entablature (an architrave,
+    a frieze with a raised tablet, a cornice)."""
+    W = w + 2 * (sl + 0.6)
+    vt = h + 0.6
+    H = vt + 3.4
+    op = rect(-W / 2, 0.0, W / 2, H)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    lights = [rect(-W / 2 + 0.6, 1.0, -w / 2 - 0.6, h - 0.4), rect(w / 2 + 0.6, 1.0, W / 2 - 0.6, h - 0.4)]
+    tr = rect(-W / 2 + 0.6, vt + 0.4, W / 2 - 0.6, H - 0.6)
+    glass = cs_union(lights + [tr])
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(glass, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    leads = [rect(-W, v - RIB / 2, W, v + RIB / 2) for v in np.linspace(1.0, h - 0.4, 6)[1:-1]]
+    leads += [rect(x - RIB / 2, vt, x + RIB / 2, H) for x in np.linspace(-W / 2 + 0.6, W / 2 - 0.6, 6)[1:-1]]
+    parts_s.append(ext(cs_union(leads) ^ glass.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    parts_s.append(ext(rect(-w / 2, 0.0, w / 2, h) - rect(-w / 2 + 0.6, 0.6, w / 2 - 0.6, h - 0.6), -0.65, -0.1))
+    parts_s.append(ext(rect(-0.3, 0.6, 0.3, h - 0.6), -0.65, -0.1))
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.5, sg * (w / 2 - 0.9)))
+        _sb_panels(parts_s, a, c_, 0.8, h - 0.8, 2)
+    X = W / 2
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    pe = 1.9
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * X, sg * (X + pe)))
+        parts.append(ext(rect(x0, 0.0, x1, H + 0.2), 0.0, 1.0))
+        parts.append(ext(rect(x0 + 0.45, 2.6, x1 - 0.45, H - 1.0), 0.99, 1.25))
+        parts.append(chamfer_box(x0 - 0.2, 0.0, x1 + 0.2, 1.8, 0.0, 1.4, c=0.25, square=("v0",)))
+        parts.append(chamfer_box(x0 - 0.3, H - 0.6, x1 + 0.3, H + 0.21, 0.0, 1.4, c=0.25, bottom=1.4))
+    E = X + pe + 0.3
+    parts.append(ext(rect(-E, H + 0.2, E, H + 1.3), 0.0, 1.3))
+    parts.append(ext(rect(-E, H + 1.29, E, H + 3.4), 0.0, 1.1))
+    parts.append(ext(rect(-3.2, H + 1.7, 3.2, H + 3.0), 1.09, 1.4))
+    parts.append(chamfer_box(-E - 1.0, H + 3.39, E + 1.0, H + 4.4, 0.0, 2.0, c=0.35, bottom=2.0))
+    top = H + 4.4
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, top, 0.0, land_extra=rect(-E - 1.0, 0.0, E + 1.0, top))
+
+
+def door_sbell(w=8.0, h=19.0, A=1.1):
+    """The ell's door onto the porch: four lights over two raised panels, a plain architrave
+    with a backband, a cornice cap."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    gl = rect(-w / 2 + 1.0, h * 0.5, w / 2 - 1.0, h - 1.0)
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(gl, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(gl, -pl, -pl + O.GLASS))
+    gb = gl.bounds()
+    bars = cs_union([rect(-RIB / 2, gb[1] - 1, RIB / 2, gb[3] + 1), rect(gb[0] - 1, (gb[1] + gb[3]) / 2 - RIB / 2, gb[2] + 1, (gb[1] + gb[3]) / 2 + RIB / 2)])
+    parts_s.append(ext(bars ^ gl.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.5, sg * (w / 2 - 1.0)))
+        _sb_panels(parts_s, a, c_, 0.6, h * 0.5 - 0.6, 1)
+    X = w / 2 + A
+    arch = (op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, h + A + 0.01)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(arch, 0.0, 0.7), ext(arch - arch.offset(-0.35, MIT, 4.0), 0.69, 0.95),
+             chamfer_box(-X - 1.0, h + A - 0.01, X + 1.0, h + A + 0.9, 0.0, 1.5, c=0.3, bottom=1.5)]
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + A + 0.9, 0.0)
+
+
+def door_sbshop(w=7.0, h=18.0, A=0.9):
+    """The woodshed's workshop door: beaded boards held by two ledges and a brace, a light of
+    three panes over it, in a plain casing under a drip cap."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    vt = h - 3.0
+    tr = rect(-w / 2 + 0.6, vt + 0.5, w / 2 - 0.6, h - 0.6)
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(tr, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(tr, -pl, -pl + O.GLASS))
+    parts_s.append(ext(cs_union([rect(x - RIB / 2, vt, x + RIB / 2, h) for x in (-w / 6, w / 6)]) ^ tr.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    face = rect(-w / 2 + 0.5, 0.5, w / 2 - 0.5, vt)
+    bd = cs_union([rect(x - 0.1, 0.0, x + 0.1, vt) for x in np.arange(-w / 2 + 1.5, w / 2 - 0.4, 1.4)])
+    parts_s.append(ext(face - bd, -0.65, -0.3))
+    lb = cs_union([rect(-w / 2 + 0.7, 2.0, w / 2 - 0.7, 3.0), rect(-w / 2 + 0.7, vt - 2.4, w / 2 - 0.7, vt - 1.4),
+                   stroke([(-w / 2 + 1.2, 3.0), (w / 2 - 1.2, vt - 2.4)], 0.9) ^ rect(-w, 3.0, w, vt - 2.4)])
+    parts_s.append(ext(lb, -0.31, -0.05))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.6),
+             chamfer_box(-X - 0.5, h + A - 0.01, X + 0.5, h + A + 0.8, 0.0, 1.2, c=0.3, bottom=1.2)]
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + A + 0.8, 0.0)
+
+
+def door_sbbarn(w=7.0, h=18.0, A=1.0):
+    """The barn's man door: boards above, a crossbuck (an X in a frame) below, a plain casing."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    face = plug_cs.offset(-0.5, MIT, 4.0)
+    bd = cs_union([rect(x - 0.1, -1, x + 0.1, h + 1) for x in np.arange(-w / 2 + 1.6, w / 2 - 0.4, 1.6)])
+    parts_s.append(ext(face - bd, -0.65, -0.3))
+    vm = h * 0.5
+    fb = face.bounds()
+    fr = rect(fb[0], fb[1], fb[2], vm) - rect(fb[0] + 0.9, fb[1] + 0.9, fb[2] - 0.9, vm - 0.9)
+    fr = fr + rect(fb[0], vm - 0.9, fb[2], vm + 0.1)
+    xx = (stroke([(fb[0] + 0.9, fb[1] + 0.9), (fb[2] - 0.9, vm - 0.9)], 0.8) + stroke([(fb[0] + 0.9, vm - 0.9), (fb[2] - 0.9, fb[1] + 0.9)], 0.8)) ^ \
+        rect(fb[0], fb[1], fb[2], vm)
+    parts_s.append(ext(fr + xx, -0.31, -0.02))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.7),
+             chamfer_box(-X - 0.4, h + A - 0.01, X + 0.4, h + A + 0.7, 0.0, 1.1, c=0.3, bottom=1.1)]
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + A + 0.7, 0.0)
+
+
+def barn_doors_sebago(W=28.0, H=34.0, run=8.0):
+    """The barn's great doors (u along the wall, v up from the sill, w out from the wall; back
+    on w = 0, printed on it): two sliding leaves of vertical boards, each framed with a
+    crossbuck below and a cross rail, hung by rollers from a track board that runs on past
+    them; guide blocks at the foot."""
+    out = []
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.15, sg * W / 2))
+        leaf = rect(a, 0.0, c_, H)
+        bd = cs_union([rect(x - 0.12, -1, x + 0.12, H + 1) for x in np.arange(a + 2.0, c_ - 0.5, 2.0)])
+        out.append(ext(leaf, 0.0, 0.8) - ext(bd, 0.55, 1.0))
+        inner = leaf.offset(-1.3, MIT, 4.0)
+        ib = inner.bounds()
+        vm = H * 0.45
+        frame = leaf - inner
+        frame = frame + rect(a, vm - 0.65, c_, vm + 0.65)
+        lo = rect(ib[0], ib[1], ib[2], vm - 0.65)
+        lb = lo.bounds()
+        xx = (stroke([(lb[0], lb[1]), (lb[2], lb[3])], 1.0) + stroke([(lb[0], lb[3]), (lb[2], lb[1])], 1.0)) ^ lo
+        hi = rect(ib[0], vm + 0.65, ib[2], ib[3])
+        hb = hi.bounds()
+        br = stroke([(hb[0], hb[1]), (hb[2], hb[3])] if sg > 0 else [(hb[2], hb[1]), (hb[0], hb[3])], 1.0) ^ hi
+        out.append(ext(frame + xx + br, 0.79, 1.25))
+        for x in (a + 2.2, c_ - 2.2):
+            out.append(ext(rect(x - 0.6, H - 2.4, x + 0.6, H + 1.6), 1.24, 1.7))
+            out.append(ext(circle((x, H + 1.6), 0.8, 14), 1.69, 2.2))
+    out.append(ext(rect(-W / 2 - run, H + 0.8, W / 2 + run, H + 2.4), 0.0, 1.6))
+    for x in (-W / 2 - run + 0.8, W / 2 + run - 0.8):
+        out.append(ext(rect(x - 0.6, H + 0.4, x + 0.6, H + 2.8), 0.0, 2.2))
+    for x in (-W / 2 - 1.0, W / 2 + 1.0):
+        out.append(ext(rect(x - 0.7, 0.0, x + 0.7, 1.4), 0.0, 1.4))
+    return union(out)
+
+
+def hay_door_sebago(w=8.0, h=8.0):
+    """The hay door in the barn's wall gable (u along, v up, back on w = 0): two board leaves,
+    each framed, a brace in each rising to the meeting stiles, a drip cap over them."""
+    out = []
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.12, sg * w / 2))
+        out.append(ext(rect(a, 0.0, c_, h), 0.0, 0.8) - ext(cs_union([rect(x - 0.1, -1, x + 0.1, h + 1) for x in np.arange(a + 1.4, c_ - 0.4, 1.4)]), 0.55, 1.0))
+        lf = rect(a, 0.0, c_, h)
+        inner = lf.offset(-0.75, MIT, 4.0)
+        ib = inner.bounds()
+        p0, p1 = ((ib[0], ib[1]), (ib[2], ib[3])) if sg < 0 else ((ib[2], ib[1]), (ib[0], ib[3]))
+        z = (lf - inner) + (stroke([p0, p1], 0.8) ^ inner)
+        out.append(ext(z, 0.79, 1.2))
+    out.append(chamfer_box(-w / 2 - 0.8, h - 0.01, w / 2 + 0.8, h + 0.8, 0.0, 1.3, c=0.3, bottom=1.3))
+    return union(out)
+
+
+def arch_sebago(w=11.0, h=18.0, band=1.4):
+    """A woodshed bay's arched architrave (u along, v up from the sill, back on w = 0): a band
+    round the round head on two plain jambs, impost blocks at the springing, a keystone.
+    Returns (the opening's outline, the architrave)."""
+    r = w / 2
+    vs = h - r
+    op = poly([(-r, 0.0), (r, 0.0)] + [(r * math.cos(a), vs + r * math.sin(a)) for a in np.linspace(0, math.pi, 25)[1:-1]])
+    ring = op.offset(band, MIT, 4.0) - op
+    ring = ring ^ rect(-50, 0.0, 50, 100)
+    out = ext(ring, 0.0, 0.8)
+    out = out + ext((op.offset(band, MIT, 4.0) - op.offset(band - 0.35, MIT, 4.0)) ^ rect(-50, vs, 50, 100), 0.79, 1.05)
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * (r - 0.0), sg * (r + band + 0.5)))
+        out = out + chamfer_box(x0, vs - 1.0, x1, vs, 0.0, 1.2, c=0.25, bottom=1.2)
+    out = out + ext(poly([(-0.8, vs + r - 0.3), (0.8, vs + r - 0.3), (1.1, vs + r + band + 0.4), (-1.1, vs + r + band + 0.4)]), 0.0, 1.25)
+    return op, out
+
+
+# ---- the porch, shutters, chimney, raking cornice, cupola, woodpile
+def post_sbdoric(h, r=1.25):
+    """A Greek Revival porch column (z = 0 to h): a square plinth, a torus, a shaft with a
+    gentle entasis, an echinus and a square abacus."""
+    from .porchwork import _revolve
+    zp, zt = 0.6, 0.5
+    za = h - 0.5
+    ze = za - 0.7
+    prof = [(0.0, 0.0), (r + 0.35, zp), (r + 0.35, zp + 0.35), (r, zp + 0.7)]
+    for t in np.linspace(0.0, 1.0, 7)[1:]:
+        z = zp + 0.7 + (ze - zp - 0.7) * t
+        prof.append((r * (1.0 - 0.16 * t ** 1.4), z))
+    prof.append((r * 0.84 + 0.55, za))
+    body = _revolve([(0.0, zp)] + prof[1:], seg=24)
+    body = body + box([-r - 0.45, -r - 0.45, 0.0], [r + 0.45, r + 0.45, zp + 0.01])
+    body = body + box([-r * 0.84 - 0.65, -r * 0.84 - 0.65, za - 0.01], [r * 0.84 + 0.65, r * 0.84 + 0.65, h])
+    return body
+
+
+def shutter_sebago(w, h, t=0.8):
+    """A louvred shutter: stiles and rails, a lock rail low in it, fixed louvres above and
+    below. Local frame as features.shutter (u 0..w, v 0..h, back at w = 0; prints face-up)."""
+    body = ext(rect(0.0, 0.0, w, h), 0.0, t - 0.35)
+    vm = h * 0.42
+    fr = rect(0.0, 0.0, w, h) - rect(0.7, 1.1, w - 0.7, h - 0.8)
+    fr = fr + rect(0.0, vm - 0.5, w, vm + 0.5)
+    body = body + ext(fr, t - 0.36, t)
+    sl = []
+    for (v0, v1) in ((1.1, vm - 0.5), (vm + 0.5, h - 0.8)):
+        for v in np.arange(v0 + 0.35, v1 - 0.25, 0.7):
+            sl.append(rect(0.7, v, w - 0.7, v + 0.38))
+    body = body + ext(cs_union(sl), t - 0.36, t - 0.08)
+    return body
+
+
+def chimney_sebago(w=7.0, d=7.0, h=24.0):
+    """The farm's chimney (stands on z = 0, its pocket's floor): common bond brick, a drip
+    course of one brick standing proud a little under the top, a two-course corbel and a
+    granite cap stone."""
+    h = round(h / 0.2) * 0.2
+    sh = round((h - 2.6) / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + TW._skin(w, d, 0.0, sh, TW._brick("common"))
+    zb = sh - 4.0
+    body = body + box([-w / 2 - 0.35, -d / 2 - 0.35, zb], [w / 2 + 0.35, d / 2 + 0.35, zb + 0.8]) + TW._corbel_out(w, d, zb, 0.35)
+    z = sh
+    for k in range(2):
+        g = 0.3 * (k + 1)
+        body = body + TW._corbel_out(w + 2 * (g - 0.3), d + 2 * (g - 0.3), z + 0.3, 0.3) + box([-w / 2 - g, -d / 2 - g, z + 0.29], [w / 2 + g, d / 2 + g, z + 0.8])
+        z += 0.8
+    body = body + box([-w / 2 - 0.9, -d / 2 - 0.9, z - 0.01], [w / 2 + 0.9, d / 2 + 0.9, z + 0.6]) + \
+        M.hull_points([(x, y, z + 0.59) for x in (-w / 2 - 0.9, w / 2 + 0.9) for y in (-d / 2 - 0.9, d / 2 + 0.9)] +
+                      [(x, y, z + 1.0) for x in (-w / 2 + 0.2, w / 2 - 0.2) for y in (-d / 2 + 0.2, d / 2 - 0.2)])
+    body = body - box([-w / 2 + 1.3, -d / 2 + 1.3, z - 1.6], [w / 2 - 1.3, d / 2 - 1.3, z + 2.0])
+    return body
+
+
+def raking_sebago(L, slope, d_eave, skin=1.6, depth=2.8, rake=3.0):
+    """The Greek Revival raking cornice (the gable's facade frame, under the rake from w = 0
+    out to ``rake``): a wide plain fascia with a bead along its foot, a two-step cyma over
+    it; it prints face-up."""
+    s = slope
+    c = math.hypot(1.0, s)
+    a_l = np.array([-d_eave, 0.0])
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    a_r = np.array([L + d_eave, 0.0])
+    clip = rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    out = []
+    for k, (dd0, dd1, w0, w1) in enumerate(((skin, skin + depth, 0.0, rake * 0.5), (skin + depth - 0.6, skin + depth, 0.0, rake * 0.62),
+                                           (skin - 0.2, skin + 0.7, 0.0, rake * 0.8), (skin - 0.2, skin + 0.3, 0.0, rake))):
+        band = []
+        for a in (a_l, a_r):
+            n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+            band.append(poly([tuple(a + n * dd0), tuple(tip + n * dd0), tuple(tip + n * dd1), tuple(a + n * dd1)]))
+        out.append(ext(cs_union(band) ^ clip, w0, w1))
+    return union(out)
+
+
+def cupola_sebago(slope, w=9.0, h=8.0):
+    """The barn's ventilator (stands with its foot on the ridge at z = 0, the ridge along x):
+    a square box with a louvred opening in a frame on every face (the slats sloping down and
+    out), sitting astride the ridge (its foot reaches down both slopes, cut to them later), a
+    flared pyramid roof, a ball and an arrow weathervane."""
+    drop = slope * w / 2 + 0.6
+    body = box([-w / 2, -w / 2, -drop], [w / 2, w / 2, h])
+    pockets, slats = [], []
+    y = -w / 2
+    pk = box([-w / 2 + 1.0, y - 1.0, 0.9], [w / 2 - 1.0, y + 0.6, h - 0.9])
+    sl = []
+    for z in np.arange(1.0, h - 1.6, 0.8):
+        sl.append(M.hull_points([(x, yy, zz) for x in (-w / 2 + 1.0, w / 2 - 1.0) for (yy, zz) in
+                                 ((y + 0.6, z + 0.55), (y + 0.6, z + 0.9), (y + 0.05, z), (y + 0.05, z + 0.35))]))
+    sl = union(sl)
+    for k in range(4):
+        pockets.append(pk.rotate([0, 0, 90 * k]))
+        slats.append(sl.rotate([0, 0, 90 * k]))
+    body = body - union(pockets) + union(slats)
+    W2 = w / 2 + 1.4
+    roof = box([-W2, -W2, h - 0.01], [W2, W2, h + 0.6]) + M.hull_points(
+        [(x, y, h + 0.59) for x in (-W2, W2) for y in (-W2, W2)] + [(x, y, h + 1.6) for x in (-w / 2, w / 2) for y in (-w / 2, w / 2)] +
+        [(0.0, 0.0, h + 5.2)])
+    ball = M.sphere(0.9, 16).translate([0, 0, h + 5.4])
+    rod = M.cylinder(4.0, 0.7, 0.7, 12).translate([0, 0, h + 5.0])
+    zv = h + 8.4
+    arrow = ext(cs_union([rect(-4.0, -0.5, 3.0, 0.5), poly([(3.0, -1.4), (5.2, 0.0), (3.0, 1.4)]),
+                          poly([(-4.6, -2.0), (-2.6, -0.4), (-2.6, 0.4), (-4.6, 2.0), (-3.6, 0.0)])]), -0.6, 0.6)
+    arrow = arrow.transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, 0], [0, 1.0, 0, zv]]))
+    return body + roof + ball + rod + arrow
+
+
+def woodpile_sebago(L=12.0, d=8.0, h=18.0, seed=0):
+    """Cordwood stacked in a woodshed bay (z = 0 up, its face at y = 0 looking -y): the
+    sticks' ends, round and split (half rounds and wedges), each standing a little proud."""
+    rng = np.random.default_rng(seed + 9)
+    out = box([0.0, 0.3, 0.0], [L, d, h])
+    ends = []
+    v = 0.2
+    while v < h - 1.0:
+        u = rng.uniform(-0.6, 0.0)
+        r = rng.uniform(0.75, 1.0)
+        while u < L - 0.4:
+            c = (u + r, v + r)
+            kind = rng.integers(0, 3)
+            if kind == 0:
+                cs = circle(c, r * 0.95, 12)
+            elif kind == 1:
+                cs = circle(c, r * 0.95, 12) ^ rect(c[0] - r, c[1] - r * 0.1, c[0] + r, c[1] + r)
+            else:
+                a = rng.uniform(0, 2 * math.pi)
+                cs = poly([c, (c[0] + r * math.cos(a), c[1] + r * math.sin(a)), (c[0] + r * math.cos(a + 1.6), c[1] + r * math.sin(a + 1.6))])
+            ends.append(cs)
+            u += 2 * r
+        v += 2 * r * 0.9
+    e_ = cs_union(ends) ^ rect(0.0, 0.0, L, h)
+    out = out + M.extrude(e_, 0.5).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, -0.2], [0, 1.0, 0, 0]]))
+    return out
