@@ -110,18 +110,19 @@ def _openings():
         L.append(Opening(blk, e, u, v0, sp, name, kind))
         L[-1].fam = fams.setdefault(id(sp), name)
 
-    lo, up = N.window_svmain(), N.window_svupper()
-    # the front: two bays each side of the pavilion, the doorway and the window over it
-    for x in (82.0, 98.0, 154.0, 170.0):
+    lo, up = N.window_svmain(w=9.0), N.window_svupper(w=9.0)
+    # the front: a bay each side of the pavilion (no wall more than half window), the doorway
+    # and the window over it
+    for x in ((CX0 + PX0) / 2, (PX1 + CX1) / 2):
         add(L1, MAIN, x, CY0, V1, lo, f"S{x:.0f}-1")
         add(L2, MAIN, x, CY0, V2, up, f"S{x:.0f}-2")
     add(L1, MAIN, XC, CY0 - PJ, 0.0, N.door_svmain(), "doorway", "door")
     add(L2, MAIN, XC, CY0 - PJ, V2 + 0.6, N.window_svcentre(h=19.0), "S-centre-2")
     # the garden front
-    for x in (82.0, 98.0, 154.0, 170.0):
+    for x in ((CX0 + PX0) / 2, (PX1 + CX1) / 2):
         add(L1, MAIN, x, CY1, V1, lo, f"N{x:.0f}-1")
     add(L1, MAIN, XC, CY1, 0.0, N.door_svback(), "garden-door", "door")
-    for x in (82.0, 98.0, XC, 154.0, 170.0):
+    for x in ((CX0 + PX0) / 2, XC, (PX1 + CX1) / 2):
         add(L2, MAIN, x, CY1, V2, up, f"N{x:.0f}-2")
     # the ends, clear of the hyphens
     for x, tag in ((CX0, "W"), (CX1, "E")):
