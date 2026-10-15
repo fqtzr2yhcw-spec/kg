@@ -992,7 +992,6 @@ def window_skeyebrow(w=16.0, h=5.0):
     xs = np.linspace(-w / 2, w / 2, 33)
     top = [(x, 1.2 + (h - 1.2) * math.cos(x / (w / 2) * math.pi / 2) ** 2) for x in xs]
     op = poly([(-w / 2, 0.0), (w / 2, 0.0)] + top[::-1])
-    op = op.offset(-0.05, MIT, 4.0) if False else op
     plug_cs = op.offset(-O.CLR, MIT, 4.0)
     pl = 1.2
     inner = plug_cs.offset(-0.5, MIT, 4.0)

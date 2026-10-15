@@ -31,7 +31,7 @@ HOUSES = ["beaumont", "villa", "harcourt", "fowler", "whitby", "delancey", "ardm
           "magnolia", "whitmore", "pennock", "oakhurst", "vantassel", "hathaway", "chatham", "winthrop", "westbrook", "ellsworth", "fairhaven",
           "prescott", "bellerive", "pinckney", "randolph", "stauffer", "porter", "pingree", "alvarado", "brenton", "ridgely", "arroyo", "hollister", "wrightwood", "ashcombe", "capistrano", "kittredge", "pullman", "lindenwald", "stickley", "sandoval", "millbrook", "brendan", "harmon", "engine3", "montclair", "lafayette", "delacroix", "belcourt", "valcour", "chevalier", "marchand", "rochambeau", "beauvais", "fontaine",
           "wyndham", "evangeline", "bellosguardo", "chantilly", "vanderlyn", "zenobia", "thornbury", "foscari", "carrington", "ravenhurst",
-          "kenmore", "sakonnet", "marisol", "fevre"]
+          "kenmore", "sakonnet", "marisol", "fevre", "bethel"]
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "out")
 BED = 256.0
@@ -65,6 +65,8 @@ def _specs(m):
 def _storey(m, z):
     """(name, height) of the storey a sill at absolute height z stands in, or None above the walls."""
     zf = m.ZF
+    if z < zf - 1.0:                               # a walk-out storey under the first floor
+        return "basement", zf - getattr(m, "ZB", 0.0)
     s1 = getattr(m, "S1", None)
     ze = getattr(m, "ZE", None)
     rj = getattr(m, "RJ", getattr(m, "RH", 0.0))

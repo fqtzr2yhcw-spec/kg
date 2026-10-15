@@ -50,7 +50,7 @@ PALETTE = {"siding": ["#E3D5B5", 0.8, 0.0], "trim": ["#F3EEE1", 0.6, 0.0], "acce
            "sash": ["#F3EEE1", 0.5, 0.0], "door": ["#7B3A29", 0.45, 0.0]}
 VIEWS = {"hero": [-34, 14, 70, 0.9, [0, 0, -14]], "hero_right": [36, 14, 70, 0.9, [0, 0, -14]],
          "front": [0, 6, 85, 0.92, [0, 0, 0]], "rear": [155, 16, 70, 0.92, [0, 0, -14]],
-         "light": [-24, 8, 85, None, [72, 52, 200], 240], "porch": [-14, 8, 85, None, [70, -20, 26], 200]}
+         "light": [-24, 8, 85, None, [76, 52, 200], 240], "porch": [-14, 8, 85, None, [74, -20, 26], 200]}
 
 # ------------------------------------------------------------------ cornices (unique to the Marisol)
 LEDGE = 1.4
@@ -83,8 +83,8 @@ ZW = round((ZE + HE) / 0.2) * 0.2
 FASCIA = 1.4
 Z_EAVE = ZW + FASCIA
 D_EAVE, RAKE, S_H, S_G = 6.0, 5.0, 0.62, 1.05
-W, D = 144.0, 104.0
-XC, YC = 72.0, 52.0
+W, D = 152.0, 104.0
+XC, YC = W / 2, 52.0
 PV0, PV1, PJ = XC - 24.0, XC + 24.0, 6.0                        # the front gable's pavilion, 6 forward
 MAIN = Block("main", [(0, 0), (PV0, 0), (PV0, -PJ), (PV1, -PJ), (PV1, 0), (W, 0), (W, D), (0, D)], ZF, ZW)
 GH = 24.0                                             # the cross gables' half width
@@ -176,12 +176,13 @@ def _openings():
     add(L2, MAIN, 0.0, YC, VG, gw, "gable-W")
     # the tower: one tall light to each face of each stage
     for (x, y, tag) in ((XC, YC - TW / 2, "S"), (XC + TW / 2, YC, "E"), (XC, YC + TW / 2, "N"), (XC - TW / 2, YC, "W")):
-        add(LT, TOWER, x, y, Z_EAVE + 37.4 - Z_T0, tw, f"T{tag}-1")
+        add(LT, TOWER, x, y, Z_EAVE + 38.2 - Z_T0, tw, f"T{tag}-1")
         add(LT, TOWER, x, y, Z_ST + 4.0 - Z_T0, tw, f"T{tag}-2")
     # the kitchen wing
     add(LW, WING, 35.0, D + 34.0, 0.4, back, "kitchen-door", "door")
-    add(LW, WING, 12.0, D + 17.0, V1, lo, "K-W")
-    add(LW, WING, 58.0, D + 17.0, V1, lo, "K-E")
+    klo = N.window_mrlower(h=15.0)
+    add(LW, WING, 12.0, D + 17.0, V1, klo, "K-W")
+    add(LW, WING, 58.0, D + 17.0, V1, klo, "K-E")
     return L1, L2, LT, LW
 
 
@@ -328,7 +329,7 @@ def build(kit=None):
     # down on its flat top, a tin top in its one colour change; steps to the front door
     pts = [(0.0, VY), (VX, VY), (VX, VEND), (W, VEND), (W, 0.0), (PV1, 0.0), (PV1, -PJ), (PV0, -PJ), (PV0, 0.0), (0.0, 0.0)]
     runs = [dict(a=(0.0, 0.0), b=(0.0, VY), posts=[-VY - 1.6]),
-            dict(a=(0.0, VY), b=(VX, VY), posts=[1.6, 30.0, 58.0, XC - 12.0, XC + 12.0, 116.0, 142.0, VX - 1.6]),
+            dict(a=(0.0, VY), b=(VX, VY), posts=[1.6, 32.0, XC - 12.0, XC + 12.0, W - 32.0, W - 2.0, VX - 1.6]),
             dict(a=(VX, VY), b=(VX, VEND), posts=[1.6, 34.0, 66.0, VEND - VY - 1.6]),
             dict(a=(VX, VEND), b=(W, VEND), posts=[1.6])]
     post_h = round((S1 - 1.4 - 2.4 - ZF) / 0.2) * 0.2

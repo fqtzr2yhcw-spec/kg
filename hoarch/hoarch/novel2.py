@@ -1020,7 +1020,7 @@ def retaining_fevre(L, h, t=3.0, cap=1.2, seed=0):
     its face in stone_fevre, a smooth coping proud on top. Prints upright on its foot."""
     body = box([0.0, 0.0, -t], [L, h - cap, 0.0])
     face = stone_fevre(rect(0.0, 0.0, L, h - cap - 0.01), seed=seed)
-    cp = box([-0.6, h - cap - 0.01, -t - 0.6], [L + 0.6, h, 0.6])
+    cp = M.hull(box([0.0, h - cap - 0.01, -t], [L, h - cap, 0.0]) + box([-0.6, h - cap + 0.6, -t - 0.6], [L + 0.6, h, 0.6]))   # 45 degrees under its lip
     # (u, v, w) solid: x = u, y = v, z = w
     return body + face + cp
 
@@ -1046,3 +1046,338 @@ def window_fvlunette(w=14.0, A=0.7):
     parts.append(ext(poly([(-1.0, rk - 0.4), (1.0, rk - 0.4), (1.4, rk + 2.4), (-1.4, rk + 2.4)]), 0.0, 1.4))
     parts.append(chamfer_box(-rk - 1.8, -1.2, rk + 1.8, 0.01, 0.0, 1.4, c=0.4, bottom=1.4))
     return O._one_piece(sash, parts, op, plug_cs, pl, rk + 2.4, -1.2)
+
+
+# ================================================================== the Bethel cottages (house 105)
+# After the camp-meeting cottages of the Wesleyan Grove camp ground at Oak Bluffs, Martha's
+# Vineyard (1860s-70s): tall, narrow Carpenter Gothic cottages that replaced the tents round the
+# preaching ground, each a steep front gable a storey and a half high, Gothic double doors
+# below, a door onto a balcony over the porch above, the gable edged in deep jigsaw lace, and
+# each painted in its own bright colours. Three of them stand on an arc round a green; each
+# has its own siding, lace, railing and side.
+
+def bb_bethel(region, datum=0.0, pitch=2.4, batten=0.8, d=0.45):
+    """Board and batten: vertical battens over plain boards (cottage A)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    bats = cs_union([rect(u - batten / 2, v0 - 1, u + batten / 2, v1 + 1) for u in np.arange(u0 + pitch / 2, u1, pitch)]) ^ region
+    return _st(bats, 0.0, d) + M.extrude(region, 0.05)
+
+
+def clap_bethel(region, datum=0.0, pitch=1.1, d=0.4):
+    """Narrow clapboards, the butt of each course standing proud (cottage B)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    bds = [rect(u0 - 1, datum + k * pitch + 0.45, u1 + 1, datum + (k + 1) * pitch) for k in range(k0, int((v1 - datum) / pitch) + 2)]
+    return _st(cs_union(bds) ^ region, 0.0, d) + M.extrude(region, 0.05)
+
+
+def bands_bethel(region, datum=0.0):
+    """Clapboards with a band of diamond-cut shingles every eighth course (cottage C)."""
+    from .core import scallop_rows
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = [M.extrude(region, 0.05)]
+    pitch = 1.2
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    k1 = int((v1 - datum) / pitch) + 2
+    clap, shing = [], []
+    for k in range(k0, k1):
+        vb = datum + k * pitch
+        (shing if k % 8 in (5, 6, 7) else clap).append(rect(u0 - 1, vb + (0.45 if k % 8 not in (5, 6, 7) else 0.0), u1 + 1, vb + pitch))
+    if clap:
+        out.append(_st(cs_union(clap) ^ region, 0.0, 0.4))
+    if shing:
+        reg = cs_union(shing) ^ region
+        if not reg.is_empty():
+            out.append(scallop_rows(reg, 1.2, 1.8, d=0.4, shape="diamond", datum=datum))
+    return union(out)
+
+
+def _barge_band(L, slope, d_eave, skin, width):
+    s = slope
+    c = math.hypot(1.0, s)
+    a_l = np.array([-d_eave, 0.0])
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    a_r = np.array([L + d_eave, 0.0])
+    depth = skin + width
+    band = []
+    for a in (a_l, a_r):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    board = cs_union(band) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    return board, a_l, tip, a_r, depth, c
+
+
+def barge_bethel(L, slope, d_eave, kind="a", skin=1.8, width=3.4, d=1.4, finial=6.0):
+    """A cottage's jigsaw bargeboard (facade frame of the gable wall, hung on the rake's end):
+    kind "a": a deep band pierced with a row of circles, scalloped below, a drop at each
+    scallop; "b": a band of hearts pierced through, its edge a run of points; "c": a fringe of
+    teardrops hanging from a band, tied along their tips by a second band. Each has a pendant
+    and a spike finial at the apex, and every accent is tied into the board."""
+    board, a_l, tip, a_r, depth, c = _barge_band(L, slope, d_eave, skin, width)
+    s = slope
+    holes, extra = [], []
+    run = float(np.linalg.norm(tip - a_l))
+    for a in (a_l, a_r):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        dirv = (tip - a) / np.linalg.norm(tip - a)
+        step = 3.0
+        for k in range(1, int(run / step)):
+            p = a + dirv * (step * k)
+            if kind == "a":
+                holes.append(circle(tuple(p + n * (skin + width * 0.5)), 0.75, 16))
+                extra.append(circle(tuple(p + n * (depth + 0.4)), 0.9, 16) - circle(tuple(p + n * (depth + 1.6)), 1.0, 16))
+                if k % 2 == 0:
+                    q = p + n * (depth + 1.3)
+                    extra.append(cs_union([stroke([tuple(p + n * depth), tuple(q)], 1.0), circle(tuple(q + n * 0.5), 0.7, 14)]))
+            elif kind == "b":
+                hc = p + n * (skin + width * 0.5)
+                hh = cs_union([circle(tuple(hc + dirv * 0.45 - n * 0.25), 0.55, 12), circle(tuple(hc - dirv * 0.45 - n * 0.25), 0.55, 12),
+                               poly([tuple(hc + dirv * 0.95 - n * 0.2), tuple(hc - dirv * 0.95 - n * 0.2), tuple(hc + n * 0.95)])])
+                holes.append(hh)
+                extra.append(poly([tuple(p + n * (depth - 0.01) - dirv * 1.4), tuple(p + n * (depth - 0.01) + dirv * 1.4),
+                                   tuple(p + n * (depth + 1.4))]))
+            else:
+                q = p + n * (depth + 2.8)
+                extra.append(cs_union([stroke([tuple(p + n * depth), tuple(q)], 1.1), circle(tuple(q), 0.9, 14)]))
+        if kind == "c":
+            b0 = a + n * (depth + 2.6)
+            extra.append(poly([tuple(b0), tuple(tip + n * (depth + 2.6)), tuple(tip + n * (depth + 3.6)), tuple(b0 + n * 1.0)]))
+    xc = L / 2
+    pend = cs_union([rect(xc - 0.6, tip[1] - depth * c - 6.0, xc + 0.6, tip[1] - depth * c + 0.4),
+                     circle((xc, tip[1] - depth * c - 6.4), 1.0, 18)])
+    spike = poly([(xc - 0.8, tip[1] - 0.2), (xc + 0.8, tip[1] - 0.2), (xc + 0.5, tip[1] + finial * 0.6), (xc, tip[1] + finial),
+                  (xc - 0.5, tip[1] + finial * 0.6)])
+    cs_ = cs_union([board] + extra + [pend, spike]) - cs_union(holes)
+    cs_ = cs_ ^ rect(-d_eave - 6, -6.0, L + d_eave + 6, tip[1] + finial + 1)
+    return _text(_tie(cs_), 0.0, d)
+
+
+def door_btdouble(w=13.0, h=24.0, A=1.0):
+    """The cottage's Gothic double doors: two tall leaves under one pointed arch, each leaf with
+    a long pointed light over a panel, a pierced trefoil in the arch's head; a casing that
+    follows the arch, a hood moulding with returns."""
+    from .grand import _apex
+    apx = _apex(w)
+    vs = h - apx
+    from .grand import _lancet
+    op = _lancet(-w / 2, w / 2, vs, v0=0.0)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    lights = []
+    for sg in (-1, 1):
+        a, b_ = sorted((sg * 0.9, sg * (w / 2 - 1.1)))
+        la = _lancet(a, b_, vs - 3.0, v0=h * 0.42)
+        lights.append(la)
+    head = poly([(-w / 2 + 1.0, vs + 0.6), (w / 2 - 1.0, vs + 0.6), (0.0, h - 1.2)])
+    glass = cs_union(lights)
+    parts_s = [p - ext(glass, -pl - 1, 0.0) for p in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    parts_s.append(ext(rect(-0.3, 0.0, 0.3, vs + 0.6), -0.65, -0.1))                    # the meeting stile
+    for sg in (-1, 1):
+        a, b_ = sorted((sg * 0.9, sg * (w / 2 - 1.1)))
+        pan = rect(a, 1.2, b_, h * 0.42 - 1.0)
+        parts_s.append(ext(pan - pan.offset(-0.45, MIT, 4.0), -0.65, -0.2))
+    from .grand import _trefoil
+    tre = _trefoil((0.0, (vs + h) / 2), min(1.6, apx * 0.22))
+    parts_s.append(ext(_clean(head.offset(-0.3, MIT, 4.0) - tre), -0.65, -0.2))
+    X = w / 2 + A
+    outer = _lancet(-X, X, vs, v0=0.0)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(outer - op, 0.0, 0.9)]
+    hood = _lancet(-X - 1.0, X + 1.0, vs, v0=vs - 1.0) - _lancet(-X + 0.1, X - 0.1, vs, v0=vs - 2.0)
+    parts.append(ext(hood ^ rect(-50, vs - 1.0, 50, 100), 0.0, 1.3))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(min(sg * (X + 1.0), sg * (X - 0.2)), vs - 2.0, max(sg * (X + 1.0), sg * (X - 0.2)), vs - 0.9, 0.0, 1.3, c=0.3))
+    parts_s = [m ^ ext(plug_cs, -pl - 1.0, 1.0) for m in parts_s]
+    top = h + A + 1.2
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, top, 0.0)
+
+
+def window_btpointed(w=7.0, h=16.0, A=0.8, label=True):
+    """The cottage's pointed window: a pair of casements under a lancet head, a Y bar in the
+    head, a label moulding with stops; a sill."""
+    from .grand import _apex, _lancet
+    apx = _apex(w)
+    vs = h - apx
+    op = _lancet(-w / 2, w / 2, vs, v0=0.0)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, vs + apx * 0.35), rect(-w, vs * 0.5 - RIB / 2, w, vs * 0.5 + RIB / 2),
+                     stroke([(0.0, vs + apx * 0.3), (-w / 2, h)], RIB), stroke([(0.0, vs + apx * 0.3), (w / 2, h)], RIB)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    X = w / 2 + A
+    outer = _lancet(-X, X, vs, v0=0.0)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(outer - op, 0.0, 0.8)]
+    if label:
+        lab = _lancet(-X - 0.9, X + 0.9, vs, v0=vs - 0.8) - _lancet(-X + 0.05, X - 0.05, vs, v0=vs - 2.0)
+        parts.append(ext(lab ^ rect(-50, vs - 0.8, 50, 100), 0.0, 1.2))
+        for sg in (-1, 1):
+            parts.append(chamfer_box(min(sg * (X + 0.9), sg * X), vs - 2.2, max(sg * (X + 0.9), sg * X), vs - 0.79, 0.0, 1.2, c=0.3))
+    parts.append(chamfer_box(-X - 0.8, -1.2, X + 0.8, 0.01, 0.0, 1.3, c=0.3, bottom=1.3))
+    top = h + A + (0.9 if label else 0.0)
+    return O._one_piece(sash, parts, op, plug_cs, pl, top, -1.2)
+
+
+def window_bttrefoil(r=3.4, A=0.8):
+    """The gable's peak light: a trefoil in a round frame."""
+    from .grand import _trefoil
+    op = _trefoil((0.0, r), r * 0.82)
+    op = cs_union([op, circle((0.0, r), r * 0.5, 24)])
+    plug_cs = op.offset(-O.CLR, RND)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, RND)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, circle((0.0, r), 0.7, 16), plug_cs)
+    ring = circle((0.0, r), r + A + 0.6, 40) - op
+    parts = [ext(op - op.offset(-RIB, RND), 0.0, O.CAS), ext(ring, 0.0, 0.9)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, 2 * r + A + 0.6, -A - 0.6)
+
+
+def rail_bethel(L, h=7.0, kind="a", t=1.0):
+    """A balcony railing strip (flat; u along, v up, w 0..t; prints on its back): a top and a
+    bottom rail on end posts, and between them kind "a": flat sawn balusters with a heart cut in
+    each, "b": crossed sticks with a ring at every crossing, "c": pierced panels each with a
+    tulip; tabs under the bottom rail for slots in the porch roof."""
+    parts = [rect(0.0, 0.0, L, 0.8), rect(0.0, h - 1.0, L, h), rect(0.0, 0.0, 1.0, h), rect(L - 1.0, 0.0, L, h)]
+    holes = []
+    vb, vt = 0.8, h - 1.0
+    H = vt - vb
+    if kind == "a":
+        n = max(1, int((L - 2.0) / 1.9))
+        for k in range(n):
+            u = 1.0 + (L - 2.0) * (k + 0.5) / n
+            parts.append(rect(u - 0.6, vb, u + 0.6, vt))
+            hc = (u, vb + H * 0.55)
+            holes.append(cs_union([circle((u - 0.22, hc[1] + 0.2), 0.25, 10), circle((u + 0.22, hc[1] + 0.2), 0.25, 10)]))
+        out = cs_union(parts)
+    elif kind == "b":
+        n = max(1, int(round((L - 2.0) / (H * 1.2))))
+        for k in range(n):
+            a, b_ = 1.0 + (L - 2.0) * k / n, 1.0 + (L - 2.0) * (k + 1) / n
+            parts += [stroke([(a, vb), (b_, vt)], 0.7), stroke([(a, vt), (b_, vb)], 0.7)]
+            parts.append(circle(((a + b_) / 2, vb + H / 2), 1.0, 16) - circle(((a + b_) / 2, vb + H / 2), 0.45, 12))
+        out = _clean(cs_union(parts))
+    else:
+        n = max(1, int((L - 2.0) / 3.6))
+        for k in range(n):
+            a, b_ = 1.0 + (L - 2.0) * k / n, 1.0 + (L - 2.0) * (k + 1) / n
+            parts.append(rect(a, vb, b_, vt))
+            uc = (a + b_) / 2
+            tul = cs_union([circle((uc, vb + H * 0.55), 0.75, 14), circle((uc - 0.55, vb + H * 0.72), 0.4, 10),
+                            circle((uc + 0.55, vb + H * 0.72), 0.4, 10)])
+            holes.append(tul)
+            holes.append(rect(uc - 0.25, vb + 0.6, uc + 0.25, vb + H * 0.4))
+            parts.append(rect(a - 0.3, vb, a + 0.3, vt))
+        out = cs_union(parts)
+    out = out - cs_union(holes) if holes else out
+    for u in (L * 0.25, L * 0.75):
+        out = out + rect(u - 1.2, -0.8, u + 1.2, 0.01)
+    return ext(out, 0.0, t)
+
+
+def post_bethel(h, collar=None, abacus=2.8, slot=None):
+    """The cottages' porch post: a slender round shaft with a ring a third up and a little
+    bulb under the cap (sawn work hangs from the beam between them)."""
+    from .porchwork import _plinth, _revolve, _top
+    z1 = h - 2.6
+    zr = 1.2 + (z1 - 1.2) * 0.35
+    prof = [(0.0, 1.19), (1.1, 1.19), (0.95, 1.6), (0.95, zr - 0.3), (1.2, zr), (0.95, zr + 0.3), (0.95, z1 - 1.6),
+            (1.25, z1 - 1.0), (1.0, z1 - 0.4), (1.0, z1)]
+    body = _revolve(prof) + _plinth(2.6, 1.2)
+    return body + _top(h, abacus / 2, z1, 1.0, slot, seg=36)
+
+
+def spandrel_btlace(u0, u1, v_bot, v_top):
+    """The cottages' porch lace: a shallow pointed arch of sawn work between the posts, a
+    roundel pierced in each spandrel, drops along the arch."""
+    H = v_top - v_bot
+    xc = (u0 + u1) / 2
+    w = u1 - u0
+    pts = [(u0, v_bot)]
+    for t in np.linspace(0, 1, 16):
+        x = u0 + w * t
+        y = v_bot + H * 0.75 * (1 - abs(2 * t - 1)) ** 0.6
+        pts.append((x, y))
+    pts += [(u1, v_bot), (u1, v_top), (u0, v_top)]
+    band = poly(pts)
+    inner = band.offset(-0.9, RND)
+    out = band - (inner ^ rect(u0, v_bot - 1, u1, v_bot + H * 0.6))
+    for sg in (-1, 1):
+        cx = xc + sg * w * 0.33
+        out = out - circle((cx, v_top - H * 0.32), min(0.8, H * 0.18), 16)
+    for t in np.linspace(0.2, 0.8, 4):
+        x = u0 + w * t
+        y = v_bot + H * 0.75 * (1 - abs(2 * t - 1)) ** 0.6
+        out = out + cs_union([rect(x - 0.35, y - 1.6, x + 0.35, y + 0.2), circle((x, y - 1.8), 0.55, 12)])
+    return _clean(out, 0.22) ^ rect(u0, v_bot - 3.0, u1, v_top + 0.01)
+
+
+def skirt_btlattice(reg, d=1.2):
+    """The cottages' skirt between the piers: a lattice of diagonal laths."""
+    u0, v0, u1, v1 = reg.bounds()
+    la = cs_union([stroke([(u, v0 - 2), (u + (v1 - v0) + 4, v1 + 2)], 0.6) for u in np.arange(u0 - (v1 - v0) - 4, u1, 1.8)])
+    lb = cs_union([stroke([(u, v1 + 2), (u + (v1 - v0) + 4, v0 - 2)], 0.6) for u in np.arange(u0 - (v1 - v0) - 4, u1, 1.8)])
+    return M.extrude(la ^ reg, d / 2) + M.extrude(lb ^ reg, d / 2).translate([0, 0, d / 2])
+
+
+def frieze_btpennant(L, h, b, pitch, margin, pair, half):
+    """The cottages' storey frieze: a row of hanging pennants (sawn points), a bead over them."""
+    v1 = h - 0.4
+    out = [_st(rect(0.2, v1 - 0.7, L - 0.2, v1), b, 0.35)]
+    pw = 1.8
+    n = max(1, int((L - 0.6) / pw))
+    u0 = (L - n * pw) / 2
+    pens = [poly([(u0 + pw * k + 0.15, v1 - 0.69), (u0 + pw * (k + 1) - 0.15, v1 - 0.69), (u0 + pw * (k + 0.5), 0.5)]) for k in range(n)]
+    out.append(_st(cs_union(pens), b, 0.35))
+    return out, []
+
+
+def course_btspool(L, h, b, pitch, margin, p):
+    """A course of little turned spools (beads and reels), the cottages' eave."""
+    rod = rect(0.2, 0.25, L - 0.2, h - 0.25)
+    out = [_st(rod, b, 0.15)]
+    sp = []
+    u = 0.6
+    while u < L - 0.9:
+        sp.append(rect(u, 0.3, u + 0.9, h - 0.3))
+        u += 1.4
+    out.append(_st(cs_union(sp), b + 0.15, 0.3))
+    return out
+
+
+PW.POSTS.update(bethel=post_bethel)
+PW.FRIEZES.update(btlace=spandrel_btlace)
+PW.SKIRTS.update(btlattice=skirt_btlattice)
+CO.FRIEZE_EXTRA.update(btpennant=frieze_btpennant)
+CO.COURSE_EXTRA.update(btspool=course_btspool)
+
+
+def fill_btsawn(L, vb, vt):
+    """The cottages' porch railing: flat sawn balusters, each waisted, with a diamond cut in
+    its widest part."""
+    H = vt - vb
+    n = max(1, int(round(L / 1.8)))
+    out, holes = [], []
+    for k in range(n):
+        u = L * (k + 0.5) / n
+        out.append(poly([(u - 0.45, vb), (u + 0.45, vb), (u + 0.75, vb + H * 0.35), (u + 0.45, vb + H * 0.55), (u + 0.75, vb + H * 0.75),
+                         (u + 0.45, vt), (u - 0.45, vt), (u - 0.75, vb + H * 0.75), (u - 0.45, vb + H * 0.55), (u - 0.75, vb + H * 0.35)]))
+    return [cs_union(out)]
+
+
+def edge_btscallop(L, z0, zc):
+    """The cottages' porch roof edge: a scalloped valance board under a plain fascia."""
+    n = max(1, int((L - 1.0) / 2.0))
+    sc = cs_union([circle((0.5 + (L - 1.0) * (k + 0.5) / n, z0 + 0.2), 0.95, 16) for k in range(n)])
+    cs = (sc + rect(0.3, z0 + 0.2, L - 0.3, zc)) ^ rect(0.3, z0 - 1.0, L - 0.3, zc)
+    return cs, 0.6
+
+
+PW.FILLS.update(btsawn=fill_btsawn)
+FT.EDGE_EXTRA.update(btscallop=edge_btscallop)

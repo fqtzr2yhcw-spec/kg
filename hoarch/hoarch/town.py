@@ -1436,7 +1436,7 @@ def sign_freight(text, L, H=5.0, t=1.0, cap=3.0):
     from .storefront import text_cs
     b = rect(-L / 2, 0.0, L / 2, H)
     board = ext(b, 0.0, t) + ext(b - b.offset(-0.6, MJ, 4.0), t - 0.01, t + 0.4)
-    letters = text_cs(text, cap=cap, font="sans" if False else "serif", track=0.6)
+    letters = text_cs(text, cap=cap, font="serif", track=0.6)
     lb = letters.bounds()
     sc = min(1.0, (L - 2.0) / max(1e-6, lb[2] - lb[0]))
     letters = letters.scale((sc, 1.0)).translate(((-(lb[0] + lb[2]) / 2) * sc, (H - cap) / 2 - lb[1]))

@@ -73,6 +73,8 @@ HE = CO.band_height(EAVE)
 ZT = 12.0                                       # the front terrace (the walk-out storey's floor)
 ZJ0 = ZT + 30.0                                 # the stone storey's top (its joint ring above)
 ZM = ZJ0 + RJ                                   # the main floor (the landing, the doors)
+ZF = ZM                                         # (the audit reads the main floor as the first storey)
+ZB = ZT                                         # (and the stone storey under it as a basement)
 ZG = ZJ0 - 2.0                                  # the garden behind, just under the joint's ledge
 S1 = ZM + 32.0                                  # the storey joint
 ZU = S1 + RJ
@@ -81,7 +83,7 @@ ZW = round((ZE + HE) / 0.2) * 0.2
 FASCIA = 1.4
 Z_EAVE = ZW + FASCIA
 D_EAVE, S_ROOF = 3.0, 0.72
-X0, X1, Y0, Y1 = 36.0, 176.0, 54.0, 134.0       # the house, 140 x 80
+X0, X1, Y0, Y1 = 30.0, 182.0, 54.0, 134.0       # the house, 152 x 80
 XC = (X0 + X1) / 2
 MAIN = Block("main", [(X0, Y0), (X1, Y0), (X1, Y1), (X0, Y1)], ZT, ZW)
 GX0, GX1, GY0, GY1 = 0.0, 220.0, 27.0, 160.0    # the ground behind the street wall
@@ -129,14 +131,14 @@ def _openings():
     base, main, upper = N.window_fvbase(), N.window_fvmain(), N.window_fvupper()
     plain, low = N.door_fvplain(), N.door_fvplain(h=16.0)
     # the walk-out storey: a window clear of the stair at each end, the door under the landing
-    for x in (44.0, 136.0, 164.0):
+    for x in (44.0, 138.0, 168.0):
         add(L0, MAIN, x, Y0, VB, base, f"S{x:.0f}-0")
     add(L0, MAIN, XD, Y0, 0.4, low, "base-door", "door")
     # the main floor: four windows and the door on the landing; five windows above
-    for x in (50.0, 76.0, 136.0, 162.0):
+    for x in (46.0, 76.0, 136.0, 166.0):
         add(L1, MAIN, x, Y0, V1, main, f"S{x:.0f}-1", sh=True)
     add(L1, MAIN, XD, Y0, ZM - ZT + 0.4, N.door_fvfront(), "front-door", "door")
-    for x in (50.0, 76.0, XD, 136.0, 162.0):
+    for x in (46.0, 76.0, XD, 136.0, 166.0):
         add(L2, MAIN, x, Y0, V2, upper, f"S{x:.0f}-2", sh=True)
     # the ends: two bays each floor; the lunette in each gable
     for y in (76.0, 112.0):
@@ -148,9 +150,9 @@ def _openings():
         add(LG, MAIN, x, (Y0 + Y1) / 2, ZW - ZT + 4.0, lun, f"lunette-{tag}")
     # the back: the garden door and four windows; five above
     add(L1, MAIN, XD, Y1, ZM - ZT + 0.4, plain, "garden-door", "door")
-    for x in (50.0, 76.0, 136.0, 162.0):
+    for x in (46.0, 76.0, 136.0, 166.0):
         add(L1, MAIN, x, Y1, V1, main, f"N{x:.0f}-1")
-    for x in (50.0, 76.0, XD, 136.0, 162.0):
+    for x in (46.0, 76.0, XD, 136.0, 166.0):
         add(L2, MAIN, x, Y1, V2, upper, f"N{x:.0f}-2")
     return L0, L1, L2, LG, shut
 
@@ -320,7 +322,7 @@ def build(kit=None):
         body = M.extrude(face, LT).translate([0, 0, -LT])
         cop = face - face.translate((0.0, -1.2))
         tex = N.stone_fevre(face - cop, seed=len(name))
-        wall = body + tex + M.extrude(cop, LT + 1.0).translate([0, 0, -LT - 0.2])
+        wall = body + tex + M.extrude(cop, LT + 1.0).translate([0, 0, -LT])            # flush inside: it prints on that face
         lot_parts.append((name, wall.transform(A), A))
     lot_env = union([w_ for _, w_, _ in lot_parts])
     ground = ground - box([GX0 - 1, GY0 - 1, -1], [GX0 + LT + 0.15, GY1 + 1, 200]) - box([GX1 - LT - 0.15, GY0 - 1, -1], [GX1 + 1, GY1 + 1, 200]) \
@@ -341,7 +343,7 @@ def build(kit=None):
     sw = box([GX0, YW, 0.0], [GX1, GY0 + 0.01, ZT])
     face = N.stone_fevre(rect(0.0, 0.0, GX1 - GX0, ZT - 1.2), seed=3)
     sw = sw + face.transform(np.array([[1.0, 0, 0, GX0], [0, 0, -1.0, YW + 0.03], [0, 1.0, 0, 0.0]]))
-    sw = sw + box([GX0 - 0.6, YW - 0.6, ZT - 1.2], [GX1 + 0.6, GY0 + 0.6, ZT + 0.4])
+    sw = sw + M.hull(box([GX0, YW, ZT - 1.2], [GX1, GY0 + 0.01, ZT - 1.19]) + box([GX0 - 0.6, YW - 0.6, ZT - 0.6], [GX1 + 0.6, GY0 + 0.6, ZT + 0.4]))
     gate0, gate1 = XS0 - 10.0, XS0 + 6.0
     sw = sw - box([gate0, YW - 2, -1], [gate1, GY0 + 2, ZT + 5])
     for x in (gate0 - 2.4, gate1 + 2.4):

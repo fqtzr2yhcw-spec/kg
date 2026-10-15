@@ -288,7 +288,7 @@ def build(kit=None):
     print("roof", round(time.time() - t0, 1))
 
     # --- the bay's cornice and its bell cap, both cut where they run into the roof
-    brings, _ = CO.level(BAYU.pts, BZE, SMALL, cut=solid_env + walls_env + roof + [p_ for p_ in kit.parts if p_.name == "WALLS-2"][0].solid.offset(0.0) if False else solid_env + walls_env + roof)
+    brings, _ = CO.level(BAYU.pts, BZE, SMALL, cut=solid_env + walls_env + roof)
     w2s = [p_ for p_ in kit.parts if p_.name == "WALLS-2"][0].solid
     brings = [dict(r, solid=r["solid"] - w2s) for r in brings]
     CO.add_level(kit, brings, "CORNICE-BAY", "cornice")
