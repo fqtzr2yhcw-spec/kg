@@ -225,3 +225,84 @@ def boulder(c, r, squash=0.55, seed=0):
     rng = np.random.default_rng(seed)
     b = M.sphere(r, 20).scale([1.0 + 0.2 * rng.random(), 0.8 + 0.3 * rng.random(), squash])
     return b.translate([c[0], c[1], 0.0])
+
+
+# ---------------------------------------------------------------- batch helpers (houses 103 on)
+def rect_fp(x0, y0, x1, y1, g=0.0):
+    return [(x0 - g, y0 - g), (x1 + g, y0 - g), (x1 + g, y1 + g), (x0 - g, y1 + g)]
+
+
+def gable_x(y0, y1, ze, s):
+    """Plane groups of a gable roof with its ridge along x, eaves at y0 and y1 at height ze."""
+    return [[((0.0, y0), (0, 1), ze, s), ((0.0, y1), (0, -1), ze, s)]]
+
+
+def gable_y(x0, x1, ze, s):
+    """Ridge along y, eaves at x0 and x1."""
+    return [[((x0, 0.0), (1, 0), ze, s), ((x1, 0.0), (-1, 0), ze, s)]]
+
+
+def hip(x0, y0, x1, y1, ze, s):
+    return [[((x0, 0.0), (1, 0), ze, s), ((x1, 0.0), (-1, 0), ze, s),
+             ((0.0, y0), (0, 1), ze, s), ((0.0, y1), (0, -1), ze, s)]]
+
+
+def shed(edge, ze, s):
+    """A one-plane roof: low edge (q, t) at height ze rising along t."""
+    q, t = edge
+    return [[(q, t, ze, s)]]
+
+
+def sunk(groups, d):
+    """The same roof planes lowered by ``d`` measured square to each plane (walls built to them
+    end inside the roof skin instead of on its top face)."""
+    return [[(q, t, z0 - d * math.sqrt(1 + s * s), s) for q, t, z0, s in g] for g in groups]
+
+
+def block(m, x0, y0, x1, y1, z0, groups, over=5.0, th=2.6, wall="wall", roofmat="roof", rake=None):
+    """Walls up to the roof planes (gable walls included) and a roof skin overhanging the eaves
+    by ``over`` (and the rakes by ``rake``, default the same)."""
+    rk = over if rake is None else rake
+    m.add(wall, roof(rect_fp(x0, y0, x1, y1), z0, sunk(groups, th / 2)))
+    fp = [(x0 - rk, y0 - over), (x1 + rk, y0 - over), (x1 + rk, y1 + over), (x0 - rk, y1 + over)]
+    m.add(roofmat, skin_roof(fp, groups, th=th))
+
+
+def posts(m, pts, z0, z1, r=1.3, mat="trim"):
+    for p in pts:
+        m.add(mat, M.cylinder(z1 - z0, r, r, 16).translate([p[0], p[1], z0]))
+
+
+def stack(m, x, y, w, d, z0, z1, mat="chimney", cap=1.2):
+    m.add(mat, bx(x - w / 2, y - d / 2, z0, x + w / 2, y + d / 2, z1) +
+          bx(x - w / 2 - cap, y - d / 2 - cap, z1 - 2.4, x + w / 2 + cap, y + d / 2 + cap, z1))
+
+
+def rail_x(m, x0, x1, y, z, h=6.0, t=0.8, mat="trim"):
+    m.add(mat, bx(x0, y - t / 2, z, x1, y + t / 2, z + h))
+
+
+def rail_y(m, y0, y1, x, z, h=6.0, t=0.8, mat="trim"):
+    m.add(mat, bx(x - t / 2, y0, z, x + t / 2, y1, z + h))
+
+
+def steps_y(m, x0, x1, y_top, z_top, n, run=2.6, toward=-1, mat="base"):
+    """A flight of n steps down from (y_top, z_top) toward -y (toward=-1) or +y."""
+    rise = z_top / n if n else 0
+    for k in range(n):
+        z = z_top - k * rise
+        ya, yb = sorted((y_top, y_top + toward * run * (k + 1)))
+        m.add(mat, bx(x0, ya, 0.0, x1, yb, z))
+
+
+def hip_poly(pts, ze, s):
+    """A hip roof over any convex plan polygon (counter-clockwise): one plane per edge, through
+    the edge at height ze, rising inward."""
+    out = []
+    P = np.asarray(pts, float)
+    for i in range(len(P)):
+        a, b = P[i], P[(i + 1) % len(P)]
+        e = (b - a) / np.linalg.norm(b - a)
+        n = np.array([-e[1], e[0]])                                     # inward for counter-clockwise
+        out.append((tuple(a), tuple(n), ze, s))
+    return [out]
