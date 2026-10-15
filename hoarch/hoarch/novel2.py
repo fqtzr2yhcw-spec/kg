@@ -4039,3 +4039,431 @@ def woodpile_sebago(L=12.0, d=8.0, h=18.0, seed=0):
     e_ = cs_union(ends) ^ rect(0.0, 0.0, L, h)
     out = out + M.extrude(e_, 0.5).transform(np.array([[1.0, 0, 0, 0], [0, 0, 1.0, -0.2], [0, 1.0, 0, 0]]))
     return out
+
+
+# ================================================================== the Prow (house 112)
+# After the Gooderham Building, Toronto (1892, David Roberts Jr.): a flatiron block on a wedge
+# lot where two streets fork, its point an octagonal turret rising through the cornice under
+# a copper spire; cast-iron shopfronts along both fronts, three storeys of brick over them
+# with sandstone trim, a steep slate roof with dormers and a flat top with iron cresting, a
+# blank party wall at the back (its sign panel left for paint).
+
+def brick_prow(region, datum=0.0, L=None, sign=None):
+    """Red brick in running bond with a course of headers every sixth course, the joints
+    struck. ``sign`` (a rectangle in the face's u, v): a smooth sign panel in a raised brick
+    frame, left for a painted advertisement."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    body = region
+    out = []
+    if sign is not None:
+        fr = sign.offset(1.4, MIT, 4.0) - sign
+        body = region - sign.offset(1.5, MIT, 4.0)
+        out.append(M.extrude(fr ^ region, 0.6) + M.extrude(sign ^ region, 0.12))
+    if not body.is_empty():
+        bh = 0.8
+        bricks = []
+        k0 = math.floor((v0 - datum) / bh) - 1
+        for k in range(k0, int((v1 - datum) / bh) + 2):
+            v = datum + k * bh
+            hdr = k % 6 == 5
+            bl = 1.2 if hdr else 2.4
+            u = u0 - 3.0 - (0.0 if hdr else (k % 2) * 1.2)
+            while u < u1 + 3.0:
+                bricks.append(rect(u + 0.11, v + 0.11, u + bl - 0.11, v + bh - 0.11))
+                u += bl
+        out.append(M.extrude(cs_union(bricks) ^ body, 0.25) + M.extrude(body, 0.05))
+    return union(out)
+
+
+def foundation_prplinth(reg, seed=0):
+    """The block's granite plinth: long smooth blocks with V joints, a bevelled cap."""
+    rng = np.random.default_rng(seed + 71)
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, 0.3)]
+    cap = chamfer_box(u0, v1 - 1.2, u1, v1, 0.0, 0.8, c=0.4, square=("u0", "u1"), bottom=0.8)
+    joints = []
+    u = u0 - rng.uniform(0.0, 4.0)
+    while u < u1:
+        u += rng.uniform(9.0, 15.0)
+        joints.append(poly([(u - 0.25, v0 - 1), (u + 0.25, v0 - 1), (u + 0.25, v1 - 1.2), (u - 0.25, v1 - 1.2)]))
+    body = out[0] - M.extrude(cs_union(joints), 1.0).translate([0, 0, 0.15]) if joints else out[0]
+    return body + cap
+
+
+TW.FOUNDATION_EXTRA.update(prplinth=foundation_prplinth)
+
+
+# ---- cornice ornaments
+def course_prbillet(L, h, b, pitch, margin, p):
+    """Billet moulding: two rows of short raised blocks, the rows staggered."""
+    out = [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.2)]
+    bl = []
+    hh = (h - 0.3) / 2
+    for r in range(2):
+        v = 0.15 + r * hh
+        for u in np.arange(0.4 + r * 1.2, L - 1.4, 2.4):
+            bl.append(rect(u, v + 0.15, u + 1.2, v + hh - 0.15))
+    out.append(_st(cs_union(bl), b + 0.19, 0.4))
+    return out
+
+
+def course_prchequer(L, h, b, pitch, margin, p):
+    """A chequer band: a raised field with squares sunk in two staggered rows."""
+    fld = rect(0.2, 0.15, L - 0.2, h - 0.15)
+    hh = (h - 0.3) / 2
+    sq = []
+    for r in range(2):
+        v = 0.15 + r * hh
+        for u in np.arange(0.4 + r * hh, L - hh, 2 * hh):
+            sq.append(rect(u + 0.12, v + 0.12, u + hh - 0.12, v + hh - 0.12))
+    return [_st(fld - cs_union(sq), b, 0.45), _st(fld, b, 0.15)]
+
+
+def frieze_prarcade(L, h, b, pitch, margin, pair, half):
+    """The main cornice's corbelled arcade: little round arches of brick springing from long
+    pendant corbels, a band over them."""
+    v0, v1 = 0.3, h - 0.3
+    sp = 3.2
+    n = max(1, int((L - 0.8) / sp))
+    u0 = (L - n * sp) / 2
+    band = rect(0.2, v1 - 0.9, L - 0.2, v1)
+    arches, corb = [], []
+    r = sp / 2 - 0.45
+    vs = v1 - 0.9 - r - 0.1
+    for k in range(n):
+        uc = u0 + sp * (k + 0.5)
+        ring = (circle((uc, vs), r + 0.45, 20) - circle((uc, vs), r, 20)) ^ rect(uc - r - 1, vs, uc + r + 1, v1)
+        arches.append(ring)
+    for k in range(n + 1):
+        uc = u0 + sp * k
+        corb.append(poly([(uc - 0.45, vs + 0.4), (uc + 0.45, vs + 0.4), (uc + 0.3, v0 + 0.6), (uc, v0), (uc - 0.3, v0 + 0.6)]))
+    out = [_st(band + cs_union(arches) ^ rect(0.2, v0, L - 0.2, v1), b, 0.45), _st(cs_union(corb) ^ rect(0.2, v0, L - 0.2, v1), b, 0.6)]
+    return out, []
+
+
+def bracket_prcorbel(h, d, t):
+    """A stepped brick corbel (side profile): three courses each stepping out further, the
+    bottom one chamfered back to the wall; solid."""
+    hh = min(h, 2.4)
+    st_ = hh / 3
+    steps = [rect(0.0, -st_ * (k + 1), d * (k + 1) / 3, -st_ * k) for k in range(3)]
+    return cs_union(steps + [poly([(0.0, -hh), (d / 3, -hh + st_ * 0.01), (0.0, -hh + st_)])]) ^ rect(0.0, -hh - 1.0, d + 1.0, 0.01)
+
+
+CO.FRIEZE_EXTRA.update(prarcade=frieze_prarcade)
+CO.COURSE_EXTRA.update(prbillet=course_prbillet, prchequer=course_prchequer)
+TW.BRACKET_EXTRA.update(prcorbel=bracket_prcorbel)
+
+
+# ---- the shopfronts, the entrance, the windows
+def shop_prow(w=24.0, h=29.0):
+    """A cast-iron shopfront (an opening, door kind): a glazed door in the middle under its
+    transom, a display window each side over a panelled bulkhead, a row of prism-glass
+    transom lights across the top, fluted iron columns at the ends, and over it all the
+    signboard in a moulded frame under a cornice."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    dw = 6.0
+    vb = 5.0                                     # the bulkheads' top
+    vt = h - 5.0                                 # the transom bar
+    door_gl = rect(-dw / 2 + 0.9, h * 0.42, dw / 2 - 0.9, vt - 0.9)
+    disp = [rect(-w / 2 + 1.6, vb + 0.6, -dw / 2 - 0.8, vt - 0.6), rect(dw / 2 + 0.8, vb + 0.6, w / 2 - 1.6, vt - 0.6)]
+    trans = rect(-w / 2 + 1.6, vt + 0.6, w / 2 - 1.6, h - 0.8)
+    glass = cs_union([door_gl, trans] + disp)
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(glass, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    tb = trans.bounds()
+    bars = [rect(x - RIB / 2, tb[1] - 1, x + RIB / 2, tb[3] + 1) for x in np.arange(tb[0] + 2.0, tb[2] - 1.0, 2.0)]
+    bars.append(rect(-w, (tb[1] + tb[3]) / 2 - RIB / 2, w, (tb[1] + tb[3]) / 2 + RIB / 2))
+    bars.append(rect(-RIB / 2, door_gl.bounds()[1] - 1, RIB / 2, door_gl.bounds()[3] + 1))
+    parts_s.append(ext(cs_union(bars) ^ glass.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    # the bulkheads' panels and the door's lower panel
+    for a, c_ in ((-w / 2 + 1.6, -dw / 2 - 0.8), (dw / 2 + 0.8, w / 2 - 1.6)):
+        pan = rect(a + 0.4, 0.8, c_ - 0.4, vb - 0.3)
+        parts_s.append(ext(pan - pan.offset(-0.45, MIT, 4.0), -0.65, -0.2))
+        parts_s.append(ext(pan.offset(-0.9, MIT, 4.0), -0.65, -0.3))
+    dpan = rect(-dw / 2 + 0.9, 1.0, dw / 2 - 0.9, h * 0.42 - 0.8)
+    parts_s.append(ext(dpan - dpan.offset(-0.45, MIT, 4.0), -0.65, -0.2))
+    parts_s.append(ext(rect(-dw / 2, 0.0, -dw / 2 + 0.5, vt) + rect(dw / 2 - 0.5, 0.0, dw / 2, vt), -0.65, -0.1))
+    X = w / 2
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * X, sg * (X + 2.2)))
+        xc = (x0 + x1) / 2
+        parts.append(ext(rect(x0, 0.0, x1, h + 0.2), 0.0, 0.9))
+        flutes = cs_union([rect(x - 0.15, 2.0, x + 0.15, h - 2.0) for x in (xc - 0.5, xc + 0.5)])
+        parts.append(ext(rect(x0 + 0.3, 3.0, x1 - 0.3, h - 3.0) - flutes, 0.89, 1.25))
+        parts.append(chamfer_box(x0 - 0.3, 0.0, x1 + 0.3, 2.6, 0.0, 1.5, c=0.3, square=("v0",)))
+        parts.append(chamfer_box(x0 - 0.4, h - 2.0, x1 + 0.4, h + 0.21, 0.0, 1.5, c=0.3, bottom=1.5))
+    E = X + 2.6
+    sb = rect(-E, h + 0.2, E, h + 4.6)
+    parts.append(ext(sb, 0.0, 0.8))
+    parts.append(ext(sb - sb.offset(-0.7, MIT, 4.0), 0.79, 1.2))
+    parts.append(chamfer_box(-E - 0.8, h + 4.59, E + 0.8, h + 5.6, 0.0, 1.8, c=0.3, bottom=1.8))
+    top = h + 5.6
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, top, 0.0, land_extra=rect(-E - 0.8, 0.0, E + 0.8, top))
+
+
+def door_prowmain(w=9.0, h=19.0, A=1.4):
+    """The entrance at the point: a pair of doors glazed above panels under a fanlight of
+    radiating bars, in a Romanesque archivolt of alternating long and short voussoirs with a
+    hood mould, on dwarf columns with cushion capitals."""
+    r = w / 2
+    vs = h
+    op = _round_op(w, h + r)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    fan = (op ^ rect(-50, vs + 0.5, 50, 100)).offset(-0.6, MIT, 4.0)
+    lights = [rect(-r + 0.9, h * 0.5, -0.6, vs - 0.9), rect(0.6, h * 0.5, r - 0.9, vs - 0.9)]
+    glass = cs_union([fan] + lights)
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(glass, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    bars = [stroke([(0.0, vs + 0.5), ((r + 1) * math.cos(a), vs + 0.5 + (r + 1) * math.sin(a))], RIB) for a in np.linspace(0.5, math.pi - 0.5, 5)]
+    bars += [rect(-w, (h * 0.5 + vs - 0.9) / 2 - RIB / 2, w, (h * 0.5 + vs - 0.9) / 2 + RIB / 2)]
+    parts_s.append(ext(cs_union(bars) ^ glass.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    parts_s.append(ext(rect(-r + 0.4, vs - 0.1, r - 0.4, vs + 0.5) + rect(-0.3, 0.0, 0.3, vs), -0.65, -0.1))
+    for a, c_ in ((-r + 0.9, -0.6), (0.6, r - 0.9)):
+        pan = rect(a, 1.0, c_, h * 0.5 - 0.8)
+        parts_s.append(ext(pan - pan.offset(-0.45, MIT, 4.0), -0.65, -0.2))
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    ring = (op.offset(A, RND) - op) ^ rect(-50, vs, 50, 100)
+    vous = []
+    for k, a in enumerate(np.linspace(0.0, math.pi, 12)[:-1]):
+        a2 = a + math.pi / 11
+        rr = r + A + (0.6 if k % 2 == 0 else 0.0)
+        vous.append(poly([(r * math.cos(a), vs + r * math.sin(a)), (rr * math.cos(a), vs + rr * math.sin(a)),
+                          (rr * math.cos(a2), vs + rr * math.sin(a2)), (r * math.cos(a2), vs + r * math.sin(a2))]).offset(-0.1, MIT, 4.0))
+    parts.append(ext(ring, 0.0, 0.7))
+    parts.append(ext(cs_union(vous), 0.69, 1.2))
+    hood = (circle((0.0, vs), r + A + 1.6, 40) - circle((0.0, vs), r + A + 0.8, 40)) ^ rect(-50, vs, 50, 100)
+    parts.append(ext(hood, 0.0, 1.5))
+    for sg in (-1, 1):
+        x = sg * (r + 1.1)
+        x0, x1 = sorted((sg * r, sg * (r + 2.2)))
+        parts.append(chamfer_box(x0, 0.0, x1, 1.6, 0.0, 1.4, c=0.25, square=("v0",)))
+        parts.append(ext(rect(x - 0.75, 1.59, x + 0.75, vs - 1.6), 0.0, 1.3))
+        parts.append(ext(poly([(x - 0.75, vs - 1.61), (x + 0.75, vs - 1.61), (x + 1.1, vs - 0.6), (x - 1.1, vs - 0.6)]), 0.0, 1.5))
+        parts.append(chamfer_box(x0 - 0.1, vs - 0.61, x1 + 0.1, vs + 0.01, 0.0, 1.6, c=0.25, bottom=1.6))
+    top = vs + r + A + 1.6
+    E = r + 2.3
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, top, 0.0, land_extra=rect(-E, 0.0, E, vs) + circle((0.0, vs), r + A + 1.6, 40))
+
+
+def _seg_op(w, h, rise):
+    """A segmental-headed opening: sides to h - rise, an arc of the given rise over them."""
+    r = (w * w / 4 + rise * rise) / (2 * rise)
+    vc = h - r
+    a0 = math.asin((w / 2) / r)
+    arc = [(r * math.sin(a), vc + r * math.cos(a)) for a in np.linspace(a0, -a0, 17)]
+    return poly([(-w / 2, 0.0), (w / 2, 0.0)] + arc), r, vc
+
+
+def _sash11(plug_cs, pl, rows=(1, 1), cols=1):
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    u0, v0, u1, v1 = inner.bounds()
+    vm = v0 + (v1 - v0) * 0.5
+    bars = rect(u0 - 1, vm - 0.3, u1 + 1, vm + 0.3)
+    if cols > 1:
+        bars = bars + cs_union([rect(u0 + (u1 - u0) * k / cols - RIB / 2, v0 - 1, u0 + (u1 - u0) * k / cols + RIB / 2, v1 + 1) for k in range(1, cols)])
+    return _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars ^ inner.offset(0.1, MIT, 4.0), plug_cs)
+
+
+def window_prow2(w=7.4, h=16.0):
+    """The first upper storey: two over two under a segmental head, a sandstone hood mould
+    following the arch with a keystone and two label stops, a stone sill on blocks."""
+    rise = 1.8
+    op, r, vc = _seg_op(w, h, rise)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash11(plug_cs, pl, cols=2)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    hood = (op.offset(1.6, MIT, 4.0) - op.offset(0.6, MIT, 4.0)) ^ rect(-50, h - rise - 1.6, 50, 100)
+    parts.append(ext(hood, 0.0, 1.1))
+    for sg in (-1, 1):
+        x = sg * (w / 2 + 1.1)
+        parts.append(chamfer_box(x - 0.8, h - rise - 2.6, x + 0.8, h - rise - 1.0, 0.0, 1.2, c=0.3, bottom=1.2))
+    parts.append(ext(poly([(-0.8, h - 0.6), (0.8, h - 0.6), (1.1, h + 1.9), (-1.1, h + 1.9)]), 0.0, 1.4))
+    parts.append(chamfer_box(-w / 2 - 1.4, -1.2, w / 2 + 1.4, 0.01, 0.0, 1.4, c=0.3, bottom=1.4))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (w / 2 + 0.9) - 0.6, -2.0, sg * (w / 2 + 0.9) + 0.6, -1.19, 0.0, 1.2, c=0.25, bottom=1.2))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 1.9, -2.0)
+
+
+def window_prow3(w=7.4, h=15.0):
+    """The second upper storey: two over two, flat-headed, under a sandstone lintel carved
+    with a zigzag between two fillets; a plain sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash11(plug_cs, pl, cols=2)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    X = w / 2 + 1.6
+    lint = rect(-X, h - 0.01, X, h + 2.6)
+    parts.append(ext(lint, 0.0, 0.9))
+    zz = stroke([(u, h + 0.7 if k % 2 == 0 else h + 1.9) for k, u in enumerate(np.arange(-X + 0.6, X - 0.5, 1.0))], 0.4)
+    parts.append(ext((zz ^ lint.offset(-0.4, MIT, 4.0)) + rect(-X + 0.3, h + 0.2, X - 0.3, h + 0.45) + rect(-X + 0.3, h + 2.15, X - 0.3, h + 2.4), 0.89, 1.2))
+    parts.append(ext((op.offset(0.6, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, h), 0.0, 0.5))
+    parts.append(chamfer_box(-w / 2 - 1.0, -1.1, w / 2 + 1.0, 0.01, 0.0, 1.3, c=0.3, bottom=1.3))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.6, -1.1)
+
+
+def window_prow4(w=7.4, h=14.0):
+    """The top storey: one over one under a round arch of brick voussoirs (gauged, in relief)
+    with a sandstone keystone, impost blocks at the springing, a sill."""
+    r = w / 2
+    op = _round_op(w, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash11(plug_cs, pl)
+    vs = h - r
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    vous = []
+    for a in np.linspace(0.0, math.pi, 10)[:-1]:
+        a2 = a + math.pi / 9
+        R2 = r + 1.5
+        vous.append(poly([(r * math.cos(a), vs + r * math.sin(a)), (R2 * math.cos(a), vs + R2 * math.sin(a)),
+                          (R2 * math.cos(a2), vs + R2 * math.sin(a2)), (r * math.cos(a2), vs + r * math.sin(a2))]).offset(-0.11, MIT, 4.0))
+    band = (circle((0.0, vs), r + 1.5, 36) - circle((0.0, vs), r - 0.05, 36)) ^ rect(-50, vs, 50, 100)
+    parts.append(ext(band, 0.0, 0.4))
+    parts.append(ext(cs_union(vous), 0.39, 0.8))
+    parts.append(ext(poly([(-0.7, h - 0.4), (0.7, h - 0.4), (0.95, h + 2.0), (-0.95, h + 2.0)]), 0.0, 1.3))
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * (r - 0.0), sg * (r + 1.8)))
+        parts.append(chamfer_box(x0, vs - 1.1, x1, vs + 0.01, 0.0, 1.1, c=0.25, bottom=1.1))
+    parts.append(chamfer_box(-w / 2 - 1.0, -1.1, w / 2 + 1.0, 0.01, 0.0, 1.3, c=0.3, bottom=1.3))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 2.0, -1.1)
+
+
+def window_prowturret(w=6.0, h=14.0):
+    """The turret's light: a narrow round-headed one over one between two little engaged
+    colonnettes with cushion capitals carrying a moulded arch; a sill."""
+    r = w / 2
+    op = _round_op(w, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash11(plug_cs, pl)
+    vs = h - r
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS)]
+    parts.append(ext((op.offset(1.3, RND) - op) ^ rect(-50, vs, 50, 100), 0.0, 0.9))
+    for sg in (-1, 1):
+        x = sg * (r + 0.7)
+        parts.append(ext(rect(x - 0.6, 0.0, x + 0.6, vs - 0.9), 0.0, 1.0))
+        parts.append(ext(poly([(x - 0.6, vs - 0.91), (x + 0.6, vs - 0.91), (x + 0.85, vs + 0.01), (x - 0.85, vs + 0.01)]), 0.0, 1.2))
+    parts.append(chamfer_box(-w / 2 - 1.3, -1.0, w / 2 + 1.3, 0.01, 0.0, 1.3, c=0.3, bottom=1.3))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + 1.3, -1.0)
+
+
+def dormer_prow(w=13.0, dep=16.0, hwall=11.0):
+    """A stone dormer on the steep roof: a round-headed one over one in a moulded arch, a
+    gable over it stepped up in three shoulders to a ball finial on a block. Local as
+    colonial.dormer_pedimented; returns (body, core, face)."""
+    rise = w / 2 * 0.9
+    face = poly([(-w / 2, 0.0), (w / 2, 0.0), (w / 2, hwall), (0.0, hwall + rise), (-w / 2, hwall)])
+    body = ext(face, -dep, 0.0) - ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, 99), -dep - 1, -1.2)
+    lw = w * 0.44
+    spring = hwall - 0.8 - lw / 2
+    light = cs_union([rect(-lw / 2, 2.0, lw / 2, spring), circle((0.0, spring), lw / 2, 28) ^ rect(-lw, spring, lw, spring + lw)])
+    body = body - ext(light, -1.3, 1.0)
+    bars = rect(-lw / 2, (2.0 + spring) / 2 - 0.3, lw / 2, (2.0 + spring) / 2 + 0.3) ^ light
+    body = body + ext(bars + (light - light.offset(-0.45, JoinType.Miter, 4.0)), -1.2, -0.5)
+    body = body + ext((light.offset(0.9, JoinType.Round) - light) ^ rect(-w, 1.4, w, hwall + rise), -0.01, 0.7)
+    body = body + chamfer_box(-lw / 2 - 1.0, 1.0, lw / 2 + 1.0, 2.0, -0.01, 1.0, c=0.3, bottom=1.0)
+    # the stepped gable: three shoulders a side up to the finial block
+    st_ = []
+    for k in range(3):
+        f = (k + 1) / 4
+        u = w / 2 * (1 - f)
+        v = hwall + rise * f
+        st_ += [rect(-u - 0.6, v - 0.9, -u + 1.6, v + 0.6), rect(u - 1.6, v - 0.9, u + 0.6, v + 0.6)]
+    st_.append(rect(-1.4, hwall + rise - 0.8, 1.4, hwall + rise + 1.4))
+    rake = (face - face.offset(-1.0, JoinType.Miter, 4.0)) ^ rect(-50, hwall, 50, 99)
+    body = body + ext(cs_union(st_) + rake, -0.01, 0.9)
+    body = body + ext(circle((0.0, hwall + rise + 2.6), 1.2, 18), -0.6, 0.6)
+    core = ext(face.offset(-1.2, JoinType.Miter, 4.0) ^ rect(-50, 1.2, 50, hwall), -dep + 1.2, -1.2)
+    return body, core, face
+
+
+def chimney_prow(w=9.0, d=7.0, h=20.0):
+    """A party-wall stack (stands on z = 0): brick in the block's bond, a sunk panel up each
+    broad face, a sandstone band, a cap corbelled out under a band of dogtooth (bricks set
+    corner-out), a stone coping."""
+    h = round(h / 0.2) * 0.2
+    sh = round((h - 3.0) / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + TW._skin(w, d, 0.0, sh, TW._brick("running"))
+    body = body - box([-w / 2 + 1.6, d / 2 - 0.3, 2.0], [w / 2 - 1.6, d / 2 + 0.6, sh - 4.0]) - \
+        box([-w / 2 + 1.6, -d / 2 - 0.6, 2.0], [w / 2 - 1.6, -d / 2 + 0.3, sh - 4.0])
+    zb = sh - 3.2
+    body = body + box([-w / 2 - 0.4, -d / 2 - 0.4, zb], [w / 2 + 0.4, d / 2 + 0.4, zb + 0.9]) + TW._corbel_out(w, d, zb, 0.4)
+    z = sh
+    teeth = []
+    for u in np.arange(-w / 2, w / 2, 0.9):
+        for y in (-d / 2 - 0.25, d / 2 + 0.25):
+            teeth.append(box([-0.3, -0.3, 0], [0.3, 0.3, 0.6]).rotate([0, 0, 45]).translate([u + 0.45, y, z + 0.1]))
+    body = body + box([-w / 2 - 0.3, -d / 2 - 0.3, z - 0.01], [w / 2 + 0.3, d / 2 + 0.3, z + 0.8]) + union(teeth) + TW._corbel_out(w, d, z, 0.3)
+    z += 0.8
+    body = body + box([-w / 2 - 0.7, -d / 2 - 0.7, z - 0.01], [w / 2 + 0.7, d / 2 + 0.7, z + 0.7]) + TW._corbel_out(w + 0.6, d + 0.6, z, 0.4)
+    z += 0.7
+    body = body + box([-w / 2 - 1.0, -d / 2 - 1.0, z - 0.01], [w / 2 + 1.0, d / 2 + 1.0, z + 0.7])
+    return body - box([-w / 2 + 1.4, -d / 2 + 1.4, z - 2.0], [w / 2 - 1.4, d / 2 - 1.4, z + 2.0])
+
+
+def spire_prow(R=19.0, h=34.0, rot=22.5):
+    """The turret's copper spire (stands on z = 0, its base an octagon of circumradius R, its
+    corners at rot + 45 k degrees): a flared skirt, standing seams up every hip and two up
+    each face, a moulded collar near the top, a ball and a spike."""
+    ang = [math.radians(rot + 45.0 * k) for k in range(8)]
+    base = [(R * math.cos(a), R * math.sin(a)) for a in ang]
+    apex = np.array([0.0, 0.0, h])
+    body = M.hull_points([(x, y, 0.0) for x, y in base] + [tuple(apex)])
+    body = body + M.hull_points([(x * 1.07, y * 1.07, 0.0) for x, y in base] + [(x * 0.94, y * 0.94, 2.4) for x, y in base])
+    ribs = []
+    for k in range(8):
+        p = np.array([base[k][0], base[k][1], 0.0])
+        q = np.array([base[(k + 1) % 8][0], base[(k + 1) % 8][1], 0.0])
+        n = np.cross(q - p, apex - p)
+        n = n / np.linalg.norm(n)
+        if np.dot(n, np.array([p[0] + q[0], p[1] + q[1], 0.0])) < 0:
+            n = -n
+        # the hip at p
+        out = np.array([p[0], p[1], 0.0]) / np.linalg.norm(p[:2])
+        hp = [p + out * 0.3 + np.array([0, 0, 2.0]), apex - np.array([0, 0, 2.5]) + out * 0.3]
+        ribs.append(M.hull_points([tuple(c + d_) for c in hp for d_ in (np.array([0, 0, 0.0]), -out * 0.6,
+                                                                          np.cross(out, [0, 0, 1.0]) * 0.25, -np.cross(out, [0, 0, 1.0]) * 0.25)]))
+        e = (q - p) / np.linalg.norm(q - p)
+        for f in (1 / 3, 2 / 3):
+            b0 = p + (q - p) * f
+            pts = []
+            for c in (b0 + np.array([0, 0, 2.0]) + (apex - b0) * 0.03, b0 + (apex - b0) * 0.86):
+                for s_ in (-0.22, 0.22):
+                    pts += [tuple(c + e * s_ + n * 0.3), tuple(c + e * s_ - n * 0.3)]
+            ribs.append(M.hull_points(pts))
+    body = body + union(ribs)
+    zc = h * 0.86
+    rc = R * (1 - 0.86) + 0.5
+    body = body + M.cylinder(0.9, rc + 0.4, rc, 8).rotate([0, 0, rot]).translate([0, 0, zc])
+    body = body + M.sphere(1.5, 18).translate([0, 0, h + 0.6]) + M.cylinder(6.0, 0.7, 0.25, 12).translate([0, 0, h + 1.6])
+    return body
+
+
+def cresting_prow(L, h=4.6, t=1.2):
+    """Iron cresting along the flat top (u along, v up, back on w = 0; printed on its back):
+    a bottom rail, a post with a ball every few millimetres, spears with leafy collars
+    between."""
+    cells = [rect(0.0, 0.0, L, 0.9), rect(0.0, 1.8, L, 2.5)]
+    n = max(1, int(round(L / 9.0)))
+    xs = [L * k / n for k in range(n + 1)]
+    for x in xs:
+        x = min(max(x, 0.6), L - 0.6)
+        cells.append(rect(x - 0.6, 0.0, x + 0.6, h))
+        cells.append(circle((x, h + 0.5), 0.8, 14))
+    for xa, xb in zip(xs[:-1], xs[1:]):
+        for x in np.arange(xa + 1.8, xb - 1.2, 1.8):
+            cells.append(rect(x - 0.5, 0.0, x + 0.5, h - 1.0))
+            cells.append(poly([(x - 0.5, h - 1.05), (x + 0.5, h - 1.05), (x, h + 0.3)]))
+            cells.append(poly([(x - 0.5, 2.4), (x - 1.0, 3.0), (x - 0.5, 3.1), (x + 0.5, 3.1), (x + 1.0, 3.0), (x + 0.5, 2.4)]))
+    return ext(_clean(cs_union(cells), 0.15), 0.0, t)

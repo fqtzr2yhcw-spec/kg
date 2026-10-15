@@ -362,6 +362,21 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 v += p_
                 j += 1
             tex = M.extrude(cs_union(rows) ^ clip, d) if rows else M()
+        elif shape == "prslate":          # banded slates: plain rectangular courses, every third course of slates cut to a
+            b = loc.bounds()              # point (a diamond band), the joints breaking (the Prow)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rows = []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                sw = 1.9
+                u = b[0] - (sw / 2 if j % 2 else 0.0) - 1.0
+                while u < b[2] + 1.0:
+                    if j % 3 == 0:
+                        rows.append(poly([(u + 0.1, v + 0.5), (u + sw / 2, v), (u + sw - 0.1, v + 0.5), (u + sw - 0.1, v + pitch), (u + 0.1, v + pitch)]))
+                    else:
+                        rows.append(rect(u + 0.1, v, u + sw - 0.1, v + pitch))
+                    u += sw
+            tex = M.extrude(cs_union(rows) ^ clip, d) if rows else M()
         elif shape == "sbshingle":        # sawn cedar shingles in even courses, each tapering (a thick butt, a thinner
             b = loc.bounds()              # upper part), the joints breaking course to course (the Sebago)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
