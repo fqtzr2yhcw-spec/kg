@@ -5,7 +5,7 @@ with its name.
     python3 -m hoarch.lineup --all
 
 Batches: houses1 (1-10), shops (11-20), houses2 (21-30), colonial (31-40), colonial2 (41-50),
-craftsman (51-60). Uses each
+craftsman (51-60), newlayouts1 (101-107), newlayouts2 (108-114). Uses each
 building's out/<b>/<b>.npz and palette (the last check/export), so run those first. Writes
 out/lineups/<Batch>.png (and the scene files beside it).
 """
@@ -34,10 +34,15 @@ BATCHES = {
                   ["bellerive", "pinckney", "stauffer", "porter", "alvarado"], 45.0, 330.0),
     "craftsman": ("The Craftsman-era batch, houses 51-60", ["ashcombe", "capistrano", "stickley", "hollister", "lindenwald"],
                   ["arroyo", "kittredge", "pullman", "sandoval", "wrightwood"], 45.0, 340.0),
+    "newlayouts1": ("The new-layouts batch, houses 101-107", ["kenmore", "marisol", "fevre", "marigny"],
+                    ["bethel", "piney", "sakonnet"], 50.0, 360.0),
+    "newlayouts2": ("The new-layouts batch, houses 108-114", ["severn", "prow", "raquette", "sebago"],
+                    ["paloma", "laurel", "ashgrove"], 50.0, 330.0),
 }
 VIEW = {"shops": [-12, 31, 50, 0.84, [0, -18, -18]]}    # per-batch camera: the shop rows are shallower
 FILE = {"houses1": "Houses_01-10", "shops": "Shops_11-20", "houses2": "Houses_21-30", "colonial": "Colonial_31-40",
-        "colonial2": "Colonial_41-50", "craftsman": "Craftsman_51-60"}
+        "colonial2": "Colonial_41-50", "craftsman": "Craftsman_51-60", "newlayouts1": "New_Layouts_101-107",
+        "newlayouts2": "New_Layouts_108-114"}
 
 
 def names():
