@@ -326,8 +326,11 @@ def _sheared(x0, x1, y0, y1, ztop, below, above):
 
 
 def _steps(xa, xb, y0, dy, n=3, rise=2.5, run=2.8):
-    """Split stone steps from a deck's edge at y0 out along dy, standing on z = 0."""
-    out = []
+    """Split stone steps from a deck's edge at y0 out along dy, standing on z = 0, a block
+    behind them carrying the deck's rim and the planks behind it (the steps' glue face)."""
+    ya, yb = sorted((y0, y0 - dy * 1.0))
+    yc, yd = sorted((y0 - dy * 1.0, y0 - dy * 1.8))
+    out = [box([xa, ya, 0.0], [xb, yb, ZF - 2.6]), box([xa, yc, 0.0], [xb, yd, ZF - 1.4])]
     for j in range(n):
         z = ZF - rise * (j + 1)
         ya, yb = sorted((y0 + dy * run * j, y0 + dy * run * (j + 1)))
@@ -536,7 +539,9 @@ def build(kit=None):
     for x in wxs:
         fr.append(_beam((x, WY0 + 0.8), (x, WY1 - 0.8), ZWP - 1.4, ZWP, 0.7))
     kit.add("WALK-frame", "Bark", union(fr), P=print_flip(), group="porch")
-    wdeck = _deck(X1 + 1.8, DX0 - 1.8, WY0, WY1, ZF, wposts)
+    wdeck = _deck(X1 + 0.8, DX0 - 0.8, WY0, WY1, ZF, wposts)            # (against the footings' faces)
+    ym = (WY0 + WY1) / 2                                                # (clear of the doors' casings)
+    wdeck = wdeck - box([X1, ym - 7.5, ZF - 0.5], [X1 + 1.8, ym + 7.5, ZF + 1.0]) - box([DX0 - 1.8, ym - 7.5, ZF - 0.5], [DX0, ym + 7.5, ZF + 1.0])
     wpiers = union([_pier(x, y, ZF - 1.3, r=1.8, seed=80 + k) for k, (x, y) in enumerate(wposts)])
     wsocks = union([box([x - 0.85, y - 0.85, ZF - 2.4], [x + 0.85, y + 0.85, ZF + 1]) for x, y in wposts])
     _deck_piece(kit, "WALK-deck", wdeck, wpiers, wsocks, print_flip())
@@ -574,8 +579,9 @@ def build(kit=None):
 
     # --- the footings and the chimneys
     doors = union(keep)                            # (the door casings run a little under the sills)
-    kit.add("BASE", "Stone", foundation([LODGE], 0.0, ZF, style="rqboulder") - ch_env - doors, group="foundation")
-    kit.add("CABIN-BASE", "Stone", foundation([CABIN], 0.0, ZF, style="rqboulder", seed=9) - chc_env - doors, group="foundation")
+    flat = box([X1 + 0.8, WY0 - 0.6, -1.0], [X1 + 4.0, WY1 + 0.6, ZF + 1.0]) + box([DX0 - 4.0, WY0 - 0.6, -1.0], [DX0 - 0.8, WY1 + 0.6, ZF + 1.0])
+    kit.add("BASE", "Stone", foundation([LODGE], 0.0, ZF, style="rqboulder") - ch_env - doors - flat, group="foundation")
+    kit.add("CABIN-BASE", "Stone", foundation([CABIN], 0.0, ZF, style="rqboulder", seed=9) - chc_env - doors - flat, group="foundation")
     kit.add("CHIMNEY", "Stone", chl, P=inv34(CH), group="chimney")
     kit.add("CABIN-CHIMNEY", "Stone", chc, P=inv34(CHC), group="chimney")
     print("specks dropped:", kit.drop_specks())
