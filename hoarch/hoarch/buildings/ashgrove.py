@@ -36,9 +36,9 @@ from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring
 
 NAME = "The Ashgrove"
 COLORS = {"Brick": "#9A4B36", "Stone": "#CBBFA6", "Timber": "#4A3528", "Stucco": "#D9CCB0", "Tile": "#7E4537",
-          "Gravel": "#A79F90", "Windows_Doors": "#CBBFA6"}
+          "Gravel": "#A79F90", "Windows_Doors": "#CBBFA6", "Windows_Timber": "#4A3528"}
 RENDER_MAT = {"Brick": "brick", "Stone": "stone", "Timber": "timber", "Stucco": "stucco", "Tile": "roof", "Gravel": "gravel",
-              "Windows_Doors": "stone", "Sash": "sash", "Door": "door", "Glass": "glass"}
+              "Windows_Doors": "stone", "Windows_Timber": "timber", "Sash": "sash", "Door": "door", "Glass": "glass"}
 PALETTE = {"brick": ["#9A4B36", 0.85, 0.0], "stone": ["#CBBFA6", 0.8, 0.0], "timber": ["#4A3528", 0.75, 0.0],
            "stucco": ["#D9CCB0", 0.95, 0.0], "roof": ["#7E4537", 0.8, 0.0], "gravel": ["#A79F90", 0.95, 0.0],
            "sash": ["#3A3A3A", 0.45, 0.2], "door": ["#5C3E2A", 0.6, 0.0]}
@@ -92,6 +92,7 @@ def _openings():
             UPPER.add(name)
 
     lo, up, upe = N.window_ashlower(), N.window_ashupper(), N.window_ashupper(w=12.0)
+    ova, gab = N.window_ashupper(w=18.0), N.window_ashupper(w=10.0, h=7.0)
     VU = S1 + 7.0
     for y, tag in ((Y0, "S"), (Y1, "N")):
         for x in (X0 + 20.0, X0 + 52.0, X1 - 52.0, X1 - 20.0):
@@ -103,8 +104,8 @@ def _openings():
     for y, tag in ((Y0 - J, "S"), (Y1 + J, "N")):
         for x in (X0 + 26.0, X0 + 58.0, X1 - 58.0, X1 - 26.0):
             add(L2, UP, x, y, VU - S1, up, f"{tag}{x:.0f}-2", up=True)
-        add(L2, UP, XC, y, VU - S1, N.window_ashupper(w=18.0), f"{tag}-over-arch", up=True)
-        add(L2, UP, XC, y, ZW + 6.0 - S1, N.window_ashupper(w=10.0, h=7.0), f"{tag}-gable", up=True)
+        add(L2, UP, XC, y, VU - S1, ova, f"{tag}-over-arch", up=True)
+        add(L2, UP, XC, y, ZW + 6.0 - S1, gab, f"{tag}-gable", up=True)
     for x, tag in ((X0 - J, "W"), (X1 + J, "E")):
         add(L2, UP, x, (Y0 + Y1) / 2, VU - S1, upe, f"{tag}-2", up=True)
     return L1, L2
@@ -150,7 +151,7 @@ def _place_inserts(kit, ops, keep, group="inserts"):
         sp = o.spec
         b = sp["cut"].bounds()
         key = "DOOR" if o.kind == "door" else "WIN"
-        frame = "Timber" if o.name in UPPER else "Windows_Doors"
+        frame = "Windows_Timber" if o.name in UPPER else "Windows_Doors"      # (both plates with supports)
         world, P, zones = O.place(sp, A, frame, "Door" if o.kind == "door" else "Sash", "Glass")
         part = kit.add(f"{key}-{o.name}", frame, world, P=P, key=f"{key}-{o.fam}-{b[2] - b[0]:.1f}x{b[3] - b[1]:.1f}",
                        group=group, render=zones)
@@ -388,4 +389,4 @@ if __name__ == "__main__":
         from hoarch.kit import slice_check
         kit.export(os.path.join(OUT, "kit"), layer=0.2)
         slice_check(os.path.join(OUT, "kit"), os.path.join(HERE, "..", "..", "slicer", "bambu_like.ini"), layer=0.2,
-                    supported=("Windows_Doors", "Timber"))
+                    supported=("Windows_",))

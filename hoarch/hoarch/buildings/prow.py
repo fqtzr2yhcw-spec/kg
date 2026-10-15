@@ -34,9 +34,9 @@ from hoarch.ornament import ext
 from hoarch.shell import Block, Opening, _corbel, foundation, lip_keep, lip_ring, stacked_shells
 
 NAME = "The Prow"
-COLORS = {"Brick": "#8E3B2C", "Stone": "#C9B48E", "Iron": "#2B3A34", "Slate": "#4A4F57", "Copper": "#5E9C88",
+COLORS = {"Brick": "#8E3B2C", "Stone": "#C9B48E", "Iron": "#2B3A34", "Windows_Iron": "#2B3A34", "Slate": "#4A4F57", "Copper": "#5E9C88",
           "Granite": "#8F8D88", "Concrete": "#B9B6AE", "Windows_Doors": "#C9B48E"}
-RENDER_MAT = {"Brick": "brick", "Stone": "stone", "Iron": "iron", "Slate": "roof", "Copper": "copper", "Granite": "granite",
+RENDER_MAT = {"Brick": "brick", "Stone": "stone", "Iron": "iron", "Windows_Iron": "iron", "Slate": "roof", "Copper": "copper", "Granite": "granite",
               "Concrete": "concrete", "Windows_Doors": "stone", "Sash": "sash", "Door": "door", "Glass": "glass"}
 PALETTE = {"brick": ["#8E3B2C", 0.85, 0.0], "stone": ["#C9B48E", 0.75, 0.0], "iron": ["#2B3A34", 0.45, 0.2],
            "roof": ["#4A4F57", 0.75, 0.0], "copper": ["#5E9C88", 0.55, 0.15], "granite": ["#8F8D88", 0.85, 0.0],
@@ -176,7 +176,7 @@ def _place_inserts(kit, ops, keep, group="inserts"):
         sp = o.spec
         b = sp["cut"].bounds()
         key = "DOOR" if o.kind == "door" else "WIN"
-        frame = "Iron" if o.name.startswith("shop") else "Windows_Doors"
+        frame = "Windows_Iron" if o.name.startswith("shop") else "Windows_Doors"      # (both plates with supports)
         world, P, zones = O.place(sp, A, frame, "Door" if o.kind == "door" else "Sash", "Glass")
         part = kit.add(f"{key}-{o.name}", frame, world, P=P, key=f"{key}-{o.fam}-{b[2] - b[0]:.1f}x{b[3] - b[1]:.1f}",
                        group=group, render=zones)
@@ -316,4 +316,4 @@ if __name__ == "__main__":
         from hoarch.kit import slice_check
         kit.export(os.path.join(OUT, "kit"), layer=0.2)
         slice_check(os.path.join(OUT, "kit"), os.path.join(HERE, "..", "..", "slicer", "bambu_like.ini"), layer=0.2,
-                    supported=("Windows_Doors", "Iron"))
+                    supported=("Windows_",))

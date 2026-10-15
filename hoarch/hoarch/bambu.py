@@ -51,7 +51,8 @@ GLASS_BOND = 0.4            # the glass colour runs two layers on into the frame
                             # (the owner painted it so: bars that start in a new colour on the glass bond poorly)
 PLANK_TOP = 1.2             # the planked parts' boards are their first six layers
 GLASS_HEX = "#1E2226"       # aim for the glass: near black
-SUPPORTED = ("Windows_Doors", "Addins")       # plates with supports under their frames (windows, doors, mansard add-ins)
+SUPPORTED = ("Windows_Doors", "Addins")       # plates with supports under their frames (windows, doors, mansard add-ins;
+                                              # any Windows_<colour> plate too: framed inserts in another colour)
 DECKS = ("PorchDeck", "Deck", "Boardwalk")   # the kit's plank-floor plates (porches, galleries, docks, platforms)
 
 # (brand, series) -> (Bambu Studio preset, penalty added to the colour difference)
@@ -197,7 +198,7 @@ def _plan(key):
         parts = [n.split("__", 1)[-1] for n in p["parts"]]
         col, hexc = p["colour"], p["hex"].upper()
         c = p.get("change")
-        if col == "Windows_Doors":                # glass, the frames over it, and a surround above (if any)
+        if col.startswith("Windows_"):            # glass, the frames over it, and a surround above (if any)
             bands = [(0.0, GLASS_HEX, "Glass"), (GLASS_TOP + GLASS_BOND, hexc, "Windows and doors")]
             if c:
                 bands.append((round(c["at_mm"], 2), c["to_hex"].upper(), c["to"]))
@@ -214,7 +215,7 @@ def _plan(key):
             n0, g0 = roles.get(h, (nm, 0.0))
             roles[h] = (n0, g0 + share)
         plates.append({"base": base, "colour": col, "parts": parts, "bands": bands,
-                       "grams": grams, "roles": roles, "supports": col in SUPPORTED,
+                       "grams": grams, "roles": roles, "supports": col in SUPPORTED or col.startswith("Windows_"),
                        "file": os.path.join(kit, p["file"]), "preview": os.path.join(kit, p["preview"])})
     return man, plates
 

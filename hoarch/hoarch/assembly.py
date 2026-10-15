@@ -1685,6 +1685,298 @@ flowers); CORNICE-E-lower, CORNICE-B-lower and CORNICE-L-lower once from white t
 doors print face up with supports under their frames only. CORNICE-J-lower changes once from
 oxblood to cream (the chevron course); CORNICE-BAY-lower and CORNICE-LEAN-lower the same way.
 """),
+    "marisol": ("THE MARISOL - LIGHTHOUSE KEEPER'S HOUSE WITH ITS LIGHT TOWER", "  1. FOUNDATION (the basalt base, the rocks of the point heaped at its seaward back corner).\n" + jointed(
+        " (the drop-sided ground storey)", " (the upper storey with the four gable walls, and the ledge for the eave)") + """
+  5. The CORNICE-E parts round the eave band: -frieze, then -upper on top.
+  6. ROOF (hipped, crossed by four steep gables; hollow, printed upright) onto the lip at the
+     wall tops; the two CHIMNEYs down into their pockets; a TRUSS (the open stick truss)
+     against the end of each gable's rakes, glued by its whole back.
+  7. Light tower: TOWER (both stages in one shell) down into the square pocket at the crossing
+     of the roofs; its eight tall windows; CORNICE-T-frieze, then -upper, round its top;
+     GALLERY (the iron deck, printed upside down) on the tower top, its lip inside the walls;
+     the four RAIL strips, their tabs down into the slots round the deck's edge (the two long
+     ones front and back); LANTERN-glass into the socket in the middle of the deck and the
+     LANTERN cage dropped over it.
+  8. Veranda: PORCH-deck (the planks) along the front and the sea side; PORCH-top (tin roof,
+     turned posts, stick braces and crossed railings in one piece, so no post is glued on its
+     own) lowered onto it, the peg under each post into its socket; PORCH-steps-0 at the front
+     door.
+  9. Kitchen wing: WING-WALLS on the base against the back wall; its two windows;
+     CORNICE-W-course, then -crown; WING-ROOF up against the back wall; CHIMNEY-wing into its
+     pocket; STOOP-back at the kitchen door.
+""", """Walls, the tower, roofs, chimneys and the lantern print upright; the GALLERY and the PORCH-deck
+upside down; the TRUSSes and RAIL strips on their backs. Windows and doors print face up with
+supports under their frames only. CORNICE-J-lower changes once from redwood to ivory, the
+PORCH-top once from pewter (its tin roof, on the plate) to ivory.
+"""),
+    "fevre": ("THE FEVRE - HILLSIDE HOUSE OF A RIVER TOWN", """  1. GROUND (the lot: the front terrace, the bank down the west side, the garden behind, the
+     fill behind the east terraces) on the layout. The limestone walls stand in their places
+     along it: LOT-wall-W, -E and -N round the lot, the STREET-WALL with its gate piers along the
+     front, the three TERRACE-walls stepping down the east side; the PATH from the gate.
+  2. WALLS-0 (the tooled limestone walk-out storey) into its place cut in the slope; JOINT-0
+     onto its lip, the CORNICE-J0 runs round it (-lower-0 and -1, then the -crown pieces);
+     WALLS-1 (the brick main floor, level with the garden behind) onto the joint's lip.
+  3. JOINT onto WALLS-1's lip, the CORNICE-J parts round it (-lower, then -crown); WALLS-2 (the
+     upper storey with both parapeted gable ends and their paired chimneys) onto its lip.
+  4. Windows and doors: clip off the supports and push each plug into its opening from
+     outside; the frame drops into the flat landing cut in the stone or brick. A pair of
+     SHUTTERs beside each shuttered window, glued by their whole backs.
+  5. The CORNICE-E parts round the eave band: -lower, then -upper on top.
+  6. ROOF down between the parapets onto the lip at the wall tops; the COPING pieces along the
+     parapets' tops (three each end).
+  7. STAIR (stone, up along the front wall to the landing on its arch over the walk-out door)
+     against WALLS-0; STAIR-rail along its open side, LANDING-rail round the landing.
+  8. Back porch onto the garden: PORCH-deck in front of the garden door; PORCH-top (roof,
+     Doric posts and railing in one piece) lowered onto it, the peg under each post into its
+     socket; PORCH-steps-0 down to the garden.
+""", """Walls, roof, ground and stair print upright; the COPINGs, the lot and terrace walls and the
+railings on their backs; the PORCH-deck upside down. Windows and doors print face up with
+supports under their frames only. The -lower cornice runs change once (brick to limestone,
+sage to cream); the PORCH-top once from slate (its roof, on the plate) to cream.
+"""),
+    "bethel": ("THE BETHEL GROVE COTTAGES - THREE CAMP-MEETING COTTAGES ROUND A GREEN", """  Three cottages, A (lavender), B (teal) and C (coral), each built the same way, its parts
+  named with its letter. They stand on an arc, A on the left, their porches to the green.
+  1. A-FOUNDATION (brick); A-WALLS-1 onto its lip; A-JOINT onto WALLS-1's lip, the
+     A-CORNICE-J parts round it (-lower, then -crown); A-WALLS-2 (the half storey with the
+     great front gable) onto the joint's lip; the A-CORNICE-E parts along the eaves (-course,
+     then -crown).
+  2. Windows and doors: push each plug into its opening from outside (the Gothic double doors
+     below, the pointed balcony door above, the trefoil in the peak).
+  3. A-ROOF onto the lip at the wall tops; A-CHIMNEY into its pocket; an A-BARGE (the jigsaw
+     lace) against the ends of the front gable's rakes, glued by its whole back.
+  4. Porch: A-PORCH-deck in front; A-PORCH-top (roof, posts and brackets in one piece, so no
+     post is glued on its own) lowered onto it, the peg under each post into its socket; the
+     balcony railings into the slots in the porch roof (A-RAIL-front along the front, A-RAIL-W
+     and A-RAIL-E down the sides); A-PORCH-steps at the front.
+  5. A's ell: A-ELL-WALLS against its outer side; A-ELL-ROOF; A-ELL-BARGE on its gable.
+  6. B the same way. Its porch has a second tier: B-TIER-top (posts, beams and the little roof)
+     onto the porch roof round the balcony, B-GABLE (the projecting gable's face) on its front.
+  7. C the same way, with its canted bay: C-BAY-WALLS against its outer side, the bay window,
+     C-BAY-ROOF on top.
+  8. BOARDWALK-0, -1 and -2 end to end along the arc in front of the steps.
+""", """Walls, roofs and chimneys print upright; the porch decks and B-TIER-top upside down; the
+BARGEs, the RAILs and B-GABLE on their backs. Windows and doors print face up with supports
+under their frames only. Each -CORNICE-J-lower changes once to its cottage's light trim colour;
+each PORCH-top once from shingle (its roof, on the plate) to trim.
+"""),
+    "piney": ("THE PINEY - DOGTROT LOG HOUSE", """  1. YARD (the swept clay, with the fieldstone piers and the stone steps on it) on the layout.
+  2. WALLS (both log pens and the breezeway's plank floor in one piece) onto the piers; LOFT
+     (the loft floor over the breezeway, which is the trot's ceiling, with its plates front and
+     back) into the notches in the pens' inner walls.
+  3. Windows and doors: push each plug into its opening from outside; a pair of SHUTTERs
+     beside each front window, glued by their whole backs.
+  4. The CORNICE-E parts along both eaves (-lower-0 and -1, then the -crown pieces).
+  5. ROOF (riven shakes over both pens and the breezeway, hollow) onto the lip at the wall
+     tops; CHIMNEY-W and CHIMNEY-E (fieldstone) against the pens' end walls, in the notches
+     left for them in the cornices and the roof.
+  6. Front porch: PORCH-deck along the front; PORCH-top (tin roof, rafters, beam, knee braces,
+     cedar posts and pole railing in one piece) lowered onto it, the peg under each post into
+     its socket. The back porch the same: BACK-PORCH-deck, then BACK-PORCH-top.
+  7. Kitchen: KITCHEN-WALLS on its piers behind the east pen; its door and windows;
+     CORNICE-K-course, then -crown; KITCHEN-ROOF; KITCHEN-CHIMNEY (the stick-and-clay chimney
+     on its stone base) against its back wall.
+  8. Covered walk: WALK-deck from the breezeway to the kitchen door; WALK-frame (round posts,
+     plates, ties and braces) onto it, its pegs into the deck; WALK-ROOF on the frame.
+  9. WOODPILE by the kitchen.
+""", """Walls, roofs, chimneys and the yard print upright; the LOFT and the porch decks upside down;
+the porch tops upside down, tilted onto their tin roofs. Windows and doors print face up with
+supports under their frames only. One change each: WALLS and KITCHEN-WALLS planks to logs
+(above the floor), the porch tops tin to cedar, CORNICE-E-lower whitewash to cedar, the
+kitchen chimney stone to clay, the YARD clay to stone (the piers and steps).
+"""),
+    "marigny": ("THE MARIGNY - CAMELBACK SHOTGUN DOUBLE", """  1. FOUNDATION (the brick piers with the slatted skirts between them).
+  2. WALLS-1 (the whole ground storey of both dwellings, with the cross wall under the camel's
+     front) onto the foundation's lip; the CORNICE-J parts round its top (-lower, then -upper):
+     the front house's eave, and the camel's belt behind.
+  3. WALLS-2 (the camelback: the second storey at the back) onto the lip at the back of the
+     ground storey's top; the CORNICE-E parts round its eave (-frieze, then -upper).
+  4. Windows and doors: push each plug into its opening from outside; the louvred SHUTTERs
+     beside the floor-length front windows, under the hoods' consoles, glued by their whole
+     backs.
+  5. ROOF-1 (the front house's hip, banded slate) onto the ground storey in front of the camel;
+     ROOF-2 on the camel; the CHIMNEYs into their pockets (two on the front roof, one on the
+     camel's).
+  6. Front gallery: GALLERY-deck along the front; GALLERY-top (roof, the four Eastlake columns,
+     spindle frieze, fan brackets and balusters in one piece) lowered onto it, the peg under
+     each column into its socket; the two GALLERY-steps flights to the doors.
+  7. Back gallery under the camel: BACK-GALLERY-deck, BACK-GALLERY-top, BACK-GALLERY-steps-0.
+""", """Walls, roofs and chimneys print upright; the gallery decks upside down; the gallery tops upside
+down on their tin roofs (one change, tin to cream). Windows and doors print face up with
+supports under their frames only. CORNICE-J-lower changes once from oxblood to cream.
+"""),
+    "paloma": ("THE PALOMA - MONTEREY COLONIAL ADOBE ROUND A COURT", """  1. FOUNDATION (the sandstone footing under the house and both wings); COURT (the paving)
+     between the wings.
+  2. WALLS-1 onto the footing's lip; JOINT (at the balcony's floor) onto its lip, the
+     CORNICE-J runs round it (-lower-0 and -1, then the -crown pieces); WALLS-2 onto the
+     joint's lip.
+  3. Windows and doors: push each plug into its opening from outside (the court door, the
+     glazed pairs onto the balcony, the rejas in the wings); a pair of SHUTTERs beside each
+     lower window, glued by their whole backs.
+  4. The CORNICE-E parts round the eave band under the gallery roof: -frieze, then -crown.
+  5. The galleries, front, west and east, each stacked from four pieces: CORREDOR-<side> (the
+     terracotta floor on its plinth) against the footing; GALLERY-<side>-lower (posts and
+     beams), the peg under each post into its socket in the floor; BALCONY-<side> (the planked
+     deck) on the lower tier's beams; GALLERY-<side>-upper (posts, railing and plate) on the
+     deck.
+  6. ROOF (redwood shingles, out over the galleries) onto the lip at the wall tops, resting on
+     the upper galleries' plates.
+  7. Wings: WALLS-wing-W and WALLS-wing-E on the footing against the house's sides; their
+     windows and doors; the CORNICE-wing runs (-course pieces, then -crown); ROOF-wing-W and
+     -E up against the house's wall; the CHIMNEYs into their pockets; on the court side
+     CORREDOR-wing-W-floor and -E-floor, with CORREDOR-wing-W-top and -E-top (posts and roof
+     in one piece) on them.
+  8. GARDEN-WALL with its gate across the court's open side; the WELL on the paving.
+""", """Walls, roofs, chimneys, the gallery tiers and the garden wall print upright; the balcony decks
+upside down; the corredor tops upside down on their shingle roofs. Windows and doors print face
+up with supports under their frames only. One change each: the CORNICE-J-lower runs redwood to
+limewash, the GARDEN-WALL limewash to terracotta (its tiled cap), the corredor tops shingle to
+redwood.
+"""),
+    "severn": ("THE SEVERN - FIVE-PART PALLADIAN HOUSE", """  1. BASE (English-bond brick with its stone water table) under the centre block.
+  2. WALLS-1 onto the base's lip; BELT onto WALLS-1's lip, the CORNICE-J parts round it
+     (-course-0 and -1, then -crown: the stone belt with its fret); WALLS-2 (with the
+     pavilion's pediment and both end gables) onto the belt's lip.
+  3. Windows and doors: push each plug into its opening from outside (the doorway with its
+     fanlight and Ionic columns, the round-headed window over it, the oculus).
+  4. The CORNICE-E parts round the eave band: -lower, then -upper; it runs across the pavilion
+     as the pediment's floor.
+  5. ROOF onto the lip at the wall tops; a RAKING cornice up the rakes of the pediment and of
+     each end gable, glued by its whole back; the CHIMNEYs into their pockets.
+  6. Hyphens and wings, either side: BASE-hyphen-W and -E, BASE-wing-W and -E against the
+     centre block's base; WALLS-hyphen-W and -E and WALLS-wing-W and -E on them; their windows
+     (round-headed in the hyphens, twelve-over-twelve under lunettes in the wings' bays); the
+     CORNICE-hyphen and CORNICE-wing runs (-course pieces, then -crown or -upper);
+     ROOF-hyphen-W and -E between the centre block and the wings; ROOF-wing-W and -E; the
+     wings' CHIMNEYs into their pockets.
+  7. STEPS (stone) to the doorway and the garden door.
+""", """Walls, roofs and chimneys print upright; the RAKING cornices on their backs. Windows and doors
+print face up with supports under their frames only. Each BASE changes once from brick to
+stone (the water table); CORNICE-E-lower once from white to stone.
+"""),
+    "raquette": ("THE RAQUETTE - ADIRONDACK GREAT CAMP LODGE", """  1. BASE (the boulder footing) under the lodge; CABIN-BASE under the dining cabin beside it.
+  2. WALLS-1 (the log ground storey) onto the footing's lip; BELT onto its lip, the CORNICE-J
+     parts round it (-lower, then -crown); WALLS-2 (the upper storeys and the great front
+     gable, its bark-clad peak above the one colour change) onto the belt's lip.
+  3. Windows and doors: push each plug into its opening from outside.
+  4. The CORNICE-E parts along the eaves: -frieze, then -upper.
+  5. ROOF (slab shakes, with the purlins and eave plates under the overhang) onto the lip at
+     the wall tops; BARGE on the front gable's rakes; BRACKET-0 and -1 (the great log
+     brackets) under the front overhang.
+  6. CHIMNEY (fieldstone) against the lodge's end wall; CABIN-CHIMNEY against the cabin's.
+  7. The stacked balconies, from the bottom: PORCH-deck on its boulder piers along the front;
+     PORCH-top (the porch frame with the balcony deck on it, in one piece) onto the deck, the
+     peg under each post into its socket; BALCONY-top (the posts from the balcony floor up to
+     the plates) onto that; TOP-BALCONY (under the peak, its deck on the eave cornice) on top.
+     STEPS up to the porch.
+  8. Covered walk to the cabin: WALK-deck on its piers between the two footings; WALK-frame
+     onto it; WALK-ROOF between the walls.
+  9. Cabin: CABIN-WALLS on its footing; its door and windows; CORNICE-C-course, then -crown;
+     CABIN-ROOF; CABIN-PORCH-deck and CABIN-PORCH-top; CABIN-STEPS.
+""", """Walls, roofs and chimneys print upright; the porch and balcony frames and decks upside down;
+the BARGE and the BRACKETs as laid on their plates. Windows and doors print face up with
+supports under their frames only. One change each: WALLS-2 and CABIN-WALLS logs to bark (the
+peaks), PORCH-top and TOP-BALCONY planks to bark, the decks planks to stone (their piers),
+CORNICE-J-lower planks to bark, CORNICE-E-upper green to bark, CABIN-PORCH-top shakes to bark.
+"""),
+    "sebago": ("THE SEBAGO - NEW ENGLAND CONNECTED FARM", """  Four buildings joined end to end, each lower and further back: the big house, the kitchen
+  ell, the woodshed (the back house) and the barn.
+  1. The footings in a row, each against the last: BASE (the big house), ELL-BASE, SHED-BASE,
+     BARN-BASE.
+  2. Big house: WALLS-1 onto the base's lip; BELT onto its lip, the CORNICE-J parts round it
+     (-course, then -crown); WALLS-2 (with the pedimented front gable and the back gable) onto
+     the belt's lip. Windows and doors (the side-hall entrance with its sidelights); a pair of
+     SHUTTERs beside each window, glued by their whole backs. The CORNICE-E parts round the
+     eave (-lower, then -upper), carried across as the pediment's floor. ROOF; CHIMNEY into
+     its pocket; a RAKING cornice up the rakes of each gable.
+  3. Kitchen ell: ELL-WALLS on its footing against the big house; its door and windows; the
+     CORNICE-L runs (-course-0 and -1, then the -crown pieces); ELL-ROOF up against the big
+     house's wall; ELL-CHIMNEY; ELL-RAKING-0 on its east gable. Its porch: PORCH-deck along the
+     front; PORCH-top (roof with its beaded ceiling, entablature and Doric columns in one
+     piece) lowered onto it, the peg under each column into its socket; PORCH-STEPS.
+  4. Woodshed: SHED-WALLS on its footing; the two ARCH casings into its open bays; a WOODPILE
+     in each bay against the back wall; its doors and window; the CORNICE-K runs; SHED-ROOF.
+  5. Barn: BARN-WALLS on its footing; its windows and door; BARN-DOORS (the sliding doors on
+     their track) and the HAY-DOOR over them, glued flat to the gabled bay's face;
+     CORNICE-R-course, then -crown; BARN-ROOF; the BARN-RAKINGs; CUPOLA into its pocket on the
+     ridge; RAMP up to the great doors.
+  6. STEPS (granite) at the front door.
+""", """Walls, roofs, chimneys and the cupola print upright; the RAKINGs, the ARCH casings and the
+barn's doors on their backs; the PORCH-deck upside down; the PORCH-top upside down, tilted onto
+its roof. Windows and doors print face up with supports under their frames only. One change
+each: CORNICE-E-lower white to clapboard, the CUPOLA white to shingles (its roof), BARN-DOORS
+and HAY-DOOR red to white (the braces), PORCH-top shingles to white, PORCH-deck planks to
+granite (its piers).
+"""),
+    "prow": ("THE PROW - FLATIRON BLOCK", """  1. SIDEWALK round both fronts and the point; BASE (the granite plinth) on it.
+  2. WALLS-1 (the ground storey with its shopfronts, the turret's base at the point) onto the
+     plinth's lip. Then storey by storey: BELT-1 onto the walls' lip, the CORNICE-J1 parts
+     round it (-course, then -crown), WALLS-2 onto the belt's lip; BELT-2, CORNICE-J2, WALLS-3;
+     BELT-3, CORNICE-J3, WALLS-4 (the top storey and the turret's top stage).
+  3. Windows and doors: push each plug into its opening from outside: the cast-iron
+     shopfronts (DOOR-shop, on their own iron plate) into the ground storey, the stair doors
+     and the corner entrance under the turret, the windows above.
+  4. The CORNICE-E parts round the eave (-frieze, then -upper); CORNICE-T-course, then -crown,
+     round the turret's top.
+  5. ROOF (banded slate, steep to a flat top) onto the lip at the wall tops, round the turret;
+     each stone DORMER into its pocket in the slope, its DORMER-core (the window) inside it
+     and a DORMER-roof over its gable; the CRESTING strips along the flat top's edges, glued
+     by their whole feet; the two CHIMNEYs on the top; SPIRE (the copper cone) on the turret.
+""", """Walls, roofs, the dormers, chimneys and the spire print upright; the CRESTING on its back.
+Windows and doors print face up with supports under their frames only: the stone-coloured
+ones on the Windows_Doors plate, the cast-iron shopfronts on the Windows_Iron plate (supports
+ON for that plate too). CORNICE-E-upper changes once from iron to stone.
+"""),
+    "laurel": ("THE LAUREL - GRISTMILL AND MILLER'S CABIN ON A CREEK", """  1. GROUND (the site: the bank, the creek bed strewn with stones, the far bank, the paths) on
+     the layout; WATER (printed upside down, in clear or blue) into the creek. Everything else
+     stands in its seat cut in the ground.
+  2. Mill: BASE (the stone footing) at the creek's edge; STONEWALL (the dry-laid wall at the
+     water) under the mill's front; WALLS-1 onto the footing's lip; BELT onto its lip, the
+     CORNICE-J parts round it (-course, then -crown: the pegged girt); WALLS-2 with both
+     gables onto the belt's lip; the windows and doors; the CORNICE-E parts along the eaves
+     (-course, then -upper: the frieze board over the rafter tails); ROOF (tin).
+  3. The wheel: PIER (stone) in its seat in the creek; AXLE through the hole in the mill's
+     wall, its outer end on the pier; BEARING over its inner end against the wall; WHEEL-a and
+     WHEEL-b (the two halves, each printed flat) onto the axle from either side, glued face to
+     face.
+  4. FLUME on its six TRESTLE bents (each in its seat), its spout over the wheel's top.
+  5. Loading shed on the mill's west end: LOADING-deck on its stone piers; LOADING-top (the
+     shed roof on its posts, in one piece) onto it, the peg under each post into its socket;
+     the MILLSTONE by it.
+  6. BRIDGE (the sloping plank footbridge with its rails and mid-creek bent, in one piece)
+     from bank to bank.
+  7. Cabin: CABIN-BASE in its seat on the bank; CABIN-WALLS; the door and windows;
+     CORNICE-H-course, then -crown; CABIN-ROOF; CHIMNEY (fieldstone with its brick stack)
+     against the end wall; PORCH-deck and PORCH-top (turned posts and railings in one piece);
+     STEPS.
+""", """Walls, roofs, the ground and the flume print upright; the WATER, the BRIDGE and the porch
+decks upside down; the wheel halves, the TRESTLEs and the STONEWALL flat. Windows and doors print
+face up with supports under their frames only. One change each: the CHIMNEY stone to brick
+(its stack), CORNICE-E-upper trim to boards, the PORCH-top and LOADING-top shakes to timber,
+their decks timber to stone (the piers).
+"""),
+    "ashgrove": ("THE ASHGROVE - ESTATE GATE LODGE", """  1. BASE-W and BASE-E (the rock-faced plinth either side of the drive); DRIVE (the gravel
+     strip with its wheel ruts) between them and on through the arch.
+  2. PASSAGE (the ribbed barrel vault and its side walls, printed upside down) on the drive
+     between the plinths; WALLS-1 (the brick ground storey, its two halves joined by the walls
+     over the passage) lowered over it onto the plinths' lips; ARCH-S and ARCH-N (the stone
+     arch faces) on the passage's two ends, flush with the brick; the four GATEs folded back
+     against the passage's walls inside the arches.
+  3. Windows and doors: push each plug into its opening from outside.
+  4. The CORNICE-J parts round the top of WALLS-1 (the jetty: -lower, the carved joist ends and
+     the vine, then -crown, the bressumer).
+  5. WALLS-2 (the jettied, half-timbered upper storey with both cross gables) onto WALLS-1's
+     ledge; its windows; the CORNICE-E parts round the eave (-course, then -upper).
+  6. ROOF (plain tiles with ridge and hip rolls) onto the lip at the wall tops; the two
+     CHIMNEYs (twin octagonal shafts) into their pockets; a BARGE (carved bargeboard) on each
+     cross gable's rakes, glued by its whole back.
+  7. In front: PIER-0 and PIER-1 either side of the drive; the brick WALL-0 and WALL-1 out from
+     them.
+""", """Walls, roofs, chimneys and the piers print upright; the PASSAGE upside down; the arch faces,
+gates and BARGEs on their backs. Windows and doors print face up with supports under their
+frames only: the stone-coloured ones on the Windows_Doors plate, the timber-framed upper ones
+on the Windows_Timber plate (supports ON for that plate too). CORNICE-J-lower changes once
+from timber to stone (the vine).
+"""),
     "section4": ("SECTION HOUSE No. 4 - TOOL HOUSE AND SPEEDER SHED", """  1. TOOL-FOUNDATION on the layout, the door side toward the track; TOOL-WALLS onto it; the door and windows; TOOL-CORNICE-frieze, then TOOL-CORNICE-crown; TOOL-ROOF; STOVEPIPE down into the hole in the back slope.
   2. SPEEDER-FOUNDATION with its gable end to the speeder's spur; SPEEDER-WALLS onto it; the doors and window; SPEEDER-CORNICE-course, then SPEEDER-CORNICE-crown; SPEEDER-ROOF.
 """, """Walls and roofs print upright. Windows and doors print face up with supports under their frames only.
@@ -1719,7 +2011,8 @@ ZIPNAME = {"villa": "Ashby_Villa", "beaumont": "Beaumont_Queen_Anne", "harcourt"
            "engine3": "Engine_Company_No3", "lakeshore": "Lakeshore_Freight_House", "pleasant": "Pleasant_Valley_School",
            "thorne": "Thorne_Livery", "mxtower": "MX_Tower", "tank12": "Water_Tank_No12", "greenfield": "Greenfield_Bandstand",
            "blackwater": "Blackwater_Coaling_Tower", "stonehaven": "Stonehaven_Tunnel_Portals",
-           "sandhouse": "Blackwater_Sand_House", "enginehouse": "Blackwater_Engine_House", "yardoffice": "Blackwater_Yard_Office", "section4": "Section_House_No4", "shanty": "Crossing_Shanty_Oil_House", "kilnridge": "Kiln_Ridge_Tunnel_Portals", "millcreek": "Mill_Creek_Bridge", "beaverrun": "Beaver_Run_Trestle"}
+           "sandhouse": "Blackwater_Sand_House", "enginehouse": "Blackwater_Engine_House", "yardoffice": "Blackwater_Yard_Office", "section4": "Section_House_No4", "shanty": "Crossing_Shanty_Oil_House", "kilnridge": "Kiln_Ridge_Tunnel_Portals", "millcreek": "Mill_Creek_Bridge", "beaverrun": "Beaver_Run_Trestle",
+           "bethel": "Bethel_Grove_Cottages"}
 
 # the scenery and detail packs (hoarch.packs)
 ZIPNAME.update({"pallets": "Loaded_Pallets_Pack", "drums": "Oil_Drums_and_Barrels_Pack", "walls": "Retaining_Walls_Pack",
