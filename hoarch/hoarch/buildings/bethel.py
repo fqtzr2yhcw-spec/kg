@@ -241,7 +241,7 @@ def _cottage(kit, k):
         box([-1.8, -1.2, zr + 6.8 - z0c], [1.8, 1.2, zr + 9.0 - z0c])
     kit.add(f"{k}-CHIMNEY", "Brick", ch.translate([cx, cy, z0c]), group="roof")
     for j, wl in enumerate(rf["walls"]):
-        bg = N.barge_bethel(wl["L"], wl["slope"], D_EAVE, kind=sc["barge"], skin=1.6)
+        bg = N.barge_bethel(wl["L"], wl["slope"], D_EAVE, kind=sc["barge"], skin=1.6, tab=RAKE - 0.6)
         fw = wl["facade"]
         A = fw.A.copy()
         A[:, 3] = fw.world(0.0, 0.0, RAKE)
@@ -267,7 +267,7 @@ def _cottage(kit, k):
         r2 = rf2["body"] + rf2["tex"] + rf2["skins"] + rf2["skin_tex"] - house_env - lip_keep(side.cs, 2.6, sz)
         kit.add(f"{k}-ELL-ROOF", "Shingle", max(r2.decompose(), key=lambda m_: m_.volume()), group="roof")
         wl = rf2["walls"][0]
-        bg = N.barge_bethel(wl["L"], wl["slope"], 2.6, kind=sc["barge"], skin=1.4, width=2.6, finial=4.0)
+        bg = N.barge_bethel(wl["L"], wl["slope"], 2.6, kind=sc["barge"], skin=1.4, width=2.6, finial=4.0, tab=2.0)
         fw = wl["facade"]
         A = fw.A.copy()
         A[:, 3] = fw.world(0.0, 0.0, 2.6)
@@ -292,7 +292,12 @@ def _cottage(kit, k):
                         arcade="btlace", skirt="btlattice", pier_tex="brick", roof_edge="btscallop", planks=dict(pitch=1.4, border=1.6),
                         drop=4.0, top=True)
     fkeep = slab(offset(MAIN.cs, 1.7), -1, ZF + 1.3)
-    deck = P["deck"] - fkeep - fnd
+    steps = []
+    for sm, A in P["steps"]:                         # the steps run 1.2 into the deck, which is cut to fit them
+        A2 = A.copy()
+        A2[:, 3] = A[:, 3] + A[:, 2] * (-1.2)
+        steps.append(sm.transform(A2))
+    deck = P["deck"] - fkeep - fnd - union(steps)
     kit.add(f"{k}-PORCH-deck", sc["trim"], deck, P=print_flip(), group="porch", render=FT.plank_zones(deck, ZF, "Planks", sc["trim"]))
     ins_box = union([box([b[0] - 0.2, b[1] - 0.2, math.floor((b[2] - 0.2) / 0.2) * 0.2], [b[3] + 0.2, b[4] + 0.2, math.ceil((b[5] + 0.2) / 0.2) * 0.2])
                      for b in (s_.bounding_box() for s_ in keep)])
@@ -301,8 +306,8 @@ def _cottage(kit, k):
     parts = {p_.name: p_ for p_ in kit.parts}
     ptop = parts[f"{k}-PORCH-top"]
     zb = ptop.solid.bounding_box()[5]                     # the balcony floor
-    for j, (sm, A) in enumerate(P["steps"]):
-        stp = sm.transform(A) - fkeep - fnd - deck - ptop.solid
+    for stp in steps:
+        stp = stp - fkeep - fnd - ptop.solid
         STEP_Y[k] = min(STEP_Y.get(k, 0.0), stp.bounding_box()[1])
         kit.add(f"{k}-PORCH-steps", "Brick", stp, group="porch")
     # the balcony railings, in slots in the porch roof: the front and both sides, the sides

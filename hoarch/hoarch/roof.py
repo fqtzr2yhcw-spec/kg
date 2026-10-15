@@ -320,6 +320,24 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
             pan = cs_union(pans[0::1]) ^ clip
             tex = (M.extrude(pan, d * 0.45) + M.extrude(cs_union(covers) ^ clip, d) + M.extrude(cs_union(crowns) ^ clip, d + 0.15)
                    + M.extrude(cs_union(noses) ^ clip, d + 0.25))
+        elif shape == "riven":            # hand-riven shakes: long boards of random width in courses, their butts
+            b = loc.bounds()              # a little out of line, some split, two thicknesses (the Piney)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(int(abs(b[0]) * 3 + abs(b[2]) * 5 + i * 11) % 997)
+            layers = {0: [], 1: []}
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                u = b[0] - rng.uniform(0.0, 2.0)
+                while u < b[2]:
+                    wd = rng.uniform(1.1, 2.7)
+                    tl = rng.uniform(-0.12, 0.12)
+                    sh = poly([(u + 0.12, v + 0.15 + tl), (u + wd - 0.12, v + 0.15 - tl), (u + wd - 0.12, v + pitch), (u + 0.12, v + pitch)])
+                    if wd > 2.0 and rng.uniform() < 0.4:          # a split down the shake from its butt
+                        um = u + wd * rng.uniform(0.35, 0.65)
+                        sh = sh - rect(um - 0.15, v - 1.0, um + 0.15, v + pitch * 0.55)
+                    layers[int(rng.integers(0, 2))].append(sh)
+                    u += wd
+            tex = union([M.extrude(cs_union(cs_) ^ clip, d + 0.08 * k) for k, cs_ in layers.items() if cs_])
         elif shape == "dutchlap":         # Dutch-lap shingles: each laid slanting so its corner laps the next,
             b = loc.bounds()              # the courses reading as diagonal zigzags, a thick butt on each (the Kittredge)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
