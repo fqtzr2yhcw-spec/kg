@@ -1769,3 +1769,410 @@ def post_piney(h):
         r = 1.5 - 0.18 * (zr - 0.6) / (z1 - 0.6) + 0.12
         body = body + _revolve([(0.0, zr - 0.3), (r, zr - 0.3), (r, zr + 0.3), (0.0, zr + 0.3)], seg=20)
     return body + _top(h, 1.5, z1, 1.32, None, seg=20)
+
+
+# ================================================================== the Marigny (house 107)
+# After the camelback shotgun doubles of the Faubourg Marigny and Bywater, New Orleans
+# (1880s-90s): two houses side by side under one roof, each one room wide and many rooms deep,
+# one storey at the street and two at the back (the "camelback", taxed as a one-storey house);
+# the double front of door, two floor-length windows and door under a deep gallery on turned
+# columns with a frieze of spindles; Italianate hoods on scroll consoles over the openings;
+# heavy paired brackets under the eave; the street front's boards channelled like dressed
+# stone, the sides in weatherboard; up on brick piers with slatted skirts between.
+
+def rustic_marigny(region, datum=0.0, course=2.6, block=6.4, chan=0.45, d=0.4):
+    """The street front's channel rustication: wide flush boards cut with V channels so the
+    wall reads as dressed stone, the vertical joints staggered course to course."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = []
+    k0 = math.floor((v0 - datum) / course) - 1
+    k1 = math.ceil((v1 - datum) / course) + 1
+    for k in range(k0, k1):
+        lo, hi = datum + k * course + chan / 2, datum + (k + 1) * course - chan / 2
+        off = (k % 2) * block / 2
+        u = u0 - block - off
+        while u < u1 + block:
+            out.append(chamfer_box(u + chan / 2, lo, u + block - chan / 2, hi, 0.0, d, c=0.25, bottom=d))
+            u += block
+    reg = M.extrude(region, d + 0.2).translate([0, 0, -0.1])
+    return (union(out) ^ reg) + M.extrude(region, 0.05)
+
+
+def lap_marigny(region, datum=0.0, pitch=1.2, d=0.38):
+    """The sides' weatherboard: bevelled lap siding, each board thick at its butt (under a 45
+    degree bevel) and thin where the next one laps it."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    out = []
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    k1 = math.ceil((v1 - datum) / pitch) + 1
+    for k in range(k0, k1):
+        vb = datum + k * pitch
+        prof = [(vb, 0.0), (vb + 0.3, d), (vb + pitch + 0.01, 0.06), (vb + pitch + 0.01, 0.0)]
+        out.append(M.hull_points([(u, v, w) for u in (u0 - 1.0, u1 + 1.0) for (v, w) in prof]))
+    reg = M.extrude(region, d + 0.2).translate([0, 0, -0.1])
+    return (union(out) ^ reg) + M.extrude(region, 0.05)
+
+
+def foundation_mgpiers(reg, seed=0):
+    """The raised foundation's face: brick piers every few feet standing proud, slatted skirt
+    boards between them under a rail (the crawl space behind)."""
+    from . import skins as SK
+    u0, v0, u1, v1 = reg.bounds()
+    L = u1 - u0
+    n = max(1, int(round(L / 17.0)))
+    out = [M.extrude(reg, 0.05)]
+    piers, panels = [], []
+    for k in range(n + 1):
+        uc = u0 + L * k / n
+        piers.append(rect(max(u0, uc - 2.4), v0, min(u1, uc + 2.4), v1))
+    pc = cs_union(piers) ^ reg
+    out.append(M.extrude(pc, 0.5) + SK.brick_bond(pc, "running", bl=2.4, bh=1.0, mortar=0.4, bed=0.4, d=0.25).translate([0, 0, 0.48]))
+    pan = reg - cs_union(piers).offset(0.3, MIT, 4.0)
+    if not pan.is_empty():
+        slats = cs_union([rect(u, v0 - 1, u + 0.9, v1 + 1) for u in np.arange(u0 + 0.4, u1, 1.6)]) ^ pan
+        out.append(M.extrude(slats, 0.3))
+        out.append(M.extrude(rect(u0 - 1, v1 - 1.2, u1 + 1, v1 - 0.2) ^ pan, 0.45))
+    return union(out)
+
+
+TW.FOUNDATION_EXTRA.update(mgpiers=foundation_mgpiers)
+
+
+# ---- cornice ornaments
+def frieze_mgpanels(L, h, b, pitch, margin, pair, half):
+    """The main eave's frieze: between the bracket pairs a sunk panel in a moulded frame with a
+    rosette of six petals at its centre."""
+    v0, v1 = 0.4, h - 0.4
+    vm = (v0 + v1) / 2
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 3.0:
+            continue
+        fr = rect(uc - wd / 2 + 0.3, v0, uc + wd / 2 - 0.3, v1)
+        out.append(_st(fr - fr.offset(-0.55, MIT, 4.0), b, 0.4))
+        r = min(1.2, (v1 - v0) / 2 - 0.7)
+        if r > 0.6:
+            pet = cs_union([circle((uc + r * 0.55 * math.cos(a), vm + r * 0.55 * math.sin(a)), r * 0.42, 12)
+                            for a in np.linspace(0, 2 * math.pi, 6, endpoint=False)])
+            out.append(_st(_clean(pet, 0.2), b, 0.3))
+            out.append(_st(circle((uc, vm), r * 0.3, 12), b, 0.45))
+    return out, []
+
+
+def course_mgguilloche(L, h, b, pitch, margin, p):
+    """A guilloche: a chain of interlaced rings with a bead in each eye."""
+    r = h / 2 - 0.15
+    n = max(1, int((L - 0.8) / (1.6 * r)))
+    st_ = (L - 0.8) / n
+    rings, beads = [], []
+    for k in range(n + 1):
+        u = 0.4 + st_ * k
+        rings.append(circle((u, h / 2), r, 20) - circle((u, h / 2), r - 0.42, 20))
+        beads.append(circle((u, h / 2), 0.28, 10))
+    out = [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.15)]
+    out.append(_st(_clean(cs_union(rings), 0.15) ^ rect(0.2, 0.1, L - 0.2, h - 0.1), b + 0.15, 0.3))
+    out.append(_st(cs_union(beads), b + 0.15, 0.3))
+    return out
+
+
+def frieze_mgsunburst(L, h, b, pitch, margin, pair, half):
+    """The camel's eave frieze: an Eastlake half-sunburst in every bay, rays fanning up from a
+    hub on the frieze's foot, under a plain fillet."""
+    v0, v1 = 0.3, h - 0.3
+    out = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 3.0:
+            continue
+        out.append(_st(rect(uc - wd / 2 + 0.2, v1 - 0.5, uc + wd / 2 - 0.2, v1), b, 0.3))     # the fillet, bay by bay
+        R_ = min(wd / 2 - 0.3, v1 - 0.6 - v0)
+        rays = [stroke([(uc, v0), (uc + R_ * math.cos(a), v0 + R_ * math.sin(a))], 0.45) for a in np.linspace(0.25, math.pi - 0.25, 7)]
+        out.append(_st(_clean(cs_union(rays), 0.18) ^ rect(uc - wd / 2, v0, uc + wd / 2, v1 - 0.5), b, 0.3))
+        out.append(_st(circle((uc, v0), 0.9, 16) ^ rect(uc - 2, v0, uc + 2, v0 + 2), b, 0.4))
+    return out, []
+
+
+def bracket_mgscroll(h, d, t):
+    """An Italianate console (side profile): a big volute under the soffit, the spine curving
+    in an S down the wall to a small curl at the foot, a leaf on its face; solid."""
+    r = min(1.2, d / 2 - 0.05)                     # the volute, never behind the bracket's back
+    pts = [(0.0, 0.0), (d - r, 0.0)]
+    for tt in np.linspace(0.0, 1.0, 12):
+        s = tt * tt * (3 - 2 * tt)
+        pts.append((d - r - max(0.0, d - r - 1.0) * s, -2 * r + 0.4 - (h - 2 * r - 0.6) * tt))
+    pts += [(0.0, -h + 0.8)]
+    body = poly(pts)
+    vol = circle((d - r, -r), r, 20)
+    curl = circle((1.0, -h + 0.9), 0.9, 16)
+    return cs_union([body, vol, curl, rect(0.0, -h + 0.9, 1.0, 0.0)]) ^ rect(0.0, -h - 1.0, d + 1.0, 0.01)
+
+
+CO.FRIEZE_EXTRA.update(mgpanels=frieze_mgpanels, mgsunburst=frieze_mgsunburst)
+CO.COURSE_EXTRA.update(mgguilloche=course_mgguilloche)
+TW.BRACKET_EXTRA.update(mgscroll=bracket_mgscroll)
+
+
+# ---- windows, doors, shutters
+def _sash44(w, h, pl, plug_cs, meet=0.6):
+    """Four over four: two lights wide and two high in each sash, a meeting rail."""
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    u0, v0, u1, v1 = inner.bounds()
+    vm = (v0 + v1) / 2
+    lo, hi = rect(u0, v0, u1, vm - meet / 2), rect(u0, vm + meet / 2, u1, v1)
+    bars = (_muntins(lo, 2, 2) ^ lo) + (_muntins(hi, 2, 2) ^ hi)
+    return _glazed([ext(plug_cs, -pl, -0.6)], lo + hi, pl, bars, plug_cs)
+
+
+def _console_hood(X, vh, parts, depth=1.6):
+    """The Italianate hood over a front opening: a frieze board with an incised fan, a scroll
+    console at each end, a cornice cap stepped out over them at 45 degrees."""
+    parts.append(ext(rect(-X, vh, X, vh + 2.2), 0.0, 0.8))
+    fan = cs_union([stroke([(0.0, vh + 0.2), (1.8 * math.cos(a), vh + 0.2 + 1.8 * math.sin(a))], 0.35)
+                    for a in np.linspace(0.3, math.pi - 0.3, 7)])
+    parts.append(ext(_clean(fan, 0.15) ^ rect(-2.0, vh + 0.2, 2.0, vh + 2.0), 0.79, 1.0))
+    for sg in (-1, 1):
+        u = sg * (X + 0.2)
+        cons = cs_union([rect(u - 0.7, vh - 2.6, u + 0.7, vh + 2.2), circle((u, vh - 2.6), 0.8, 16)])
+        parts.append(ext(cons, 0.0, depth - 0.2))
+        parts.append(ext(rect(u - 0.3, vh - 1.8, u + 0.3, vh + 1.6), depth - 0.21, depth))
+    parts.append(chamfer_box(-X - 1.4, vh + 2.19, X + 1.4, vh + 2.9, 0.0, depth + 0.4, c=0.3, bottom=depth + 0.4))
+    parts.append(chamfer_box(-X - 1.6, vh + 2.89, X + 1.6, vh + 3.5, 0.0, depth + 0.6, c=0.3, bottom=0.6))
+    return vh + 3.5
+
+
+def window_mgfloor(w=11.0, h=28.0, A=1.2):
+    """The gallery's floor-length window: four over four, a casing with a bead, an Italianate
+    hood on scroll consoles over it; it stands on the gallery floor (no sill)."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash44(w, h, pl, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8),
+             ext((op.offset(0.45, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 1.0)]
+    top = _console_hood(X, h + A - 0.01, parts)
+    return O._one_piece(sash, parts, op, plug_cs, pl, top, 0.0)
+
+
+def window_mgside(w=10.0, h=22.0, A=1.0):
+    """The long sides' window: two over two in a plain casing under a frieze board and a cap,
+    a sill on a plain apron."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash22(w, h, pl, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    vh = h + A - 0.01
+    parts.append(ext(rect(-X, vh, X, vh + 1.6), 0.0, 0.8))
+    parts.append(chamfer_box(-X - 0.8, vh + 1.59, X + 0.8, vh + 2.4, 0.0, 1.3, c=0.3, bottom=1.3))
+    parts.append(chamfer_box(-X - 0.6, -1.2, X + 0.6, 0.01, 0.0, 1.4, c=0.3, bottom=1.4))
+    parts.append(ext(rect(-X + 0.6, -2.6, X - 0.6, -1.19), 0.0, 0.6))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 2.4, -2.6)
+
+
+def window_mgupper(w=9.0, h=15.0, A=0.9):
+    """The camel's window: two over two under a segmental head, its casing following the arch
+    with a keystone; a sill."""
+    rise = 1.6
+    R_ = (w * w / 4 + rise * rise) / (2 * rise)
+    arc = [(R_ * math.sin(a), h - rise - (R_ - rise) + R_ * math.cos(a)) for a in np.linspace(math.asin(w / 2 / R_), -math.asin(w / 2 / R_), 17)]
+    op = poly([(-w / 2, 0.0), (w / 2, 0.0)] + arc)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    u0, v0, u1, v1 = inner.bounds()
+    vm = round(((v0 + v1) / 2 - 0.5) / 0.2) * 0.2
+    lo, hi = inner ^ rect(-50, v0, 50, vm - 0.3), inner ^ rect(-50, vm + 0.3, 50, 100)
+    bars = rect(-RIB / 2, v0 - 1, RIB / 2, v1 + 1)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], lo + hi, pl, bars, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, RND) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    kt = h + A
+    parts.append(ext(poly([(-0.9, kt - 1.6), (0.9, kt - 1.6), (1.2, kt + 0.6), (-1.2, kt + 0.6)]), 0.0, 1.2))
+    parts.append(chamfer_box(-X - 0.6, -1.2, X + 0.6, 0.01, 0.0, 1.3, c=0.3, bottom=1.3))
+    return O._one_piece(sash, parts, op, plug_cs, pl, kt + 0.6, -1.2)
+
+
+def door_mgfront(w=11.0, h=27.0, A=1.2):
+    """A front door of the double: a tall leaf with two round-headed lights over two raised
+    panels, a transom of three lights over it, under the same console hood as the windows."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    vt = h - 4.0
+    tr = rect(-w / 2 + 0.6, vt + 0.5, w / 2 - 0.6, h - 0.6)
+    lights = []
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.6, sg * (w / 2 - 1.1)))
+        r = (c_ - a) / 2
+        lights.append(rect(a, vt * 0.45, c_, vt - 1.0 - r) + circle(((a + c_) / 2, vt - 1.0 - r), r, 20))
+    glass = cs_union(lights) + tr
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(glass, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    parts_s.append(ext(cs_union([rect(x - RIB / 2, vt, x + RIB / 2, h) for x in np.linspace(-w / 2, w / 2, 4)[1:-1]]) ^ tr.offset(0.1, MIT, 4.0),
+                       -pl + O.GLASS - 0.01, -0.5))
+    parts_s.append(ext(rect(-w / 2 + 0.4, vt - 0.1, w / 2 - 0.4, vt + 0.5), -0.65, -0.1))
+    for lt in lights:
+        parts_s.append(ext(lt.offset(0.5, RND) - lt, -0.65, -0.2))
+    for sg in (-1, 1):
+        a, c_ = sorted((sg * 0.6, sg * (w / 2 - 1.1)))
+        pan = rect(a, 1.2, c_, vt * 0.45 - 1.0)
+        parts_s.append(ext(pan - pan.offset(-0.45, MIT, 4.0), -0.65, -0.2))
+        parts_s.append(chamfer_box(*pan.offset(-0.9, MIT, 4.0).bounds(), -0.65, 0.35, c=0.2))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8),
+             ext((op.offset(0.45, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 1.0)]
+    top = _console_hood(X, h + A - 0.01, parts)
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, top, 0.0)
+
+
+def door_mgback(w=9.0, h=22.0, A=1.0):
+    """The back doors onto the back gallery: four panels under a two-light transom, a plain
+    casing with a cap."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    vt = h - 3.4
+    tr = rect(-w / 2 + 0.6, vt + 0.5, w / 2 - 0.6, h - 0.6)
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(tr, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(tr, -pl, -pl + O.GLASS))
+    parts_s.append(ext(rect(-RIB / 2, vt, RIB / 2, h) ^ tr.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    parts_s.append(ext(rect(-w / 2 + 0.4, vt - 0.1, w / 2 - 0.4, vt + 0.5), -0.65, -0.1))
+    lh = (vt - 2.0) * 0.5
+    _panels(parts_s, w, [(1.0, 1.0 + lh), (1.0 + lh + 0.9, vt - 0.9)])
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    vh = h + A - 0.01
+    parts.append(ext(rect(-X, vh, X, vh + 1.4), 0.0, 0.8))
+    parts.append(chamfer_box(-X - 0.8, vh + 1.39, X + 0.8, vh + 2.2, 0.0, 1.3, c=0.3, bottom=1.3))
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, vh + 2.2, 0.0)
+
+
+def shutter_marigny(w, h, t=0.8, stile=0.6):
+    """The Marigny's floor-length shutter: three fields of fixed louvers between two lock rails,
+    a slide bolt on the middle rail. Local frame as features.shutter (u 0..w, v 0..h, back at
+    w = 0; prints face-up)."""
+    web = 0.4
+    r1, r2 = round(h / 3 / 0.2) * 0.2, round(h * 2 / 3 / 0.2) * 0.2
+    parts = [ext(rect(0, 0, w, h) - rect(stile, stile, w - stile, h - stile), 0.0, t)]
+    for rv in (r1, r2):
+        parts.append(ext(rect(stile, rv - stile / 2, w - stile, rv + stile / 2), 0.0, t))
+    for f0, f1 in ((stile, r1 - stile / 2), (r1 + stile / 2, r2 - stile / 2), (r2 + stile / 2, h - stile)):
+        field = rect(stile, f0, w - stile, f1)
+        parts.append(ext(field, 0.0, web))
+        b = field.bounds()
+        n = max(1, int((b[3] - b[1] - 0.5) / 0.9))
+        pt = (b[3] - b[1] - 0.5) / n
+        slats = [rect(b[0] - 0.1, b[1] + 0.5 + k * pt, b[2] + 0.1, b[1] + 0.5 + k * pt + min(RIB + 0.05, pt - 0.45)) for k in range(n)]
+        parts.append(ext(cs_union(slats) ^ field.offset(0.05), web, t - 0.2))
+    parts.append(ext(rect(w * 0.25, r1 - 0.25, w * 0.75, r1 + 0.25), t - 0.01, t + 0.2))
+    return union(parts)
+
+
+# ---- the gallery: column, baluster, spindle frieze, skirt and roof edge (registered)
+def post_marigny(h, collar=None, abacus=3.2, slot=None):
+    """The gallery's column, Eastlake turned: a tall square chamfered pedestal, a vase turned
+    with rings above it, a long shaft with a neck ring, a square capital block."""
+    from .porchwork import _revolve, _top
+    zp = 3.4
+    c_ = 0.45                                                      # the pedestal's chamfered corners
+    ped = M.extrude(poly([(1.6, -1.6 + c_), (1.6, 1.6 - c_), (1.6 - c_, 1.6), (-1.6 + c_, 1.6), (-1.6, 1.6 - c_), (-1.6, -1.6 + c_),
+                          (-1.6 + c_, -1.6), (1.6 - c_, -1.6)]), zp)
+    z1 = h - 2.8
+    zv = zp + (z1 - zp) * 0.22
+    prof = [(0.0, zp - 0.01), (1.35, zp - 0.01), (1.35, zp + 0.3), (1.0, zp + 0.6), (1.45, zp + 1.6), (1.45, zv - 0.8),
+            (0.95, zv), (1.25, zv + 0.25), (1.25, zv + 0.55), (0.95, zv + 0.8), (1.0, z1 - 1.2), (1.25, z1 - 0.95),
+            (1.25, z1 - 0.65), (1.05, z1 - 0.4), (1.05, z1)]
+    body = _revolve(prof) + ped
+    return body + _top(h, abacus / 2, z1, 1.05, slot, seg=36)
+
+
+def baluster_marigny(h, seg=16):
+    """The gallery's baluster: turned, a vase low down, rings, a slim neck."""
+    from .porchwork import _revolve
+    zv = h * 0.35
+    prof = [(0.0, 0.0), (0.5, 0.0), (0.5, 0.5), (0.35, 0.7), (0.55, zv - 0.6), (0.55, zv), (0.3, zv + 0.9), (0.3, h - 1.0),
+            (0.48, h - 0.8), (0.48, h - 0.5), (0.32, h - 0.3), (0.32, h), (0.0, h)]
+    return _revolve(prof, seg=seg)
+
+
+def spandrel_mgspindle(u0, u1, v_bot, v_top):
+    """The gallery's frieze between two columns (Eastlake): a rail under the beam and a second
+    one below it with a row of turned spindles between them, a fan bracket in each corner."""
+    H = v_top - v_bot
+    vr = v_bot + H * 0.42
+    out = [rect(u0, v_top - 0.8, u1, v_top), rect(u0, vr - 0.35, u1, vr + 0.35)]
+    reach = min(5.4, (u1 - u0) * 0.22)
+    n = max(1, int((u1 - u0 - 2 * reach) / 1.4))
+    for k in range(n + 1):
+        u = u0 + reach + (u1 - u0 - 2 * reach) * k / max(n, 1)
+        out.append(rect(u - 0.3, vr, u + 0.3, v_top - 0.79))
+        out.append(circle((u, (vr + v_top - 0.8) / 2), 0.5, 12))
+    for sg, uo in ((1, u0), (-1, u1)):
+        fan = poly([(uo, v_top), (uo, v_bot)] + [(uo + sg * reach * math.sin(a), v_top - H * math.cos(a)) for a in np.linspace(0, math.pi / 2, 10)])
+        slots = cs_union([stroke([(uo + sg * 0.9 * math.sin(a), v_top - 0.9 * math.cos(a)), (uo + sg * (reach - 1.0) * math.sin(a), v_top - (H - 1.0) * math.cos(a))], 0.55)
+                          for a in np.linspace(0.35, math.pi / 2 - 0.35, 3)])
+        out.append(fan - slots)
+    return _clean(cs_union(out)) ^ rect(u0, v_bot - 0.01, u1, v_top + 0.01)
+
+
+def skirt_mgslats(reg, d=1.2):
+    """The gallery's skirt: slats set on the diagonal both ways (a lattice of flat strips)
+    between plain rails."""
+    u0, v0, u1, v1 = reg.bounds()
+    H = v1 - v0
+    st_ = []
+    for u in np.arange(u0 - H, u1 + H, 2.2):
+        st_.append(stroke([(u, v0), (u + H, v1)], 0.7))
+    lat = _clean(cs_union(st_), 0.2) ^ reg
+    rails = (rect(u0 - 1, v1 - 1.0, u1 + 1, v1 + 1) + rect(u0 - 1, v0 - 1, u1 + 1, v0 + 0.8)) ^ reg
+    return M.extrude(lat, d * 0.5) + M.extrude(rails, d)
+
+
+def edge_mgmodillion(L, z0, zc):
+    """The gallery roof's edge: a fascia carried on a row of little round-ended modillions
+    under a cap."""
+    n = max(1, int((L - 1.2) / 2.0))
+    mods = [rect(u - 0.4, z0 + 0.1, u + 0.4, zc - 1.0) + circle((u, z0 + 0.5), 0.4, 10)
+            for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))]
+    return cs_union(mods) + rect(0.3, zc - 1.0, L - 0.3, zc), 0.6
+
+
+PW.POSTS.update(marigny=post_marigny)
+PW.BALUSTERS.update(marigny=(baluster_marigny, 1.9))
+PW.FRIEZES.update(mgspindle=spandrel_mgspindle)
+PW.SKIRTS.update(mgslats=skirt_mgslats)
+FT.EDGE_EXTRA.update(mgmodillion=edge_mgmodillion)
+
+
+def chimney_marigny(w=7.0, d=12.0, h=30.0):
+    """The Marigny's chimney (stands on z = 0, the floor of its roof pocket): running-bond brick,
+    a stucco band, a three-course corbelled cap under a slab, two octagonal clay pots."""
+    h = round(h / 0.2) * 0.2
+    sh = round((h - 5.0) / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0], [w / 2, d / 2, sh]) + TW._skin(w, d, 0.0, sh - 3.0, TW._brick("running"))
+    zb = sh - 3.0
+    body = body + box([-w / 2 - 0.3, -d / 2 - 0.3, zb], [w / 2 + 0.3, d / 2 + 0.3, zb + 1.2]) + TW._corbel_out(w, d, zb, 0.3)
+    z = sh
+    for k in range(3):
+        g = 0.25 * (k + 1)
+        body = body + TW._corbel_out(w + 2 * (g - 0.25), d + 2 * (g - 0.25), z + 0.25, 0.25) + \
+            box([-w / 2 - g, -d / 2 - g, z + 0.24], [w / 2 + g, d / 2 + g, z + 0.6])
+        z += 0.6
+    body = body + box([-w / 2 - 0.9, -d / 2 - 0.9, z - 0.01], [w / 2 + 0.9, d / 2 + 0.9, z + 0.6])
+    z += 0.6
+    for y in (-d / 4, d / 4):
+        pot = M.cylinder(3.2, 1.25, 1.0, 8).translate([0, y, z - 0.01]) + M.cylinder(0.6, 1.3, 1.3, 8).translate([0, y, z + 3.0])
+        body = body + pot - M.cylinder(4.0, 0.7, 0.7, 8).translate([0, y, z + 0.6])
+    return body
