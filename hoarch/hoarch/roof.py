@@ -362,6 +362,30 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 v += p_
                 j += 1
             tex = M.extrude(cs_union(rows) ^ clip, d) if rows else M()
+        elif shape == "ashtile":          # plain clay tiles in even courses half bonded, each course thick at its butt
+            b = loc.bounds()              # and thinning up the slope so the course above laps over it with a shadow
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)      # line; every third tile a hair thicker, as hand-made tile
+            tw_ = 2.2                                         # lies (the Ashgrove)
+            parts_ = []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                u = b[0] - (tw_ / 2 if j % 2 else 0.0) - 1.0
+                k = 0
+                grp = ([], [])
+                while u < b[2] + 1.0:
+                    grp[(k + j) % 3 == 0].append(rect(u + 0.13, v, u + tw_ - 0.13, v + pitch + 0.01))
+                    u += tw_
+                    k += 1
+
+                def taper(P, v0=v):
+                    P = np.array(P)
+                    P[:, 2] *= 1 - 0.6 * np.clip((P[:, 1] - v0) / pitch, 0, 1)
+                    return P
+                for g_, dd in zip(grp, (d, d + 0.1)):
+                    cs = cs_union(g_) ^ clip
+                    if not cs.is_empty():
+                        parts_.append(M.extrude(cs, dd).warp_batch(taper))
+            tex = union(parts_)
         elif shape == "lrtin":            # the mill's tin: sheets with a crimped seam every pitch up the slope (here the
             b = loc.bounds()              # ribs run down the slope: v is along it), a lap across every 24 mm (the Laurel)
             clip = loc.offset(-0.2, JoinType.Miter, 4.0)

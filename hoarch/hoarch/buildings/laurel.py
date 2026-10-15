@@ -433,10 +433,19 @@ def build(kit=None):
         x, y = rng.uniform(2.0, SX - 2.0), rng.uniform(CY0 + 4.0, CY1 - 7.0)
         r = rng.uniform(0.7, 1.5)
         peb.append(M.sphere(1.0, 10).scale([r * rng.uniform(0.8, 1.3), r, r * 0.45]).translate([x, y, ZBED]))
+    def boulder(x, y, z, r):
+        """A field boulder: an angular hull of points on a squat ellipsoid, sunk a third."""
+        pts = []
+        for _ in range(16):
+            th, ph = rng.uniform(0.0, 2 * math.pi), rng.uniform(-0.35, 1.2)
+            k = rng.uniform(0.8, 1.1)
+            pts.append((x + k * r * 1.2 * math.cos(th) * math.cos(ph), y + k * r * math.sin(th) * math.cos(ph), z + k * r * 0.75 * math.sin(ph)))
+        pts += [(x + r * math.cos(t_), y + r * math.sin(t_), z - r * 0.4) for t_ in np.linspace(0, 2 * math.pi, 7)[:-1]]
+        return M.hull_points(pts)
     for (x, y, r) in ((30.0, 22.0, 4.0), (100.0, 40.0, 3.4), (226.0, 26.0, 4.6), (122.0, 18.0, 3.0)):
-        peb.append(M.sphere(1.0, 16).scale([r * 1.2, r, r * 0.7]).translate([x, y, ZBED]))
+        peb.append(boulder(x, y, ZBED, r))
     for (x, y, r) in ((8.0, 190.0, 6.0), (140.0, 182.0, 5.0), (232.0, 150.0, 6.0), (110.0, 140.0, 3.6), (14.0, 4.0, 3.0)):
-        peb.append(M.sphere(1.0, 16).scale([r * 1.2, r, r * 0.7]).translate([x, y, ZB if y > CY1 else ZFAR]))
+        peb.append(boulder(x, y, ZB if y > CY1 else ZFAR, r))
     g = g + (union(peb) ^ box([0.0, 0.0, -1.0], [SX, SY, 60.0]))
     paths = [stroke([(63.0, BYB - 1.0), (60.0, 80.0), (58.0, HY0 - 22.0)], 4.6),
              stroke([(64.0, 72.0), (100.0, 74.0), (MX0 - 13.0, (LDY0 + LDY1) / 2)], 4.0)]

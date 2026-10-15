@@ -4812,3 +4812,337 @@ def rail_laurel(L, h=6.4, t=1.0):
     cells.append(rect(0.0, 0.0, 0.6, h))
     cells.append(rect(L - 0.6, 0.0, L, h))
     return ext(cs_union(cells), -t / 2, t / 2)
+
+
+# ================================================================== the Ashgrove (house 114)
+# After the Lodge Gate of the Biltmore Estate, Asheville, North Carolina (1895, Richard Morris
+# Hunt): a gate lodge the drive passes through, a long low house with a great arch in its
+# middle, brick below with stone quoins, a jettied half-timbered storey over it with pebbledash
+# between the timbers, a steep hipped roof of plain tiles with a cross gable over the arch on
+# both faces, two tall chimneys, gate piers and walls stepping out either side of the drive.
+
+TIMBERS = []                                       # the half-timbering's relief, kept for the render
+QUOINS = []                                        # and the stone quoins
+
+
+def brick_ashgrove(region, datum=0.0, L=None, ends=(True, True)):
+    """English bond (a course of stretchers, a course of headers), and at free corners stone
+    quoins, long and short, their edges chamfered."""
+    from . import skins as SK
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    body = region
+    out = []
+    if L is not None:
+        q = []
+        k = 0
+        v = math.floor((v0 - datum) / 3.2) * 3.2 + datum
+        while v < v1:
+            lng = 5.6 if k % 2 == 0 else 3.2
+            for j, (a, b) in enumerate(((0.0, lng), (L - lng, L))):
+                if ends[j]:
+                    q.append(rect(a, v + 0.15, b, v + 3.05))
+            v += 3.2
+            k += 1
+        qs = cs_union(q) ^ region if q else None
+        if qs is not None and not qs.is_empty():
+            body = region - qs.offset(0.1, MIT, 4.0)
+            for pc in qs.decompose():
+                bb = pc.bounds()
+                qb = chamfer_box(bb[0], bb[1], bb[2], bb[3], -0.01, 0.75, c=0.3) ^ M.extrude(pc.offset(0.01, MIT, 4.0), 2.0).translate([0, 0, -0.5])
+                out.append(qb)
+                QUOINS.append(qb)
+            out.append(M.extrude(qs, 0.05))
+    if not body.is_empty():
+        out.append(SK.brick_bond(body, "english", bl=2.3, bh=0.8, mortar=0.22, bed=0.22, d=0.24, datum=datum) + M.extrude(body, 0.05))
+    return union(out)
+
+
+def timber_ashgrove(region, datum=0.0, L=None, gable=False, seed=0):
+    """Half-timbering: a sill and a head plate, close studding with a mid rail, a pair of
+    curved braces rising from the sill at each end of a run, the panels between filled with
+    pebbledash (a field of little stones). In a gable (``gable``) the studs run up to the rakes
+    with a collar and a carved lozenge at the centre."""
+    if region.is_empty():
+        return M()
+    rng = np.random.default_rng(seed + 29)
+    u0, v0, u1, v1 = region.bounds()
+    tw = 1.0
+    t = [rect(u0 - 1, v0, u1 + 1, v0 + 1.2), rect(u0 - 1, v1 - 1.1, u1 + 1, v1)]
+    vm = (v0 + v1) / 2 if not gable else v0 + 7.0
+    t.append(rect(u0 - 1, vm - 0.5, u1 + 1, vm + 0.5))
+    for u in np.arange(math.floor(u0 / 3.4) * 3.4, u1 + 1.0, 3.4):
+        t.append(rect(u - tw / 2, v0, u + tw / 2, v1))
+    if L is not None and not gable:
+        for a, sg in ((1.0, 1), (L - 1.0, -1)):
+            pts = [(a + sg * (6.0 * s_), v0 + 1.0 + (vm - v0 - 1.5) * math.sin(s_ * math.pi / 2)) for s_ in np.linspace(0.0, 1.0, 7)]
+            t.append(stroke(pts, 0.9))
+    if gable:
+        uc = (u0 + u1) / 2
+        lz = poly([(uc, vm + 2.0), (uc + 3.6, vm + 6.0), (uc, vm + 10.0), (uc - 3.6, vm + 6.0)])
+        t.append(lz - lz.offset(-0.9, MIT, 4.0))
+        t.append(rect(u0 - 1, vm + 12.0, u1 + 1, vm + 12.9))
+    tim = _clean(cs_union(t), 0.12) ^ region
+    fill = region - tim.offset(0.12, MIT, 4.0)
+    out = [M.extrude(region, 0.18)]
+    tsol = M.extrude(tim, 0.7)
+    out.append(tsol)
+    TIMBERS.append(tsol)
+    if not fill.is_empty():
+        pts = []
+        fb = fill.bounds()
+        n = int(fill.area() * 0.9)
+        xs = rng.uniform(fb[0], fb[2], n)
+        ys = rng.uniform(fb[1], fb[3], n)
+        peb = [circle((x, y), rng.uniform(0.18, 0.3), 6) for x, y in zip(xs, ys)]
+        pe = cs_union(peb) ^ fill.offset(-0.2, MIT, 4.0)
+        if not pe.is_empty():
+            out.append(M.extrude(pe, 0.36))
+    return union(out)
+
+
+def foundation_ashplinth(reg, seed=0):
+    """A rock-faced granite plinth: two courses of blocks, each face pitched (a raised rough
+    field inside a tooled margin)."""
+    rng = np.random.default_rng(seed + 41)
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, 0.1)]
+    H = v1 - v0
+    nc = max(2, int(round(H / 4.5)))                 # courses about 4.5 mm (a gate pier has several)
+    for j in range(nc):
+        vb = v0 + j * H / nc
+        u = u0 - rng.uniform(0.0, 5.0)
+        while u < u1:
+            ln = rng.uniform(5.0, 9.0)
+            blk = rect(u + 0.18, vb + 0.18, u + ln - 0.18, vb + H / nc - 0.18) ^ reg
+            if not blk.is_empty() and blk.area() > 1.0:
+                out.append(M.extrude(blk, 0.3))
+                f_ = blk.offset(-0.5, MIT, 4.0)
+                if not f_.is_empty():
+                    b2 = f_.bounds()
+                    bumps = [circle((rng.uniform(b2[0], b2[2]), rng.uniform(b2[1], b2[3])), rng.uniform(0.4, 0.8), 8) for _ in range(int(f_.area() / 1.5) + 1)]
+                    out.append(M.extrude(f_, 0.45) + M.extrude(cs_union(bumps) ^ f_, 0.6))
+            u += ln
+    return union(out)
+
+
+TW.FOUNDATION_EXTRA.update(ashplinth=foundation_ashplinth)
+
+
+# ---- cornice ornaments
+def frieze_ashjoist(L, h, b, pitch, margin, pair, half):
+    """The jetty: the floor joists' ends run out over the brick, each squared with a chamfered
+    nose, a carved bracket under every third, all under the bressumer."""
+    v0, v1 = 0.3, h - 0.3
+    out = [_st(rect(0.2, v1 - 1.0, L - 0.2, v1), b, 0.35)]
+    js = []
+    for k, u in enumerate(np.arange(1.2, L - 0.8, 2.6)):
+        js.append(rect(u - 0.6, v1 - 2.4, u + 0.6, v1 - 0.95))
+        if k % 3 == 0:
+            js.append(poly([(u - 0.6, v1 - 2.4), (u + 0.6, v1 - 2.4), (u + 0.6, v0 + 0.8), (u, v0), (u - 0.6, v0 + 0.8)]))
+    out.append(_st(cs_union(js) ^ rect(0.2, v0, L - 0.2, v1), b, 0.6))
+    return out, []
+
+
+def course_ashvine(L, h, b, pitch, margin, p):
+    """A carved band: a running vine, a wave of stem with a leaf in every hollow, between
+    fillets."""
+    out = [_st(rect(0.2, 0.15, L - 0.2, 0.45) + rect(0.2, h - 0.45, L - 0.2, h - 0.15), b, 0.3)]
+    vm = h / 2
+    a = h / 2 - 0.7
+    pts = [(u, vm + a * math.sin(u * 2 * math.pi / 3.6)) for u in np.arange(0.4, L - 0.4, 0.3)]
+    sh = [stroke(pts, 0.35)]
+    for u in np.arange(0.4 + 0.9, L - 1.0, 1.8):
+        up = math.sin(u * 2 * math.pi / 3.6) > 0
+        c = (u, vm - a * 0.4 if up else vm + a * 0.4)
+        sh.append(poly([(c[0] - 0.5, c[1]), (c[0], c[1] + 0.3), (c[0] + 0.5, c[1]), (c[0], c[1] - 0.3)]))
+    out.append(_st(_clean(cs_union(sh), 0.12) ^ rect(0.2, 0.45, L - 0.2, h - 0.45), b, 0.35))
+    return out
+
+
+def bracket_ashbracket(h, d, t):
+    """A carved eave bracket (side profile): a timber block under the soffit, its lower edge
+    cut in a reverse curve ending in a little drop; solid."""
+    hh = min(h, 2.8)
+    pts = [(0.0, 0.0), (d, 0.0), (d, -0.7)]
+    for s_ in np.linspace(0.0, 1.0, 8):
+        pts.append((d - (d - 0.6) * s_, -0.7 - (hh - 0.9) * (0.5 - 0.5 * math.cos(s_ * math.pi))))
+    pts.append((0.0, -hh))
+    return poly(pts) ^ rect(0.0, -hh - 1.0, d + 1.0, 0.01)
+
+
+CO.FRIEZE_EXTRA.update(ashjoist=frieze_ashjoist)
+CO.COURSE_EXTRA.update(ashvine=course_ashvine)
+TW.BRACKET_EXTRA.update(ashbracket=bracket_ashbracket)
+
+
+# ---- windows, the door, the arch
+def _diamonds(region, pitch=1.6):
+    """Leading for diamond panes over a light (bars at 45 degrees both ways)."""
+    b = region.bounds()
+    span = (b[2] - b[0]) + (b[3] - b[1])
+    bars = []
+    for s_ in np.arange(-span, span, pitch):
+        bars.append(stroke([(b[0] + s_, b[1]), (b[0] + s_ + span, b[1] + span)], RIB))
+        bars.append(stroke([(b[0] + s_, b[3]), (b[0] + s_ + span, b[3] - span)], RIB))
+    return cs_union(bars)
+
+
+def window_ashlower(w=11.0, h=14.0, A=1.2):
+    """The lodge's ground floor: two lights of diamond panes divided by a stone mullion, in a
+    chamfered stone surround under a hood mould with square label stops; a stone sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    ib = inner.bounds()
+    bars = (_diamonds(inner, 1.7) + rect(-0.9, -1.0, 0.9, h + 1.0)) ^ inner.offset(0.1, MIT, 4.0)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.7),
+             ext(rect(-0.9, 0.0, 0.9, h), -0.01, 0.6),
+             ext((op.offset(A, MIT, 4.0) - op.offset(A - 0.4, MIT, 4.0)), 0.69, 0.95)]
+    hood = rect(-X - 1.0, h + A - 0.01, X + 1.0, h + A + 1.1) + rect(-X - 1.0, h + A - 2.2, -X + 0.2, h + A + 0.5) + \
+        rect(X - 0.2, h + A - 2.2, X + 1.0, h + A + 0.5)
+    parts.append(ext(hood, 0.0, 1.2))
+    parts.append(chamfer_box(-X - 0.6, -1.2, X + 0.6, 0.01, 0.0, 1.4, c=0.3, bottom=1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.1, -1.2)
+
+
+def window_ashupper(w=15.0, h=9.0, A=1.0):
+    """The jettied storey's casement band: three lights of diamond panes between timber
+    mullions in a timber frame, a moulded cill and head."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    ib = inner.bounds()
+    mull = cs_union([rect(x - 0.6, -1.0, x + 0.6, h + 1.0) for x in np.linspace(ib[0], ib[2], 4)[1:-1]])
+    bars = (_diamonds(inner, 1.6) + mull) ^ inner.offset(0.1, MIT, 4.0)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.8),
+             ext(mull ^ op, -0.01, 0.5),
+             chamfer_box(-X - 0.8, h + A - 0.01, X + 0.8, h + A + 0.9, 0.0, 1.3, c=0.3, bottom=1.3),
+             chamfer_box(-X - 0.8, -1.1, X + 0.8, 0.01, 0.0, 1.4, c=0.3, bottom=1.4)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 0.9, -1.1)
+
+
+def door_ashgrove(w=8.0, h=18.0, A=1.4):
+    """The lodge-keeper's door: an oak door under a four-centred (Tudor) arch, its boards
+    studded with nail heads in rows, strap hinges, a ring handle; a chamfered stone surround
+    with carved spandrels and a square hood mould over it."""
+    from .colonial import _strap
+    r1 = w * 0.22
+    vs = h - 2.6
+    pts = [(-w / 2, 0.0), (w / 2, 0.0), (w / 2, vs)]
+    for a in np.linspace(0.0, math.pi / 2 * 0.85, 6)[1:]:
+        pts.append((w / 2 - r1 + r1 * math.cos(a), vs + r1 * math.sin(a) * 1.4))
+    pts.append((0.0, h))
+    for a in np.linspace(math.pi / 2 * 0.85, 0.0, 6)[:-1]:
+        pts.append((-w / 2 + r1 - r1 * math.cos(a), vs + r1 * math.sin(a) * 1.4))
+    pts.append((-w / 2, vs))
+    op = poly(pts)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    face = plug_cs.offset(-0.5, MIT, 4.0)
+    bd = cs_union([rect(x - 0.1, -1, x + 0.1, h + 1) for x in np.arange(-w / 2 + 1.4, w / 2 - 0.4, 1.4)])
+    parts_s.append(ext(face - bd, -0.65, -0.3))
+    studs = [circle((x, v), 0.22, 8) for x in np.arange(-w / 2 + 0.75, w / 2 - 0.5, 1.4) for v in np.arange(1.5, vs, 2.2)]
+    parts_s.append(ext(cs_union(studs) ^ face, -0.31, -0.05))
+    for v in (2.4, vs - 2.0):
+        parts_s.append(ext(_strap(-w / 2 + 0.5, w / 2 - 1.6, v) ^ face, -0.31, -0.06))
+    parts_s.append(ext(circle((w / 2 - 1.4, h * 0.45), 0.7, 14) - circle((w / 2 - 1.4, h * 0.45), 0.4, 12), -0.31, 0.0))
+    X = w / 2 + A
+    sur = op.offset(A, MIT, 4.0) - op
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(sur ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    spand = rect(-X, vs, X, h + A) - op.offset(A * 0.5, MIT, 4.0)
+    parts.append(ext(spand ^ rect(-X, vs, X, h + A), 0.0, 0.8))
+    parts.append(ext(cs_union([circle((sg * (w / 2 - r1 * 0.6), h - 0.4), 0.55, 12) for sg in (-1, 1)]), 0.79, 1.05))
+    hood = rect(-X - 0.9, h + A - 0.01, X + 0.9, h + A + 1.0) + rect(-X - 0.9, vs - 1.6, -X + 0.1, h + A + 0.5) + rect(X - 0.1, vs - 1.6, X + 0.9, h + A + 0.5)
+    parts.append(ext(hood, 0.0, 1.2))
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + A + 1.0, 0.0, land_extra=rect(-X - 0.9, 0.0, X + 0.9, h + A + 1.0))
+
+
+def arch_ashgrove(r=16.0, vs=18.0, ring=3.0):
+    """The great arch's face (u across, v up from the drive, back on w = 0; printed on its
+    back): voussoirs of stone, long and short in turn, a keystone standing proud, a hood
+    mould over them dying into label stops, impost blocks and chamfered jambs down to the
+    drive. Returns the solid; the opening is a half circle of radius r springing at vs."""
+    vous = []
+    n = 13
+    for k in range(n):
+        a0, a1 = math.pi * k / n, math.pi * (k + 1) / n
+        rr = r + ring + (0.8 if k % 2 == 0 else 0.0)
+        vous.append(poly([(r * math.cos(a0), vs + r * math.sin(a0)), (rr * math.cos(a0), vs + rr * math.sin(a0)),
+                          (rr * math.cos(a1), vs + rr * math.sin(a1)), (r * math.cos(a1), vs + r * math.sin(a1))]).offset(-0.12, MIT, 4.0))
+    band = (circle((0.0, vs), r + ring, 64) - circle((0.0, vs), r - 0.05, 64)) ^ rect(-50, vs, 50, 100)
+    out = ext(band, 0.0, 0.5) + ext(cs_union(vous), 0.49, 1.0)
+    key = poly([(-1.4, vs + r - 0.2), (1.4, vs + r - 0.2), (1.9, vs + r + ring + 1.4), (-1.9, vs + r + ring + 1.4)])
+    out = out + ext(key, 0.0, 1.4)
+    hood = (circle((0.0, vs), r + ring + 2.2, 64) - circle((0.0, vs), r + ring + 1.0, 64)) ^ rect(-50, vs, 50, 100)
+    out = out + ext(hood - key.offset(0.01, MIT, 4.0), 0.0, 1.3)
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * (r - 0.0), sg * (r + ring + 2.2)))
+        out = out + chamfer_box(x0, vs - 1.6, x1, vs + 0.01, 0.0, 1.3, c=0.3, bottom=1.3)
+        j0, j1 = sorted((sg * r, sg * (r + 2.2)))
+        out = out + chamfer_box(j0, 0.0, j1, vs - 1.59, 0.0, 0.8, c=0.4, square=("v0", "v1"))
+    return out
+
+
+def chimney_ashgrove(w=12.0, d=7.0, h=40.0):
+    """A Tudor stack (stands on z = 0, its roof pocket's floor): a brick base with a stone
+    weathering, two octagonal brick shafts on it each with a moulded base and a spreading
+    capped crown."""
+    h = round(h / 0.2) * 0.2
+    zb = round(h * 0.42 / 0.2) * 0.2
+    body = box([-w / 2, -d / 2, 0.0], [w / 2, d / 2, zb]) + TW._skin(w, d, 0.0, zb, TW._brick("english"))
+    body = body + M.hull_points([(sx * (w / 2 + 0.4), sy * (d / 2 + 0.4), zb) for sx in (-1, 1) for sy in (-1, 1)] +
+                                [(sx * (w / 2 - 0.4), sy * (d / 2 - 0.4), zb + 1.2) for sx in (-1, 1) for sy in (-1, 1)])
+    body = body + box([-w / 2 - 0.4, -d / 2 - 0.4, zb - 1.0], [w / 2 + 0.4, d / 2 + 0.4, zb + 0.01])
+    rs = min(d / 2 - 0.6, w / 4 - 0.5)
+    for sg in (-1, 1):
+        x = sg * w / 4
+        sh = M.cylinder(h - zb - 3.0, rs, rs * 0.94, 8).rotate([0, 0, 22.5]).translate([x, 0, zb + 1.0])
+        base = M.cylinder(1.2, rs + 0.5, rs + 0.5, 8).rotate([0, 0, 22.5]).translate([x, 0, zb + 1.0])
+        fl = M.cylinder(1.0, rs * 0.94, rs + 0.7, 8).rotate([0, 0, 22.5]).translate([x, 0, h - 2.0])
+        cap = M.cylinder(1.0, rs + 0.7, rs + 0.7, 8).rotate([0, 0, 22.5]).translate([x, 0, h - 1.0])
+        flue = M.cylinder(4.0, rs - 1.1, rs - 1.1, 8).translate([x, 0, h - 3.0])
+        body = body + sh + base + fl + cap - flue
+        ribs = [box([-0.15, -rs - 0.2, zb + 3.0], [0.15, -rs + 0.25, h - 3.2]).rotate([0, 0, 45 * k + 22.5]) for k in range(8)]
+        body = body - union(ribs).translate([x, 0, 0])
+    return body
+
+
+def barge_ashgrove(L, s, d_eave, W=2.8, t=1.2, drop=5.0):
+    """A cross gable's bargeboard (in its plane: u across from the left eave end, v up from
+    the roof's under side there, w out from its back; printed on its back): a broad board up
+    both rakes carved with a running scroll in relief, its lower edge cut in shallow cusps,
+    a turned pendant from the apex."""
+    band = poly([(0.0, -W), (L / 2, s * L / 2 - W * 1.1), (L, -W), (L, 0.6), (L / 2, s * L / 2 + 0.6), (0.0, 0.6)])
+    ang = math.atan(s)
+    Ls = math.hypot(L / 2, s * L / 2)
+    cusps = []
+    for side in (-1, 1):
+        for a in np.arange(1.6, Ls - 2.0, 2.2):
+            x = a * math.cos(ang)
+            u = x if side < 0 else L - x
+            cusps.append(circle((u, s * x - W - 0.35), 0.75, 12))
+    cs = band - cs_union(cusps)
+    pend = cs_union([rect(L / 2 - 0.9, s * L / 2 - W - drop + 1.0, L / 2 + 0.9, s * L / 2), circle((L / 2, s * L / 2 - W - drop + 1.0), 1.1, 16)])
+    cs = cs + pend
+    sc = []
+    for side in (-1, 1):
+        pts = []
+        for a in np.arange(0.6, Ls - 1.2, 0.3):
+            x = a * math.cos(ang)
+            yv = s * x - W / 2 + 0.6 * math.sin(a * 2 * math.pi / 3.0)
+            pts.append((x if side < 0 else L - x, yv))
+        sc.append(stroke(pts, 0.4))
+    sc = _clean(cs_union(sc), 0.12) ^ cs.offset(-0.35, MIT, 4.0)
+    out = ext(cs, 0.0, t)
+    if not sc.is_empty():
+        out = out + ext(sc, t - 0.01, t + 0.35)
+    return out
