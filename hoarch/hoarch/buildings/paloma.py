@@ -155,6 +155,20 @@ def _skin(f, b, reg):
     return N.adobe_paloma(reg, datum=0.0, seed=seed, dado=5.0 if b.z0 == ZF else -10.0)
 
 
+def _shutter_room():
+    """Where the shutters hang: the plaster is kept flat there so they glue on their whole back."""
+    out = []
+    for o in OPENINGS:
+        if o.name not in SHUTTERED:
+            continue
+        b = o.spec["cut"].bounds()
+        w_, h_ = b[2] - b[0], b[3] - b[1]
+        for sg in (-1, 1):
+            a, c_ = sorted((sg * (w_ / 2 + 1.1 + 0.3), sg * (w_ / 2 + 1.1 + 0.5 + w_ / 2 + 0.3)))
+            out.append(o.facade.place(box([o.u + a, o.v0 - 0.3, -0.5], [o.u + c_, o.v0 + h_ + 0.3, 1.5])))
+    return union(out)
+
+
 def _place_inserts(kit, ops, keep, group="inserts"):
     for o in ops:
         A = o.local_frame()
@@ -169,7 +183,7 @@ def _place_inserts(kit, ops, keep, group="inserts"):
             w_op, h_op = b[2] - b[0], b[3] - b[1]
             left, right = shutters_pair(w_op, h_op, casing=1.1, gap=0.5, make=N.shutter_paloma)
             for side, m in (("L", left), ("R", right)):
-                kit.add(f"SHUTTER-{o.name}-{side}", "Green", m.translate([0, 0, 0.35]).transform(A), P=inv34(A),
+                kit.add(f"SHUTTER-{o.name}-{side}", "Green", m.transform(A), P=inv34(A),
                         key="SHUTTER-paloma", group="shutters")
 
 
@@ -337,7 +351,7 @@ def build(kit=None):
     # --- the house: two storeys, the joint at the balcony's floor, the eave under the gallery roof
     band = slab(offset(MAIN.cs, 9.0), ZE - LEDGE - 0.6, ZW + 0.01)
     st = stacked_shells([MAIN], OPEN1 + OPEN2, [S1], t=T, corners="none", siding=_skin, clear=[lip_keep(MAIN.cs, T, ZF, 1.2)],
-                        prof=CO.joint_profile(RJ, LEDGE), belt_blocks=None, water_table=False, undress=[band, wenv, wings_und])
+                        prof=CO.joint_profile(RJ, LEDGE), belt_blocks=None, water_table=False, undress=[band, wenv, wings_und, _shutter_room()])
     kit.add("WALLS-1", "Limewash", st["shells"][0] - wenv, group="walls")
     kit.add("JOINT", "Limewash", st["rings"][0] - wenv, group="walls")
     lip = _corbel(MAIN.cs, T, ZW) + lip_ring(MAIN.cs, T, ZW)
@@ -456,7 +470,6 @@ def build(kit=None):
         y += h
     pave = pave - union(joints)
     wc = (XC, 76.0)
-    pave = pave - M.cylinder(2.0, 5.2, 5.2, 40).translate([wc[0], wc[1], -0.5])
     kit.add("COURT", "Sandstone", pave, group="foundation")
     well = M.cylinder(5.0, 5.0, 5.0, 40) - M.cylinder(6.0, 3.6, 3.6, 40).translate([0, 0, 1.0])
     for k, a in enumerate(np.linspace(0, 2 * math.pi, 14, endpoint=False)):
@@ -466,7 +479,7 @@ def build(kit=None):
         well = well + box([sg * 4.3 - 0.7, -0.7, 5.6], [sg * 4.3 + 0.7, 0.7, 16.0])
     well = well + box([-5.4, -0.7, 15.99], [5.4, 0.7, 17.2]) + M.cylinder(6.0, 0.7, 0.7, 16).rotate([0, 90, 0]).translate([-3.0, 0, 13.0])
     well = well + (M.cylinder(2.0, 1.1, 1.2, 16) - M.cylinder(2.0, 0.8, 0.9, 16).translate([0, 0, 0.4])).translate([3.6, 3.0, 5.79])
-    kit.add("WELL", "Sandstone", well.translate([wc[0], wc[1], 0.0]), group="stoop")
+    kit.add("WELL", "Sandstone", well.translate([wc[0], wc[1], 0.6]), group="stoop")            # it stands on the paving
     print("court", round(time.time() - t0, 1))
     print("specks dropped:", kit.drop_specks())
     print("done", round(time.time() - t0, 1))
