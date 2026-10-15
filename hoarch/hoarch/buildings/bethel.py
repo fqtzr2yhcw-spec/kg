@@ -247,7 +247,7 @@ def _cottage(kit, k):
         A[:, 3] = fw.world(0.0, 0.0, RAKE)
         bw = bg.transform(A) - roof - eenv
         bw = max(bw.decompose(), key=lambda m_: m_.volume())
-        kit.add(f"{k}-BARGE-{j}", sc["acc"], bw, P=inv34(A), key=f"{k}-BARGE", group="roof")
+        kit.add(f"{k}-BARGE-{j}", sc["acc"], bw, P=(_m44(print_flip()) @ _m44(inv34(A)))[:3], key=f"{k}-BARGE", group="roof")   # (face down: the glue tab up)
     # the base: brick piers with lattice between
     fnd = foundation([MAIN] + ([side] if side is not None else []), 0.0, ZF, style="brick")
     kit.add(f"{k}-FOUNDATION", "Brick", fnd, group="foundation")
@@ -272,7 +272,7 @@ def _cottage(kit, k):
         A = fw.A.copy()
         A[:, 3] = fw.world(0.0, 0.0, 2.6)
         bw = max((bg.transform(A) - r2 - house_env).decompose(), key=lambda m_: m_.volume())
-        kit.add(f"{k}-ELL-BARGE", sc["acc"], bw, P=inv34(A), group="roof")
+        kit.add(f"{k}-ELL-BARGE", sc["acc"], bw, P=(_m44(print_flip()) @ _m44(inv34(A)))[:3], group="roof")
     if sc["side"] == "bay":
         sz = side.z1
         sw = wall_shell([side], LS, t=2.2, belt=None, corners="none", water_table=False, siding=_skinfn(sc["skin"], side))
