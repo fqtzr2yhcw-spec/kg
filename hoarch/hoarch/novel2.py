@@ -419,7 +419,11 @@ def gallery_marisol(half, t=1.6, rail_in=1.4, slot=(1.2, 0.8), lip=(16.0, 2.8)):
     # the seam boards of the deck, a row of plates (shallow grooves)
     grooves = union([box([x - 0.25, -half + 2.6, t - 0.2], [x + 0.25, half - 2.6, t + 1]) for x in np.arange(-half + 4.0, half - 3.0, 3.2)])
     ring = M.cylinder(1.0, 12.8 / math.cos(math.pi / 8), 12.8 / math.cos(math.pi / 8), 8).rotate([0, 0, 22.5]).translate([0, 0, t - 0.6])
-    return deck - (grooves - M.cylinder(2.0, 15.4, 15.4, 8).rotate([0, 0, 22.5]).translate([0, 0, t - 1.0])) - ring
+    # the socket's floor opened through the deck in a 45 degree chamfer the glass sits on: the deck
+    # prints upside down, and a closed floor would bridge right across the socket
+    c8 = math.cos(math.pi / 8)
+    seat = M.cylinder(t - 0.6 + 0.02, (12.8 - (t - 0.6)) / c8, 12.8 / c8, 8).rotate([0, 0, 22.5]).translate([0, 0, -0.01])
+    return deck - (grooves - M.cylinder(2.0, 15.4, 15.4, 8).rotate([0, 0, 22.5]).translate([0, 0, t - 1.0])) - ring - seat
 
 
 def gallery_rail_marisol(L, h=9.4, tab=(0.8, 0.8)):
@@ -445,7 +449,7 @@ def lantern_marisol(a=12.6, hg=15.0, hp=6.0):
     door in one face (the watch room's wall), then the glazing in two tiers of panes between
     corner mullions, a mid rail and a top ring, under a domed roof with a ventilator ball and a
     lightning rod; and the glass, an octagonal block that the cage drops over (its foot sits
-    0.6 down in the deck's socket). Both built from z = 0 (the gallery deck's top). Returns
+    0.95 down, on the chamfer of the deck's socket). Both built from z = 0 (the deck's top). Returns
     (cage, glass). The cage prints upright: its rings bridge between the mullions, and the
     dome is hollowed by a 45-degree cone so nothing overhangs."""
     def oct_(ap, z0, z1):
@@ -472,17 +476,22 @@ def lantern_marisol(a=12.6, hg=15.0, hp=6.0):
         ang = math.radians(22.5 + 45 * k)
         mull.append(M.cylinder(hg + 0.01, 0.75, 0.75, 12).translate([R * math.cos(ang), R * math.sin(ang), zs - 0.01]))
     mid = oct_(a + 1.0, zs + hg * 0.5 - 0.5, zs + hg * 0.5 + 0.5) - oct_(a, zs, zt)
-    top = oct_(a + 1.8, zt, zt + 1.6) - oct_(a, zt - 1.0, zt + 1.6)
+    c8 = math.cos(math.pi / 8)
+    top = oct_(a + 1.8, zt, zt + 1.0) + M.cylinder(0.61, (a + 1.8) / c8, (a + 2.4) / c8, 8).rotate([0, 0, 22.5]).translate([0, 0, zt + 0.99])
+    top = top - oct_(a, zt - 1.0, zt + 1.6)                # (its top flared at 45 degrees out to the dome's rim)
     rd = a + 2.4
-    dome = M.sphere(rd, 48).scale([1.0, 1.0, 0.62]).translate([0, 0, zt + 1.6]) ^ box([-50, -50, zt + 1.6], [50, 50, zt + 30])
+    kz = 0.95                                 # (tall enough that the 45 degree hollow under it stays inside its shell,
+    dome = M.sphere(rd, 48).scale([1.0, 1.0, kz]).translate([0, 0, zt + 1.6]) ^ box([-50, -50, zt + 1.6], [50, 50, zt + 30])  # the vent on solid)
     dome = dome + oct_(a + 2.4, zt + 1.59, zt + 2.2)
-    cone = M.cylinder(a + 0.01, a / math.cos(math.pi / 8), 0.0, 8).rotate([0, 0, 22.5]).translate([0, 0, zt + 1.6])
+    cone = M.cylinder(a + 0.06, a / math.cos(math.pi / 8), 0.0, 8).rotate([0, 0, 22.5]).translate([0, 0, zt + 1.55])     # (open at its foot)
     dome = dome - cone
-    zd = zt + 1.6 + rd * 0.62
-    vent = M.cylinder(2.4, 2.2, 1.4, 16).translate([0, 0, zd - 0.6]) + M.sphere(2.6, 24).translate([0, 0, zd + 3.6])
+    zd = zt + 1.6 + rd * kz
+    ball = M.sphere(2.6, 24).translate([0, 0, zd + 3.6])
+    vent = M.cylinder(2.4, 2.2, 1.4, 16).translate([0, 0, zd - 0.6]) + M.hull(ball + M.sphere(0.05, 6).translate([0, 0, zd + 3.6 - 2.6 * math.sqrt(2.0)]))
+    #  (the ball on a 45 degree neck, so its lower half doesn't hang)
     rod = M.cylinder(5.0, 0.6, 0.5, 10).translate([0, 0, zd + 5.8])
     cage = union([par, mid, top, dome, vent, rod] + mull)
-    glass = oct_(a - 0.2, -0.6, zt + 1.4)
+    glass = oct_(a - 0.2, -0.95, zt + 1.4)              # (down on the gallery socket's chamfer)
     return cage, glass
 
 
