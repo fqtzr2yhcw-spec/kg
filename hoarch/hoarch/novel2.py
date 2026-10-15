@@ -4467,3 +4467,348 @@ def cresting_prow(L, h=4.6, t=1.2):
             cells.append(poly([(x - 0.5, h - 1.05), (x + 0.5, h - 1.05), (x, h + 0.3)]))
             cells.append(poly([(x - 0.5, 2.4), (x - 1.0, 3.0), (x - 0.5, 3.1), (x + 0.5, 3.1), (x + 1.0, 3.0), (x + 0.5, 2.4)]))
     return ext(_clean(cs_union(cells), 0.15), 0.0, t)
+
+
+# ================================================================== the Laurel (house 113)
+# After Mabry Mill (Blue Ridge Parkway, Virginia, about 1910) and the mountain mills like it: a
+# water-powered gristmill standing on the bank with its front at the creek, an overshot wheel
+# turning against it fed over the top by a wooden flume on trestles from upstream, a plank
+# footbridge across the creek to the miller's cabin set back on the bank with its porch and
+# stone chimney. The whole site is the base: banks, the creek bed, a water casting.
+
+def weather_laurel(region, datum=0.0, L=None, ends=(True, True), seed=0):
+    """Rough-sawn weatherboards: horizontal boards of uneven widths lapped in courses, each
+    course in lengths with butt joints, a few boards standing a hair proud or sunk (weathered
+    and warped); plain corner boards where a corner is free."""
+    if region.is_empty():
+        return M()
+    rng = np.random.default_rng(seed + 13)
+    u0, v0, u1, v1 = region.bounds()
+    body = region
+    out = []
+    if L is not None:
+        cb = (rect(-1.0, v0 - 1, 2.0, v1 + 1) + rect(L - 2.0, v0 - 1, L + 1.0, v1 + 1)) ^ region
+        for k, (a, b) in enumerate(((-0.6, 0.0), (L, L + 0.6))):
+            band = region ^ (rect(0.0, v0 - 1, 0.6, v1 + 1) if k == 0 else rect(L - 0.6, v0 - 1, L, v1 + 1))
+            if ends[k] and not band.is_empty():
+                bb = band.bounds()
+                cb = cb + rect(a, bb[1], b, bb[3])
+        body = region - cb.offset(0.1, MIT, 4.0)
+        if not cb.is_empty():
+            out.append(M.extrude(cb, 0.6))
+    if not body.is_empty():
+        v = datum + math.floor((v0 - datum) / 1.7) * 1.7 - 1.7
+        out.append(M.extrude(body, 0.08))
+        while v < v1 + 0.1:
+            hh = rng.uniform(1.4, 2.0)
+            u = u0 - rng.uniform(0.0, 30.0)
+            while u < u1 + 1.0:
+                ln = rng.uniform(18.0, 40.0)
+                bd = rect(u + 0.1, v, u + ln - 0.1, v + hh) ^ body
+                if not bd.is_empty():
+                    dd = 0.34 + rng.choice([0.0, 0.0, 0.0, 0.07, -0.06])
+                    bb = bd.bounds()
+                    prof = M.hull_points([(x, y, z) for x in (bb[0], bb[2]) for (y, z) in ((bb[1], 0.0), (bb[1], dd), (bb[1] + 0.25, dd), (bb[3], 0.1), (bb[3], 0.0))])
+                    out.append(prof ^ M.extrude(bd, 1.0).translate([0, 0, -0.01]))
+                u += ln
+            v += hh
+    return union(out)
+
+
+def foundation_lrstone(reg, seed=0):
+    """Dry-laid creek stone: long flat stones in rough courses, each its own depth, the
+    joints left open."""
+    rng = np.random.default_rng(seed + 83)
+    u0, v0, u1, v1 = reg.bounds()
+    out = [M.extrude(reg, 0.12)]
+    v = v0 + 0.15
+    while v < v1 - 0.6:
+        h = min(rng.uniform(1.2, 2.3), v1 - v - 0.15)
+        u = u0 - rng.uniform(0.0, 3.0)
+        while u < u1:
+            ln = rng.uniform(3.2, 8.5)
+            sk = rng.uniform(-0.25, 0.25)
+            st_ = poly([(u + 0.15, v + 0.12), (u + ln - 0.15, v + 0.12 + max(sk, 0)), (u + ln - 0.25, v + h - 0.12), (u + 0.3, v + h - 0.12 - max(-sk, 0))]) ^ reg
+            if not st_.is_empty() and st_.area() > 0.6:
+                d = rng.uniform(0.3, 0.55)
+                s2 = st_.offset(-0.25, MIT, 4.0)
+                out.append(M.extrude(st_, d * 0.6) + (M.extrude(s2, d) if not s2.is_empty() else M()))
+            u += ln
+        v += h
+    return union(out)
+
+
+TW.FOUNDATION_EXTRA.update(lrstone=foundation_lrstone)
+
+
+# ---- cornice ornaments
+def course_lrgirt(L, h, b, pitch, margin, p):
+    """A hewn girt board, the heads of its oak pegs showing (square, a little proud) in pairs."""
+    out = [_st(rect(0.2, 0.15, L - 0.2, h - 0.15), b, 0.35)]
+    pegs = []
+    for u in np.arange(1.4, L - 1.0, 5.0):
+        for dv in (-0.45, 0.45):
+            pegs.append(rect(u - 0.3, h / 2 + dv - 0.3, u + 0.3, h / 2 + dv + 0.3))
+    out.append(_st(cs_union(pegs), b + 0.34, 0.25))
+    return out
+
+
+def course_lrboard(L, h, b, pitch, margin, p):
+    """The mill's frieze board: a plain wide board, a bead along its foot."""
+    return [_st(rect(0.2, 0.6, L - 0.2, h - 0.15), b, 0.35), _st(rect(0.2, 0.15, L - 0.2, 0.65), b, 0.55)]
+
+
+def bracket_lrrafter(h, d, t):
+    """Sawn rafter tails (side profile): square rafters running out under the roof, each end
+    cut back on a bevel underneath; solid."""
+    hh = min(h, 2.2)
+    return poly([(0.0, 0.0), (d, 0.0), (d, -hh * 0.5), (d - hh * 0.5, -hh), (0.0, -hh)]) ^ rect(0.0, -hh - 1.0, d + 1.0, 0.01)
+
+
+CO.COURSE_EXTRA.update(lrgirt=course_lrgirt, lrboard=course_lrboard)
+TW.BRACKET_EXTRA.update(lrrafter=bracket_lrrafter)
+
+
+# ---- windows and doors
+def window_lrmill(w=8.0, h=10.0, A=1.0):
+    """A mill light: six panes (three by two) fixed in a plain board casing under a drip cap,
+    a wide sill board."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    ib = inner.bounds()
+    bars = cs_union([rect(x - RIB / 2, -1.0, x + RIB / 2, h + 1.0) for x in np.linspace(ib[0], ib[2], 4)[1:-1]] +
+                    [rect(-w, (ib[1] + ib[3]) / 2 - RIB / 2, w, (ib[1] + ib[3]) / 2 + RIB / 2)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.6),
+             chamfer_box(-X - 0.6, h + A - 0.3, X + 0.6, h + A + 0.8, 0.0, 1.2, c=0.3, bottom=1.2),
+             chamfer_box(-X - 0.8, -1.3, X + 0.8, 0.01, 0.0, 1.5, c=0.3, bottom=1.5)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 0.8, -1.3)
+
+
+def window_lrcabin(w=8.0, h=14.0, A=1.1):
+    """The cabin's window: six over six in a casing whose head board is cut to a low peak, a
+    sill on two little brackets."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash_g(w, h, pl, plug_cs, 3, 2, 2)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, h + A - 0.01), 0.0, 0.6)]
+    head = poly([(-X - 0.4, h + A - 0.02), (X + 0.4, h + A - 0.02), (X + 0.4, h + A + 0.8), (0.0, h + A + 2.0), (-X - 0.4, h + A + 0.8)])
+    parts.append(ext(head, 0.0, 0.8))
+    parts.append(chamfer_box(-X - 0.5, -1.1, X + 0.5, 0.01, 0.0, 1.3, c=0.3, bottom=1.3))
+    for sg in (-1, 1):
+        x = sg * (X - 0.5)
+        parts.append(ext(poly([(x - 0.45, -0.7), (x + 0.45, -0.7), (x, -2.4)]), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 2.0, -2.4)
+
+
+def window_lrloft(w=6.0, h=6.0, A=0.9):
+    """A gable light: four panes in a plain casing."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    bars = cs_union([rect(-RIB / 2, -1.0, RIB / 2, h + 1.0), rect(-w, h / 2 - RIB / 2, w, h / 2 + RIB / 2)])
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(op.offset(A, MIT, 4.0) - op, 0.0, 0.6),
+             chamfer_box(-X - 0.3, -0.9, X + 0.3, 0.01, 0.0, 1.0, c=0.3, bottom=1.0)]
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A, -0.9)
+
+
+def door_lrmill(w=13.0, h=21.0, A=1.2):
+    """The mill's door: a pair of board leaves, each on three ledges with long strap hinges
+    and a hand-forged pull, in a heavy board casing under a drip cap."""
+    from .colonial import _strap
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    face = plug_cs.offset(-0.5, MIT, 4.0)
+    bd = cs_union([rect(x - 0.11, -1, x + 0.11, h + 1) for x in np.arange(-w / 2 + 1.6, w / 2 - 0.4, 1.6)])
+    parts_s.append(ext(face - bd, -0.65, -0.3))
+    parts_s.append(ext(rect(-0.25, 0.0, 0.25, h - 0.5), -0.65, -0.05))
+    for v in (2.0, h / 2, h - 3.0):
+        for sg in (-1, 1):
+            parts_s.append(ext(_strap(sg * (w / 2 - 0.6), sg * 0.9, v) ^ face.offset(0.3, MIT, 4.0), -0.31, -0.06))
+    for sg in (-1, 1):
+        parts_s.append(ext(circle((sg * 1.0, h * 0.45), 0.45, 12), -0.31, 0.0))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8),
+             chamfer_box(-X - 0.6, h + A - 0.01, X + 0.6, h + A + 0.8, 0.0, 1.3, c=0.3, bottom=1.3)]
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + A + 0.8, 0.0)
+
+
+def door_lrcabin(w=8.0, h=19.0, A=1.0):
+    """The cabin's door: boards on ledges, a four-light window high in it, a wooden thumb
+    latch, a plain casing with a drip cap."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    gl = rect(-w / 2 + 1.4, h * 0.62, w / 2 - 1.4, h - 1.4)
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    parts_s = [p_ - ext(gl, -pl - 1, 0.0) for p_ in parts_s]
+    parts_s.append(ext(gl, -pl, -pl + O.GLASS))
+    gb = gl.bounds()
+    bars = cs_union([rect(-RIB / 2, gb[1] - 1, RIB / 2, gb[3] + 1), rect(gb[0] - 1, (gb[1] + gb[3]) / 2 - RIB / 2, gb[2] + 1, (gb[1] + gb[3]) / 2 + RIB / 2)])
+    parts_s.append(ext(bars ^ gl.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    face = plug_cs.offset(-0.5, MIT, 4.0) - gl.offset(0.5, MIT, 4.0)
+    bd = cs_union([rect(x - 0.1, -1, x + 0.1, h + 1) for x in np.arange(-w / 2 + 1.4, w / 2 - 0.4, 1.4)])
+    parts_s.append(ext(face - bd, -0.65, -0.3))
+    parts_s.append(ext(gl.offset(0.5, MIT, 4.0) - gl, -0.65, -0.2))
+    parts_s.append(ext(rect(-w / 2 + 0.8, 2.0, w / 2 - 0.8, 2.9) + rect(-w / 2 + 0.8, h * 0.55, w / 2 - 0.8, h * 0.55 + 0.9), -0.31, -0.05))
+    parts_s.append(ext(rect(w / 2 - 2.4, h * 0.45, w / 2 - 0.9, h * 0.45 + 0.5) + circle((w / 2 - 2.6, h * 0.45 + 0.25), 0.4, 10), -0.31, 0.0))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.6),
+             chamfer_box(-X - 0.5, h + A - 0.01, X + 0.5, h + A + 0.7, 0.0, 1.1, c=0.3, bottom=1.1)]
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + A + 0.7, 0.0)
+
+
+# ---- the water works
+def wheel_laurel_half(R=26.0, W=12.0, n_b=32, n_arm=8, hub=4.0, axle=1.6, out=0.0):
+    """One half of the overshot wheel (lying flat, its outer face on z = 0, the wheel's mid
+    plane at z = W / 2, the axle along z): a shroud ring, arms from a hub, the halves of the
+    buckets standing on the ring (each a sole board and a bent face), an axle stub ``out`` long
+    past the outer face. The two halves glue at the mid plane, every bucket on its twin."""
+    t = 1.6
+    zm = W / 2
+    ring = M.cylinder(t, R, R, 96) - M.cylinder(t * 3, R - 3.2, R - 3.2, 96).translate([0, 0, -t])
+    body = ring
+    for k in range(n_arm):
+        a = 360.0 * k / n_arm
+        arm = box([hub - 0.5, -0.9, 0.0], [R - 2.8, 0.9, t]).rotate([0, 0, a])
+        body = body + arm
+    body = body + M.cylinder(t + 0.8, hub + 0.6, hub + 0.6, 32)
+    # the sole (a drum) and the buckets between the shrouds, to the mid plane
+    sole = M.cylinder(zm - t + 0.01, R - 3.0, R - 3.0, 96).translate([0, 0, t - 0.01]) - \
+        M.cylinder(zm + 2, R - 4.2, R - 4.2, 96).translate([0, 0, -1])
+    body = body + sole
+    for k in range(n_b):
+        a = 2 * math.pi * k / n_b
+        p0 = np.array([(R - 3.1) * math.cos(a), (R - 3.1) * math.sin(a)])
+        a2 = a + 2 * math.pi / n_b * 0.55
+        p1 = np.array([(R - 0.1) * math.cos(a2), (R - 0.1) * math.sin(a2)])
+        bkt = stroke([tuple(p0), tuple(p1)], 0.7)
+        body = body + M.extrude(bkt, zm - t + 0.01).translate([0, 0, t - 0.01])
+    # the hub boss, the spokes' wedges, the axle
+    body = body + M.cylinder(zm, hub, hub, 32)
+    if out > 0:
+        body = body + M.cylinder(out, axle, axle, 24).translate([0, 0, -out])
+    return body
+
+
+def flume_laurel(L, W=14.0, H=6.0, t=1.2, pitch=12.0):
+    """The flume: a trough of planks (the joints scored along it) with a yoke round it every
+    ``pitch`` (two posts and a cross tie under it), from x = 0 to L, its floor on z = 0,
+    centred on y = 0; a sloping spout at the far end."""
+    body = box([0.0, -W / 2, 0.0], [L, W / 2, H]) - box([-1.0, -W / 2 + t, t], [L - t, W / 2 - t, H + 1])
+    gr = [box([-1, y - 0.1, -1], [L + 1, y + 0.1, H + 1]) - box([-2, -W / 2 + 0.3, -2], [L + 2, W / 2 - 0.3, H + 2])
+          for y in (-W / 2, W / 2)]
+    for z in np.arange(1.6, H - 0.4, 1.6):
+        for sg in (-1, 1):
+            body = body - box([-1, sg * W / 2 - 0.12, z - 0.1], [L + 1, sg * W / 2 + 0.12, z + 0.1])
+    for x in np.arange(pitch / 2, L - 2.0, pitch):
+        for sg in (-1, 1):
+            body = body + box([x - 0.8, sg * W / 2 - (0.0 if sg > 0 else 1.0), -1.0], [x + 0.8, sg * W / 2 + (1.0 if sg > 0 else 0.0), H + 0.8])
+        body = body + box([x - 0.8, -W / 2 - 1.0, -1.0], [x + 0.8, W / 2 + 1.0, 0.01])
+    # the spout: a short chute out of the end wall, sloping down
+    sp = M.hull_points([(L - 0.01, y, z) for y in (-W / 2 + 2.0, W / 2 - 2.0) for z in (t, t + 2.0)] +
+                       [(L + 4.0, y, z) for y in (-W / 2 + 2.4, W / 2 - 2.4) for z in (-1.2, 0.6)])
+    sp = sp - M.hull_points([(L - 1.0, y, z) for y in (-W / 2 + 2.8, W / 2 - 2.8) for z in (t + 0.6, t + 3.0)] +
+                            [(L + 5.0, y, z) for y in (-W / 2 + 3.2, W / 2 - 3.2) for z in (-0.6, 2.0)])
+    body = body - box([L - t - 0.5, -W / 2 + 2.8, t + 0.6], [L + 0.5, W / 2 - 2.8, H + 1])
+    return body + sp
+
+
+def bent_laurel(h, w, t=1.4):
+    """A trestle bent (in its plane: u across, v up, w its thickness; printed flat): two posts
+    battered in a little, a cap and a sill, an X of braces."""
+    hw = w / 2
+    posts = [poly([(-hw - 0.6, 0.0), (-hw + 1.2, 0.0), (-hw + 1.6, h), (-hw - 0.2, h)]),
+             poly([(hw - 1.2, 0.0), (hw + 0.6, 0.0), (hw + 0.2, h), (hw - 1.6, h)])]
+    cap = rect(-hw - 1.0, h - 1.4, hw + 1.0, h)
+    sill = rect(-hw - 1.4, 0.0, hw + 1.4, 1.2)
+    v0, v1 = 2.6, h - 2.6
+    braces = [stroke([(-hw + 0.8, v0), (hw - 0.8, v1)], 0.9), stroke([(hw - 0.8, v0), (-hw + 0.8, v1)], 0.9)]
+    return ext(cs_union(posts + [cap, sill] + braces), 0.0, t)
+
+
+def millstone_laurel(r=8.0, h=2.6):
+    """A worn millstone lying by the mill door (on z = 0): the eye, the harps of furrows (ten
+    sectors of parallel grooves) dressed in its face, a chipped edge."""
+    body = M.cylinder(h, r, r * 0.98, 64)
+    body = body - M.cylinder(h + 2, 1.4, 1.4, 24).translate([0, 0, -1])
+    fur = []
+    for k in range(10):
+        a = 2 * math.pi * k / 10
+        d = np.array([math.cos(a), math.sin(a)])
+        n = np.array([-d[1], d[0]])
+        for j in range(4):
+            off = 0.9 * j
+            p0 = d * 2.0 + n * off
+            p1 = d * (r - 0.6) + n * (off + 1.2)
+            fur.append(stroke([tuple(p0), tuple(p1)], 0.3))
+    body = body - M.extrude(cs_union(fur) - circle((0, 0), 1.9, 24), 1.0).translate([0, 0, h - 0.25])
+    body = body - box([r - 1.2, -1.5, h - 0.8], [r + 1, 1.0, h + 1])
+    return body
+
+
+def chimney_laurel(w0=14.0, d0=9.0, zs=24.0, w1=8.0, d1=6.0, top=60.0, seed=0):
+    """The cabin's end chimney (stands on z = 0, its back on local y = 0 running out to +y):
+    a fieldstone base with sloped shoulders up to ``zs``, a brick stack over it to ``top`` with
+    a corbelled cap. Returns (solid, the height of the stone-to-brick change)."""
+    rng = np.random.default_rng(seed + 5)
+    base = box([-w0 / 2, 0.0, 0.0], [w0 / 2, d0, zs - 4.0]) + M.hull_points(
+        [(x, y, zs - 4.0) for x in (-w0 / 2, w0 / 2) for y in (0.0, d0)] + [(x, y, zs) for x in (-w1 / 2 - 0.6, w1 / 2 + 0.6) for y in (0.0, d1 + 0.6)])
+    st_ = []
+    z = 0.3
+    while z < zs - 5.0:
+        h = rng.uniform(1.6, 2.6)
+        for face, (L, mk) in enumerate(((w0, lambda u, v, a, b: box([u, d0 - 0.1, v], [u + a, d0 + 0.45, v + b])),
+                                         (d0, lambda u, v, a, b: box([w0 / 2 - 0.1, u, v], [w0 / 2 + 0.45, u + a, v + b])),
+                                         (d0, lambda u, v, a, b: box([-w0 / 2 - 0.45, u, v], [-w0 / 2 + 0.1, u + a, v + b])))):
+            u = (-w0 / 2 if face == 0 else 0.0) - rng.uniform(0.0, 1.5)
+            end = w0 / 2 if face == 0 else d0
+            while u < end - 0.6:
+                a = rng.uniform(2.0, 4.0)
+                lo, hi_ = max(u + 0.12, -w0 / 2 if face == 0 else 0.0), min(u + a - 0.12, end)
+                if hi_ - lo > 0.6:
+                    st_.append(mk(lo, z + 0.12, hi_ - lo, h - 0.24))
+                u += a
+        z += h
+    zb = round(zs / 0.2) * 0.2
+    stack = box([-w1 / 2, 0.0, zb - 0.01], [w1 / 2, d1, top - 2.4]) + TW._skin(w1, d1, zb, top - 2.4, TW._brick("flemish")).translate([0, d1 / 2, 0])
+    cap = box([-w1 / 2 - 0.4, -0.0, top - 2.41], [w1 / 2 + 0.4, d1 + 0.4, top - 1.6]) + TW._corbel_out(w1, d1, top - 2.41, 0.4).translate([0, d1 / 2, 0]) + \
+        box([-w1 / 2 - 0.8, 0.0, top - 1.61], [w1 / 2 + 0.8, d1 + 0.8, top])
+    body = base + union(st_) + stack + cap - box([-w1 / 2 + 1.4, 1.4, top - 4.0], [w1 / 2 - 1.4, d1 - 1.4, top + 1])
+    return body ^ box([-50, 0.0, -1], [50, 50, top + 1]), zb
+
+
+def post_laurel(h, r=1.2):
+    """A turned porch post (z = 0 to h): round, a little swelling, two beads near the foot and
+    two under a round capital block."""
+    from .porchwork import _revolve
+    prof = [(0.0, 0.0), (r + 0.2, 0.0), (r + 0.2, 0.8), (r, 1.1)]
+    for t_ in np.linspace(0.0, 1.0, 6)[1:]:
+        z = 1.1 + (h - 2.6) * t_
+        prof.append((r * (1.0 + 0.08 * math.sin(math.pi * t_)), z))
+    prof += [(r + 0.35, h - 1.2), (r + 0.35, h), (0.0, h)]
+    body = _revolve(prof, seg=20)
+    for zb in (2.0, 2.8, h - 2.6, h - 1.8):
+        body = body + _revolve([(0.0, zb - 0.2), (r + 0.18, zb - 0.2), (r + 0.18, zb + 0.2), (0.0, zb + 0.2)], seg=20)
+    return body
+
+
+def rail_laurel(L, h=6.4, t=1.0):
+    """A porch railing between two posts (u along, v up, w across, standing on v = 0): a
+    shaped top rail, a bottom rail, round-faced square balusters; flat, printed with the top."""
+    cells = [rect(0.0, 0.6, L, 1.4), rect(0.0, h - 1.1, L, h)]
+    for u in np.arange(1.0, L - 0.5, 1.5):
+        cells.append(rect(u - 0.35, 1.3, u + 0.35, h - 1.0))
+    cells.append(rect(0.0, 0.0, 0.6, h))
+    cells.append(rect(L - 0.6, 0.0, L, h))
+    return ext(cs_union(cells), -t / 2, t / 2)

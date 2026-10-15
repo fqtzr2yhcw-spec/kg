@@ -362,6 +362,31 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
                 v += p_
                 j += 1
             tex = M.extrude(cs_union(rows) ^ clip, d) if rows else M()
+        elif shape == "lrtin":            # the mill's tin: sheets with a crimped seam every pitch up the slope (here the
+            b = loc.bounds()              # ribs run down the slope: v is along it), a lap across every 24 mm (the Laurel)
+            clip = loc.offset(-0.2, JoinType.Miter, 4.0)
+            ribs = [rect(u - 0.22, b[1] - 1, u + 0.22, b[3] + 1) for u in np.arange(np.floor(b[0] / pitch) * pitch, b[2] + pitch, pitch)]
+            laps = [rect(b[0] - 1, v, b[2] + 1, v + 0.35) for v in np.arange(np.floor(b[1] / 24.0) * 24.0 + 12.0, b[3], 24.0)]
+            tex = union([M.extrude(cs_union(ribs) ^ clip, d), M.extrude(cs_union(laps) ^ clip, d * 0.45)])
+        elif shape == "lrshake":          # split oak shakes, short and thick in uneven courses, a few cracked down the
+            b = loc.bounds()              # middle (a slot), their butts ragged (the Laurel's cabin)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(int(abs(b[0]) * 5 + abs(b[2]) * 9 + i * 11) % 983)
+            sh, cracks = [], []
+            for j in range(int(np.floor(b[1] / pitch)) - 1, int(np.ceil(b[3] / pitch)) + 1):
+                v = j * pitch
+                u = b[0] - rng.uniform(0.0, 2.0)
+                while u < b[2]:
+                    wd = rng.uniform(1.5, 2.6)
+                    dv = rng.uniform(-0.25, 0.25)
+                    sh.append(poly([(u + 0.1, v + dv), (u + wd - 0.1, v - dv * 0.5), (u + wd - 0.1, v + pitch), (u + 0.1, v + pitch)]))
+                    if rng.uniform() < 0.18:
+                        x = u + wd * rng.uniform(0.35, 0.65)
+                        cracks.append(rect(x - 0.08, v + dv, x + 0.08, v + pitch * 0.6))
+                    u += wd
+            tex = M.extrude(cs_union(sh) ^ clip, d)
+            if cracks:
+                tex = tex - M.extrude(cs_union(cracks), d + 1.0).translate([0, 0, 0.12])
         elif shape == "prslate":          # banded slates: plain rectangular courses, every third course of slates cut to a
             b = loc.bounds()              # point (a diamond band), the joints breaking (the Prow)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
