@@ -345,6 +345,23 @@ def hip_texture(path, planes, z_eave, d_eave=0.0, pitch=1.55, wtab=1.8, d=0.33, 
             tex = M.extrude(cs_union(rows) ^ clip, d) if rows else M()
             if thick:
                 tex = tex + M.extrude(cs_union(thick) ^ clip, d + 0.15)
+        elif shape == "svslate":          # Peach Bottom slate: random widths, square butts, joints broken by half, every
+            b = loc.bounds()              # fourth course a short band laid one size smaller (the Severn)
+            clip = loc.offset(-0.3, JoinType.Miter, 4.0)
+            rng = np.random.default_rng(int(abs(b[0]) * 5 + abs(b[2]) * 9 + i * 3) % 983)
+            rows = []
+            v = b[1] - pitch
+            j = 0
+            while v < b[3] + pitch:
+                p_ = pitch * (0.7 if j % 4 == 3 else 1.0)
+                u = b[0] - rng.uniform(0.0, 2.0)
+                while u < b[2]:
+                    wd = rng.uniform(1.5, 2.4) * (0.8 if j % 4 == 3 else 1.0)
+                    rows.append(rect(u + 0.12, v + 0.12, u + wd - 0.12, v + p_))
+                    u += wd
+                v += p_
+                j += 1
+            tex = M.extrude(cs_union(rows) ^ clip, d) if rows else M()
         elif shape == "cypress":          # hand-riven cypress shakes: long boards of random width in courses, their butts
             b = loc.bounds()              # a little out of line, some split, two thicknesses (the Piney)
             clip = loc.offset(-0.3, JoinType.Miter, 4.0)
