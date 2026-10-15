@@ -1,0 +1,1048 @@
+"""The new-layouts batch, houses 103 on (after hoarch.novel, which holds 101-102). Each house
+starts from a real building's plan and massing (hoarch/massing has the reviewed volume
+studies). This module holds each house's own pieces (wall skins, foundations, cornice
+ornaments and brackets, windows, doors, porch styles, and the parts its layout needs that no
+earlier house had) and registers its ornaments on import. Nothing in one house's section is
+shared with another building.
+"""
+import math
+
+import numpy as np
+from manifold3d import JoinType, Manifold as M
+
+from .core import RIB, ashlar, box, circle, cs_union, ngon, poly, rect, union
+from .ornament import chamfer_box, ext, stroke
+from . import cornice as CO, features as FT, openings as O, porchwork as PW, trimwork as TW
+from .colonial import _st
+from .colonial4 import _glazed, _muntins
+from .gables import _text, _tie
+
+MIT = JoinType.Miter
+RND = JoinType.Round
+
+
+def _clean(cs, r=0.27):
+    """Close slots and drop bars narrower than 2 r (a nozzle), keeping the outline otherwise."""
+    cs = cs.offset(r, RND).offset(-r, RND)
+    return cs.offset(-r, RND).offset(r, RND)
+
+
+# ================================================================== the Marisol (house 103)
+# After Point Fermin Light (San Pedro, California, 1874) and its Stick Style sisters drawn by
+# Paul J. Pelz for the Lighthouse Board: a two-storey keeper's house with cross gables on all
+# four sides, and the light's square tower rising out of the crossing of the roofs through
+# two stages to a bracketed gallery and a glazed iron lantern. The Stick Style shows its frame
+# on the outside: boards laid over drop siding mark the posts, sills and plates; trusses fill
+# the gables; braces carry the hoods, the eaves and the veranda.
+
+def drop_marisol(region, datum=0.0, pitch=1.3, groove=0.5, d=0.35, sticks_u=(), bands_v=(), stick=1.3, sd=0.8):
+    """The Marisol's walls: drop siding (each board with a groove along its foot), with the
+    Stick Style's boards laid over it: verticals at ``sticks_u`` (corner posts, studs between
+    the windows) and bands at ``bands_v`` (the sill and head lines of each storey)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    boards = []
+    k0 = math.floor((v0 - datum) / pitch) - 1
+    k1 = math.ceil((v1 - datum) / pitch) + 1
+    for k in range(k0, k1):
+        vb = datum + k * pitch
+        boards.append(rect(u0 - 1, vb + groove, u1 + 1, vb + pitch))
+    out = [_st(cs_union(boards) ^ region, 0.0, d), M.extrude(region, 0.05)]
+    sticks = [rect(u - stick / 2, v0 - 1, u + stick / 2, v1 + 1) for u in sticks_u if u0 - stick < u < u1 + stick]
+    sticks += [rect(u0 - 1, v - stick / 2, u1 + 1, v + stick / 2) for v in bands_v if v0 - stick < v < v1 + stick]
+    if sticks:
+        out.append(_st(cs_union(sticks) ^ region, 0.0, sd))
+    return union(out)
+
+
+def foundation_mrbasalt(reg, seed=0):
+    """The Marisol's base: low courses of dark rough basalt (the bluff it stands on) under a
+    plain chamfered water table."""
+    u0, v0, u1, v1 = reg.bounds()
+    stone = ashlar(rect(u0, v0, u1, v1 - 1.2), course=(1.6, 2.4), length=(2.4, 5.4), d=0.55, seed=seed + 11,
+                   rough=0.3, bevel=0.3)
+    cap = chamfer_box(u0, v1 - 1.2, u1, v1, 0.0, 0.6, c=0.35, square=("u0", "u1"), bottom=0.6)
+    return stone + cap
+
+
+TW.FOUNDATION_EXTRA.update(mrbasalt=foundation_mrbasalt)
+
+
+# ---- cornice ornaments
+def frieze_mrsticks(L, h, b, pitch, margin, pair, half):
+    """The storey joint's frieze: the Stick Style frame in small, a rail top and bottom, a post
+    at every bracket station and a St Andrew's cross braced into every bay."""
+    v0, v1 = 0.5, h - 0.5
+    out = [_st(rect(0.3, v0, L - 0.3, v0 + 0.7) + rect(0.3, v1 - 0.7, L - 0.3, v1), b, 0.35)]
+    posts = [rect(u - 0.45, v0, u + 0.45, v1) for u in CO._us(L, pitch, margin, 0.0)]
+    xs = []
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        a, c_ = uc - wd / 2 + 0.6, uc + wd / 2 - 0.6
+        if c_ - a < 2.0:
+            continue
+        xs.append(stroke([(a, v0 + 0.5), (c_, v1 - 0.5)], 0.55))
+        xs.append(stroke([(a, v1 - 0.5), (c_, v0 + 0.5)], 0.55))
+    if posts:
+        out.append(_st(cs_union(posts), b, 0.45))
+    if xs:
+        out.append(_st(_clean(cs_union(xs)) ^ rect(0.3, v0, L - 0.3, v1), b, 0.3))
+    return out, []
+
+
+def course_mrrope(L, h, b, pitch, margin, p):
+    """A ship's rope laid along the course: twisted strands slanting one way, on a round rod."""
+    rod = rect(0.2, 0.25, L - 0.2, h - 0.25)
+    out = [_st(rod, b, 0.18)]
+    pu = 1.05
+    n = max(1, int((L - 0.6) / pu))
+    u0 = (L - n * pu) / 2
+    strands = []
+    for k in range(n + 1):
+        uc = u0 + pu * k
+        strands.append(stroke([(uc - h * 0.32, 0.3), (uc + h * 0.32, h - 0.3)], 0.5))
+    out.append(_st(_clean(cs_union(strands)) ^ rod, b + 0.18, 0.3))
+    return out
+
+
+def frieze_mrportholes(L, h, b, pitch, margin, pair, half):
+    """The eave's frieze: a round port in every bay, a ring with a boss at its hub and four
+    bolt heads round it, between two plain fillets."""
+    v0, v1 = 0.4, h - 0.4
+    vm = (v0 + v1) / 2
+    r = min((v1 - v0) / 2 - 0.1, 1.7)
+    out = [_st(rect(0.3, v0, L - 0.3, v0 + 0.5) + rect(0.3, v1 - 0.5, L - 0.3, v1), b, 0.3)]
+    for uc, wd in CO._between(L, pitch, margin, pair, half):
+        if wd < 2 * r + 0.8:
+            continue
+        out.append(_st(circle((uc, vm), r, 28) - circle((uc, vm), r - 0.6, 28), b, 0.4))
+        out.append(_st(circle((uc, vm), 0.55, 14), b, 0.45))
+        if wd > 2 * r + 3.0:
+            for sg in (-1, 1):
+                out.append(_st(circle((uc + sg * (r + 0.9), vm), 0.36, 10), b, 0.3))
+    return out, []
+
+
+def frieze_mrlozenge(L, h, b, pitch, margin, pair, half):
+    """The tower's frieze: a chain of lozenges linked point to point, a bead in each."""
+    v0, v1 = 0.4, h - 0.4
+    vm = (v0 + v1) / 2
+    hh = (v1 - v0) / 2
+    lw = 2.6
+    n = max(1, int((L - 0.8) / lw))
+    u0 = (L - n * lw) / 2
+    loz = []
+    for k in range(n):
+        uc = u0 + lw * (k + 0.5)
+        o = poly([(uc - lw / 2, vm), (uc, vm - hh), (uc + lw / 2, vm), (uc, vm + hh)])
+        loz.append(o - o.offset(-0.5, MIT, 4.0))
+        loz.append(circle((uc, vm), 0.35, 10))
+    out = [_st(_clean(cs_union(loz)) ^ rect(0.2, v0, L - 0.2, v1), b, 0.35)]
+    return out, []
+
+
+def bracket_mrbrace(h, d, t):
+    """A Stick Style eave brace (side profile): a post down the wall ending in a knob, the arm
+    under the soffit, and the diagonal strut between them, the triangle filled solid (no hole
+    through a bracket) with the strut standing proud of it as a step."""
+    post = rect(0.0, -h, 1.0, 0.0)
+    arm = rect(0.0, -1.0, d, 0.0)
+    web = poly([(0.0, -1.0), (d - 0.3, -1.0), (1.0, -h + 1.2), (0.0, -h + 1.2)])
+    knob = circle((0.5, -h), 0.55, 14)
+    tip = poly([(d - 1.0, -1.0), (d, -1.0), (d, -1.6)])
+    return cs_union([post, arm, web, knob, tip])
+
+
+CO.FRIEZE_EXTRA.update(mrsticks=frieze_mrsticks, mrportholes=frieze_mrportholes, mrlozenge=frieze_mrlozenge)
+CO.COURSE_EXTRA.update(mrrope=course_mrrope)
+TW.BRACKET_EXTRA.update(mrbrace=bracket_mrbrace)
+
+
+# ---- windows and doors
+def _sash22(w, h, pl, plug_cs, meet=0.6):
+    """A two-over-two sash: one vertical bar in each sash and a meeting rail."""
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    u0, v0, u1, v1 = inner.bounds()
+    vm = (v0 + v1) / 2
+    lo, hi = rect(u0, v0, u1, vm - meet / 2), rect(u0, vm + meet / 2, u1, v1)
+    bars = rect(-RIB / 2, v0 - 1, RIB / 2, v1 + 1)
+    return _glazed([ext(plug_cs, -pl, -0.6)], lo + hi, pl, bars, plug_cs)
+
+
+def window_mrlower(w=9.0, h=19.0, A=0.9):
+    """The Marisol's ground-floor window: two over two, a plain casing with plinth blocks, and a
+    Stick Style hood: a long head board on two diagonal braces whose posts run down the
+    casing; a sill on two little blocks."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash22(w, h, pl, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    vh = h + A
+    parts.append(chamfer_box(-X - 2.6, vh - 0.3, X + 2.6, vh + 1.2, 0.0, 1.6, c=0.4, bottom=0.8))      # the head board
+    parts.append(chamfer_box(-X - 2.2, vh + 1.19, X + 2.2, vh + 1.8, 0.0, 1.0, c=0.3, bottom=0.6))  # its drip
+    for sg in (-1, 1):
+        brace = poly([(sg * (X - 0.5), vh - 3.4), (sg * (X + 0.9), vh - 3.4), (sg * (X + 2.4), vh + 0.01), (sg * (X + 1.4), vh + 0.01),
+                      (sg * (X - 0.5), vh - 2.2)])
+        parts.append(ext(brace, 0.0, 1.2))
+        parts.append(chamfer_box(min(sg * X, sg * (X - 1.2)), 0.0, max(sg * X, sg * (X - 1.2)), 2.2, 0.0, 1.0, c=0.3, bottom=1.0))
+    parts.append(chamfer_box(-X - 0.8, -1.2, X + 0.8, 0.01, 0.0, 1.4, c=0.3, bottom=1.4))
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * (X - 0.4) - 0.6, -2.2, sg * (X - 0.4) + 0.6, -1.19, 0.0, 1.0, c=0.3, bottom=1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 1.8, -2.2)
+
+
+def window_mrupper(w=9.0, h=17.0, A=0.8):
+    """The upper storey's window: two over two under a little stick gablet (a raking cap on the
+    casing with a king post in its triangle), a sawn apron under the sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash22(w, h, pl, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    vh = h + A
+    G = X + 1.0
+    rise = 3.4
+    tri = poly([(-G, vh), (G, vh), (0.0, vh + rise)])
+    parts.append(ext(tri - tri.offset(-0.9, MIT, 4.0), 0.0, 1.2))
+    parts.append(ext(rect(-0.45, vh, 0.45, vh + rise - 0.6), 0.0, 1.0))
+    parts.append(chamfer_box(-G - 0.4, vh - 0.8, G + 0.4, vh + 0.01, 0.0, 1.3, c=0.3, bottom=0.8))
+    parts.append(chamfer_box(-X - 0.8, -1.2, X + 0.8, 0.01, 0.0, 1.4, c=0.3, bottom=1.4))
+    apron = poly([(-X + 0.4, -1.0), (X - 0.4, -1.0), (X - 1.4, -3.2), (0.0, -3.8), (-X + 1.4, -3.2)])
+    parts.append(ext(apron, 0.0, 0.8))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + rise, -3.8)
+
+
+def window_mrgable(w=7.0, h=12.0, gap=2.0, A=0.7):
+    """The cross gables' window: a pair of tall lights one over one under one hood board on
+    three small braces, a single sill."""
+    W = 2 * w + gap
+    lights = [rect(-W / 2, 0.0, -W / 2 + w, h), rect(W / 2 - w, 0.0, W / 2, h)]
+    op = cs_union(lights)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    vm = h * 0.5
+    bars = rect(-W, vm - 0.3, W, vm + 0.3)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    whole = rect(-W / 2, 0.0, W / 2, h)
+    X = W / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((whole.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    parts.append(ext(rect(-gap / 2 - 0.3, 0.0, gap / 2 + 0.3, h), 0.0, 1.0))
+    vh = h + A
+    parts.append(chamfer_box(-X - 1.6, vh, X + 1.6, vh + 1.2, 0.0, 1.5, c=0.4, bottom=0.8))
+    for x in (-X, 0.0, X):
+        parts.append(ext(poly([(x - 0.5, vh - 2.0), (x + 0.5, vh - 2.0), (x + 1.2, vh + 0.01), (x - 1.2, vh + 0.01)]), 0.0, 1.1))
+    parts.append(chamfer_box(-X - 0.8, -1.2, X + 0.8, 0.01, 0.0, 1.3, c=0.3, bottom=1.3))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 1.2, -1.2)
+
+
+def window_mrtower(w=8.0, h=15.0, A=0.8):
+    """The light tower's window: a tall one-over-one with a segmental head, its casing stepped
+    out at the head to a keyed arch; a sill on a corbel. One to each face of each stage, as a
+    keeper's watch room has them."""
+    rise = w * 0.22
+    R = (w * w / 4 + rise * rise) / (2 * rise)
+    vs = h - rise
+    arc = [(R * math.sin(a), vs - (R - rise) + R * math.cos(a)) for a in np.linspace(math.asin(w / 2 / R), -math.asin(w / 2 / R), 17)]
+    op = poly([(-w / 2, 0.0), (w / 2, 0.0)] + arc)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    vm = vs * 0.48
+    bars = rect(-w, vm - 0.3, w, vm + 0.3)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    outer = op.offset(A, RND)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext((outer - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    parts.append(ext((op.offset(A + 0.8, RND) - op.offset(A - 0.1, RND)) ^ rect(-50, vs - 0.5, 50, 100), 0.0, 1.1))
+    parts.append(ext(poly([(-0.9, h + A - 0.6), (0.9, h + A - 0.6), (1.2, h + A + 1.6), (-1.2, h + A + 1.6)]), 0.0, 1.4))
+    X = w / 2 + A
+    parts.append(chamfer_box(-X - 0.8, -1.2, X + 0.8, 0.01, 0.0, 1.4, c=0.3, bottom=1.4))
+    parts.append(ext(poly([(-X + 0.6, -1.0), (X - 0.6, -1.0), (X - 1.6, -2.6), (-X + 1.6, -2.6)]), 0.0, 1.0))
+    return O._one_piece(sash, parts, op, plug_cs, pl, h + A + 1.6, -2.6)
+
+
+def door_mrfront(w=12.0, h=24.0, A=1.0):
+    """The keeper's front door: a pair of leaves, each a tall glazed light over a panel framed
+    in stick mouldings with a diagonal brace across it; a three-light transom; a casing with
+    corner blocks and a hood board on long braces."""
+    tr = 4.0
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0)]
+    vd = h - tr
+    leaves = [rect(-w / 2 + 0.3, 0.0, -0.25, vd - 0.4), rect(0.25, 0.0, w / 2 - 0.3, vd - 0.4)]
+    for lf in leaves:
+        parts_s.append(ext(lf, -pl, -0.6))
+    lights = []
+    for lf in leaves:
+        a, _, c_, _ = lf.bounds()
+        lights.append(rect(a + 0.9, vd * 0.48, c_ - 0.9, vd - 1.4))
+    trl = rect(-w / 2 + 0.6, vd + 0.2, w / 2 - 0.6, h - 0.6)
+    glass = cs_union(lights) + trl
+    parts_s = [p - ext(glass, -pl - 1, 0.0) for p in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    gb = [rect(x - RIB / 2, vd, x + RIB / 2, h) for x in (-w / 6, w / 6)]
+    parts_s.append(ext(cs_union(gb) ^ trl.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    parts_s.append(ext(rect(-w / 2 + 0.3, vd - 0.4, w / 2 - 0.3, vd + 0.2), -pl, -0.4))          # transom bar
+    for lf in leaves:
+        a, _, c_, _ = lf.bounds()
+        pan = rect(a + 0.9, 1.4, c_ - 0.9, vd * 0.48 - 1.0)
+        parts_s.append(ext(pan - pan.offset(-0.5, MIT, 4.0), -0.65, -0.2))
+        pb = pan.offset(-0.5, MIT, 4.0).bounds()
+        parts_s.append(ext(_clean(stroke([(pb[0] + 0.3, pb[1] + 0.3), (pb[2] - 0.3, pb[3] - 0.3)], 0.55)) ^
+                           pan.offset(-0.4, MIT, 4.0), -0.65, -0.25))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.9)]
+    for sg in (-1, 1):
+        parts.append(chamfer_box(sg * X - 1.0, h + A - 1.9, sg * X + 1.0, h + A + 1.7, 0.0, 1.3, c=0.3))      # corner blocks
+        brace = poly([(sg * (X - 0.5), h - 6.0), (sg * (X + 0.9), h - 6.0), (sg * (X + 3.0), h + A + 1.7), (sg * (X + 2.0), h + A + 1.7)])
+        parts.append(ext(brace, 0.0, 1.2))
+    parts.append(chamfer_box(-X - 3.4, h + A + 1.59, X + 3.4, h + A + 2.8, 0.0, 1.7, c=0.4, bottom=0.8))
+    parts_s = [m ^ ext(plug_cs, -pl - 1.0, 1.0) for m in parts_s]
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + A + 2.8, 0.0)
+
+
+def door_mrback(w=8.4, h=21.0, A=0.8):
+    """The kitchen door: four panels framed in sticks, the upper two glazed, in a plain casing
+    with a drip cap."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    leaf = plug_cs
+    parts_s = [ext(leaf, -pl, -0.6), ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0)]
+    vm = h * 0.55
+    lights = [rect(-w / 2 + 0.9, vm + 0.4, -0.45, h - 1.2), rect(0.45, vm + 0.4, w / 2 - 0.9, h - 1.2)]
+    glass = cs_union(lights)
+    parts_s = [p - ext(glass, -pl - 1, 0.0) for p in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    for a, c_ in ((-w / 2 + 0.9, -0.45), (0.45, w / 2 - 0.9)):
+        pan = rect(a, 1.2, c_, vm - 0.6)
+        parts_s.append(ext(pan - pan.offset(-0.5, MIT, 4.0), -0.65, -0.2))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8),
+             chamfer_box(-X - 1.0, h + A - 0.01, X + 1.0, h + A + 1.2, 0.0, 1.4, c=0.4, bottom=0.8)]
+    parts_s = [m ^ ext(plug_cs, -pl - 1.0, 1.0) for m in parts_s]
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + A + 1.2, 0.0)
+
+
+# ---- the gable trusses
+def gable_marisol(L, slope, d_eave, skin=1.8, width=2.2, d=1.4, collar=0.46, finial=5.0):
+    """The Marisol's cross-gable truss (Stick Style), hung on the rake's outer end like a
+    bargeboard (facade frame of the gable wall: u from its left end, v up from the eave): the
+    raking boards over the skin's end, a collar tie across at ``collar`` of the height, a king
+    post from it to the apex, two struts fanning down from the king post's foot to the rafters,
+    a turned drop under the collar and a spike finial; every member at least 1.0 wide and all
+    of them one frame (no accent on its own)."""
+    s = slope
+    c = math.hypot(1.0, s)
+    a_l = np.array([-d_eave, 0.0])
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    a_r = np.array([L + d_eave, 0.0])
+    depth = skin + width
+    band = []
+    for a in (a_l, a_r):
+        n = np.array([s, -1.0]) / c if a[0] < L / 2 else np.array([-s, -1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * depth), tuple(a + n * depth)]))
+    board = cs_union(band) ^ rect(-d_eave - 5, -0.01, L + d_eave + 5, tip[1] + 5)
+    vc = tip[1] * collar
+    half_c = (tip[1] - depth * c - vc) / s + 0.4          # the collar runs into the boards' lower edge
+    xc = L / 2
+    members = [rect(xc - half_c, vc - 0.6, xc + half_c, vc + 0.6),        # collar tie
+               rect(xc - 0.6, vc - 0.6, xc + 0.6, tip[1] - depth * c * 0.5)]  # king post
+    for sg in (-1, 1):
+        p0 = (xc, vc + 0.2)
+        p1 = (xc + sg * half_c * 0.62, vc + (tip[1] - vc) * 0.42)
+        members.append(stroke([p0, p1], 1.0))
+        members.append(stroke([(xc + sg * half_c * 0.55, vc), (xc + sg * half_c * 0.55, vc - 2.2)], 1.0))
+    drop = cs_union([rect(xc - 0.55, vc - 4.6, xc + 0.55, vc), circle((xc, vc - 4.8), 0.8, 16)])
+    spike = poly([(xc - 0.8, tip[1] - 0.2), (xc + 0.8, tip[1] - 0.2), (xc + 0.5, tip[1] + finial * 0.6), (xc, tip[1] + finial),
+                  (xc - 0.5, tip[1] + finial * 0.6)])
+    frame = _tie(cs_union([board] + members + [drop, spike]))
+    return _text(frame, 0.0, d)
+
+
+# ---- the chimneys
+def chimney_marisol(w, dd, h, cap=2.0):
+    """A brick stack with a sunk panel on every face and a corbelled cap of three courses
+    stepping out at 45 degrees under a thin slab (prints upright)."""
+    zc = h - 4.6
+    shaft = box([-w / 2, -dd / 2, 0.0], [w / 2, dd / 2, zc])
+    for ax, L_, D_ in ((0, w, dd), (1, dd, w)):
+        for sg in (-1, 1):
+            if L_ < 5.0:
+                continue
+            pan = box([-L_ / 2 + 1.2, -0.3, h * 0.45], [L_ / 2 - 1.2, 0.5, zc - 1.6])
+            if ax == 1:
+                pan = pan.rotate([0, 0, 90])
+            off = [0.0, sg * D_ / 2, 0.0] if ax == 0 else [sg * D_ / 2, 0.0, 0.0]
+            shaft = shaft - pan.translate(off)
+    parts = [shaft]
+    z = zc
+    for k in range(3):
+        g = 0.4 * (k + 1)
+        parts.append(M.hull_points([(x * (w / 2 + g - 0.4), y * (dd / 2 + g - 0.4), z - 0.01) for x in (-1, 1) for y in (-1, 1)] +
+                                   [(x * (w / 2 + g), y * (dd / 2 + g), z + 0.4) for x in (-1, 1) for y in (-1, 1)]))
+        parts.append(box([-w / 2 - g, -dd / 2 - g, z + 0.39], [w / 2 + g, dd / 2 + g, z + 1.0]))
+        z += 1.0
+    parts.append(box([-w / 2 - 1.4, -dd / 2 - 1.4, z - 0.01], [w / 2 + 1.4, dd / 2 + 1.4, h]))
+    flue = box([-w / 2 + 1.4, -dd / 2 + 1.4, h - 1.6], [w / 2 - 1.4, dd / 2 - 1.4, h + 1.0])
+    return union(parts) - flue
+
+
+# ---- the light: gallery deck, its railing strips, the lantern and its glass
+def gallery_marisol(half, t=1.6, rail_in=1.4, slot=(1.2, 0.8), lip=(16.0, 2.8)):
+    """The gallery deck: a square plate ``half`` from the centre, ``t`` thick, slots for the
+    railing strips' tabs along its edges, a socket ring in the middle for the lantern, and a
+    locating lip underneath that drops inside the tower's walls. Built at z = 0 (its top at t)."""
+    deck = box([-half, -half, 0.0], [half, half, t])
+    li, lh = lip
+    deck = deck + (box([-li, -li, -1.2], [li, li, 0.01]) - box([-li + 1.4, -li + 1.4, -2.0], [li - 1.4, li - 1.4, 1.0]))
+    sw, sd = slot
+    cuts = []
+    for sg in (-1, 1):
+        for ax in (0, 1):
+            e = sg * (half - rail_in)
+            if ax == 0:
+                cuts.append(box([-half + 3.0, e - sw / 2, t - sd], [half - 3.0, e + sw / 2, t + 1]))
+            else:
+                cuts.append(box([e - sw / 2, -half + 3.0, t - sd], [e + sw / 2, half - 3.0, t + 1]))
+    deck = deck - union(cuts)
+    # the seam boards of the deck, a row of plates (shallow grooves)
+    grooves = union([box([x - 0.25, -half + 2.6, t - 0.2], [x + 0.25, half - 2.6, t + 1]) for x in np.arange(-half + 4.0, half - 3.0, 3.2)])
+    ring = M.cylinder(1.0, 12.8 / math.cos(math.pi / 8), 12.8 / math.cos(math.pi / 8), 8).rotate([0, 0, 22.5]).translate([0, 0, t - 0.6])
+    return deck - (grooves - M.cylinder(2.0, 15.4, 15.4, 8).rotate([0, 0, 22.5]).translate([0, 0, t - 1.0])) - ring
+
+
+def gallery_rail_marisol(L, h=9.4, tab=(0.8, 0.8)):
+    """One side of the gallery's iron railing, flat (u along, v up, w across 0..1.0): a top
+    rail, a mid rail and a bottom rail on square posts with a ball on each, and tabs under the
+    bottom rail that drop into the deck's slots. Open enough to see the lantern through.
+    Prints on its back."""
+    t = 1.0
+    parts = [rect(0.0, 0.0, L, 0.9), rect(0.0, h * 0.45 - 0.45, L, h * 0.45 + 0.45), rect(0.0, h - 1.0, L, h)]
+    n = max(2, int(L / 7.0) + 1)
+    for k in range(n):
+        u = 0.5 + (L - 1.0) * k / (n - 1)
+        parts.append(rect(u - 0.5, 0.0, u + 0.5, h))
+        parts.append(circle((u, h + 0.5), 0.7, 14))
+    tw, td = tab
+    for u in (L * 0.2, L * 0.5, L * 0.8):
+        parts.append(rect(u - 1.5, -td, u + 1.5, 0.01))
+    return ext(cs_union(parts), 0.0, t)
+
+
+def lantern_marisol(a=12.6, hg=15.0, hp=6.0):
+    """The lantern, iron (the cage) and glass: an octagonal parapet ``hp`` high with a little
+    door in one face (the watch room's wall), then the glazing in two tiers of panes between
+    corner mullions, a mid rail and a top ring, under a domed roof with a ventilator ball and a
+    lightning rod; and the glass, an octagonal block that the cage drops over (its foot sits
+    0.6 down in the deck's socket). Both built from z = 0 (the gallery deck's top). Returns
+    (cage, glass). The cage prints upright: its rings bridge between the mullions, and the
+    dome is hollowed by a 45-degree cone so nothing overhangs."""
+    def oct_(ap, z0, z1):
+        return M.cylinder(z1 - z0, ap / math.cos(math.pi / 8), ap / math.cos(math.pi / 8), 8).rotate([0, 0, 22.5]).translate([0, 0, z0])
+    zs = hp                                   # the parapet's top: the glazing starts here
+    zt = zs + hg                              # the top ring's foot
+    Rk = 1.0 / math.cos(math.pi / 8)
+    flare = M.hull_points([((a + 2.0) * Rk * math.cos(math.radians(22.5 + 45 * k)), (a + 2.0) * Rk * math.sin(math.radians(22.5 + 45 * k)), zs - 1.4)
+                           for k in range(8)] +
+                          [((a + 2.6) * Rk * math.cos(math.radians(22.5 + 45 * k)), (a + 2.6) * Rk * math.sin(math.radians(22.5 + 45 * k)), zs - 0.8)
+                           for k in range(8)])
+    par = oct_(a + 2.0, 0.0, zs - 0.8) + flare + oct_(a + 2.6, zs - 0.81, zs) - oct_(a, -1.0, zs + 1.0)
+    # its door, sunk in the south face, and a sunk panel on the others
+    ap = a + 2.0
+    for k in range(8):
+        ang = -math.pi / 2 + k * math.pi / 4
+        w_ = 3.2 if k == 0 else 3.6
+        z0_, z1_ = (0.4, zs - 1.4) if k == 0 else (1.0, zs - 1.8)
+        pan = box([-w_ / 2, -0.4, z0_], [w_ / 2, 0.5, z1_]).rotate([0, 0, math.degrees(ang) - 90 + 180])
+        par = par - pan.translate([ap * math.cos(ang), ap * math.sin(ang), 0])
+    R = (a + 0.6) / math.cos(math.pi / 8)
+    mull = []
+    for k in range(8):
+        ang = math.radians(22.5 + 45 * k)
+        mull.append(M.cylinder(hg + 0.01, 0.75, 0.75, 12).translate([R * math.cos(ang), R * math.sin(ang), zs - 0.01]))
+    mid = oct_(a + 1.0, zs + hg * 0.5 - 0.5, zs + hg * 0.5 + 0.5) - oct_(a, zs, zt)
+    top = oct_(a + 1.8, zt, zt + 1.6) - oct_(a, zt - 1.0, zt + 1.6)
+    rd = a + 2.4
+    dome = M.sphere(rd, 48).scale([1.0, 1.0, 0.62]).translate([0, 0, zt + 1.6]) ^ box([-50, -50, zt + 1.6], [50, 50, zt + 30])
+    dome = dome + oct_(a + 2.4, zt + 1.59, zt + 2.2)
+    cone = M.cylinder(a + 0.01, a / math.cos(math.pi / 8), 0.0, 8).rotate([0, 0, 22.5]).translate([0, 0, zt + 1.6])
+    dome = dome - cone
+    zd = zt + 1.6 + rd * 0.62
+    vent = M.cylinder(2.4, 2.2, 1.4, 16).translate([0, 0, zd - 0.6]) + M.sphere(2.6, 24).translate([0, 0, zd + 3.6])
+    rod = M.cylinder(5.0, 0.6, 0.5, 10).translate([0, 0, zd + 5.8])
+    cage = union([par, mid, top, dome, vent, rod] + mull)
+    glass = oct_(a - 0.2, -0.6, zt + 1.4)
+    return cage, glass
+
+
+def rocks_marisol(spots, seed=5):
+    """The rocks of the point: faceted blocks (hulls of jittered points), flat underneath."""
+    rng = np.random.default_rng(seed)
+    out = []
+    for (x, y, r) in spots:
+        pts = []
+        for k in range(14):
+            th = rng.uniform(0, 2 * math.pi)
+            ph = rng.uniform(0.05, math.pi / 2)
+            rr = r * rng.uniform(0.7, 1.05)
+            pts.append((x + rr * math.cos(th) * math.cos(ph) * 1.15, y + rr * math.sin(th) * math.cos(ph), rr * math.sin(ph) * 0.85))
+        for k in range(6):
+            th = 2 * math.pi * k / 6 + rng.uniform(-0.3, 0.3)
+            rr = r * rng.uniform(0.85, 1.1)
+            pts.append((x + rr * math.cos(th) * 1.15, y + rr * math.sin(th), 0.0))
+        out.append(M.hull_points(pts))
+    return union(out)
+
+
+# ---- the veranda: post, railing fill, spandrel, skirt and roof edge styles (registered)
+def post_marisol(h, collar=None, abacus=3.0, slot=None):
+    """The veranda's post: a round shaft on a square plinth, two turned rings a third of the way
+    up, a necking under a square chamfered cap."""
+    from .porchwork import _plinth, _revolve, _top
+    z1 = h - 3.0
+    zr = 1.2 + (z1 - 1.2) * 0.32
+    prof = [(0.0, 1.19), (1.3, 1.19), (1.3, 1.6), (1.05, 1.9), (1.05, zr - 0.6), (1.3, zr - 0.35), (1.3, zr - 0.05),
+            (1.05, zr + 0.2), (1.3, zr + 0.45), (1.3, zr + 0.75), (1.05, zr + 1.0), (1.05, z1 - 0.4), (1.25, z1 - 0.2),
+            (1.25, z1)]
+    body = _revolve(prof) + _plinth(3.0, 1.2)
+    return body + _top(h, abacus / 2, z1, 1.25, slot, seg=36)
+
+
+def fill_mrcross(L, vb, vt):
+    """The veranda railing: Stick Style panels, each a St Andrew's cross in a frame of sticks."""
+    H = vt - vb
+    n = max(1, int(round(L / (H * 1.5))))
+    out = []
+    for k in range(n + 1):
+        u = L * k / n
+        out.append(rect(max(0.0, u - 0.4), vb, min(L, u + 0.4), vt))
+    for k in range(n):
+        a, c_ = L * k / n + 0.4, L * (k + 1) / n - 0.4
+        out.append(stroke([(a, vb + 0.3), (c_, vt - 0.3)], 0.6))
+        out.append(stroke([(a, vt - 0.3), (c_, vb + 0.3)], 0.6))
+    return [_clean(cs_union(out)) ^ rect(0.0, vb, L, vt)]
+
+
+def spandrel_mrbraces(u0, u1, v_bot, v_top):
+    """The veranda's upper work between two posts: a curved brace from each post into the beam,
+    and between them a rail with short sticks standing on it (a stick valance)."""
+    H = v_top - v_bot
+    out = []
+    reach = min(5.0, (u1 - u0) * 0.3)
+    for sg, uo in ((1, u0), (-1, u1)):
+        pts = [(uo, v_bot - 0.6)]
+        for a in np.linspace(0.0, math.pi / 2, 9):
+            pts.append((uo + sg * reach * (1 - math.cos(a)), v_bot + H * math.sin(a)))
+        out.append(stroke(pts, 0.9))
+    vr = v_bot + H * 0.45
+    out.append(rect(u0, vr - 0.4, u1, vr + 0.4))
+    n = max(1, int((u1 - u0 - 2 * reach) / 1.6))
+    for k in range(n + 1):
+        u = u0 + reach + (u1 - u0 - 2 * reach) * k / max(n, 1)
+        out.append(rect(u - 0.4, vr, u + 0.4, v_top))
+    return _clean(cs_union(out)) ^ rect(u0, v_bot - 1.0, u1, v_top + 0.01)
+
+
+def skirt_mrboards(reg, d=1.2):
+    """The veranda's skirt: vertical boards with a gap between each, a rail along the top."""
+    u0, v0, u1, v1 = reg.bounds()
+    bd = cs_union([rect(u, v0 - 1, u + 1.4, v1 + 1) for u in np.arange(u0 + 0.2, u1, 2.0)]) ^ reg
+    rail = rect(u0 - 1, v1 - 1.0, u1 + 1, v1 + 1) ^ reg
+    return M.extrude(bd, d * 0.6) + M.extrude(rail, d)
+
+
+def edge_mrdrip(L, z0, zc):
+    """The veranda roof's fascia: a plain board with a row of small drops under a drip."""
+    n = max(1, int((L - 1.2) / 2.4))
+    drops = [rect(u - 0.45, z0 - 0.6, u + 0.45, z0 + 0.4) + circle((u, z0 - 0.6), 0.5, 12)
+             for u in (0.6 + (L - 1.2) * (k + 0.5) / n for k in range(n))]
+    cs = cs_union(drops) + rect(0.3, zc - 0.7, L - 0.3, zc)
+    return cs, 0.6
+
+
+PW.POSTS.update(marisol=post_marisol)
+PW.FILLS.update(mrcross=fill_mrcross)
+PW.FRIEZES.update(mrbraces=spandrel_mrbraces)
+PW.SKIRTS.update(mrboards=skirt_mrboards)
+FT.EDGE_EXTRA.update(mrdrip=edge_mrdrip)
+
+
+# ================================================================== the Fevre (house 104)
+# After the brick houses on the bluffs of Galena, Illinois (1840s-50s), the lead-mining town on
+# the Fever River: a Federal house with Greek Revival touches, set into the hill so it shows
+# three storeys to the street (a walk-out storey of tooled limestone under two of brick) and two
+# to the garden behind; parapeted gable ends carrying paired chimneys; a stone stair climbing
+# along the front wall to the door on the main floor; a street wall with steps, and garden
+# terraces stepping down the side. The ground it stands on is part of the model.
+
+def brick_fevre(region, datum=0.0):
+    """The Fevre's brick: American common bond, a course of headers every sixth, deep joints."""
+    from .skins import brick_bond
+    return brick_bond(region, "common", bl=2.4, bh=0.8, mortar=0.5, bed=0.2, d=0.3, datum=datum, header_every=6)
+
+
+def stone_fevre(region, datum=0.0, seed=0):
+    """Galena limestone: long squared blocks in even courses, each face tooled in fine vertical
+    strokes inside a smooth margin (the margin and strokes sunk, so the block face prints
+    upright with nothing overhanging)."""
+    if region.is_empty():
+        return M()
+    u0, v0, u1, v1 = region.bounds()
+    rng = np.random.default_rng(seed)
+    out = []
+    ch = 3.2
+    k0 = math.floor((v0 - datum) / ch)
+    for k in range(k0, int((v1 - datum) / ch) + 1):
+        vb = datum + k * ch
+        u = u0 - rng.uniform(0.0, 7.0)
+        while u < u1:
+            L = rng.uniform(5.0, 9.0)
+            blk = rect(u + 0.25, vb + 0.25, u + L - 0.25, vb + ch - 0.25) ^ region
+            if blk.area() > 1.0:
+                out.append(_st(blk, 0.0, 0.45))
+                inner = blk.offset(-0.55, MIT, 4.0)
+                if inner.area() > 1.0:
+                    b = inner.bounds()
+                    strokes = cs_union([rect(x, b[1], x + 0.5, b[3]) for x in np.arange(b[0] + 0.3, b[2] - 0.3, 1.0)]) ^ inner
+                    out.append(_st(strokes, 0.45, 0.12))
+            u += L
+    out.append(M.extrude(region, 0.05))
+    return union(out)
+
+
+# ---- cornice ornaments
+def frieze_fvcorbel(L, h, b, pitch, margin, pair, half):
+    """A brick corbel table: little stepped brick corbels hanging from a band, every 2.4 mm
+    (the joint between the stone storey and the brick)."""
+    v1 = h - 0.4
+    out = [_st(rect(0.2, v1 - 1.0, L - 0.2, v1), b, 0.5)]
+    pu = 2.4
+    n = max(1, int((L - 0.8) / pu))
+    u0 = (L - n * pu) / 2
+    cors = []
+    for k in range(n):
+        uc = u0 + pu * (k + 0.5)
+        cors.append(rect(uc - 0.7, v1 - 2.2, uc + 0.7, v1 - 0.99) + rect(uc - 0.45, v1 - 3.2, uc + 0.45, v1 - 2.19))
+    out.append(_st(cs_union(cors), b, 0.45))
+    return out, []
+
+
+def course_fvtooled(L, h, b, pitch, margin, p):
+    """A dressed limestone band: a smooth margin top and bottom, the face between tooled in
+    short vertical strokes."""
+    band = rect(0.2, 0.2, L - 0.2, h - 0.2)
+    out = [_st(band, b, 0.25)]
+    st_ = cs_union([rect(u, 0.6, u + 0.45, h - 0.6) for u in np.arange(0.6, L - 0.6, 0.95)])
+    out.append(_st(st_ ^ band, b + 0.25, 0.15))
+    return out
+
+
+def frieze_fvdiaper(L, h, b, pitch, margin, pair, half):
+    """The storey joint's frieze: a band of brick laid in a diaper of raised diamonds (headers
+    set proud), between two stretcher courses."""
+    v0, v1 = 0.4, h - 0.4
+    vm = (v0 + v1) / 2
+    out = [_st(rect(0.2, v0, L - 0.2, v0 + 0.8) + rect(0.2, v1 - 0.8, L - 0.2, v1), b, 0.35)]
+    dw, dh = 3.2, (v1 - v0 - 1.8) / 2
+    n = max(1, int((L - 1.0) / dw))
+    u0 = (L - n * dw) / 2
+    dia = []
+    for k in range(n):
+        uc = u0 + dw * (k + 0.5)
+        o = poly([(uc - dw / 2 + 0.2, vm), (uc, vm - dh), (uc + dw / 2 - 0.2, vm), (uc, vm + dh)])
+        dia.append(o - o.offset(-0.55, MIT, 4.0))
+    out.append(_st(_clean(cs_union(dia)), b, 0.35))
+    return out, []
+
+
+def course_fvbead(L, h, b, pitch, margin, p):
+    """A stone string course with a bead and reel along its face."""
+    band = rect(0.2, 0.2, L - 0.2, h - 0.2)
+    out = [_st(band, b, 0.25)]
+    vm = h / 2
+    beads = []
+    u = 0.8
+    while u < L - 1.4:
+        beads.append(circle((u, vm), 0.42, 12))
+        beads.append(rect(u + 0.55, vm - 0.22, u + 1.45, vm + 0.22))
+        u += 2.0
+    out.append(_st(_clean(cs_union(beads), 0.2), b + 0.25, 0.25))
+    return out
+
+
+def frieze_fvswags(L, h, b, pitch, margin, pair, half):
+    """The eave's Federal frieze: festoons of drapery hung from rosettes, a tassel between,
+    under a plain fillet."""
+    v0, v1 = 0.4, h - 0.4
+    out = [_st(rect(0.2, v1 - 0.6, L - 0.2, v1), b, 0.3)]
+    sw = 6.0
+    n = max(1, int((L - 1.2) / sw))
+    u0 = (L - n * sw) / 2
+    sh = []
+    for k in range(n + 1):
+        uc = u0 + sw * k
+        sh.append(circle((uc, v1 - 1.3), 0.6, 14))
+        if 0 < k < n or True:
+            sh.append(rect(uc - 0.25, v0 + 0.8, uc + 0.25, v1 - 1.3) ^ rect(0.3, -5, L - 0.3, 50))
+            sh.append(poly([(uc - 0.55, v0 + 0.2), (uc + 0.55, v0 + 0.2), (uc, v0 + 1.2)]) ^ rect(0.3, -5, L - 0.3, 50))
+    for k in range(n):
+        a, c_ = u0 + sw * k + 0.7, u0 + sw * (k + 1) - 0.7
+        pts = [(a + (c_ - a) * t, v1 - 1.4 - (v1 - v0 - 2.0) * math.sin(math.pi * t)) for t in np.linspace(0, 1, 13)]
+        sh.append(stroke(pts, 0.6))
+        pts2 = [(a + (c_ - a) * (0.15 + 0.7 * t), v1 - 1.2 - (v1 - v0 - 2.8) * math.sin(math.pi * t)) for t in np.linspace(0, 1, 9)]
+        sh.append(stroke(pts2, 0.5))
+    out.append(_st(_clean(cs_union(sh)) ^ rect(0.2, v0, L - 0.2, v1), b, 0.35))
+    return out, []
+
+
+def course_fvdentil(L, h, b, pitch, margin, p):
+    """Federal dentils, small and close, with a bead under them."""
+    out = [_st(rect(0.2, 0.2, L - 0.2, 0.9), b, 0.35)]
+    pu = 1.3
+    n = max(1, int((L - 0.8) / pu))
+    u0 = (L - n * pu) / 2
+    dents = cs_union([rect(u0 + pu * k + 0.2, 0.9, u0 + pu * k + pu - 0.3, h - 0.2) for k in range(n)])
+    out.append(_st(dents, b, 0.5))
+    return out
+
+
+def bracket_fvmodillion(h, d, t):
+    """A Federal modillion (side profile): a long horizontal block under the soffit, its front
+    rolled down in a scroll, its back square to the wall."""
+    body = rect(0.0, -min(h, 1.8), d - 0.6, 0.0)
+    roll = circle((d - 0.9, -min(h, 1.8) + 0.2), min(h, 1.8) * 0.55, 18)
+    return cs_union([body, roll]) ^ rect(0.0, -h, d, 0.0)
+
+
+CO.FRIEZE_EXTRA.update(fvcorbel=frieze_fvcorbel, fvdiaper=frieze_fvdiaper, fvswags=frieze_fvswags)
+CO.COURSE_EXTRA.update(fvtooled=course_fvtooled, fvbead=course_fvbead, fvdentil=course_fvdentil)
+TW.BRACKET_EXTRA.update(fvmodillion=bracket_fvmodillion)
+
+
+# ---- windows, doors, shutters
+def _sash66(w, h, pl, plug_cs, meet=0.6, cols=3, rows=2):
+    """Six over six: two sashes of cols x rows lights and a meeting rail."""
+    inner = plug_cs.offset(-0.6, MIT, 4.0)
+    u0, v0, u1, v1 = inner.bounds()
+    vm = (v0 + v1) / 2
+    lo, hi = rect(u0, v0, u1, vm - meet / 2), rect(u0, vm + meet / 2, u1, v1)
+    bars = (_muntins(lo, cols, rows) ^ lo) + (_muntins(hi, cols, rows) ^ hi)
+    return _glazed([ext(plug_cs, -pl, -0.6)], lo + hi, pl, bars, plug_cs)
+
+
+def window_fvmain(w=9.0, h=19.0, A=0.6):
+    """The main floor's window: six over six in a narrow wood casing, under a tooled limestone
+    lintel with a raised keystone and splayed ends, on a projecting stone sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash66(w, h, pl, plug_cs)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.7)]
+    vh = h + A - 0.01
+    lin = poly([(-X - 0.6, vh), (X + 0.6, vh), (X + 1.6, vh + 3.0), (-X - 1.6, vh + 3.0)])
+    parts.append(ext(lin, 0.0, 1.0))
+    parts.append(ext(cs_union([rect(x, vh + 0.5, x + 0.4, vh + 2.6) for x in np.arange(-X - 0.2, X + 0.4, 0.9)]) ^ lin, 0.99, 1.15))
+    parts.append(ext(poly([(-1.1, vh - 0.6), (1.1, vh - 0.6), (1.5, vh + 3.6), (-1.5, vh + 3.6)]), 0.0, 1.5))
+    parts.append(chamfer_box(-X - 1.2, -1.4, X + 1.2, 0.01, 0.0, 1.6, c=0.4, bottom=1.6))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 3.6, -1.4)
+
+
+def window_fvupper(w=9.0, h=16.0, A=0.6):
+    """The upper storey's window: six over six (shorter), a plain limestone lintel with a
+    tooled face and a sill."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash66(w, h, pl, plug_cs, rows=2)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.7)]
+    vh = h + A - 0.01
+    lin = rect(-X - 1.0, vh, X + 1.0, vh + 2.4)
+    parts.append(ext(lin, 0.0, 1.0))
+    parts.append(ext(cs_union([rect(x, vh + 0.4, x + 0.4, vh + 2.0) for x in np.arange(-X - 0.6, X + 0.6, 0.9)]) ^ lin, 0.99, 1.15))
+    parts.append(chamfer_box(-X - 1.0, -1.2, X + 1.0, 0.01, 0.0, 1.4, c=0.4, bottom=1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 2.4, -1.2)
+
+
+def window_fvbase(w=9.0, h=12.0, A=0.6):
+    """The stone storey's window: three over three under a heavy stone lintel of three
+    voussoirs, a plain sill (the street face of the walk-out storey)."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    sash = _sash66(w, h, pl, plug_cs, cols=3, rows=1)
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.7)]
+    vh = h + A - 0.01
+    for a, c_, top in ((-X - 1.4, -1.3, 3.0), (-1.3, 1.3, 3.6), (1.3, X + 1.4, 3.0)):
+        parts.append(chamfer_box(a + 0.15, vh, c_ - 0.15, vh + top, 0.0, 1.1, c=0.3, bottom=0.5))
+    parts.append(chamfer_box(-X - 0.8, -1.2, X + 0.8, 0.01, 0.0, 1.4, c=0.4, bottom=1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, vh + 3.6, -1.2)
+
+
+def door_fvfront(w=9.6, h=21.0, side=2.4, A=0.8):
+    """The Fevre's front door, Federal: a six-panel leaf between leaded sidelights over little
+    panels, an elliptical fanlight of radiating leads over all, reeded pilasters, and a
+    limestone lintel with a keystone over the arch."""
+    W = w + 2 * (side + 0.6)
+    rise = W * 0.22
+    vs = h
+    R = (W * W / 4 + rise * rise) / (2 * rise)
+    arc = [(R * math.sin(a), vs - (R - rise) + R * math.cos(a)) for a in np.linspace(math.asin(W / 2 / R), -math.asin(W / 2 / R), 25)]
+    op = poly([(-W / 2, 0.0), (W / 2, 0.0)] + arc)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0)]
+    leaf = rect(-w / 2, 0.0, w / 2, h - 0.6)
+    parts_s.append(ext(leaf, -pl, -0.6))
+    for j in range(3):
+        for sg in (-1, 1):
+            vb = 1.0 + j * (h - 2.4) / 3
+            pan = rect(min(sg * 0.5, sg * (w / 2 - 0.9)), vb, max(sg * 0.5, sg * (w / 2 - 0.9)), vb + (h - 2.4) / 3 - 0.8)
+            parts_s.append(ext(pan - pan.offset(-0.45, MIT, 4.0), -0.65, -0.2))
+            parts_s.append(chamfer_box(*pan.offset(-0.9, MIT, 4.0).bounds(), -0.65, 0.35, c=0.2))
+    fan = op ^ rect(-50, h - 0.01, 50, 100)
+    side_l = [rect(min(sg * (w / 2), sg * (W / 2 - 0.4)), h * 0.32, max(sg * (w / 2), sg * (W / 2 - 0.4)), h - 0.6) for sg in (-1, 1)]
+    glass = cs_union(side_l) + fan.offset(-0.6, MIT, 4.0)
+    for sg in (-1, 1):
+        sl = rect(min(sg * (w / 2 - 0.01), sg * (W / 2 - 0.2)), 0.0, max(sg * (w / 2 - 0.01), sg * (W / 2 - 0.2)), h - 0.6)
+        parts_s.append(ext(sl, -pl, -0.6))
+    parts_s.append(ext(rect(-W / 2, h - 0.6, W / 2, h + 0.01), -pl, -0.4))
+    parts_s = [p - ext(glass, -pl - 1, 0.0) for p in parts_s]
+    parts_s.append(ext(glass, -pl, -pl + O.GLASS))
+    leads = [stroke([(0.0, h), (R * 1.2 * math.sin(a), h + R * 1.2 * math.cos(a))], RIB) for a in np.linspace(-1.2, 1.2, 9)]
+    leads.append(circle((0.0, h), 1.6, 24) - circle((0.0, h), 1.0, 24))
+    for sg in (-1, 1):
+        x0, x1 = sorted((sg * (w / 2), sg * (W / 2 - 0.4)))
+        leads += [stroke([(x0, y), (x1, y + (x1 - x0))], RIB) for y in np.arange(h * 0.32 - 1.0, h - 1.0, 1.8)]
+        leads += [stroke([(x0, y + (x1 - x0)), (x1, y)], RIB) for y in np.arange(h * 0.32 - 1.0, h - 1.0, 1.8)]
+    parts_s.append(ext(cs_union(leads) ^ glass.offset(0.1, MIT, 4.0), -pl + O.GLASS - 0.01, -0.5))
+    X = W / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, RND) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8)]
+    for sg in (-1, 1):                         # reeded pilasters
+        x0, x1 = sorted((sg * (W / 2 + 0.2), sg * (W / 2 + 1.8)))
+        parts.append(chamfer_box(x0, 0.0, x1, h + 0.4, 0.0, 1.0, c=0.2, square=("v0",)))
+        parts.append(ext(cs_union([rect(x, 1.0, x + 0.3, h - 0.6) for x in np.arange(x0 + 0.25, x1 - 0.2, 0.55)]), 0.99, 1.2))
+    top = h + rise + A
+    lin = poly([(-X - 2.0, h + 0.4), (X + 2.0, h + 0.4), (X + 2.0, top + 0.8), (-X - 2.0, top + 0.8)]) - op.offset(A - 0.01, RND)
+    parts.append(ext(lin, 0.0, 1.0))
+    parts.append(ext(poly([(-1.2, top - 1.6), (1.2, top - 1.6), (1.6, top + 1.4), (-1.6, top + 1.4)]), 0.0, 1.5))
+    parts_s = [m ^ ext(plug_cs, -pl - 1.0, 1.0) for m in parts_s]
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, top + 1.4, 0.0)
+
+
+def door_fvplain(w=8.4, h=19.0, A=0.8):
+    """The walk-out storey's and the garden door: a board-and-batten door with a four-light
+    transom, under a flat stone lintel."""
+    op = rect(-w / 2, 0.0, w / 2, h)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    parts_s = [ext(plug_cs - plug_cs.offset(-0.5, MIT, 4.0), -pl, 0.0), ext(plug_cs, -pl, -0.6)]
+    vt = h - 3.6
+    tr = rect(-w / 2 + 0.6, vt + 0.4, w / 2 - 0.6, h - 0.6)
+    parts_s = [p - ext(tr, -pl - 1, 0.0) for p in parts_s]
+    parts_s.append(ext(tr, -pl, -pl + O.GLASS))
+    parts_s.append(ext(cs_union([rect(x - RIB / 2, vt, x + RIB / 2, h) for x in np.linspace(-w / 2, w / 2, 5)[1:-1]]) ^ tr.offset(0.1, MIT, 4.0),
+                       -pl + O.GLASS - 0.01, -0.5))
+    bb = cs_union([rect(x - 0.25, 0.4, x + 0.25, vt - 0.2) for x in np.arange(-w / 2 + 1.4, w / 2 - 1.0, 1.4)])
+    parts_s.append(ext(_clean(plug_cs.offset(-0.6, MIT, 4.0) ^ rect(-50, 0.0, 50, vt) - bb, 0.2), -0.65, -0.3))
+    for v in (2.0, vt - 2.0):
+        parts_s.append(ext(rect(-w / 2 + 0.8, v - 0.5, w / 2 - 0.8, v + 0.5), -0.65, -0.1))
+    X = w / 2 + A
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS),
+             ext((op.offset(A, MIT, 4.0) - op) ^ rect(-50, 0.0, 50, 100), 0.0, 0.8),
+             chamfer_box(-X - 1.2, h + A - 0.01, X + 1.2, h + A + 2.6, 0.0, 1.1, c=0.3, bottom=0.6)]
+    parts_s = [m ^ ext(plug_cs, -pl - 1.0, 1.0) for m in parts_s]
+    return O._one_piece(parts_s, parts, op, plug_cs, pl, h + A + 2.6, 0.0)
+
+
+def shutter_fevre(w, h, t=0.8, stile=0.6):
+    """The Fevre's shutter: two fields of fixed louvers above and below a lock rail at
+    mid-height, a little iron holdback (an S) on the outer stile. Local frame as
+    features.shutter (u 0..w, v 0..h, back at w = 0; prints face-up)."""
+    web = 0.4
+    rv = round(h * 0.5 / 0.2) * 0.2
+    parts = [ext(rect(0, 0, w, h) - rect(stile, stile, w - stile, h - stile), 0.0, t),
+             ext(rect(stile, rv - stile / 2, w - stile, rv + stile / 2), 0.0, t)]
+    for f0, f1 in ((stile, rv - stile / 2), (rv + stile / 2, h - stile)):
+        field = rect(stile, f0, w - stile, f1)
+        parts.append(ext(field, 0.0, web))
+        b = field.bounds()
+        n = max(1, int((b[3] - b[1] - 0.5) / 1.0))
+        pt = (b[3] - b[1] - 0.5) / n
+        slats = [rect(b[0] - 0.1, b[1] + 0.5 + k * pt, b[2] + 0.1, b[1] + 0.5 + k * pt + min(RIB + 0.05, pt - 0.5)) for k in range(n)]
+        parts.append(ext(cs_union(slats) ^ field.offset(0.05), web, t - 0.2))
+    return union(parts)
+
+
+# ---- the porch at the garden door: post, railing, spandrel, skirt, roof edge
+def post_fevre(h, collar=None, abacus=3.0, slot=None):
+    """The garden porch's post: a slender Greek Doric column without a base, fluted in eight
+    shallow facets, under a square echinus and abacus."""
+    from .porchwork import _plinth, _revolve, _top
+    z1 = h - 2.8
+    prof = [(0.0, 1.19), (1.3, 1.19)] + [(1.3 - 0.25 * (z - 1.2) / (z1 - 1.2), z) for z in np.linspace(1.2, z1, 6)] + [(1.05, z1)]
+    body = _revolve(prof, seg=8) + _plinth(3.0, 1.2)
+    return body + _top(h, abacus / 2, z1, 1.05, slot, seg=8)
+
+
+def baluster_fevre(h, seg=16):
+    """A plain square-ish turned baluster: a slender shaft with a bead near the top."""
+    from .porchwork import _revolve
+    prof = [(0.0, 0.0), (0.45, 0.0), (0.45, 0.4), (0.32, 0.6), (0.32, h - 1.2), (0.45, h - 1.0), (0.45, h - 0.7),
+            (0.32, h - 0.5), (0.32, h), (0.0, h)]
+    return _revolve(prof, seg=seg)
+
+
+def spandrel_fvplain(u0, u1, v_bot, v_top):
+    """The garden porch's beam: a Greek Revival frieze board with a row of guttae drops under
+    its fillet (no arches)."""
+    H = v_top - v_bot
+    out = [rect(u0, v_top - H * 0.45, u1, v_top)]
+    n = max(1, int((u1 - u0 - 1.0) / 1.6))
+    for k in range(n):
+        u = u0 + 0.8 + (u1 - u0 - 1.6) * (k + 0.5) / n
+        out.append(poly([(u - 0.5, v_top - H * 0.45 + 0.01), (u + 0.5, v_top - H * 0.45 + 0.01), (u + 0.3, v_top - H * 0.45 - 0.9),
+                         (u - 0.3, v_top - H * 0.45 - 0.9)]))
+    return cs_union(out)
+
+
+def skirt_fvstone(reg, d=1.2):
+    """The garden porch's skirt: a low limestone wall, coursed, under a smooth cap."""
+    u0, v0, u1, v1 = reg.bounds()
+    st = stone_fevre(reg - rect(u0 - 1, v1 - 1.0, u1 + 1, v1 + 1), seed=7)
+    return st + M.extrude(rect(u0 - 1, v1 - 1.0, u1 + 1, v1 + 1) ^ reg, d)
+
+
+def edge_fvdentilcap(L, z0, zc):
+    """The garden porch roof's edge: a fascia with a row of square dentils under a cap."""
+    n = max(1, int((L - 1.0) / 1.4))
+    cs = cs_union([rect(u - 0.45, z0 + 0.3, u + 0.45, zc - 1.0) for u in (0.5 + (L - 1.0) * (k + 0.5) / n for k in range(n))])
+    return cs + rect(0.3, zc - 0.9, L - 0.3, zc), 0.6
+
+
+PW.POSTS.update(fevre=post_fevre)
+PW.BALUSTERS.update(fevre=(baluster_fevre, 1.8))
+PW.FRIEZES.update(fvplain=spandrel_fvplain)
+PW.SKIRTS.update(fvstone=skirt_fvstone)
+FT.EDGE_EXTRA.update(fvdentilcap=edge_fvdentilcap)
+
+
+# ---- the front stair, its railing, the parapet copings, the street wall and terrace walls
+def stair_fevre(x0, x1, y0, y1, z0, z1, n=12, landing=(14.0, 28.0), arch=True):
+    """The stone stair climbing along the front wall: ``n`` steps rising from x0 (at z0) toward
+    x1, a landing (length, width along x) at the top at z1 on a pier whose arch opens to the
+    walk-out storey's door under it; the stair's outer face (y0) is plain dressed stone. Built
+    in world coordinates (the wall at y1). Prints upright."""
+    ll, lw = landing
+    xs1 = x1 - lw                                       # the flight's top edge
+    parts = []
+    rise = (z1 - z0) / n
+    run = (xs1 - x0) / n
+    for k in range(n):
+        za = z0 + rise * (k + 1)
+        parts.append(box([x0 + run * k, y0, z0], [xs1 + 0.01, y1, round(za / 0.2) * 0.2]))
+    parts.append(box([xs1, y0, z0], [x1, y1, z1]))
+    m = union(parts)
+    if not arch:
+        return m
+    # the arch through the landing's pier, front to back
+    from .core import poly as P_
+    xa, xb = xs1 + 6.0, x1 - 6.0
+    sp = z0 + 16.0
+    r = (xb - xa) / 2
+    arch = [(xa, z0 - 1.0), (xb, z0 - 1.0)] + [((xa + xb) / 2 + r * math.cos(a), sp + r * math.sin(a)) for a in np.linspace(0, math.pi, 20)]
+    cut = M.extrude(P_(arch), y1 - y0 + 2.0).transform([[1, 0, 0, 0], [0, 0, 1, y0 - 1.0], [0, 1, 0, 0]])
+    m = m - cut
+    # nosings: each tread's front edge rounded over a little (a chamfer step on the stringer)
+    return m
+
+
+def stair_rail_fevre(L, rise, h=9.0):
+    """The iron railing along the stair's open side, flat (u along the run, v up, w 0..0.9):
+    a sloping hand rail and bottom rail, square balusters plumb every 1.8, a newel at each end
+    with a ball, and tabs under the bottom rail into slots in the stair's top. Prints on its
+    back."""
+    t = 0.9
+    s = rise / L
+    parts = []
+    def band(v0, wd):
+        return poly([(0.0, v0), (L, v0 + rise), (L, v0 + rise + wd), (0.0, v0 + wd)])
+    parts.append(band(h - 1.0, 1.0))
+    parts.append(band(1.4, 0.8))
+    n = max(2, int(L / 1.8))
+    for k in range(n + 1):
+        u = 0.4 + (L - 0.8) * k / n
+        vb = s * u
+        parts.append(rect(u - 0.35, vb + 1.4, u + 0.35, vb + h - 0.99))
+    for u, vb in ((0.6, 0.0), (L - 0.6, rise)):
+        parts.append(rect(u - 0.7, vb - 0.6, u + 0.7, vb + h + 0.8))
+        parts.append(circle((u, vb + h + 1.4), 0.8, 16))
+    for u in (L * 0.25, L * 0.75):
+        parts.append(rect(u - 1.2, s * u - 0.8, u + 1.2, s * u + 1.41))
+    return ext(cs_union(parts), 0.0, t)
+
+
+def coping_fevre(L, slope, d_eave, w=4.4, th=1.6, over=0.6):
+    """The parapet's limestone coping in the gable wall's frame (u along, v up from the eave,
+    w across the wall, centred): a band ``th`` thick following both rakes, ``over`` past the
+    wall's faces, the ends squared off at the shoulders. Prints on its side (lying flat)."""
+    s = slope
+    c = math.hypot(1.0, s)
+    tip = np.array([L / 2, s * (L / 2 + d_eave)])
+    a_l, a_r = np.array([-d_eave + 0.0, 0.0]), np.array([L + d_eave, 0.0])
+    band = []
+    for a in (a_l, a_r):
+        n = np.array([-s, 1.0]) / c if a[0] < L / 2 else np.array([s, 1.0]) / c
+        band.append(poly([tuple(a), tuple(tip), tuple(tip + n * th), tuple(a + n * th)]))
+    cs = cs_union(band) ^ rect(0.0, -5.0, L, 500)
+    return ext(cs, -w / 2, w / 2)
+
+
+def retaining_fevre(L, h, t=3.0, cap=1.2, seed=0):
+    """A limestone retaining wall, ``L`` long, ``h`` high, ``t`` thick (u along, v up, w out),
+    its face in stone_fevre, a smooth coping proud on top. Prints upright on its foot."""
+    body = box([0.0, 0.0, -t], [L, h - cap, 0.0])
+    face = stone_fevre(rect(0.0, 0.0, L, h - cap - 0.01), seed=seed)
+    cp = box([-0.6, h - cap - 0.01, -t - 0.6], [L + 0.6, h, 0.6])
+    # (u, v, w) solid: x = u, y = v, z = w
+    return body + face + cp
+
+
+def window_fvlunette(w=14.0, A=0.7):
+    """The gable's lunette: a half-round attic light with radiating bars round a little hub,
+    in a limestone arch of five voussoirs with a keystone, on a sill."""
+    r = w / 2
+    pts = [(-r, 0.0), (r, 0.0)] + [(r * math.cos(a), r * math.sin(a)) for a in np.linspace(0.0, math.pi, 25)][1:-1]
+    op = poly(pts)
+    plug_cs = op.offset(-O.CLR, MIT, 4.0)
+    pl = O.PLUG
+    inner = plug_cs.offset(-0.5, MIT, 4.0)
+    bars = cs_union([stroke([(0.0, 0.0), ((r + 1) * math.cos(a), (r + 1) * math.sin(a))], RIB) for a in np.linspace(0.45, math.pi - 0.45, 4)])
+    bars = bars + circle((0.0, 0.0), 1.4, 20)
+    sash = _glazed([ext(plug_cs, -pl, -0.6)], inner, pl, bars, plug_cs)
+    ring = (op.offset(A + 1.6, RND) - op.offset(A - 0.05, RND)) ^ rect(-50, 0.0, 50, 50)
+    parts = [ext(op - op.offset(-RIB, MIT, 4.0), 0.0, O.CAS), ext(ring, 0.0, 1.0)]
+    for a in np.linspace(0.0, math.pi, 6)[1:-1]:
+        ca, sa = math.cos(a), math.sin(a)
+        parts.append(ext(stroke([((r + A) * ca, (r + A) * sa), ((r + A + 1.6) * ca, (r + A + 1.6) * sa)], 0.35), 0.99, 1.15))
+    rk = r + A
+    parts.append(ext(poly([(-1.0, rk - 0.4), (1.0, rk - 0.4), (1.4, rk + 2.4), (-1.4, rk + 2.4)]), 0.0, 1.4))
+    parts.append(chamfer_box(-rk - 1.8, -1.2, rk + 1.8, 0.01, 0.0, 1.4, c=0.4, bottom=1.4))
+    return O._one_piece(sash, parts, op, plug_cs, pl, rk + 2.4, -1.2)
