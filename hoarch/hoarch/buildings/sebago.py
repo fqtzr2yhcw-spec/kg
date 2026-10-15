@@ -291,9 +291,14 @@ def _rakes(kit, name, rf, roof, cut=None, d_eave=D_EAVE, rake=RAKE, w_out=0.45):
         kit.add(f"{name}-{j}", "White", r_, P=inv34(A), group="roof")
 
 
-def _steps(xa, xb, y0, dy, n=3):
-    """Granite steps from a sill at ZF at y0 out along dy, standing on z = 0."""
+def _steps(xa, xb, y0, dy, n=3, carry=False):
+    """Granite steps from a sill at ZF at y0 out along dy, standing on z = 0; with ``carry`` a
+    block behind them under a deck's rim and planks (their glue face)."""
     out = []
+    if carry:
+        ya, yb = sorted((y0, y0 - dy * 1.0))
+        yc, yd = sorted((y0 - dy * 1.0, y0 - dy * 1.8))
+        out += [box([xa, ya, 0.0], [xb, yb, ZF - 2.6]), box([xa, yc, 0.0], [xb, yd, ZF - 1.4])]
     rise = ZF / (n + 1)
     for j in range(n):
         z = ZF - rise * (j + 1)
@@ -473,7 +478,7 @@ def build(kit=None):
     _place_inserts(kit, OPEN_K, keep)
     for k, (op, casing, Aa) in enumerate(arches):
         kit.add(f"ARCH-{k}", "White", casing.transform(Aa), P=inv34(Aa), key="ARCH-sebago", group="inserts")
-        kit.add(f"WOODPILE-{k}", "Wood", N.woodpile_sebago(L=8.8, d=9.0, h=16.0, seed=k).translate([BAYS[k] - 3.4, KY0 + 4.8, 0.0]),
+        kit.add(f"WOODPILE-{k}", "Wood", N.woodpile_sebago(L=8.8, d=9.0, h=16.0, seed=k).translate([BAYS[k] - 3.4, KY0 + T + 1.3 + 0.2, 0.0]),
                 group="stoop")
     kroof = kroof - lip_keep(SHED.cs, T, ZWK)
     kit.add("SHED-ROOF", "Shingles", max(kroof.decompose(), key=lambda m_: m_.volume()), group="roof")
@@ -521,12 +526,13 @@ def build(kit=None):
     # --- the footings, the steps and the ramp
     house_keep = union(keep)
     bases = {b.name: foundation([b], 0.0, ZF, style="sbgranite", seed=k * 5) for k, b in enumerate(BLOCKS)}
-    kit.add("BASE", "Granite", bases["big"] - house_keep, group="foundation")
+    flat = box([28.0 - 8.0, BY0 - 4.0, -1.0], [28.0 + 8.0, BY0 - 0.8, ZF + 1.0])          # (the steps glue to a dressed face)
+    kit.add("BASE", "Granite", bases["big"] - house_keep - flat, group="foundation")
     kit.add("ELL-BASE", "Granite", bases["ell"] - bases["big"] - core["big"] - house_keep, group="foundation")
     kit.add("SHED-BASE", "Granite", bases["shed"] - bases["ell"] - bases["barn"] - core["ell"] - core["barn"] - house_keep, group="foundation")
     kit.add("BARN-BASE", "Granite", bases["barn"] - house_keep, group="foundation")
-    kit.add("STEPS", "Granite", _steps(28.0 - 8.0, 28.0 + 8.0, BY0 - 1.6, -1.0) - house_keep, group="stoop")
-    kit.add("PORCH-STEPS", "Granite", _steps(LX0 + 5.2, LX0 + 21.4, LY0 - 13.1, -1.0), group="stoop")
+    kit.add("STEPS", "Granite", _steps(28.0 - 8.0, 28.0 + 8.0, BY0 - 0.8, -1.0) - house_keep, group="stoop")
+    kit.add("PORCH-STEPS", "Granite", _steps(LX0 + 5.2, LX0 + 21.4, LY0 - 13.0, -1.0, carry=True), group="stoop")
     ramp = M.hull_points([(x, y, z) for x in (XD0 + 3.0, XD1 - 3.0) for (y, z) in
                           ((RY0 - PJ - 1.6, 0.0), (RY0 - PJ - 1.6, ZF), (RY0 - PJ - 16.0, 0.0), (RY0 - PJ - 16.0, 0.6))])
     ramp = ramp - union([box([XD0, y - 0.15, ZF - 3.0], [XD1, y + 0.15, ZF + 2.0]) for y in np.arange(RY0 - PJ - 4.0, RY0 - PJ - 15.0, -3.2)])
