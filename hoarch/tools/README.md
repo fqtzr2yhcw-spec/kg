@@ -46,9 +46,9 @@ and the details to `out/<building>/u/` (`final.log`, `printcheck.log`, `glue_aud
 
 1. the build-stage pictures for the guide (`hoarch.stages`);
 2. the showcase renders copied in as the package's renders;
-3. `tools/package.py`: the plates, PRINT_NOTES.txt (from `hoarch/assembly.py`: the assembly
-   steps, the print notes, the one-line joinery summary) and the renders, zipped;
-4. the build guide PDF (`hoarch.guide`), put into the zip;
+3. the build guide PDF (`hoarch.guide`);
+4. `tools/package.py`: the plates, PRINT_NOTES.txt (from `hoarch/assembly.py`: the assembly
+   steps, the print notes, the one-line joinery summary), the renders and the guide, zipped;
 5. the version (`hoarch.versions`): `out/<Name>_Print_Files_vX.Y.zip` with its VERSION.txt, the
    older zip removed;
 6. the Bambu Studio project for the P2S (`hoarch.bambu`): `out/<Name>_P2S_vX.Y.3mf`.

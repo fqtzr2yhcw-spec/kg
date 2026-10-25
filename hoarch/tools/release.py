@@ -2,8 +2,8 @@
 
   1. the build-stage pictures for the guide (hoarch.stages);
   2. the showcase renders become the package's renders (out/<b>/cycles);
-  3. the print package and zip (tools/package.py);
-  4. the build guide PDF, put into the zip (hoarch.guide);
+  3. the build guide PDF (hoarch.guide);
+  4. the print package and zip, the guide in it (tools/package.py);
   5. the version: the zip renamed <Name>_Print_Files_vX.Y.zip with its VERSION.txt, the older
      release removed (hoarch.versions; add a HISTORY line there first for an update);
   6. the Bambu Studio project for the P2S (hoarch.bambu).
@@ -38,9 +38,8 @@ def release(key, stages=True):
             shutil.copy(s, cyc)
     else:
         print(f"  (no showcase renders in out/{key}/showcase: the zip goes out without renders)")
-    steps = [(["tools/package.py", key], "pkg.log", "package"),
-             (["-m", "hoarch.guide", key], "guide.log", "build guide"),
-             (["-m", "hoarch.guide", "--zip", key], "guide_zip.log", "guide in zip"),
+    steps = [(["-m", "hoarch.guide", key], "guide.log", "build guide"),          # (first, so the zip and its notes have it)
+             (["tools/package.py", key], "pkg.log", "package"),
              (["-m", "hoarch.versions", key], "versions.log", "version"),
              (["-m", "hoarch.bambu", key], "bambu.log", "P2S project")]
     for args, log, label in steps:
