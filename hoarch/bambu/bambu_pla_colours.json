@@ -1,0 +1,542 @@
+[
+{
+"series": "PLA Basic",
+"colour": "Orange",
+"hex": "#FF6A13",
+"code": "10300"
+},
+{
+"series": "PLA Basic",
+"colour": "Pumpkin Orange",
+"hex": "#FF9016",
+"code": "10301"
+},
+{
+"series": "PLA Basic",
+"colour": "Blue Gray",
+"hex": "#5B6579",
+"code": "10602"
+},
+{
+"series": "PLA Basic",
+"colour": "Cobalt Blue",
+"hex": "#0056B8",
+"code": "10604"
+},
+{
+"series": "PLA Basic",
+"colour": "Turquoise",
+"hex": "#00B1B7",
+"code": "10605"
+},
+{
+"series": "PLA Basic",
+"colour": "Cyan",
+"hex": "#0086D6",
+"code": "10603"
+},
+{
+"series": "PLA Basic",
+"colour": "Blue",
+"hex": "#0A2989",
+"code": "10601"
+},
+{
+"series": "PLA Basic",
+"colour": "Gray",
+"hex": "#8E9089",
+"code": "10103"
+},
+{
+"series": "PLA Basic",
+"colour": "Silver",
+"hex": "#A6A9AA",
+"code": "10102"
+},
+{
+"series": "PLA Basic",
+"colour": "Light Gray",
+"hex": "#D1D3D5",
+"code": "10104"
+},
+{
+"series": "PLA Basic",
+"colour": "Dark Gray",
+"hex": "#545454",
+"code": "10105"
+},
+{
+"series": "PLA Basic",
+"colour": "Mistletoe Green",
+"hex": "#3F8E43",
+"code": "10502"
+},
+{
+"series": "PLA Basic",
+"colour": "Bright Green",
+"hex": "#BECF00",
+"code": "10503"
+},
+{
+"series": "PLA Basic",
+"colour": "Bambu Green",
+"hex": "#00AE42",
+"code": "10501"
+},
+{
+"series": "PLA Basic",
+"colour": "Black",
+"hex": "#000000",
+"code": "10101"
+},
+{
+"series": "PLA Basic",
+"colour": "Brown",
+"hex": "#9D432C",
+"code": "10800"
+},
+{
+"series": "PLA Basic",
+"colour": "Cocoa Brown",
+"hex": "#6F5034",
+"code": "10802"
+},
+{
+"series": "PLA Basic",
+"colour": "Beige",
+"hex": "#F7E6DE",
+"code": "10201"
+},
+{
+"series": "PLA Basic",
+"colour": "Pink",
+"hex": "#F55A74",
+"code": "10203"
+},
+{
+"series": "PLA Basic",
+"colour": "Indigo Purple",
+"hex": "#482960",
+"code": "10701"
+},
+{
+"series": "PLA Basic",
+"colour": "Purple",
+"hex": "#5E43B7",
+"code": "10700"
+},
+{
+"series": "PLA Basic",
+"colour": "Magenta",
+"hex": "#EC008C",
+"code": "10202"
+},
+{
+"series": "PLA Basic",
+"colour": "Red",
+"hex": "#C12E1F",
+"code": "10200"
+},
+{
+"series": "PLA Basic",
+"colour": "Maroon Red",
+"hex": "#9D2235",
+"code": "10205"
+},
+{
+"series": "PLA Basic",
+"colour": "Hot Pink",
+"hex": "#F5547C",
+"code": "10204"
+},
+{
+"series": "PLA Basic",
+"colour": "Jade White",
+"hex": "#FFFFFF",
+"code": "10100"
+},
+{
+"series": "PLA Basic",
+"colour": "Yellow",
+"hex": "#F4EE2A",
+"code": "10400"
+},
+{
+"series": "PLA Basic",
+"colour": "Sunflower Yellow",
+"hex": "#FEC600",
+"code": "10402"
+},
+{
+"series": "PLA Basic",
+"colour": "Bronze",
+"hex": "#847D48",
+"code": "10801"
+},
+{
+"series": "PLA Basic",
+"colour": "Gold",
+"hex": "#E4BD68",
+"code": "10401"
+},
+{
+"series": "PLA Matte",
+"colour": "Mandarin Orange",
+"hex": "#F99963",
+"code": "11300"
+},
+{
+"series": "PLA Matte",
+"colour": "Sky Blue",
+"hex": "#56B7E6",
+"code": "11603"
+},
+{
+"series": "PLA Matte",
+"colour": "Marine Blue",
+"hex": "#0078BF",
+"code": "11600"
+},
+{
+"series": "PLA Matte",
+"colour": "Ice Blue",
+"hex": "#A3D8E1",
+"code": "11601"
+},
+{
+"series": "PLA Matte",
+"colour": "Dark Blue",
+"hex": "#042F56",
+"code": "11602"
+},
+{
+"series": "PLA Matte",
+"colour": "Nardo Gray",
+"hex": "#757575",
+"code": "11104"
+},
+{
+"series": "PLA Matte",
+"colour": "Ash Gray",
+"hex": "#9B9EA0",
+"code": "11102"
+},
+{
+"series": "PLA Matte",
+"colour": "Apple Green",
+"hex": "#C2E189",
+"code": "11502"
+},
+{
+"series": "PLA Matte",
+"colour": "Grass Green",
+"hex": "#61C680",
+"code": "11500"
+},
+{
+"series": "PLA Matte",
+"colour": "Dark Green",
+"hex": "#68724D",
+"code": "11501"
+},
+{
+"series": "PLA Matte",
+"colour": "Charcoal",
+"hex": "#000000",
+"code": "11101"
+},
+{
+"series": "PLA Matte",
+"colour": "Dark Chocolate",
+"hex": "#4D3324",
+"code": "11802"
+},
+{
+"series": "PLA Matte",
+"colour": "Latte Brown",
+"hex": "#D3B7A7",
+"code": "11800"
+},
+{
+"series": "PLA Matte",
+"colour": "Dark Brown",
+"hex": "#7D6556",
+"code": "11801"
+},
+{
+"series": "PLA Matte",
+"colour": "Caramel",
+"hex": "#AE835B",
+"code": "11803"
+},
+{
+"series": "PLA Matte",
+"colour": "Sakura Pink",
+"hex": "#E8AFCF",
+"code": "11201"
+},
+{
+"series": "PLA Matte",
+"colour": "Lilac Purple",
+"hex": "#AE96D4",
+"code": "11700"
+},
+{
+"series": "PLA Matte",
+"colour": "Scarlet Red",
+"hex": "#DE4343",
+"code": "11200"
+},
+{
+"series": "PLA Matte",
+"colour": "Terracotta",
+"hex": "#B15533",
+"code": "11203"
+},
+{
+"series": "PLA Matte",
+"colour": "Plum",
+"hex": "#950051",
+"code": "11204"
+},
+{
+"series": "PLA Matte",
+"colour": "Dark Red",
+"hex": "#BB3D43",
+"code": "11202"
+},
+{
+"series": "PLA Matte",
+"colour": "Ivory White",
+"hex": "#FFFFFF",
+"code": "11100"
+},
+{
+"series": "PLA Matte",
+"colour": "Bone White",
+"hex": "#CBC6B8",
+"code": "11103"
+},
+{
+"series": "PLA Matte",
+"colour": "Lemon Yellow",
+"hex": "#F7D959",
+"code": "11400"
+},
+{
+"series": "PLA Matte",
+"colour": "Desert Tan",
+"hex": "#E8DBB7",
+"code": "11401"
+},
+{
+"series": "PLA Tough",
+"colour": "Orange",
+"hex": "#FF7F41",
+"code": "12300"
+},
+{
+"series": "PLA Tough",
+"colour": "Light Blue",
+"hex": "#0085AD",
+"code": "12600"
+},
+{
+"series": "PLA Tough",
+"colour": "Lavender Blue",
+"hex": "#6667AB",
+"code": "12700"
+},
+{
+"series": "PLA Tough",
+"colour": "Gray",
+"hex": "#515A6C",
+"code": "12102"
+},
+{
+"series": "PLA Tough",
+"colour": "Silver",
+"hex": "#898D8D",
+"code": "12103"
+},
+{
+"series": "PLA Tough",
+"colour": "Pine Green",
+"hex": "#00482B",
+"code": "12500"
+},
+{
+"series": "PLA Tough",
+"colour": "Black",
+"hex": "#25282A",
+"code": "12101"
+},
+{
+"series": "PLA Tough",
+"colour": "Vermilion Red",
+"hex": "#DD3C22",
+"code": "12200"
+},
+{
+"series": "PLA Tough",
+"colour": "White",
+"hex": "#F9F7F4",
+"code": "12100"
+},
+{
+"series": "PLA Tough",
+"colour": "Yellow",
+"hex": "#FEDB00",
+"code": "12400"
+},
+{
+"series": "PLA Lite",
+"colour": "Black",
+"hex": "#000000",
+"code": "16100"
+},
+{
+"series": "PLA Lite",
+"colour": "Yellow",
+"hex": "#EFE255",
+"code": "16400"
+},
+{
+"series": "PLA Lite",
+"colour": "White",
+"hex": "#FFFFFF",
+"code": "16103"
+},
+{
+"series": "PLA Lite",
+"colour": "Cyan",
+"hex": "#4DAFDA",
+"code": "16600"
+},
+{
+"series": "PLA Lite",
+"colour": "Red",
+"hex": "#C6001A",
+"code": "16200"
+},
+{
+"series": "PLA Lite",
+"colour": "Gray",
+"hex": "#999D9D",
+"code": "16101"
+},
+{
+"series": "PLA Tough+",
+"colour": "Black",
+"hex": "#000000",
+"code": "12104"
+},
+{
+"series": "PLA Tough+",
+"colour": "Gray",
+"hex": "#AFB1AE",
+"code": "12105"
+},
+{
+"series": "PLA Tough+",
+"colour": "Silver",
+"hex": "#959698",
+"code": "12106"
+},
+{
+"series": "PLA Tough+",
+"colour": "White",
+"hex": "#FFFFFF",
+"code": "12107"
+},
+{
+"series": "PLA Tough+",
+"colour": "Orange",
+"hex": "#DC3A27",
+"code": "12301"
+},
+{
+"series": "PLA Tough+",
+"colour": "Yellow",
+"hex": "#F4D53F",
+"code": "12401"
+},
+{
+"series": "PLA Tough+",
+"colour": "Cyan",
+"hex": "#009BD8",
+"code": "12601"
+},
+{
+"series": "PLA Lite",
+"colour": "Blue",
+"hex": "#004EA8",
+"code": "16601"
+},
+{
+"series": "PLA Lite",
+"colour": "Sunflower Yellow",
+"hex": "#FFB549",
+"code": "16401"
+},
+{
+"series": "PLA Lite",
+"colour": "Green",
+"hex": "#00BB31",
+"code": "16501"
+},
+{
+"series": "PLA Lite",
+"colour": "Orange",
+"hex": "#FF671F",
+"code": "16301"
+},
+{
+"series": "PLA Lite",
+"colour": "Matte Beige",
+"hex": "#ECC3B2",
+"code": "16700"
+},
+{
+"series": "PLA Lite",
+"colour": "Cocoa Brown",
+"hex": "#745335",
+"code": "16800"
+},
+{
+"series": "PLA Lite",
+"colour": "Dark Gray",
+"hex": "#8C8B8C",
+"code": "16102"
+},
+{
+"series": "PLA Pure",
+"colour": "Pure White",
+"hex": "#FFFFFF",
+"code": "17100"
+},
+{
+"series": "PLA Pure",
+"colour": "Absolute Black",
+"hex": "#000000",
+"code": "17101"
+},
+{
+"series": "PLA Pure",
+"colour": "Milky Pink",
+"hex": "#F7CED7",
+"code": "17200"
+},
+{
+"series": "PLA Pure",
+"colour": "Baby Blue",
+"hex": "#A4DBE8",
+"code": "17600"
+},
+{
+"series": "PLA Pure",
+"colour": "Apricot",
+"hex": "#FFB673",
+"code": "17300"
+}
+]
