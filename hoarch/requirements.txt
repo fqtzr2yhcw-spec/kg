@@ -1,0 +1,13 @@
+# hoarch: python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
+manifold3d>=3.0      # the geometry kernel
+numpy
+trimesh              # analysis: the glue audit
+rtree                # trimesh's spatial index (closest-point queries)
+scipy
+reportlab            # build guide PDFs
+pillow
+pypdf
+matplotlib
+bpy                  # Blender as a Python module, for the renders (needs Python 3.11)
+# Also needed, outside Python: PrusaSlicer (its command line, `prusa-slicer`, slices the
+# plates for the time and gram estimates); Bambu Studio to open the P2S projects.
