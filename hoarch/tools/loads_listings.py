@@ -103,7 +103,7 @@ def data(key):
     sizes = []
     for p in man["parts"]:
         d = sorted(p["size_mm"], reverse=True)
-        sizes.append((p["instances"][0].split("__")[-1], p["qty"], d))
+        sizes.append((re.sub(r"-\d+$", "", p["instances"][0].split("__")[-1]), p["qty"], d))
     return dict(pk=pk, ex=ex, grams=grams, mins=mins, fil=fil, mat=mat, price=price, net_e=net_e, net_y=net_y,
                 sizes=sizes, nplates=len(man["plates"]))
 
