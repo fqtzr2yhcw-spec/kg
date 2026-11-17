@@ -259,7 +259,8 @@ PACKS = {
         scene=lambda: F.pack_scene("nacelle"),
         blurb="The rest of a wind turbine on the rails: the nacelle on its yellow transport frame, with panel seams, roof "
               "hatch, louvred intakes, lifting points and the main-shaft flange at the nose, and the cast rotor hub on its "
-              "stand with its three blade flanges, bolting rings and studs. Pairs with our wind tower section load.",
+              "stand with its three blade flanges, each with its bearing seat, bore and bolt circle cut into the face. Pairs "
+              "with our wind tower section load.",
         pieces=[_piece("Nacelle", F.nacelle, "Sunflower Yellow", 1, (F.NAC_FRAME, "White")),
                 _piece("Rotor-hub", F.hub, "Sunflower Yellow", 1, (F.NAC_FRAME, "White"))],
         listing=dict(price="29.99", title="HO Scale Wind Turbine Nacelle and Rotor Hub Flatcar Loads | Printed in Color | 1:87 Model Railroad",
