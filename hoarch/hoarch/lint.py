@@ -89,6 +89,26 @@ def overhangs(m, layer=LAYER, allow=0.35, min_area=0.05):
     return dict(area=round(sum(s[1] for s in spots), 1), spots=spots)
 
 
+
+def floating(m, layer=LAYER, min_area=0.05):
+    """Floating regions, as Bambu Studio warns of them ("has floating regions"): a connected patch of
+    a layer with nothing at all under it in the layer below, printed on air. A local low point of a
+    feature that hangs past what carries it (a flange or an eye below a shaft, the web of a cradle
+    between its openings, a lug corner, a keel tip in a gap) starts this way. Unlike an overhang,
+    nothing anchors it while it prints, so it must always be fixed.
+    Returns [(z, area, bounds), ...] in print orientation, z from the part's bottom."""
+    b = m.bounding_box()
+    prev, out = None, []
+    for z in np.arange(b[2] + layer / 2, b[5], layer):
+        cs = m.slice(float(z))
+        if prev is not None and not cs.is_empty():
+            for d in cs.decompose():
+                a = d.area()
+                if a >= min_area and (d ^ prev).area() < 1e-4:
+                    out.append((round(float(z - b[2]), 2), round(a, 2), [round(v, 1) for v in d.bounds()]))
+        prev = cs
+    return out
+
 def overhang_kit(kit, layer=LAYER, allow=0.35, limit=1.0, only=None):
     """Print the unique parts that would need support (or bridge) at Bambu's default angle."""
     seen = set()

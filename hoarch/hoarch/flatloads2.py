@@ -48,7 +48,11 @@ def keel(y, z, r, base):
     """The 45 degree keel under a round thing of radius r centred at (y, z), down to ``base``:
     its sides are the circle's tangents at 45 degrees, so nothing past 45 degrees overhangs."""
     dz = z - S2 * r - base
-    return poly([(y - S2 * r, z - S2 * r), (y + S2 * r, z - S2 * r), (y + S2 * r - dz, base - 0.01), (y - S2 * r + dz, base - 0.01)])
+    cs = poly([(y - S2 * r, z - S2 * r), (y + S2 * r, z - S2 * r), (y + S2 * r - dz, base - 0.01), (y - S2 * r + dz, base - 0.01)])
+    if dz > S2 * r:             # the tangents cross above the base: a 1.6 mm stem through the crossing, so the keel
+        zx = z - 2 * S2 * r     # never pinches to a point (the slicer drops the neck and the V above floats)
+        cs = cs + CS.square((1.6, zx - base + 0.81)).translate((y - 0.8, base - 0.01))
+    return cs
 
 
 def tangent_on(c1, r1, c2, r2, r, ov=0.05):
@@ -244,6 +248,9 @@ def otr_tire():
     N = 26
     for k in range(N):
         for side in (1, -1):
+            a = 360.0 * (k + (0.5 if side < 0 else 0.0)) / N
+            if abs((a - 270.0 + 180.0) % 360.0 - 180.0) < 58.0:     # the bottom (270 here): the saddle carries the tread,
+                continue                                           # and a lug cut there would start in the air
             g = box([19.45, -0.7, 1.1], [R + 1.0, 0.7, 4.7]) + box([19.0, -0.7, 4.4], [R + 1.0, 0.7, 7.5])
             g = g.rotate([14.0, 0, 0])
             if side < 0:
@@ -354,6 +361,9 @@ def log_stack(seed=3):
         else:
             under = [p for p in logs + c2 if math.hypot(p[0][0] - y, p[0][1] - z) < p[1] + r + 0.2]
             zl = min(p[0][1] for p in under)
+            below = [p for p in logs + c2 if p[0][1] < z - 1.0 and abs(p[0][0] - y) < p[1] - 0.2]
+            if below:               # the tip goes down onto the log right under it, not into the gap between two logs
+                zl = min(zl, max(p[0][1] + math.sqrt(p[1] ** 2 - (p[0][0] - y) ** 2) for p in below) - 0.2)
             cs = poly([(y - S2 * rk, z - S2 * rk), (y + S2 * rk, z - S2 * rk), (y, zl)])
         keels.append(along_x(cs, x0 + 0.4, x1 - 0.4))
     ext = max(abs(y) + r * 1.04 for (y, z), r in logs)
@@ -583,9 +593,9 @@ def brick_cube(seed=1):
     cube = cube - union(cuts)
     bands = []
     for x in (Lx * 0.27, Lx * 0.73):
-        bands.append(box([x - 0.2, -0.15, 2 * c], [x + 0.2, Wy + 0.15, H + 0.2]) - box([x - 1, 0.0, -1], [x + 1, Wy, H]))
+        bands.append(box([x - 0.2, -0.15, 2 * c], [x + 0.2, Wy + 0.15, H + 0.2]) - box([x - 1, 0.2, -1], [x + 1, Wy - 0.2, H]))
     for y in (Wy * 0.3, Wy * 0.7):
-        bands.append(box([-0.15, y - 0.2, 0.0], [Lx + 0.15, y + 0.2, H + 0.2]) - box([0.0, y - 1, -1], [Lx, y + 1, H]))
+        bands.append(box([-0.15, y - 0.2, 0.0], [Lx + 0.15, y + 0.2, H + 0.2]) - box([0.2, y - 1, -1], [Lx - 0.2, y + 1, H]))
     return union([cube] + bands)
 
 
@@ -976,18 +986,22 @@ def propane_pair():
         tank_ = union([shell] + heads)
         web = M.hull((tank_ ^ box([hd, yc - r, zc - r], [hd + Lt, yc + r, zc - r * S2 + 0.01])) + box([hd + 2.0, yc - 1.6, z0 - 0.01], [hd + Lt - 2.0, yc + 1.6, z0]))
         xs1, xs2 = hd + Lt * 0.2, hd + Lt * 0.8
+        xm = hd + Lt / 2
+        # the web lands on a runner the length of the tank, so no part of it starts on air (Bambu Studio
+        # flagged the web between its openings as floating); its openings sit in the two bays between the
+        # leg timbers and the middle timber, so the web stands on the middle timber too
+        parts.append(box([hd + 1.4, yc - 2.0, 0.0], [hd + Lt - 1.4, yc + 2.0, z0]))   # tops at the colour change, so no white sliver
         holes = []
-        w = 6.0
-        for a in np.linspace(xs1 + 3.0, xs2 - 3.0 - w, 3):
-            top = z0 + 0.4
+        w = 7.0
+        for c in ((xs1 + 1.4 + xm - 1.2) / 2, (xm + 1.2 + xs2 - 1.4) / 2):
+            a, top = c - w / 2, z0 + 0.8
             holes.append(M.hull_points([(x, y, z) for y in (yc - r, yc + r) for (x, z) in
-                                        ((a, z0 - 0.5), (a + w, z0 - 0.5), (a, top), (a + w, top), (a + w / 2, top + min(w / 2, zc - r - top - 0.9)))]))
+                                        ((a, z0 - 0.5), (a + w, z0 - 0.5), (a, top), (a + w, top), (a + w / 2, top + 0.3))]))
         parts += [tank_, web - union(holes)]
         for xs in (xs1, xs2):                                    # saddle legs
             leg = box([xs - 0.6, yc - r * 0.8, z0 - 0.01], [xs + 0.6, yc + r * 0.8, zc - r * 0.5])
             parts.append(leg - M.cylinder(4, r - 0.05, r - 0.05, 64).rotate([0, 90, 0]).translate([xs - 2, yc, zc]))
             parts.append(box([xs - 1.4, yc - r * 0.8, z0 - 0.01], [xs + 1.4, yc + r * 0.8, z0 + 0.4]))
-        xm = hd + Lt / 2
         parts += [M.cylinder(1.4, 2.6, 2.6, 32).translate([xm, yc, zc + r - 0.5]),
                   M.cylinder(0.5, 2.6, 2.2, 32).translate([xm, yc, zc + r + 0.89]),
                   box([xm + 2.4, yc - 0.5, zc + r + 0.7], [xm + 2.9, yc + 0.5, zc + r + 1.3])]
@@ -998,7 +1012,7 @@ def propane_pair():
         parts.append(M.hull_points([(xm + dx, yc + out_ * (r + 0.12), zc + dz) for dx in (4.0, 8.0) for dz in (-0.8, 1.2)] +
                                    [(xm + dx, yc + out_ * (r - 0.8), zc + dz) for dx in (4.0, 8.0) for dz in (-1.2, 1.2)]))
     L = Lt + 2 * hd
-    dun = [box([x - 1.2, -2 * r - 2.6, 0.0], [x + 1.2, 2 * r + 2.6, z0 + 0.01]) for x in (hd + Lt * 0.2, hd + Lt * 0.5, hd + Lt * 0.8)]
+    dun = [box([x - 1.2, -2 * r - 2.6, 0.0], [x + 1.2, 2 * r + 2.6, z0]) for x in (hd + Lt * 0.2, hd + Lt * 0.5, hd + Lt * 0.8)]
     return F._sheeted(lambda: union(parts + dun))()
 
 
@@ -1588,7 +1602,11 @@ def generator_rotor():
     sad = []
     for xs in (x0 - 9.0, x0 + Lb + 11.5):                                                    # journal saddles
         sad.append(along_x(keel(0.0, zc, rj, z0), xs - 1.2, xs + 1.2))
-    skid = _skid_frame(x0 - 13.0, x0 + Lb + 13.0, 9.5, z0)
+    xr2 = x0 + Lb + 8.5             # the coupling flange and the outer collector ring hang below the journals: keels
+    sad += [along_x(keel(0.0, zc, 4.6, z0), x0 - 13.95, x0 - 12.65),     # under them, on cross members
+            along_x(keel(0.0, zc, rj + 0.7, z0), xr2 + 0.05, xr2 + 1.35)]
+    skid = _skid_frame(x0 - 14.6, x0 + Lb + 13.0, 9.5, z0)
+    skid = skid + box([xr2 - 0.5, -9.5, 0.0], [x0 + Lb + 13.0 - 2.39, 9.5, z0])
     return F._sheeted(lambda: union([body, web, skid] + sad))()
 
 
@@ -1680,7 +1698,9 @@ def tube_bundle():
     body = union(parts)
     web = _cradle(body, 2.0, L - 2.0, zc, r + 1.0, z0, 8.0)
     skid = _skid_frame(-2.0, L + 3.0, 8.5, z0)
-    return F._sheeted(lambda: union([body, web, skid]))()
+    ends = [along_x(keel(0.0, zc, r + 1.8, z0), -1.55, -0.05),            # keels under the tubesheet and the floating
+            along_x(keel(0.0, zc, r + 0.6, z0), L + 0.6, L + 1.15)]       # head (both hang below the bundle), on the
+    return F._sheeted(lambda: union([body, web, skid] + ends))()           # end cross members
 
 
 # ================================================================== 40. distillation column
@@ -1712,7 +1732,9 @@ def column():
         parts.append(ring ^ box([x - 1, -r - 1, zc - r * 0.6], [x + 1, r + 1, zc + r + 1]))
     for x, rn, hn, a in ((xk + 20.0, 1.6, 3.0, 0), (xk + 60.0, 3.4, 2.6, 40), (xk + 95.0, 1.4, 3.0, -35), (xk + 130.0, 3.4, 2.6, 40),
                          (xk + 160.0, 1.8, 3.0, 0)):
-        nz = union([M.cylinder(hn + 0.6, rn, rn, 32), M.cylinder(0.6, rn + 0.9, rn + 0.9, 32).translate([0, 0, hn + 0.6])]).translate([0, 0, r - 0.6])
+        nz = union([M.cylinder(hn + 0.6, rn, rn, 32), M.cylinder(0.6, rn + 0.9, rn + 0.9, 32).translate([0, 0, hn + 0.6]),
+                    M.cylinder(0.9, rn, rn + 0.9, 32).translate([0, 0, hn - 0.3])]).translate([0, 0, r - 0.6])   # collar: a tilted
+        # nozzle's flange grows out of its neck instead of starting in the air
         parts.append(nz.rotate([a, 0, 0]).translate([x, 0, zc]))
     rails = []
     for sgn in (-1, 1):                                                                       # the ladder along the top
@@ -2121,7 +2143,7 @@ def mine_car():
     ribs = []
     for x in (-5.0, 0.0, 5.0):
         for sgn in (-1, 1):
-            ribs.append(along_x((offset(outer, 0.3) - outer) ^ poly([(0, zv), (sgn * 20, zv + 20 * math.tan(ang)), (sgn * 20, zv - 5), (0, zv - 5)]), x - 0.3, x + 0.3))
+            ribs.append(along_x((offset(outer, 0.3) - outer) ^ poly([(0, zv), (sgn * 20, zv + 20 * math.tan(ang)), (sgn * 20, zv), (0, zv)]), x - 0.3, x + 0.3))   # not below the apex
     cradle = poly([(-4.6, zf - 0.01), (4.6, zf - 0.01), (4.6, zf + 0.6), (0.6, zv + 0.4), (-0.6, zv + 0.4), (-4.6, zf + 0.6)])
     cradles = [along_x(cradle, x - 0.4, x + 0.4) for x in (-5.0, 5.0)]
     latch = box([bl - 0.01, 2.0, zv + hv - 4.0], [bl + 0.5, 3.0, zv + hv - 0.5])
@@ -2200,8 +2222,8 @@ def cathode_bundle(seed=1):
         x, y = rng.uniform(1.0, S - 1.0, 2)
         parts.append(M.cylinder(0.25, rng.uniform(0.3, 0.5), 0.2, 8).translate([x, y, zt - 0.01]))
     for u in (S * 0.28, S * 0.72):
-        parts.append(box([u - 0.25, -0.45, z0], [u + 0.25, S + 0.45, zt + 0.2]) - box([u - 1, -0.2, z0 - 1], [u + 1, S + 0.2, zt]))
-        parts.append(box([-0.45, u - 0.25, z0], [S + 0.45, u + 0.25, zt + 0.2]) - box([-0.2, u - 1, z0 - 1], [S + 0.2, u + 1, zt]))
+        parts.append(box([u - 0.25, -0.45, z0], [u + 0.25, S + 0.45, zt + 0.2]) - box([u - 1, 0.3, z0 - 1], [u + 1, S - 0.3, zt]))
+        parts.append(box([-0.45, u - 0.25, z0], [S + 0.45, u + 0.25, zt + 0.2]) - box([0.3, u - 1, z0 - 1], [S - 0.3, u + 1, zt]))
     skids = [box([0.0, y - 0.6, 0.0], [S, y + 0.6, z0 + 0.01]) for y in (1.4, S - 1.4)]
     return F._sheeted(lambda: union(parts + skids))()
 
@@ -2220,7 +2242,9 @@ def _spoked_wheel(x, zc, r, ya, yb, n_spokes, cleats):
     lugs = []
     if cleats:
         for k in range(cleats):
-            lugs.append(box([r - 0.05, -0.25, 0.1], [r + 0.5, 0.25, w - 0.1]).rotate([0, 0, 360.0 * k / cleats + 8.0]))
+            lug = M.hull(box([r + 0.45, -0.25, 0.1], [r + 0.5, 0.25, w - 0.1]) +      # tapered from a 2 mm root, so
+                         box([r - 0.2, -1.0, 0.1], [r - 0.15, 1.0, w - 0.1]))        # a lug low on the wheel grows
+            lugs.append(lug.rotate([0, 0, 360.0 * k / cleats + 8.0]))               # out of the rim
     wheel = union([rim, hub] + spokes + lugs)
     return wheel.rotate([-90, 0, 0]).translate([x, ya, zc])
 
@@ -2394,9 +2418,9 @@ def radiator_bank(n=18):
         x = k * pitch
         panel = box([x, -Dp / 2, z0 - 0.01], [x + tf, Dp / 2, z0 + H])
         parts.append(panel)
-    for zh in (z0 + 2.0, z0 + H - 2.0):                                     # headers and their flanges
-        parts.append(M.cylinder(Lb + 1.6, 0.9, 0.9, 20).rotate([0, 90, 0]).translate([-0.8, 0.0, zh]))
-        for xe in (-1.4, Lb + 0.8):
+    for zh in (z0 + 2.0, z0 + H - 2.0):     # headers and their flanges, against the end panels so they grow out of them
+        parts.append(M.cylinder(Lb + 1.2, 0.9, 0.9, 20).rotate([0, 90, 0]).translate([-0.6, 0.0, zh]))
+        for xe in (-0.59, Lb - 0.01):
             parts.append(M.cylinder(0.6, 1.6, 1.6, 24).rotate([0, 90, 0]).translate([xe, 0.0, zh]))
     for x in (2.0, Lb - 2.0):                                               # lifting lugs on top
         lug = box([x - 0.6, -0.5, z0 + H - 0.01], [x + 0.6, 0.5, z0 + H + 1.6])
@@ -2505,8 +2529,13 @@ def hydraulic_cylinder(r=4.5, L=60.0):
                                [(L * 0.5 + dx, -r + 0.8, zc + dz) for dx in (0, 5.0) for dz in (-1.4, 1.6)]))
     body = union(parts)
     web = _cradle(body, -1.6, L + 2.0, zc, r + 0.6, z0, r * 0.9, holes=2)
-    skid = _skid_frame(-3.0, L + 3.0, r * 0.9 + 0.6, z0)
-    return F._sheeted(lambda: union([body, web, skid]))()
+    xo = xe + r * 0.7               # the eye hangs below the rod past the barrel: a cradle of its own under it, on
+    eye_web = M.hull((eye ^ box([xo - r, -r, zc - r], [xo + r, r, zc - r * 0.7 * S2])) +      # the skid's last cross member
+                     box([xo - 1.0, -r * 0.35, z0 - 0.01], [xo + 1.0, r * 0.35, z0]))
+    yw = r * 0.9 + 0.6               # the skid as before, its beams run on to a cross member under the eye
+    skid = union([_skid_frame(-3.0, L + 3.0, yw, z0), box([xo - 1.2, -yw, 0.0], [xo + 1.2, yw, z0])] +
+                 [box([L + 2.99, y - 1.0, 0.0], [xo + 1.2, y + 1.0, z0]) for y in (-yw + 1.0, yw - 1.0)])
+    return F._sheeted(lambda: union([body, web, eye_web, skid]))()
 
 
 # ================================================================== 57. turnout frogs and switch points

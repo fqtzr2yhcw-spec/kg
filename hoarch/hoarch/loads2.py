@@ -215,8 +215,8 @@ PACKS2 = dict([
                colors="Light Gray, Iron Gray", ship=6.5, pack=1.50)),
     _load("propane", "Propane Tank Load", 2,
           "Six new 1,000 gallon propane tanks for a 53 ft bulkhead flat, in pairs on dunnage: 2:1 heads, saddle legs, the "
-          "valve dome with its hinged lid, a lifting lug and a nameplate on each. Each shell rides on a cradle web pierced "
-          "with openings.",
+          "valve dome with its hinged lid, a lifting lug and a nameplate on each. Each shell rides on a cradle web on a "
+          "timber runner, pierced with openings between the timbers.",
           [_p("Propane-pair", G.propane_pair, "Cocoa Brown", 3, (G.PROP_DUN, "White"))],
           "16.99", "HO Scale Propane Tanks 6 pc | 1000 Gallon Tank Bulkhead Flatcar Load | Printed in Color | 1:87",
           ["propane tanks", "ho propane", "lp gas tank", "fuel dealer", "storage tank", "bulkhead flatcar",

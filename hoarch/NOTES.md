@@ -690,3 +690,19 @@ reads. What they added to the rules:
 - Check with `lint.overhangs` on every piece: the big spots should all be bridges under 30 mm
   (bundle bottoms between dunnage, bellies between tracks, a culvert's roof), and anything else is
   a fix.
+- No floating regions: `python3 tools/floatcheck.py <pack>` (`lint.floating`) finds any patch of a
+  layer with nothing under it, which Bambu Studio warns of ("has floating regions"). The owner hit it
+  on the propane tanks: the cradle web between its openings started in mid-air over the bed sheet,
+  and an opening sat right over the middle timber, so the tanks didn't touch it. Each of these
+  started on air and was fixed in v1.1:
+  - a web or cradle between openings: land it on a runner, and keep openings off the timbers;
+  - anything hanging below a shaft past its cradle (a rod eye, a coupling flange, a collector ring,
+    a tubesheet, a floating head): a keel or cradle of its own, on a cross member;
+  - a tilted flange (column nozzles): a 45 degree collar under it, from the neck;
+  - flanges standing off the end of a bank (radiator headers): put them against the end panel;
+  - lugs and cleats low on a wheel or tire: taper the cleat's root, and leave the tread uncut where
+    the saddle carries it;
+  - a keel whose tip lands in the gap between two logs: run it down to the log beneath;
+  - band straps beside a stack or over a void: run them into the stack or the joint.
+  `keel()` puts a 1.6 mm stem where its two tangents cross (a small body high up); the bowtie it
+  made pinched to a point, and the slicer drops a neck that thin.
