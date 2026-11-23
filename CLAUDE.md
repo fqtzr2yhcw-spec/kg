@@ -99,6 +99,8 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
   Don't repeat that.
 - Cornice brackets are solid and 1.6 mm thick. No hole goes through a bracket; a sunk eye
   is fine. The Camellia's pierced 0.8 mm ring brackets printed as strings.
+- Flatcar loads: no whole vehicles (tanks, military trucks, excavators, dozers, crawler tractors);
+  they don't look good. Parts loads are good (buckets, engines, cylinders, wheelsets and so on).
 - Zips are versioned (`<Name>_Print_Files_v1.1.zip`). Every update adds a line to
   `hoarch/hoarch/versions.py` and bumps the version.
 

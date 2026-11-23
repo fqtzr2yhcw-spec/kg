@@ -94,14 +94,14 @@ def girder(L=GIRDER_L, skew=GIRDER_SKEW):
     for x in np.arange(ft(1.0), L - ft(1.0) + 0.01, ft(2.0)):
         if min(abs(x - xl) for xl in lifts) < 2.6:
             continue
-        for y in (-1.0, 1.0):
-            bits.append(box([x - 0.3, y - 0.3, H - 0.01], [x + 0.3, y + 0.3, H + 1.4]))
-        bits.append(box([x - 0.3, -1.3, H + 0.8], [x + 0.3, 1.3, H + 1.4]))
+        for y in (-1.0, 1.0):                                               # 0.8 mm: a 0.6 mm leg was dropped by the slicer
+            bits.append(box([x - 0.4, y - 0.4, H - 0.01], [x + 0.4, y + 0.4, H + 1.4]))
+        bits.append(box([x - 0.4, -1.4, H + 0.7], [x + 0.4, 1.4, H + 1.4]))
     for xl in lifts:
         for y in (-1.25, 1.25):
-            bits += [box([xl - 1.5, y - 0.3, H - 0.01], [xl - 0.9, y + 0.3, H + 2.6]),
-                     box([xl + 0.9, y - 0.3, H - 0.01], [xl + 1.5, y + 0.3, H + 2.6]),
-                     box([xl - 1.5, y - 0.3, H + 2.0], [xl + 1.5, y + 0.3, H + 2.6])]
+            bits += [box([xl - 1.7, y - 0.45, H - 0.01], [xl - 0.8, y + 0.45, H + 2.6]),
+                     box([xl + 0.8, y - 0.45, H - 0.01], [xl + 1.7, y + 0.45, H + 2.6]),
+                     box([xl - 1.7, y - 0.45, H + 1.9], [xl + 1.7, y + 0.45, H + 2.6])]
     holes = []
     for x in (L * 0.25, L * 0.5, L * 0.75):
         for sgn in (-1, 1):
@@ -696,406 +696,6 @@ def reel_chock():
     return blk - rim
 
 
-# ================================================================== crawler tracks (batch 3)
-def track_unit(xa, xb, rr, rf, h, yi, yo, n_road, rw, z0=0.0, band=0.55, recess=0.4, rollers=0, pitch=0.75):
-    """One crawler track from x = xa (rear, sprocket radius rr) to xb (front, idler radius rf), its top
-    run at z0 + h, across yi..yo with the outer face at yo (yo > yi; mirror for the other side).
-    The run rises from the ground at 45 degrees into the sprocket and idler, so nothing overhangs.
-    The loop's inside is recessed on the outer face with the road wheels, return rollers, idler and
-    toothed sprocket standing in it; shoe joints cut across the top run and down the band's face."""
-    zt = z0 + h
-    cf, cr = (xb - rf, zt - rf), (xa + rr, zt - rr)
-    xf = cf[0] + rf * S2 - (cf[1] - rf * S2 - z0)
-    xr = cr[0] - rr * S2 + (cr[1] - rr * S2 - z0)
-    prof = cs_union([circle(cf, rf, 40), circle(cr, rr, 40), poly([(xr, z0), (xf, z0), (cf[0], cf[1]), (cr[0], cr[1])])]).hull()
-    unit = along_y(prof, yi, yo)
-    inner = offset(prof, -band)
-    unit = unit - along_y(inner, yo - recess, yo + 1.0)
-    wheels = []
-    wz = z0 + band + rw - 0.05
-    xs = np.linspace(xr + rw * 0.6, xf - rw * 0.6, n_road)
-    for x in xs:
-        wheels.append(M.cylinder(recess + 0.02, rw, rw, 28).rotate([-90, 0, 0]).translate([x, yo - recess - 0.01, wz]))
-        wheels.append(M.cylinder(0.25, rw * 0.45, rw * 0.38, 20).rotate([-90, 0, 0]).translate([x, yo - 0.02, wz]))
-    for x in np.linspace(cr[0] + rr, cf[0] - rf, rollers + 2)[1:-1] if rollers else []:
-        rret = 0.9
-        wheels.append(M.cylinder(recess + 0.02, rret, rret, 20).rotate([-90, 0, 0]).translate([x, yo - recess - 0.01, zt - band - rret + 0.05]))
-    wheels.append(M.cylinder(recess + 0.02, rf - band - 0.1, rf - band - 0.1, 32).rotate([-90, 0, 0]).translate([cf[0], yo - recess - 0.01, cf[1]]))
-    wheels.append(M.cylinder(0.3, (rf - band) * 0.4, (rf - band) * 0.35, 20).rotate([-90, 0, 0]).translate([cf[0], yo - 0.02, cf[1]]))
-    teeth = cs_union([circle((0, 0), rr - band - 0.55, 32)] +
-                     [CS.square((0.7, 1.1), True).translate((rr - band - 0.55, 0.0)).rotate(360.0 * k / 11) for k in range(11)])
-    wheels.append(along_y(teeth.translate(cr), yo - recess - 0.01, yo - 0.02))
-    wheels.append(M.cylinder(0.3, (rr - band) * 0.45, (rr - band) * 0.4, 20).rotate([-90, 0, 0]).translate([cr[0], yo - 0.02, cr[1]]))
-    unit = union([unit] + wheels)
-    cuts = []
-    for x in np.arange(cr[0], cf[0], pitch):                      # shoe joints across the top run
-        cuts.append(box([x - 0.1, yi - 1, zt - 0.22], [x + 0.1, yo + 1, zt + 1]))
-    for x in np.arange(xr, xf, pitch):                            # and down the band's face on the bottom run
-        cuts.append(box([x - 0.1, yo - 0.18, z0 - 1], [x + 0.1, yo + 1, z0 + band]))
-    return unit - union(cuts)
-
-
-def tracks(xa, xb, rr, rf, h, yc, tw, n_road, rw, **kw):
-    """Both tracks, centred at y = +-yc, tw wide."""
-    right = track_unit(xa, xb, rr, rf, h, yc - tw / 2, yc + tw / 2, n_road, rw, **kw)
-    return right + right.mirror([0, 1, 0])
-
-
-def _side(pts, ya, yb):
-    """A side profile [(x, z), ...] extruded across ya..yb."""
-    return along_y(poly(pts), ya, yb)
-
-
-def _grille(x0, x1, y0, y1, z, n, d=0.22, along="x"):
-    """Grooves in a top face at z: n slots across x0..x1 (``along`` x: slots run across y)."""
-    out = []
-    if along == "x":
-        for x in np.linspace(x0, x1, n):
-            out.append(box([x - 0.12, y0, z - d], [x + 0.12, y1, z + 1]))
-    else:
-        for y in np.linspace(y0, y1, n):
-            out.append(box([x0, y - 0.12, z - d], [x1, y + 0.12, z + 1]))
-    return out
-
-
-# ================================================================== 13. main battle tank
-TANK_TRACK = 9.6          # steel-grey tracks and running gear to the top run, then the olive hull
-TANK_GUN_Z = TANK_TRACK + 5.4 + 5.0
-
-
-@solid
-def tank():
-    """A main battle tank as it rides on a flatcar: turret turned to the rear, the gun on its travel
-    lock over the engine deck (the barrel is a separate piece that plugs into the mantlet). Seven
-    road wheels a side behind side skirts, a long shallow glacis, a low wedge turret with its
-    bustle, cupola, hatches, sights and smoke dischargers, grilles on the engine deck. Generic,
-    not any one army's tank."""
-    zt = TANK_TRACK
-    zd = zt + 5.4
-    trk = tracks(0.0, 74.0, 4.2, 3.6, zt, 16.1, 7.4, 7, 3.9, rollers=2)
-    upper = _side([(4.2, zt - 0.01), (70.4, zt - 0.01), (75.0, zt + 4.6), (68.0, zd), (2.0, zd), (-0.6, zd - 0.6), (-0.6, zt + 4.8)], -20.6, 20.6)
-    belly = _side([(8.0, 4.0), (68.0, 4.0), (68.0 + zt - 4.0, zt + 0.01), (8.0 - zt + 4.0, zt + 0.01)], -12.3, 12.3)
-    skirts = []
-    for sgn in (-1, 1):
-        sk = _side([(5.0, 5.4), (70.0, 5.4), (73.0, zt + 0.3), (3.0, zt + 0.3)], 19.8 if sgn > 0 else -20.6, 20.6 if sgn > 0 else -19.8)
-        for x in np.arange(14.0, 70.0, 10.5):
-            sk = sk - box([x - 0.12, sgn * 20.4 - 1, 5.0], [x + 0.12, sgn * 20.4 + 1, zt + 0.5])
-        skirts.append(sk)
-    hull = union([trk, upper, belly] + skirts)
-    det = []
-    for sgn in (-1, 1):                                          # fender boxes, headlights with guards, tow eyes
-        det.append(box([46.0, sgn * 14.5, zd - 0.01], [60.0, sgn * 20.2, zd + 2.2]))
-        det.append(box([70.0, sgn * 16.5 - 1.2, zt + 4.2], [72.6, sgn * 16.5 + 1.2, zt + 5.6]))
-        det.append(box([73.4, sgn * 9.0 - 1.0, zt + 1.0], [75.4, sgn * 9.0 + 1.0, zt + 3.6]))
-    cuts = _grille(3.5, 21.0, -12.0, 12.0, zd, 14) + _grille(46.5, 59.5, 15.0, 19.7, zd + 2.2, 0)
-    # turret, turned to the rear (its gun along -x)
-    xt = 44.0
-    base = [(20, -6), (20, 6), (12, 17), (-20, 17), (-26, 14), (-26, -14), (-20, -17), (12, -17)]
-    roof = [(14, -5), (14, 5), (8, 15), (-19, 15.5), (-24, 12.5), (-24, -12.5), (-19, -15.5), (8, -15)]
-    tz = zd + 9.0
-    turret = M.hull_points([(xt - u, v, zd - 0.01) for u, v in base] + [(xt - u, v, tz) for u, v in roof])
-    tdet = [box([xt - 21.5, -4.2, zd + 1.6], [xt - 17.0, 4.2, zd + 8.0]),                 # mantlet
-            M.cylinder(1.5, 3.0, 3.0, 28).translate([xt + 6, 7.0, tz - 0.01]),           # commander's cupola
-            M.cylinder(0.5, 2.6, 2.4, 28).translate([xt + 6, 7.0, tz + 1.49]),
-            M.cylinder(0.45, 2.4, 2.2, 28).translate([xt + 6, -7.0, tz - 0.01]),         # loader's hatch
-            box([xt - 2.0, -10.2, tz - 0.01], [xt + 3.4, -9.6, tz + 0.6]),               # loader's MG, stowed flat
-            box([xt - 13.0, 8.5, tz - 0.01], [xt - 9.0, 12.0, tz + 2.4]),                # gunner's sight
-            box([xt + 14.0, -11.0, zd - 0.01], [xt + 26.0, 11.0, zd + 3.6]),             # stowage on the deck at the bustle
-            M.cylinder(1.4, 0.35, 0.3, 10).translate([xt + 22.0, 11.5, tz - 0.01]),       # antenna bases
-            M.cylinder(1.4, 0.35, 0.3, 10).translate([xt + 22.0, -11.5, tz - 0.01])]
-    for sgn in (-1, 1):                                          # smoke dischargers on the cheeks
-        for k in range(3):
-            tdet.append(box([xt - 2.0 - 1.0 * k, sgn * 15.7 - 0.7, zd + 6.0], [xt - 1.2 - 1.0 * k, sgn * 15.7 + 0.7, zd + 7.4]))
-    gun = M.cylinder(4.0, 0.68, 0.68, 20).rotate([0, -90, 0]).translate([xt - 18.0, 0.0, TANK_GUN_Z])
-    # travel lock on the rear deck: an A-frame with a saddle under the barrel
-    zg = TANK_GUN_Z
-    lock = [box([2.0, -2.4, zd - 0.01], [4.2, 2.4, zd + 0.8])]
-    for sgn in (-1, 1):
-        lock.append(_side([(2.4, zd), (3.8, zd), (3.5, zg - 1.9), (2.7, zg - 1.9)], sgn * 1.6 - 0.4, sgn * 1.6 + 0.4))
-    sad = box([2.2, -2.0, zg - 2.1], [4.0, 2.0, zg - 1.0]) - M.cylinder(3, 1.3, 1.3, 24).rotate([0, 90, 0]).translate([1.5, 0, zg])
-    lock.append(sad)
-    return F._sheeted(lambda: union([hull, turret] + det + tdet + lock) - union(cuts + [gun]))()
-
-
-@solid
-def tank_barrel():
-    """The tank's gun, printed lying with its underside cut flat (it rests on the travel lock with
-    the flat down): thermal sleeve with its clamp bands, the bore evacuator, the muzzle; a peg that
-    plugs into the mantlet."""
-    segs = [(0.0, 3.0, 0.62), (3.0, 4.0, 1.7), (4.0, 26.0, 1.35), (26.0, 27.5, 1.5), (27.5, 35.0, 1.8), (35.0, 36.5, 1.5),
-            (36.5, 64.5, 1.2), (64.5, 67.0, 1.3)]
-    parts = [M.cylinder(b - a, r, r, 32).rotate([0, 90, 0]).translate([a, 0, 0]) for a, b, r in segs]
-    for x in (10.0, 18.0, 46.0, 56.0):
-        r = 1.35 if x < 26 else 1.2
-        parts.append(M.cylinder(0.6, r + 0.15, r + 0.15, 32).rotate([0, 90, 0]).translate([x, 0, 0]))
-    b = union(parts)
-    b = b - M.cylinder(1.0, 0.55, 0.55, 20).rotate([0, 90, 0]).translate([66.5, 0, 0])
-    zc = 0.84                                                      # cut 0.36 under the thin tube's axis (0.3 r)
-    b = b.translate([0, 0, zc])
-    return b ^ box([-1, -3, 0.0], [70, 3, 6])
-
-
-# ================================================================== 14. armoured personnel carriers
-APC_TRACK = 7.2
-
-
-@solid
-def apc():
-    """A tracked armoured personnel carrier: a plain aluminium box on five road wheels a side, the
-    glacis with its trim vane folded down, headlights in guards, the driver's hatch and the
-    commander's cupola with its MG stowed, the big cargo hatch, the rear ramp with its door and
-    hinges, an exhaust on the right front. Generic."""
-    zt = APC_TRACK
-    zr = zt + 13.8
-    trk = tracks(0.0, 50.0, 3.0, 3.0, zt, 12.2, 6.0, 5, 3.0)
-    upper = _side([(2.8, zt - 0.01), (47.2, zt - 0.01), (52.6, zt + 5.4), (40.0, zr), (0.0, zr), (0.0, zt + 2.8)], -15.4, 15.4)
-    belly = _side([(6.0, 3.6), (44.0, 3.6), (44.0 + zt - 3.6, zt + 0.01), (6.0 - zt + 3.6, zt + 0.01)], -9.1, 9.1)
-    body = union([trk, upper, belly])
-    # trim vane folded on the glacis: a raised panel in the glacis' plane
-    g0, g1 = (52.6, zt + 5.4), (40.0, zr)
-    n = np.array([g1[1] - g0[1], -(g1[0] - g0[0])])
-    n = n / np.linalg.norm(n) * 0.45
-    vane = _side([(g0[0] - 1.2, g0[1] + 0.9), (g1[0] + 1.6, g1[1] - 1.2), (g1[0] + 1.6 + n[0] * -1, g1[1] - 1.2 - n[1] * -1),
-                  (g0[0] - 1.2 + n[0] * -1, g0[1] + 0.9 - n[1] * -1)], -12.5, 12.5)
-    det = [vane]
-    for sgn in (-1, 1):
-        det.append(box([49.0, sgn * 13.0 - 1.1, zt + 4.4], [51.4, sgn * 13.0 + 1.1, zt + 6.2]))
-    det += [M.cylinder(0.5, 2.6, 2.4, 24).translate([34.0, -8.0, zr - 0.01]),                  # driver's hatch
-            M.cylinder(1.6, 3.0, 3.0, 28).translate([28.0, 7.5, zr - 0.01]),                   # cupola
-            M.cylinder(0.5, 2.7, 2.5, 28).translate([28.0, 7.5, zr + 1.59]),
-            box([22.0, 9.6, zr + 2.0], [32.0, 10.2, zr + 2.6]),                                 # its MG, stowed along the roof
-            box([22.0, 9.4, zr + 1.5], [23.0, 10.4, zr + 2.1]),
-            box([4.0, -7.0, zr - 0.01], [21.0, 7.0, zr + 0.35]),                                # cargo hatch
-            M.cylinder(1.0, 0.8, 0.8, 16).translate([15.0, 10.5, zr - 0.01]),                  # vent
-            M.cylinder(0.5, 0.8, 1.3, 16).translate([15.0, 10.5, zr + 0.99]),
-            box([42.0, 15.39, zt + 3.0], [46.0, 16.2, zt + 9.0]),                               # exhaust guard on the right side
-            M.cylinder(3.0, 0.6, 0.6, 14).translate([44.0, 15.8, zt + 8.99])]
-    det += [box([-0.4, y - 1.2, zt + 3.0], [0.01, y + 1.2, zt + 4.2]) for y in (-9.0, 9.0)]   # ramp hinges
-    det += [box([-0.4, sgn * 12.5 - 0.8, zt + 9.0], [0.01, sgn * 12.5 + 0.8, zt + 10.5]) for sgn in (-1, 1)]  # tail lights
-    cuts = [box([-1, -10.5, zt + 2.8], [0.12, -10.26, zr - 1.0]), box([-1, 10.26, zt + 2.8], [0.12, 10.5, zr - 1.0]),
-            box([-1, -10.5, zr - 1.24], [0.12, 10.5, zr - 1.0]),                                 # ramp outline
-            box([-1, 1.5, zt + 3.6], [0.12, 1.74, zr - 2.4]), box([-1, 6.76, zt + 3.6], [0.12, 7.0, zr - 2.4]),
-            box([-1, 1.5, zr - 2.64], [0.12, 7.0, zr - 2.4])]                                    # door in the ramp
-    cuts += [box([4.2, y - 0.12, zr + 0.13], [20.8, y + 0.12, zr + 1]) for y in (0.0,)]
-    return F._sheeted(lambda: union([body] + det) - union(cuts))()
-
-
-# ================================================================== 15. crawler excavator
-EXC_TRACK = 10.4          # tracks, carbody and swing ring, then the yellow upper
-EXC_SWING = 28.0          # swing centre's x
-
-
-@solid
-def excavator():
-    """A 20 tonne class crawler excavator without its front (boom, arm and bucket are separate
-    pieces): long-frame tracks with rollers and carriers, the carbody and swing ring, the upper with
-    its cab on the left, engine hood and grilles, exhaust, fuel and tool boxes on the right, the
-    rounded counterweight, handrails, and the boom-foot bracket the boom slides into."""
-    zc = EXC_TRACK
-    trk = tracks(0.0, 51.0, 4.0, 3.7, zc, 13.7, 6.9, 7, 1.4, rollers=2)              # the upper sits on the track tops
-    carbody = _side([(14.0, 3.2), (38.0, 3.2), (42.0, 7.2), (42.0, zc + 0.01), (10.0, zc + 0.01), (10.0, 7.2)], -10.3, 10.3)
-    ring = M.cylinder(zc - 9.6, 9.0, 9.0, 48).translate([EXC_SWING, 0, 9.6])
-    xs = EXC_SWING
-    R = 30.0
-    zb = zc
-    plan = [(xs + 14.0, -15.8), (xs + 14.0, 15.8), (xs - 18.0, 15.8)] + \
-           [(xs + R * math.cos(t), R * math.sin(t)) for t in np.linspace(math.radians(148), math.radians(212), 9)] + [(xs - 18.0, -15.8)]
-    deck_top = zb + 6.0
-    house = M.hull_points([(x, y, zb) for x, y in plan if x >= 4.0] + [(x, y, deck_top) for x, y in plan])
-    # counterweight: taller at the back, its underside rising at 45 degrees behind the tracks
-    cw = M.hull_points([(x, y, z) for x, y in plan if x < xs - 12.0 for z in (deck_top - 0.01, zb + 17.0)] +
-                       [(xs - 12.0, y, zb + 8.0) for y in (-15.8, 15.8)])
-    cut45 = M.hull_points([(4.0, y, zb - 0.01) for y in (-20, 20)] + [(-10.0, y, zb - 0.01) for y in (-20, 20)] +
-                          [(-10.0, y, zb + 14.0) for y in (-20, 20)])
-    upper = union([house, cw]) - cut45
-    # cab on the left front
-    cab = M.hull_points([(x, y, z) for x in (xs + 1.0, xs + 13.6) for y in (-15.6, -5.0) for z in (deck_top - 0.01,)] +
-                        [(x, y, zb + 24.0) for x in (xs + 1.0, xs + 12.4) for y in (-15.6, -5.0)])
-    roof = M.hull_points([(x, y, zb + 24.0) for x in (xs + 0.6, xs + 12.8) for y in (-15.9, -4.7)] +
-                         [(x, y, zb + 24.6) for x in (xs + 0.9, xs + 12.5) for y in (-15.7, -4.9)])
-    panes = []
-    for (x0, x1, y0, y1) in ((xs + 2.0, xs + 12.0, -15.7, -15.3), (xs + 2.0, xs + 12.0, -5.3, -4.9)):
-        panes.append(box([x0, y0 - 0.2, deck_top + 2.5], [x1, y1 + 0.2, zb + 23.0]) - box([x0 - 1, -14.9, deck_top], [x1 + 1, -5.7, zb + 25]))
-    front = M.hull_points([(xs + 13.7, y, z) for y in (-14.8, -5.8) for z in (deck_top + 1.5,)] + [(xs + 12.5, y, zb + 23.2) for y in (-14.8, -5.8)] +
-                          [(xs + 13.0, y, deck_top + 1.5) for y in (-14.8, -5.8)] + [(xs + 11.8, y, zb + 23.2) for y in (-14.8, -5.8)])
-    # engine hood, exhaust, right-hand boxes, handrails, boom-foot bracket
-    hood = box([xs - 18.0, -15.0, deck_top - 0.01], [xs - 1.0, 15.0, zb + 13.0])
-    rbox = box([xs + 1.0, 5.0, deck_top - 0.01], [xs + 13.8, 15.6, zb + 11.0])
-    det = [cab, roof, hood, rbox,
-           M.cylinder(5.0, 0.7, 0.7, 14).translate([xs - 6.0, 9.0, zb + 12.99]),
-           box([xs - 15.0, -13.0, zb + 12.99], [xs - 8.0, -6.0, zb + 15.5])]
-    for y in (14.2, 4.6):
-        det.append(box([xs - 16.0, y - 0.25, zb + 12.99], [xs - 2.0, y + 0.25, zb + 15.0]))
-    for x in (xs - 15.5, xs - 9.0, xs - 2.5):
-        for y in (14.2,):
-            det.append(box([x - 0.25, y - 0.25, zb + 12.99], [x + 0.25, y + 0.25, zb + 15.0]))
-    for sgn in (-1, 1):
-        det.append(box([xs + 13.5, sgn * 3.6 - 0.4, deck_top - 0.01], [xs + 19.0, sgn * 3.6 + 0.4, zb + 10.5]))
-    cuts = _grille(xs - 10.5, xs - 2.0, -14.0, -8.0, zb + 13.0, 7) + _grille(xs - 10.5, xs - 2.0, 7.0, 13.0, zb + 13.0, 7)
-    return F._sheeted(lambda: union([trk, carbody, ring, upper] + det + panes + [front]) - union(cuts))()
-
-
-EXC_FOOT = (EXC_SWING + 16.5, EXC_TRACK + 6.0 + 2.0)     # the boom foot pin (x, z), between the bracket's plates
-
-
-def _band(pts, half):
-    """A beam along a polyline [(x, z), ...] with half-depths ``half`` at its points, as a 2D outline."""
-    outs = []
-    for (a, ha), (b, hb) in zip(zip(pts[:-1], half[:-1]), zip(pts[1:], half[1:])):
-        d = np.array(b) - np.array(a)
-        n = np.array([-d[1], d[0]]) / np.linalg.norm(d)
-        outs.append(poly([tuple(np.array(a) + n * ha), tuple(np.array(b) + n * hb), tuple(np.array(b) - n * hb), tuple(np.array(a) - n * ha)]))
-        outs += [circle(a, ha, 24), circle(b, hb, 24)]
-    return cs_union(outs)
-
-
-def _excavator_front(side=1):
-    """One half (``side`` +1 or -1) of the excavator's front, split down its centre plane so each
-    half prints on its cut face: the box-section boom folded down, the arm tucked back under it,
-    the bucket curled and resting on its timber, the boom, arm and bucket cylinders down the middle,
-    pin bosses on the outside. Glue the halves face to face."""
-    F_ = EXC_FOOT
-    K, T, A = (75.0, 27.0), (104.0, 22.0), (79.0, 14.0)
-    boom = _band([F_, K, T], [2.6, 4.6, 2.6])
-    arm = _band([T, A], [3.2, 2.0])
-    bucket = poly([(A[0] + 2.0, A[1] + 1.0), (A[0] - 3.0, A[1] + 1.5), (A[0] - 7.5, A[1] - 2.0), (A[0] - 8.5, 6.0), (A[0] - 6.5, 2.0),
-                   (A[0] + 5.0, 2.0), (A[0] + 6.5, 4.0), (A[0] + 5.5, A[1] - 3.0)])
-    cyl_boom = _band([(EXC_FOOT[0] + 1.0, EXC_FOOT[1] - 3.5), (62.0, 20.0)], [0.9, 0.9])
-    cyl_arm = _band([(62.0, 31.0), (100.0, 27.0)], [0.8, 0.8])
-    cyl_bkt = _band([(102.0, 18.5), (86.0, 15.0)], [0.75, 0.75])
-    w_boom, w_arm, w_bkt, w_cyl = 3.0, 2.6, 5.8, 0.9
-    parts = [along_y(boom, 0.0, w_boom), along_y(arm, 0.0, w_arm), along_y(bucket, 0.0, w_bkt),
-             along_y(cyl_boom, 0.0, w_cyl), along_y(cyl_arm, 0.0, w_cyl), along_y(cyl_bkt, 0.0, w_cyl)]
-    for (x, z), r, w in ((F_, 1.6, w_boom), (K, 1.8, w_boom), (T, 1.6, w_boom), (A, 1.3, w_bkt)):
-        parts.append(M.cylinder(0.5, r, r, 24).rotate([-90, 0, 0]).translate([x, w - 0.01, z]))
-    for k in range(3):                                               # teeth on the bucket's lip, the middle one on the centre line
-        y0 = [0.0, 2.0, 4.0][k]
-        parts.append(box([A[0] + 5.8, y0, 3.0], [A[0] + 7.6, y0 + 1.0, 4.4]))
-    m = union(parts)
-    return m if side > 0 else m.mirror([0, 1, 0])
-
-
-@solid
-def excavator_front(side=1):
-    """An excavator front half in its print pose: on its cut face."""
-    return _excavator_front(side).rotate([90 * side, 0, 0])
-
-
-@solid
-def excavator_block():
-    """The timber the bucket rests on."""
-    return box([-8.0, -4.5, 0.0], [8.0, 4.5, 1.2]) + box([-6.5, -6.0, 1.19], [6.5, 6.0, 2.0])
-
-
-# ================================================================== 16. crawler dozer and its blade
-DOZER_TRACK = 8.6
-BLADE_SKID = 1.2
-
-
-@solid
-def dozer():
-    """A mid-size crawler dozer shipped with its blade off (the blade rides beside it): oval tracks
-    on six rollers a side, the mainframe between them with the push-arm trunnions, the long engine
-    hood with its radiator guard, side louvres, exhaust stack and precleaner, the ROPS cab with its
-    glass and overhung roof on a 45 degree soffit, fenders, the fuel tank and a three-shank ripper
-    lowered onto a steel block. Generic."""
-    zt = DOZER_TRACK
-    trk = tracks(0.0, 48.0, 3.6, 3.6, zt, 11.4, 6.4, 6, 1.6, rollers=1)
-    frame = _side([(6.0, 2.6), (44.0, 2.6), (48.0, 6.6), (48.0, zt + 0.01), (2.0, zt + 0.01), (2.0, 6.6)], -8.25, 8.25)
-    fenders = box([2.0, -14.8, zt - 0.01], [26.0, 14.8, zt + 0.5])              # from the frame's end, not over the sprockets' curve
-    hood = M.hull_points([(x, y, zt - 0.01) for x in (24.0, 48.0) for y in (-8.8, 8.8)] + [(x, y, zt + 12.4) for x in (24.0, 47.6) for y in (-8.0, 8.0)])
-    grille = box([47.5, -7.6, zt - 0.01], [48.9, 7.6, zt + 11.6])            # the radiator guard, a 0.9 mm ledge over the frame's end
-    cab = M.hull_points([(x, y, zt + 0.49) for x in (8.0, 24.5) for y in (-9.5, 9.5)] + [(x, y, zt + 24.0) for x in (8.6, 23.6) for y in (-8.9, 8.9)])
-    roof = M.hull_points([(x, y, zt + 23.4) for x in (8.4, 23.8) for y in (-9.1, 9.1)] + [(x, y, zt + 24.4) for x in (7.6, 24.6) for y in (-9.9, 9.9)] +
-                         [(x, y, zt + 25.2) for x in (7.6, 24.6) for y in (-9.9, 9.9)])
-    tank_ = box([2.0, -8.0, zt + 0.49], [8.2, 8.0, zt + 8.0])
-    det = [M.cylinder(6.0, 0.75, 0.75, 16).translate([40.0, 4.5, zt + 12.39]),
-           M.cylinder(3.5, 1.1, 1.1, 20).translate([33.0, -4.5, zt + 12.39]),
-           M.cylinder(0.9, 1.1, 1.8, 20).translate([33.0, -4.5, zt + 15.88]),
-           M.cylinder(0.5, 1.8, 1.8, 20).translate([33.0, -4.5, zt + 16.77])]
-    for sgn in (-1, 1):                                          # push-arm trunnions on the track frames
-        det.append(M.cylinder(1.8, 1.5, 1.5, 20).rotate([-90 * sgn, 0, 0]).translate([24.0, sgn * 14.0, 4.6]))
-        ya, yb = sorted((sgn * 8.0, sgn * 9.4))                                  # lift cylinder brackets, set into the hood's side
-        det.append(box([45.5, ya, zt + 4.0], [48.5, yb, zt + 7.5]))
-    panes = []
-    for x0, x1 in ((9.5, 15.6), (16.6, 22.6)):
-        for sgn in (-1, 1):
-            panes.append(box([x0, sgn * 9.0 - 0.6, zt + 6.0], [x1, sgn * 9.0 + 0.6, zt + 22.0]))
-    for sgn in (-1, 1):
-        panes.append(box([8.0 - 0.6 if sgn < 0 else 23.4, -7.6, zt + 6.0], [8.6 if sgn < 0 else 24.6, 7.6, zt + 22.0]))
-    cuts = []
-    for z in np.arange(zt + 2.0, zt + 11.0, 1.1):                 # radiator guard bars
-        cuts.append(box([48.5, -7.0, z], [49.5, 7.0, z + 0.45]))
-    for x in np.arange(27.0, 46.0, 1.2):                          # hood side louvres
-        for sgn in (-1, 1):
-            cuts.append(box([x, sgn * 8.6 - 0.3, zt + 3.0], [x + 0.4, sgn * 8.6 + 0.3, zt + 9.0]))
-    # ripper: three shanks down onto one steel block carry the beam; two 45 degree links tie it to the frame
-    shank = [(-6.2, 0.99), (-4.8, 0.99), (-4.8, 9.1), (-6.4, 9.1), (-7.2, 3.0)]
-    rip = [box([-7.0, -6.5, 9.0], [-4.0, 6.5, 13.0]), box([-8.4, -6.5, 0.0], [-3.6, 6.5, 1.0])]
-    rip += [_side(shank, y - 0.8, y + 0.8) for y in (-5.0, 0.0, 5.0)]
-    link = [(2.05, 6.6), (2.05, 7.8), (-4.01, 13.86), (-4.01, 12.66)]
-    rip += [_side(link, y - 0.4, y + 0.4) for y in (-3.5, 3.5)]
-    return F._sheeted(lambda: union([trk, frame, fenders, hood, grille, cab, roof, tank_] + det + rip) - union(cuts + panes))()
-
-
-@solid
-def dozer_blade():
-    """The dozer's semi-U blade standing on its cutting edge on timber skids, as it ships: the
-    moldboard's concave face curling forward at the top no more than 45 degrees, end bits, ribs and
-    the push-arm and tilt brackets on the back, bolts along the cutting edge."""
-    L = ft(11.2)
-    z0 = BLADE_SKID
-    sec = [(0.4, 0), (0, 0.6), (-1.6, 3), (-2.6, 6), (-3.0, 9), (-2.8, 12), (-2.0, 14), (-1.0, 15), (-4.4, 15), (-4.4, 3.2), (-1.2, 0)]
-    blade = along_x(poly([(y + 2.2, z + z0) for y, z in sec]), 0.0, L)
-    parts = [blade]
-    for x0 in (-0.6, L):                                          # end bits, swept forward a little
-        parts.append(along_x(poly([(2.8, z0), (1.6, z0 + 3.0), (-0.4, z0 + 14.6), (-2.2, z0 + 15.0), (-2.2, z0 + 3.2), (1.0, z0)]), x0, x0 + 0.6))
-    for x in np.linspace(3.0, L - 3.0, 6):                        # ribs on the back
-        parts.append(_side_y(x, -2.2, -3.2, z0 + 3.2, z0 + 14.6))
-    for x in (L * 0.28, L * 0.72):                                # push-arm brackets and pins
-        parts.append(box([x - 1.6, -4.4, z0 + 2.4], [x + 1.6, -2.19, z0 + 6.4]))
-        parts.append(M.cylinder(4.0, 0.7, 0.7, 16).rotate([0, 90, 0]).translate([x - 2.0, -3.4, z0 + 4.8]))
-    parts.append(box([L / 2 - 1.2, -4.0, z0 + 11.0], [L / 2 + 1.2, -2.19, z0 + 14.0]))
-    for x in np.linspace(1.5, L - 1.5, 12):
-        parts.append(M.cylinder(0.25, 0.3, 0.3, 10).rotate([-90, 0, 0]).translate([x, 1.45, z0 + 1.6]))
-    skids = [box([x - 1.2, -3.8, 0.0], [x + 1.2, 4.2, z0 + 0.01]) for x in (2.0, L / 2, L - 2.0)]
-    return F._sheeted(lambda: union(parts + skids))()
-
-
-def _side_y(x, y0, y1, z0, z1, t=0.6):
-    """A rib in the (y, z) plane at x: from y0 at the plate out to y1, z0 to z1, its outer edge sloped
-    in at both ends."""
-    return along_x(poly([(y0, z0), (y1, z0 + 1.2), (y1, z1 - 1.2), (y0, z1)]), x - t / 2, x + t / 2)
-
-
-# ================================================================== 17. vintage crawler tractors
-CRAWLER_TRACK = 6.6
-
-
-@solid
-def crawler_tractor():
-    """A 1940s crawler tractor: oval tracks on five rollers, the radiator with its cast top tank and
-    vertical grille, a narrow hood with the exhaust and air-cleaner stacks, the fuel tank, the open
-    operator's seat with its back and steering levers, fenders over the tracks and the drawbar
-    plate at the rear. Generic."""
-    zt = CRAWLER_TRACK
-    trk = tracks(0.0, 36.0, 2.8, 2.8, zt, 9.0, 5.8, 5, 1.8, rollers=1)
-    frame = _side([(5.0, 2.4), (32.0, 2.4), (35.0, 5.4), (35.0, zt + 0.01), (1.0, zt + 0.01), (1.0, 5.4)], -6.1, 6.1)
-    fenders = box([0.0, -11.9, zt - 0.01], [14.0, 11.9, zt + 0.4])
-    hood = box([14.0, -4.4, zt - 0.01], [33.0, 4.4, zt + 8.5])
-    rad = M.hull_points([(x, y, z) for x in (33.0, 37.4) for y in (-5.6, 5.6) for z in (zt - 0.01, zt + 9.4)] +
-                        [(x, y, zt + 10.6) for x in (33.4, 37.0) for y in (-5.0, 5.0)])
-    tank_ = box([9.0, -6.0, zt + 0.39], [14.5, 6.0, zt + 7.5])
-    seat = [box([3.0, -4.5, zt + 0.39], [8.0, 4.5, zt + 3.4]), box([2.0, -4.5, zt + 0.39], [3.2, 4.5, zt + 8.0])]
-    levers = [box([9.6, y - 0.3, zt + 3.4], [10.2, y + 0.3, zt + 10.5]) for y in (-1.8, 1.8)]
-    stacks = [M.cylinder(5.5, 0.55, 0.55, 14).translate([28.0, 2.4, zt + 8.49]), M.cylinder(4.5, 1.0, 1.0, 18).translate([22.0, -2.2, zt + 8.49]),
-              M.cylinder(0.6, 1.0, 1.4, 18).translate([22.0, -2.2, zt + 12.98]), M.cylinder(0.4, 1.4, 1.4, 18).translate([22.0, -2.2, zt + 13.57])]
-    det = [box([-0.4, -2.0, 2.0], [1.01, 2.0, 6.0])]
-    cuts = [box([37.0, y - 0.18, zt + 1.2], [38.0, y + 0.18, zt + 8.8]) for y in np.arange(-4.6, 4.7, 0.8)]
-    cuts += [box([x, sgn * 4.4 - 0.3, zt + 2.0], [x + 0.35, sgn * 4.4 + 0.3, zt + 6.5]) for x in np.arange(16.0, 31.5, 1.1) for sgn in (-1, 1)]
-    return F._sheeted(lambda: union([trk, frame, fenders, hood, rad, tank_] + seat + levers + stacks + det) - union(cuts))()
-
-
 # ================================================================== wheels (batch 4)
 def _tire(x, zc, r, ya, yb, lugs=24, hub=True, outer=1):
     """A tire on its wheel, axis along y between ya and yb, centre (x, zc): tread lugs cut across
@@ -1400,90 +1000,6 @@ def propane_pair():
     L = Lt + 2 * hd
     dun = [box([x - 1.2, -2 * r - 2.6, 0.0], [x + 1.2, 2 * r + 2.6, z0 + 0.01]) for x in (hd + Lt * 0.2, hd + Lt * 0.5, hd + Lt * 0.8)]
     return F._sheeted(lambda: union(parts + dun))()
-
-
-# ================================================================== 24. military 6x6 cargo trucks
-MT_PLANE = 13.0           # chassis frame top = body bottom (display)
-MT_TR = 6.3               # tire radius
-
-
-def _mt_chassis_display():
-    """The truck's chassis as it stands: frame rails, bumper with shackles, springs, axles with their
-    differentials, six tires, the fuel tank, battery box and transfer case. Everything reaches up to
-    MT_PLANE, so the part prints upside down on its frame rails."""
-    zp, r = MT_PLANE, MT_TR
-    parts = [box([6.0, s * 3.8 - (1.0 if s > 0 else 0.0), zp - 2.4], [79.0, s * 3.8 + (0.0 if s > 0 else 1.0), zp]) for s in (-1, 1)]
-    parts.append(box([76.0, -10.5, zp - 2.6], [79.6, 10.5, zp]))                # bumper at frame height
-    for sgn in (-1, 1):
-        parts.append(box([79.5, sgn * 6.0 - 0.6, zp - 2.3], [80.6, sgn * 6.0 + 0.6, zp]))       # shackles
-    parts.append(box([77.0, -3.5, zp - 4.6], [79.0, 3.5, zp]))                   # winch
-    parts.append(box([1.0, -1.8, zp - 3.0], [6.2, 1.8, zp]))                     # pintle
-    parts.append(box([1.0, -9.0, zp - 2.0], [6.5, 9.0, zp]))                     # rear crossmember, across the rails
-    for x in (68.0, 28.0, 14.0):
-        for sgn in (-1, 1):
-            ya, yb = (sgn * 9.6, sgn * 13.6) if sgn > 0 else (-13.6, -9.6)
-            parts.append(_tire(x, r, r, min(ya, yb), max(ya, yb), lugs=20, outer=sgn))
-            parts.append(_wheel_keel(x, r, r, min(ya, yb), max(ya, yb), zp))
-        parts.append(box([x - 0.7, -9.7, r - 0.7], [x + 0.7, 9.7, r + 0.7]))                 # axle
-        parts.append(M.hull_points([(x + dx, y, z) for dx in (-1.8, 1.8) for y in (-1.6, 1.6) for z in (r - 0.4, r + 1.6)] +
-                                   [(x + dx, y, r - 1.6) for dx in (-0.8, 0.8) for y in (-0.8, 0.8)]))    # differential
-        for sgn in (-1, 1):                                                      # leaf springs up to the rails
-            parts.append(box([x - 4.5, sgn * 3.8 - 0.5, r + 0.6], [x + 4.5, sgn * 3.8 + 0.5, zp - 2.39]))
-    for sgn, (x0, x1) in ((1, (38.0, 46.0)), (-1, (36.0, 42.0))):                # fuel tank, battery box
-        ya, yb = sorted((sgn * 3.6, sgn * 7.0))                                  # hung on the rail's outer face
-        parts.append(box([x0, ya, zp - 6.0], [x1, yb, zp]))
-    parts.append(box([44.0, -3.0, zp - 6.5], [52.0, 3.0, zp]))                   # transfer case, between the rails
-    parts.append(box([20.0, -0.5, zp - 4.0], [66.0, 0.5, zp]))                   # drive line
-    return union(parts)
-
-
-@solid
-def mt_chassis():
-    """The truck's chassis in its print pose: upside down on its frame rails, on a bed sheet (it ends up
-    hidden under the body)."""
-    return F._sheeted(lambda: flip(_mt_chassis_display()))()
-
-
-@solid
-def mt_body():
-    """The truck's body, printed standing on its flat underside (it sits on the chassis' rails): the
-    hood with its grille, headlights and brush guard, flat fenders, the hard cab with its windshield,
-    doors and windows, the cargo bed with troop-seat sides and a canvas cover over its bows, the
-    exhaust stack, tail lights."""
-    parts = [box([62.0, -7.5, 0.0], [77.0, 7.5, 9.0]),                                   # hood
-             box([76.6, -7.0, 0.8], [78.0, 7.0, 8.4]),                                    # grille
-             box([60.0, -13.8, 0.0], [77.4, 13.8, 0.8])]                                   # fenders
-    for sgn in (-1, 1):
-        parts.append(box([75.4, sgn * 10.6 - 1.3, 0.79], [77.4, sgn * 10.6 + 1.3, 2.6]))   # headlights
-        parts.append(box([77.6, sgn * 5.0 - 0.3, 0.79], [78.4, sgn * 5.0 + 0.3, 8.0]))     # brush guard bars
-    parts.append(box([77.6, -5.3, 7.4], [78.4, 5.3, 8.0]))
-    cab = M.hull_points([(x, y, 0.0) for x in (49.0, 62.0) for y in (-12.0, 12.0)] + [(x, y, 15.4) for x in (49.0, 61.0) for y in (-12.0, 12.0)])
-    roof = M.hull_points([(x, y, 15.3) for x in (49.0, 61.0) for y in (-12.0, 12.0)] + [(x, y, 15.8) for x in (48.6, 61.6) for y in (-12.4, 12.4)] +
-                         [(x, y, 16.4) for x in (48.6, 61.6) for y in (-12.4, 12.4)])
-    parts += [cab, roof]
-    bed = box([0.0, -13.8, 0.0], [48.0, 13.8, 6.5]) + box([47.9, -8.0, 0.0], [49.1, 8.0, 1.0])      # with the spacer to the cab
-    canvas_cs = cs_union([poly([(-13.6, 6.4), (13.6, 6.4), (13.6, 16.0), (-13.6, 16.0)]),
-                          CS.circle(1.0, 48).scale((13.6, 3.0)).translate((0.0, 16.0))]) ^ CS.square((40, 30)).translate((-20.0, 6.4))
-    canvas = along_x(canvas_cs, 0.3, 47.6)
-    parts += [bed, canvas]
-    for x in np.arange(4.0, 46.0, 8.5):                                                    # bows
-        parts.append(along_x(offset(canvas_cs, 0.25) - offset(canvas_cs, -0.05), x - 0.3, x + 0.3))
-    for x in np.arange(2.0, 47.0, 3.0):                                                    # rope tie-downs
-        for sgn in (-1, 1):
-            parts.append(box([x - 0.25, sgn * 13.8 - 0.3, 6.6], [x + 0.25, sgn * 13.8 + 0.3, 7.4]))
-    parts.append(M.cylinder(11.0, 0.55, 0.55, 14).translate([60.5, 12.6, 0.0]))            # exhaust stack
-    for sgn in (-1, 1):
-        parts.append(box([-0.4, sgn * 11.5 - 0.8, 2.0], [0.01, sgn * 11.5 + 0.8, 3.4]))     # tail lights
-    cuts = []
-    for sgn in (-1, 1):                                                                    # windshield, door outline, door window
-        cuts.append(box([60.4, sgn * 6.0 - 5.0, 9.4], [62.5, sgn * 6.0 + 5.0, 14.6]))
-        yo = sgn * 12.0
-        cuts.append(box([50.5, yo - 0.12 - (1 if sgn < 0 else 0), 1.0], [50.74, yo + 0.12 + (1 if sgn > 0 else 0), 14.8]))
-        cuts.append(box([50.9, yo - 0.4 - (1 if sgn < 0 else 0), 9.0], [58.6, yo + 0.4 + (1 if sgn > 0 else 0), 14.4]))
-    for z in np.arange(1.4, 8.0, 0.9):                                                    # grille bars
-        cuts.append(box([77.6, -6.5, z], [78.1, 6.5, z + 0.4]))
-    cuts += [box([-1, -12.5, 7.8], [0.25, 12.5, 15.0])]                                     # the rear flap's edge
-    return union(parts) - union(cuts)
 
 
 # ================================================================== 25. precast box culverts
@@ -2095,9 +1611,10 @@ def generator_stator():
     ax = lambda m: m.rotate([0, 90, 0])
     shell = ax(M.cylinder(L, r, r, 96)).translate([0, 0, zc])
     parts = [shell]
-    for x in np.linspace(3.0, L - 3.0, 7):
-        parts.append(ax(M.cylinder(1.0, r + 0.6, r + 0.6, 96)).translate([x - 0.5, 0, zc]))
-    for a in range(0, 360, 30):
+    for x in np.linspace(3.0, L - 3.0, 7):                                     # ring stiffeners, kept to the upper half
+        ring = ax(M.cylinder(1.0, r + 0.6, r + 0.6, 96)).translate([x - 0.5, 0, zc])
+        parts.append(ring ^ box([x - 1, -r - 2, zc - r * 0.6], [x + 1, r + 2, zc + r + 2]))
+    for a in (-90, -60, -30, 0, 30, 60, 90):                                     # longitudinal bars, top and sides
         parts.append(box([3.0, -0.4, r - 0.2], [L - 3.0, 0.4, r + 0.45]).rotate([a, 0, 0]).translate([0, 0, zc]))
     for xe, sgn in ((0.0, -1), (L, 1)):                                                      # end covers and bolt circles
         cov = ax(M.cylinder(1.2, r - 1.2, r - 1.2, 96)).translate([xe if sgn > 0 else xe - 1.2, 0, zc])
@@ -2119,8 +1636,8 @@ def generator_stator():
     parts.append(M.hull_points([(L * 0.55 + dx, -r - 0.2, zc + dz) for dx in (0, 6.0) for dz in (-1.5, 2.0)] +
                                [(L * 0.55 + dx, -r + 1.0, zc + dz) for dx in (0, 6.0) for dz in (-2.0, 2.0)]))
     body = union(parts)
-    web = _cradle(body, 2.0, L - 2.0, zc, r + 0.6, z0, 14.0)
-    skid = _skid_frame(0.0, L, 14.5, z0)
+    web = _cradle(body, -1.6, L + 1.6, zc, r + 0.6, z0, 14.0)                   # under the end covers too
+    skid = _skid_frame(-2.0, L + 2.0, 14.5, z0)
     return F._sheeted(lambda: union([body, web, skid]))()
 
 
@@ -2154,8 +1671,8 @@ def tube_bundle():
                for z in np.arange(-r + 0.8, r - 0.6, 1.0) if math.hypot(y, z) < r - 0.7]
     parts.append(ts - union(holes + dimples))
     for sgn in (-1, 1):
-        lug = M.hull(box([-1.6, sgn * 2.5 - 0.3, zc + r + 1.0], [-0.0, sgn * 2.5 + 0.3, zc + r + 1.8]) +
-                     M.cylinder(0.6, 0.9, 0.9, 16).rotate([90, 0, 0]).translate([-0.8, sgn * 2.5 + 0.3, zc + r + 2.6]))
+        lug = M.hull(box([-1.6, sgn * 2.5 - 0.5, zc + r + 1.0], [-0.0, sgn * 2.5 + 0.5, zc + r + 1.8]) +
+                     M.cylinder(1.0, 1.0, 1.0, 16).rotate([90, 0, 0]).translate([-0.8, sgn * 2.5 + 0.5, zc + r + 2.6]))
         parts.append(lug - M.cylinder(2, 0.4, 0.4, 12).rotate([90, 0, 0]).translate([-0.8, sgn * 2.5 + 1.0, zc + r + 2.6]))
     fh = ax(M.cylinder(1.2, r + 0.6, r + 0.6, 72)).translate([L, 0, zc])
     dome = (M.sphere(1.0, 48).scale([r * 0.45, r + 0.2, r + 0.2]) ^ box([0, -r - 1, -r - 1], [r, r + 1, r + 1])).translate([L + 1.19, 0, zc])
@@ -2186,7 +1703,7 @@ def column():
     hd = r / 2
     shell = ax(M.cylinder(Ls, r, r, 96)).translate([xk, 0, zc])
     head = (M.sphere(1.0, 64).scale([hd, r, r]) - box([-hd - 1, -r - 1, -r - 1], [0, r + 1, r + 1])).translate([xk + Ls - 0.01, 0, zc])
-    skirt = ax(M.cylinder(xk + 0.01, r, r, 96)).translate([0, 0, zc]) - ax(M.cylinder(xk + 1, r - 0.6, r - 0.6, 96)).translate([-1, 0, zc])
+    skirt = ax(M.cylinder(xk + 0.01, r, r, 96)).translate([0, 0, zc]) - ax(M.cylinder(2.5, r - 0.6, r - 0.6, 96)).translate([-1, 0, zc])   # a recess, not a tunnel
     skirt = skirt - box([4.0, -3.0, zc + r - 3.0], [12.0, 3.0, zc + r + 1])                 # access opening (on top)
     base_ring = ax(M.cylinder(1.2, r + 1.2, r + 1.2, 96)).translate([0, 0, zc])
     parts = [shell, head, skirt, base_ring]
@@ -2210,7 +1727,7 @@ def column():
             g = along_y(poly([(x - 0.4, r - 0.2), (x + 0.4, r - 0.2), (x + 0.4, r + 2.4), (x - 0.4, r + 2.4)]), -0.3, 0.3)
             parts.append(g.rotate([a, 0, 0]).translate([0, 0, zc]))
     body = union(parts + rails)
-    web = _cradle(body, 4.0, xk + Ls - 2.0, zc, r, z0, 12.0, holes=7)     # one cradle the whole length: the shell never spans
+    web = _cradle(body, 1.0, xk + Ls + hd, zc, r, z0, 12.0, holes=7)      # one cradle the whole length, head included
     skid = _skid_frame(2.0, xk + Ls, 12.5, z0)
     return F._sheeted(lambda: union([body, web, skid]))()
 
@@ -2318,7 +1835,7 @@ def package_boiler():
         band = ax(M.cylinder(0.6, r + 0.2, r + 0.2, 96)).translate([x - 0.3, 0, zc])
         parts.append(band ^ box([x - 1, -r - 1, zc - r * 0.6], [x + 1, r + 1, zc + r + 1]))
     parts.append(ax(M.cylinder(1.4, r + 0.3, r + 0.3, 96)).translate([x0 - 1.4, 0, zc]))    # front door
-    parts.append(box([x0 - 6.0, -4.5, zc - 5.0], [x0 - 1.39, 4.5, zc + 4.0]))               # burner housing
+    parts.append(box([x0 - 6.0, -4.5, z0 - 0.01], [x0 - 1.39, 4.5, zc + 4.0]))              # burner housing, down to the base
     parts.append(M.cylinder(3.4, 2.2, 2.2, 32).translate([x0 - 3.7, 0, zc + 3.99]))       # blower motor on the housing
     parts.append(ax(M.cylinder(1.2, r + 0.2, r + 0.2, 96)).translate([x0 + L, 0, zc]))     # rear door
     parts.append(ax(M.cylinder(0.6, 1.0, 1.0, 20)).translate([x0 + L + 1.19, 0, zc + 2.0]))
@@ -2327,14 +1844,15 @@ def package_boiler():
     for x, rn, hn in ((x0 + L * 0.5, 1.6, 3.0), (x0 + L * 0.7, 0.9, 2.6), (x0 + L * 0.76, 0.9, 2.6)):
         parts += [M.cylinder(hn + 0.6, rn, rn, 24).translate([x, 0, zc + r - 0.6]), M.cylinder(0.6, rn + 0.7, rn + 0.7, 24).translate([x, 0, zc + r + hn])]
     wy = -(r + 1.6)                                                                         # water column
-    parts += [M.cylinder(8.0, 0.9, 0.9, 20).translate([x0 + 6.0, wy, zc - 2.0]),
-              box([x0 + 5.4, wy - 0.4, zc - 1.0], [x0 + 6.6, -r + 0.6, zc - 0.2]), box([x0 + 5.4, wy - 0.4, zc + 4.4], [x0 + 6.6, -r + 0.6, zc + 5.2]),
+    gus = M.hull_points([(x0 + 6.0 + dx, y, z) for dx in (-0.6, 0.6) for (y, z) in ((wy, zc - 1.0), (-r + 0.6, zc - 1.0), (-r + 0.6, zc - 1.0 - (wy + r)))])
+    parts += [M.cylinder(7.0, 0.9, 0.9, 20).translate([x0 + 6.0, wy, zc - 1.0]), gus,                  # the column on a 45 degree gusset
+              box([x0 + 5.4, wy - 0.4, zc + 4.4], [x0 + 6.6, -r + 0.6, zc + 5.2]),
               box([x0 + 6.7, wy - 0.6, zc - 0.5], [x0 + 7.6, wy + 0.6, zc + 4.0])]                # gauge glass on the column
     for x in (x0 + L * 0.25, x0 + L * 0.85):
         lug = M.hull(box([x - 1.4, -0.3, zc + r - 0.8], [x + 1.4, 0.3, zc + r + 0.4]) + M.cylinder(0.6, 0.9, 0.9, 16).rotate([90, 0, 0]).translate([x, 0.3, zc + r + 1.2]))
         parts.append(lug - M.cylinder(2, 0.4, 0.4, 12).rotate([90, 0, 0]).translate([x, 1.0, zc + r + 1.2]))
     body = union(parts)
-    web = _cradle(body, x0 + 1.0, x0 + L - 1.0, zc, r, z0, 12.0)
+    web = _cradle(body, x0 - 1.6, x0 + L + 1.4, zc, r + 0.3, z0, 12.0)       # under both doors
     skid = _skid_frame(x0 - 7.0, x0 + L + 2.0, 12.5, z0)
     return F._sheeted(lambda: union([body, web, skid]))()
 
@@ -2738,7 +2256,7 @@ def farm_tractor():
               M.cylinder(4.5, 0.8, 0.8, 16).translate([19.0, -2.4, z0 + 10.99])]                          # air stack
     col = F._seg((11.0, z0 + 13.0), (6.5, z0 + 17.5), 0.6)
     parts.append(along_y(col, -0.3, 0.3))
-    sw = (M.cylinder(0.5, 2.6, 2.6, 32) - M.cylinder(2, 2.0, 2.0, 32).translate([0, 0, -1])) + box([-2.3, -0.3, 0.0], [2.3, 0.3, 0.5])
+    sw = (M.cylinder(0.8, 2.7, 2.7, 32) - M.cylinder(2, 1.9, 1.9, 32).translate([0, 0, -1])) + box([-2.3, -0.4, 0.0], [2.3, 0.4, 0.8])
     parts.append(sw.rotate([0, -45, 0]).translate([6.3, 0.0, z0 + 17.4]))                               # steering wheel, tilted
     bar = F._seg((3.0, zr + 2.5), (0.0, zr + 6.5), 0.8)
     parts.append(along_y(bar, -0.5, 0.5))
@@ -2752,6 +2270,305 @@ def farm_tractor():
     timbers = [box([0.0, sgn * 7.6 - 2.2, 0.0], [31.0, sgn * 7.6 + 2.2, z0 + 0.01]) for sgn in (-1, 1)]
     timbers.append(box([2.0, -1.6, 0.0], [26.0, 1.6, z0 + 0.01]))         # centre timber
     return F._sheeted(lambda: union(parts + timbers))()
+
+
+# ================================================================== 52. excavator buckets
+BKT_EDGE = 1.0            # the wear plate, cutting edge and teeth, then the yellow bucket
+BUCKETS = {"digging-large": (6.0, 5.5, 4.5, 5), "digging-medium": (4.0, 4.4, 3.6, 4), "ditching": (7.0, 4.4, 2.6, 0),
+           "rock": (5.0, 5.2, 4.2, 4)}
+
+
+@solid
+def bucket(kind="digging-large"):
+    """An excavator bucket as dealers ship them, standing on its floor: side plates sloping from the
+    lip to the back, the back rising upright from a 45 degree heel, the top plate bridging the side
+    plates, two ears with their pin bosses, the cutting edge and teeth (or a plain edge), side
+    cutters, wear strips on the back of a rock bucket. The wear plate, edge and teeth print grey to
+    BKT_EDGE, the bucket yellow above. The mouth has no roof, so nothing overhangs."""
+    wf, df, hf, n = BUCKETS[kind]
+    W, D, H = ft(wf), ft(df), ft(hf)
+    t, ts = 0.9, 0.8
+    side = poly([(0.7, 0.0), (D, 0.0), (D, 1.4), (D * 0.38, H), (0.0, H), (0.0, 0.7)])
+    body = along_y(side, -W / 2, W / 2)
+    cavity = poly([(t + 1.5, t), (D + 1.0, t), (D + 1.0, H + 1.0), (t, H + 1.0), (t, t + 1.5)])
+    body = body - along_y(cavity, -W / 2 + ts, W / 2 - ts)
+    parts = [body, box([0.0, -W / 2, H - 0.8], [min(5.0, D * 0.38), W / 2, H])]                    # top plate
+    for y in (-W * 0.18, W * 0.18):                                                                 # ears and pin bosses
+        ear = along_y(poly([(0.2, H - 0.01), (5.2, H - 0.01), (4.4, H + 3.4), (1.0, H + 3.4)]), y - 0.5, y + 0.5)
+        hole = M.cylinder(3.0, 0.55, 0.55, 14).rotate([90, 0, 0]).translate([2.7, y + 1.5, H + 2.2])
+        boss = M.cylinder(1.6, 1.1, 1.1, 20).rotate([90, 0, 0]).translate([2.7, y + 0.8, H + 2.2])
+        parts.append(union([ear, boss]) - hole)
+    if n:
+        for k in range(n):                                                                          # teeth on their adapters
+            y = (k - (n - 1) / 2) * (W - 2.0) / max(n - 1, 1)
+            parts.append(M.hull_points([(D - 0.5, y + dy, z) for dy in (-0.7, 0.7) for z in (0.0, 1.0)] +
+                                       [(D + 2.4, y + dy, z) for dy in (-0.3, 0.3) for z in (0.0, 0.5)]))
+            parts.append(box([D - 2.0, y - 0.8, t - 0.01], [D - 0.2, y + 0.8, 1.9]))
+    else:
+        parts.append(box([D - 0.01, -W / 2, 0.0], [D + 0.8, W / 2, 0.8]))                          # bolt-on edge
+        parts += [M.cylinder(0.3, 0.3, 0.3, 10).translate([D + 0.4, y, 0.79]) for y in np.linspace(-W / 2 + 1.0, W / 2 - 1.0, 9)]
+    for sgn in (-1, 1):                                                                             # side cutters
+        ya, yb = sorted((sgn * (W / 2 - 0.01), sgn * (W / 2 + 0.5)))
+        parts.append(along_y(poly([(D - 4.0, 0.0), (D + 0.4, 0.0), (D - 0.2, 3.0), (D - 4.0, 2.2)]), ya, yb))
+    if kind == "rock":                                                                              # wear strips on the back
+        for y in np.linspace(-W / 2 + 2.0, W / 2 - 2.0, 4):
+            parts.append(box([-0.4, y - 0.4, 1.0], [0.01, y + 0.4, H - 1.0]))
+    parts.append(box([0.7, -W / 2, 0.0], [D, W / 2, BKT_EDGE + 0.01]))                             # the wear plate under the floor
+    return union(parts)
+
+
+# ================================================================== 53. locomotive diesel engine
+PM_SKID = 1.6
+
+
+@solid
+def prime_mover():
+    """A V16 locomotive diesel engine on its shipping skid, out of the unit for overhaul or new from
+    the plant: oil pan and crankcase with eight inspection doors a side, two banks at 45 degrees with
+    sixteen cylinder heads and their rocker covers, the exhaust manifold down the V to the
+    turbocharger at one end, the accessory end with its pumps and governor, lifting eyes. Generic."""
+    z0 = PM_SKID
+    L = 56.0
+    zc = z0 + 11.4                                                          # crankcase top
+    pan = M.hull_points([(x, y, z0 - 0.01) for x in (0.0, L) for y in (-7.0, 7.0)] + [(x, y, z0 + 3.4) for x in (0.0, L) for y in (-8.5, 8.5)])
+    case = box([0.0, -8.5, z0 + 3.39], [L, 8.5, zc])
+    parts = [pan, case]
+    for sgn in (-1, 1):                                                     # inspection doors and their handles
+        yo = sgn * 8.5
+        for k in range(8):
+            x = 3.5 + k * 6.6
+            ya, yb = sorted((yo - sgn * 0.01, yo + sgn * 0.35))
+            parts.append(box([x - 2.4, ya, z0 + 5.0], [x + 2.4, yb, z0 + 9.6]))
+            ya2, yb2 = sorted((yo + sgn * 0.34, yo + sgn * 0.7))
+            parts.append(box([x - 1.6, ya2, z0 + 7.0], [x - 0.8, yb2, z0 + 7.6]))
+            parts.append(box([x + 0.8, ya2, z0 + 7.0], [x + 1.6, yb2, z0 + 7.6]))
+    a = math.radians(22.5)
+    for sgn in (-1, 1):                                                     # the banks, leaning out 22.5 degrees
+        u = np.array([sgn * math.sin(a), math.cos(a)])                     # up the bank
+        v = np.array([math.cos(a), -sgn * math.sin(a)]) * sgn               # across it, outward
+        base = np.array([sgn * 3.6, zc - 0.5])
+        hw, hh = 3.2, 6.0
+        pts = [base - v * hw, base + v * hw, base + v * hw + u * hh, base - v * hw + u * hh]
+        parts.append(along_x(poly([tuple(p) for p in pts]), 0.5, L - 0.5))
+        top = base + u * hh
+        for k in range(8):                                                  # heads and rocker covers
+            x = 3.5 + k * 6.6
+            hd = [top - v * 3.0, top + v * 3.0, top + v * 3.0 + u * 1.4, top - v * 3.0 + u * 1.4]
+            parts.append(along_x(poly([tuple(p) for p in hd]), x - 2.9, x + 2.9))
+            rc = [top - v * 2.2 + u * 1.39, top + v * 2.2 + u * 1.39, top + v * 1.8 + u * 2.5, top - v * 1.8 + u * 2.5]
+            parts.append(along_x(poly([tuple(p) for p in rc]), x - 2.4, x + 2.4))
+    zm = zc + 4.6
+    parts.append(box([2.0, -2.2, zc - 0.01], [L - 2.0, 2.2, zm + 2.2]))     # exhaust manifold down the V
+    parts += [M.cylinder(9.0, 4.2, 4.2, 40).translate([L + 3.5, 0.0, z0 + 6.0]),                  # turbocharger
+              M.cylinder(2.0, 3.6, 3.6, 40).translate([L + 3.5, 0.0, z0 + 14.99]),
+              box([L - 0.01, -2.2, z0 + 6.0], [L + 1.0, 2.2, zm + 2.2]),
+              M.cylinder(4.0, 1.6, 1.6, 24).translate([L + 3.5, 0.0, z0 + 16.98]),
+              box([L - 0.01, -6.0, z0 - 0.01], [L + 8.0, 6.0, z0 + 6.01])]
+    parts += [box([-4.0, -7.5, z0 - 0.01], [0.01, 7.5, zc + 2.0]),                                  # accessory end
+              M.cylinder(3.0, 1.8, 1.8, 24).translate([-2.0, -4.0, zc + 1.99]),
+              M.cylinder(3.0, 1.8, 1.8, 24).translate([-2.0, 4.0, zc + 1.99]),
+              box([-3.4, -1.6, zc + 1.99], [-0.6, 1.6, zc + 6.0])]
+    for x in (6.0, L - 6.0):                                                # lifting eyes on the manifold
+        eye = M.hull(box([x - 1.2, -0.4, zm + 2.19], [x + 1.2, 0.4, zm + 2.8]) + M.cylinder(0.8, 0.9, 0.9, 16).rotate([90, 0, 0]).translate([x, 0.4, zm + 3.6]))
+        parts.append(eye - M.cylinder(2, 0.4, 0.4, 12).rotate([90, 0, 0]).translate([x, 1.0, zm + 3.6]))
+    skid = [box([-5.0, y - 1.0, 0.0], [L + 9.0, y + 1.0, z0 + 0.01]) for y in (-6.0, 6.0)]
+    skid += [box([x - 1.0, -7.5, 0.0], [x + 1.0, 7.5, z0 + 0.01]) for x in np.linspace(-4.0, L + 8.0, 5)]
+    return F._sheeted(lambda: union(parts + skid))()
+
+
+# ================================================================== 54. transformer radiators
+RAD_RACK = 1.2
+
+
+@solid
+def radiator_bank(n=18):
+    """A bank of a power transformer's panel radiators, shipped off the tank: eighteen pressed-steel
+    panels standing side by side, the top and bottom headers through them with a flange at each end,
+    lifting lugs on the top header, on two rack timbers."""
+    z0 = RAD_RACK
+    pitch, tf = 1.3, 0.6
+    H, Dp = ft(8.0), 6.4
+    Lb = (n - 1) * pitch + tf
+    parts = []
+    for k in range(n):
+        x = k * pitch
+        panel = box([x, -Dp / 2, z0 - 0.01], [x + tf, Dp / 2, z0 + H])
+        parts.append(panel)
+    for zh in (z0 + 2.0, z0 + H - 2.0):                                     # headers and their flanges
+        parts.append(M.cylinder(Lb + 1.6, 0.9, 0.9, 20).rotate([0, 90, 0]).translate([-0.8, 0.0, zh]))
+        for xe in (-1.4, Lb + 0.8):
+            parts.append(M.cylinder(0.6, 1.6, 1.6, 24).rotate([0, 90, 0]).translate([xe, 0.0, zh]))
+    for x in (2.0, Lb - 2.0):                                               # lifting lugs on top
+        lug = box([x - 0.6, -0.5, z0 + H - 0.01], [x + 0.6, 0.5, z0 + H + 1.6])
+        parts.append(lug - M.cylinder(2, 0.35, 0.35, 12).rotate([90, 0, 0]).translate([x, 1.0, z0 + H + 1.0]))
+    timbers = [box([x - 1.2, -Dp / 2 - 2.0, 0.0], [x + 1.2, Dp / 2 + 2.0, z0 + 0.01]) for x in (1.0, Lb - 1.0)]
+    timbers.append(box([-1.0, -0.8, 0.0], [Lb + 1.0, 0.8, z0 + 0.01]))
+    return F._sheeted(lambda: union(parts + timbers))()
+
+
+# ================================================================== 55. ship anchor and chain
+ANCHOR_TIMBER = 1.2
+
+
+@solid
+def ship_anchor():
+    """A stockless ship's anchor of about ten tonnes lying flat on three timbers, the way they ride:
+    the shank with its D-shackle, the crown with its tripping palms, and the two flukes thinning
+    from the crown to their tips. Printed face down."""
+    z0 = ANCHOR_TIMBER
+    parts = []
+    shank = M.hull_points([(x, y, z) for x in (6.0,) for y in (-1.6, 1.6) for z in (z0, z0 + 2.4)] +
+                          [(x, y, z) for x in (36.0,) for y in (-2.0, 2.0) for z in (z0, z0 + 3.0)])
+    parts.append(shank)
+    crown = M.hull_points([(x, y, z) for x in (33.0, 45.0) for y in (-6.5, 6.5) for z in (z0,)] +
+                          [(x, y, z0 + 4.0) for x in (34.0, 44.0) for y in (-5.5, 5.5)])
+    parts.append(crown)
+    for sgn in (-1, 1):
+        fl = M.hull_points([(x, sgn * y, z0) for (x, y) in ((44.0, 4.0), (37.0, 14.5), (20.0, 9.5), (32.0, 2.2))] +
+                           [(x, sgn * y, z0 + h) for (x, y, h) in ((42.0, 4.2, 3.0), (36.0, 12.8, 1.4), (22.0, 9.0, 0.9), (32.5, 2.6, 2.6))])
+        parts.append(fl)
+        parts.append(M.hull_points([(x, sgn * y, z) for x in (44.0, 46.5) for y in (4.0, 7.0) for z in (z0, z0 + 2.6)]))   # tripping palm
+    ring = (M.cylinder(1.4, 4.2, 4.2, 40) - M.cylinder(2, 2.8, 2.8, 40).translate([0, 0, -0.3])) ^ box([-5, -5, 0], [0.6, 5, 2])
+    legs = [box([0.0, sgn * 3.5 - 0.7, 0.0], [5.0, sgn * 3.5 + 0.7, 1.4]) for sgn in (-1, 1)]
+    shackle = union([ring.translate([0.6, 0, 0])] + legs + [box([4.2, -4.4, 0.0], [5.2, 4.4, 1.4])]).translate([1.4, 0, z0])
+    parts.append(shackle)
+    timbers = [box([x - 1.2, -15.5, 0.0], [x + 1.2, 15.5, z0 + 0.01]) for x in (4.0, 22.0, 40.0)]
+    return F._sheeted(lambda: union(parts + timbers))()
+
+
+@solid
+def anchor_chain(runs=4, links=11):
+    """Stud-link anchor chain flaked in four runs on a pallet: flat links lying, upright links standing
+    through them, every link with its stud."""
+    z0 = ANCHOR_TIMBER
+    d = 0.9
+    Ll, Wl = 6 * d, 3.6 * d
+    pitch = Ll - 2 * d
+    ring_cs = (cs_union([circle((-(Ll - Wl) / 2, 0.0), Wl / 2, 24), circle(((Ll - Wl) / 2, 0.0), Wl / 2, 24),
+                         poly([(-(Ll - Wl) / 2, -Wl / 2), ((Ll - Wl) / 2, -Wl / 2), ((Ll - Wl) / 2, Wl / 2), (-(Ll - Wl) / 2, Wl / 2)])]) -
+               cs_union([circle((-(Ll - Wl) / 2, 0.0), Wl / 2 - d, 24), circle(((Ll - Wl) / 2, 0.0), Wl / 2 - d, 24),
+                         poly([(-(Ll - Wl) / 2, -Wl / 2 + d), ((Ll - Wl) / 2, -Wl / 2 + d), ((Ll - Wl) / 2, Wl / 2 - d), (-(Ll - Wl) / 2, Wl / 2 - d)])]))
+    stud = poly([(-0.3, -Wl / 2 + d - 0.01), (0.3, -Wl / 2 + d - 0.01), (0.3, Wl / 2 - d + 0.01), (-0.3, Wl / 2 - d + 0.01)])
+    link_cs = ring_cs + stud
+    flat = M.extrude(link_cs, d)
+    upright = M.extrude(link_cs, d).translate([0, 0, -d / 2]).rotate([90, 0, 0]).translate([0, 0, Wl / 2])
+    parts = []
+    for r in range(runs):
+        y = (r - (runs - 1) / 2) * (Wl + 0.8)
+        for k in range(links):
+            x = k * pitch
+            parts.append((flat if k % 2 == 0 else upright).translate([x, y, z0]))
+    Lx = (links - 1) * pitch
+    W = runs * (Wl + 0.8)
+    pallet = [box([-4.0, y - 0.8, 0.0], [Lx + 4.0, y + 0.8, z0 - 0.4]) for y in (-W / 2 + 0.8, 0.0, W / 2 - 0.8)]
+    pallet += [box([x - 1.0, -W / 2, z0 - 0.41], [x + 1.0, W / 2, z0 + 0.01]) for x in np.linspace(-3.0, Lx + 3.0, 9)]
+    return F._sheeted(lambda: union(parts + pallet))()
+
+
+# ================================================================== 56. hydraulic cylinders
+HYD_SKID = 1.6
+
+
+def _hyd_zc(r):
+    return HYD_SKID + 2.4 + r
+
+
+def hyd_change(r):
+    return math.floor((_hyd_zc(r) - r - 0.5) / 0.2) * 0.2
+
+
+@solid
+def hydraulic_cylinder(r=4.5, L=60.0):
+    """A big hydraulic cylinder for a mining shovel or a dam gate, retracted for shipping, on a
+    timber cradle and skid: the barrel with its cap-end clevis and pin hole, the gland nut and the
+    rod end's eye with its bearing, ports with flanged fittings on top, a nameplate. The cradle web
+    under the barrel carries it at 45 degrees."""
+    z0 = HYD_SKID
+    zc = _hyd_zc(r)
+    ax = lambda m: m.rotate([0, 90, 0])
+    parts = [ax(M.cylinder(L, r, r, 64)).translate([0, 0, zc]),
+             ax(M.cylinder(2.0, r + 0.5, r + 0.5, 64)).translate([-2.0, 0, zc]),                   # cap
+             ax(M.cylinder(2.4, r + 0.6, r + 0.6, 64)).translate([L, 0, zc]),                      # gland nut
+             ax(M.cylinder(2.5, r * 0.55, r * 0.55, 40)).translate([L + 2.39, 0, zc])]             # the rod, retracted
+    for y in (-r * 0.45, r * 0.45):                                                                # cap clevis
+        cl = along_y(cs_union([poly([(-1.8, zc - r * 0.8), (-1.8, zc + r * 0.8), (-2.0 - r * 0.9, zc + r * 0.5), (-2.0 - r * 0.9, zc - r * 0.5)]),   # into the cap
+                               circle((-2.0 - r * 0.9, zc), r * 0.55, 32)]), y - 0.6, y + 0.6)
+        parts.append(cl - M.cylinder(4, 0.6, 0.6, 16).rotate([90, 0, 0]).translate([-2.0 - r * 0.9, y + 2, zc]))
+    xe = L + 4.85
+    eye = along_y(cs_union([circle((xe + r * 0.7, zc), r * 0.7, 40), poly([(xe - 0.01, zc - r * 0.45), (xe + r * 0.7, zc - r * 0.7),
+                                                                             (xe + r * 0.7, zc + r * 0.7), (xe - 0.01, zc + r * 0.45)])]) -
+                  circle((xe + r * 0.7, zc), r * 0.3, 24), -r * 0.35, r * 0.35)
+    parts.append(eye)
+    for x in (2.5, L - 3.0):                                                                       # ports with flanged fittings
+        parts += [M.cylinder(2.0, 0.9, 0.9, 20).translate([x, 0.0, zc + r - 0.3]), M.cylinder(0.6, 1.5, 1.5, 20).translate([x, 0.0, zc + r + 1.6])]
+    parts.append(M.hull_points([(L * 0.5 + dx, -r - 0.15, zc + dz) for dx in (0, 5.0) for dz in (-0.8, 1.6)] +
+                               [(L * 0.5 + dx, -r + 0.8, zc + dz) for dx in (0, 5.0) for dz in (-1.4, 1.6)]))
+    body = union(parts)
+    web = _cradle(body, -1.6, L + 2.0, zc, r + 0.6, z0, r * 0.9, holes=2)
+    skid = _skid_frame(-3.0, L + 3.0, r * 0.9 + 0.6, z0)
+    return F._sheeted(lambda: union([body, web, skid]))()
+
+
+# ================================================================== 57. turnout frogs and switch points
+TO_DUN = 1.2
+
+
+@solid
+def turnout_frog():
+    """A No. 10 rail-bound manganese frog, 16 ft, on dunnage: the casting's top with its flangeways
+    closing to the throat and opening along the point, the wing rails with their bolt rows, the
+    rail ends at toe and heel."""
+    z0 = TO_DUN
+    L = ft(16.0)
+    hr = inch(7.0)
+    plan = poly([(0.0, -3.0), (L, -5.4), (L, 5.4), (0.0, 3.0)])
+    frog = M.extrude(plan, hr).translate([0, 0, z0])
+    xt, xp = 0.34 * L, 0.42 * L
+    grooves = []
+    for sgn in (-1, 1):
+        a, b, c = (0.0, sgn * 1.7), (xt, sgn * 0.7), (L + 1.0, sgn * 3.4)
+        for p0, p1 in ((a, b), (b, c)):
+            grooves.append(M.extrude(F._seg(p0, p1, 0.55), 1.0).translate([0, 0, z0 + hr - 0.7]))
+    grooves.append(M.extrude(poly([(xt, -0.7), (xp, -1.2), (xp, 1.2), (xt, 0.7)]), 1.0).translate([0, 0, z0 + hr - 0.7]))
+    frog = frog - union(grooves)
+    bolts = []
+    for sgn in (-1, 1):
+        for x in np.linspace(L * 0.15, L * 0.9, 7):
+            yy = sgn * (3.0 + (5.4 - 3.0) * x / L)
+            ya, yb = sorted((yy - sgn * 0.01, yy + sgn * 0.3))
+            bolts.append(box([x - 0.3, ya, z0 + hr * 0.4], [x + 0.3, yb, z0 + hr * 0.7]))
+    dun = [box([x - 1.0, -6.5, 0.0], [x + 1.0, 6.5, z0 + 0.01]) for x in (2.0, L / 2, L - 2.0)]
+    return F._sheeted(lambda: union([frog] + bolts + dun))()
+
+
+def _rail_profile(z0, head_scale=1.0):
+    pts = [(-0.875, 0.0), (0.875, 0.0), (0.875, 0.22), (0.25, 0.62), (0.25, 1.34), (0.45 * head_scale, 1.54), (0.45 * head_scale, RAIL_H),
+           (-0.45 * head_scale, RAIL_H), (-0.45 * head_scale, 1.54), (-0.25, 1.34), (-0.25, 0.62), (-0.875, 0.22)]
+    return [(y, z0 + z) for y, z in pts]
+
+
+@solid
+def switch_points(n=2):
+    """A pair of 26 ft switch point rails on dunnage, a left and a right: each head planed away on
+    its gauge side from nothing at the point to full width ten feet back (vertical cut faces, so
+    nothing overhangs), with a banded stack of slide plates alongside."""
+    z0 = TO_DUN
+    L = ft(26.0)
+    xp = ft(10.0)
+    parts = []
+    for k in range(n):
+        y = (k - (n - 1) / 2) * 4.0
+        g = 1.0 if k == 0 else -1.0                                         # the gauge side of this rail
+        rail = along_x(poly([(y + a, b) for a, b in _rail_profile(z0)]), 0.0, L)
+        z1, z2 = z0 + 1.3, z0 + RAIL_H + 1.0
+        planed = M.hull_points([(-0.1, y - g * 0.5, z) for z in (z1, z2)] + [(-0.1, y + g * 1.5, z) for z in (z1, z2)] +
+                               [(xp, y + g * 0.46, z) for z in (z1, z2)] + [(xp, y + g * 1.5, z) for z in (z1, z2)])
+        parts.append(rail - planed)
+    plates = [box([12.0 + i * 8.0, 5.5, z0 - 0.01], [18.0 + i * 8.0, 9.5, z0 + 1.6]) for i in range(8)]
+    plates += [box([12.0 + i * 8.0 + 2.6, 5.3, z0 - 0.01], [12.0 + i * 8.0 + 3.4, 9.7, z0 + 1.8]) for i in range(8)]   # bands
+    dun = [box([x - 1.0, -4.5, 0.0], [x + 1.0, 10.5, z0 + 0.01]) for x in np.linspace(2.0, L - 2.0, 4)]
+    dun.append(box([11.0, 5.0, 0.0], [76.0, 10.0, z0 + 0.01]))                 # the plates' own board
+    return F._sheeted(lambda: union(parts + plates + dun))()
 
 
 # ================================================================== scenes (renders only)
@@ -2918,62 +2735,6 @@ def scene_cablereels():
     return s
 
 
-def scene_tank():
-    L = ft(53.5)
-    s = F._car(L, "car_black")
-    zd = F.deck()
-    t = tank()
-    x0 = L / 2 - 30.0
-    _place(s, t, "Iron Gray Metallic", (TANK_TRACK, "Bronze"), x0 + 37.6, zd)
-    b = tank_barrel()
-    bb = t.bounding_box()
-    xm = x0 + 37.6 - (bb[0] + bb[3]) / 2 + 44.0 - 18.0             # the mantlet's face, where the peg goes in
-    F._put(s, "Bronze", b.translate([0, 0, -0.84]).rotate([0, 0, 180]).translate([xm + 3.0, 0, zd + TANK_GUN_Z]))
-    return s
-
-
-def scene_apc():
-    L = ft(53.5)
-    s = F._car(L, "car_oxide")
-    zd = F.deck()
-    for x in (L / 2 - 32.0, L / 2 + 32.0):
-        _place(s, apc(), "Iron Gray Metallic", (APC_TRACK, "Bronze"), x, zd)
-    return s
-
-
-def scene_excavator():
-    L = ft(53.5)
-    s = F._car(L, "car_black")
-    zd = F.deck()
-    x0 = 30.0
-    m = excavator()
-    hi, lo = m.split_by_plane((0, 0, 1), EXC_TRACK + 1e-3)
-    F._put(s, "Iron Gray Metallic", lo.translate([x0, 0, zd]))
-    F._put(s, "Sunflower Yellow", hi.translate([x0, 0, zd]))
-    for side in (1, -1):
-        F._put(s, "Sunflower Yellow", _excavator_front(side).translate([x0, 0, zd]))
-    F._put(s, "Cocoa Brown", excavator_block().translate([x0 + 79.0, 0, zd]))
-    return s
-
-
-def scene_dozer():
-    L = ft(53.5)
-    s = F._car(L, "car_mineral")
-    zd = F.deck()
-    _place(s, dozer(), "Iron Gray Metallic", (DOZER_TRACK, "Sunflower Yellow"), 60.0, zd)
-    _place(s, dozer_blade(), "Cocoa Brown", (BLADE_SKID, "Sunflower Yellow"), 140.0, zd)
-    return s
-
-
-def scene_crawler():
-    L = ft(40.0)
-    s = F._car(L, "car_oxide")
-    zd = F.deck()
-    for x in (L / 2 - 26.0, L / 2 + 26.0):
-        _place(s, crawler_tractor(), "Iron Gray Metallic", (CRAWLER_TRACK, "Sunflower Yellow"), x, zd)
-    return s
-
-
 def scene_trailers():
     L = ft(89.3)
     s = F._car(L, "ttx_yellow", kind="fishbelly", W=ft(9.8))
@@ -3018,16 +2779,6 @@ def scene_propane():
     zd = F.deck()
     for x in np.linspace(1.6 + 30.0, L - 1.6 - 30.0, 3):
         _place(s, propane_pair(), "Cocoa Brown", (PROP_DUN, "White"), x, zd)
-    return s
-
-
-def scene_miltrucks():
-    L = ft(53.5)
-    s = F._car(L, "car_black")
-    zd = F.deck()
-    for x0 in (8.0, 98.0):
-        F._put(s, "Black", _mt_chassis_display().translate([x0, 0, zd]))
-        F._put(s, "Bronze", mt_body().translate([x0, 0, zd + MT_PLANE]))
     return s
 
 
@@ -3285,19 +3036,79 @@ def scene_farmtractors():
     return s
 
 
-SCENES = {"joists": scene_joists, "copper": scene_copper, "farmtractors": scene_farmtractors,
-"boiler": scene_boiler, "locoboiler": scene_locoboiler, "wheelsets": scene_wheelsets, "girderspan": scene_girderspan,
-          "windblade": scene_windblade, "minecars": scene_minecars,
-"rotor": scene_rotor, "stator": scene_stator, "tubebundle": scene_tubebundle, "column": scene_column, "gear": scene_gear,
-          "genset": scene_genset,
-"sheetpile": scene_sheetpile, "poles": scene_poles, "crushed": scene_crushed, "giantlog": scene_giantlog,
-          "pulpwood": scene_pulpwood, "truss": scene_truss,
-"culverts": scene_culverts, "conpipe": scene_conpipe, "barriers": scene_barriers, "manholes": scene_manholes,
-          "doubletees": scene_doubletees, "rebar": scene_rebar,
-"trailers": scene_trailers, "containers": scene_containers, "crates": scene_crates, "chillers": scene_chillers,
-          "propane": scene_propane, "miltrucks": scene_miltrucks,
-"tank": scene_tank, "apc": scene_apc, "excavator": scene_excavator, "dozer": scene_dozer, "crawler": scene_crawler,
-"concties": scene_concties, "woodties": scene_woodties, "granite": scene_granite, "bricks": scene_bricks,
-          "ingotmolds": scene_ingotmolds, "cablereels": scene_cablereels,
-"girders": scene_girders, "lumber": lambda: _lumber_scene("lumber"), "wrapped": lambda: _lumber_scene("wrapped"),
-          "tires": scene_tires, "logs": scene_logs, "panels": scene_panels}
+def scene_buckets():
+    L = ft(40.0)
+    s = F._car(L, "car_oxide")
+    zd = F.deck()
+    for i, (kind, x) in enumerate(zip(BUCKETS, np.linspace(20.0, L - 20.0, 4))):
+        _place(s, bucket(kind), "Iron Gray Metallic", (BKT_EDGE, "Sunflower Yellow"), x, zd, rz=180.0 * (i % 2))
+    return s
+
+
+def scene_primemover():
+    L = ft(40.0)
+    s = F._car(L, "car_black")
+    _place(s, prime_mover(), "Black", (PM_SKID, "Gray"), L / 2, F.deck())
+    return s
+
+
+def scene_radiators():
+    L = ft(40.0)
+    s = F._car(L, "car_mineral")
+    zd = F.deck()
+    for x in np.linspace(L / 2 - 40.0, L / 2 + 40.0, 3):
+        for y in (-6.5, 6.5):
+            _place(s, radiator_bank(), "Cocoa Brown", (RAD_RACK, "Light Gray"), x, zd, y)
+    return s
+
+
+def scene_anchor():
+    L = ft(53.5)
+    s = F._car(L, "car_black")
+    zd = F.deck()
+    _place(s, ship_anchor(), "Cocoa Brown", (ANCHOR_TIMBER, "Black"), 34.0, zd)
+    _place(s, ship_anchor(), "Cocoa Brown", (ANCHOR_TIMBER, "Black"), 86.0, zd, rz=180.0)
+    for x in (130.0, 168.0):
+        _place(s, anchor_chain(), "Cocoa Brown", (ANCHOR_TIMBER, "Black"), x, zd, rz=90.0)
+    return s
+
+
+def scene_hydraulics():
+    L = ft(40.0)
+    s = F._car(L, "car_mineral")
+    zd = F.deck()
+    _place(s, hydraulic_cylinder(), "Cocoa Brown", (hyd_change(4.5), "Sunflower Yellow"), 48.0, zd, -6.0)
+    for x in (34.0, 100.0):
+        _place(s, hydraulic_cylinder(3.5, 45.0), "Cocoa Brown", (hyd_change(3.5), "Sunflower Yellow"), x, zd, 6.5)
+    return s
+
+
+def scene_turnout():
+    L = ft(53.5)
+    s = F._car(L, "car_oxide")
+    zd = F.deck()
+    for x in (40.0, 100.0):
+        _place(s, turnout_frog(), "Cocoa Brown", (TO_DUN, "Iron Gray Metallic"), x, zd, -8.5)
+    _place(s, switch_points(), "Cocoa Brown", (TO_DUN, "Iron Gray Metallic"), L / 2 + 20.0, zd, 7.5)
+    return s
+
+
+SCENES = {
+    "girders": scene_girders, "lumber": lambda: _lumber_scene("lumber"), "wrapped": lambda: _lumber_scene("wrapped"),
+    "tires": scene_tires, "logs": scene_logs, "panels": scene_panels,
+    "concties": scene_concties, "woodties": scene_woodties, "granite": scene_granite, "bricks": scene_bricks,
+    "ingotmolds": scene_ingotmolds, "cablereels": scene_cablereels,
+    "trailers": scene_trailers, "containers": scene_containers, "crates": scene_crates, "chillers": scene_chillers,
+    "propane": scene_propane,
+    "culverts": scene_culverts, "conpipe": scene_conpipe, "barriers": scene_barriers, "manholes": scene_manholes,
+    "doubletees": scene_doubletees, "rebar": scene_rebar,
+    "sheetpile": scene_sheetpile, "poles": scene_poles, "crushed": scene_crushed, "giantlog": scene_giantlog,
+    "pulpwood": scene_pulpwood, "truss": scene_truss,
+    "rotor": scene_rotor, "stator": scene_stator, "tubebundle": scene_tubebundle, "column": scene_column, "gear": scene_gear,
+    "genset": scene_genset,
+    "boiler": scene_boiler, "locoboiler": scene_locoboiler, "wheelsets": scene_wheelsets, "girderspan": scene_girderspan,
+    "windblade": scene_windblade, "minecars": scene_minecars,
+    "joists": scene_joists, "copper": scene_copper, "farmtractors": scene_farmtractors,
+    "buckets": scene_buckets, "primemover": scene_primemover, "radiators": scene_radiators, "anchor": scene_anchor,
+    "hydraulics": scene_hydraulics, "turnout": scene_turnout,
+}

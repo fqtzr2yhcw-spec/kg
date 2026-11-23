@@ -654,25 +654,21 @@ Freight for HO flatcars, under the pack rules above. What is particular to loads
 
 ## Flatcar loads, second series (`flatloads2.py`, `loads2.py`)
 
-Fifty more loads (November 2026), under the rules above. The geometry and render scenes are in
+Fifty more loads (November 2026), under the rules above. The owner dropped the six whole-vehicle loads
+(tank, APCs, military trucks, excavator, dozer, crawler tractors: "parts are good, whole vehicles
+don't look good") and they were replaced with parts: excavator buckets, a locomotive diesel engine,
+transformer radiators, anchors and chain, hydraulic cylinders, turnout frogs and switch points. The geometry and render scenes are in
 `flatloads2.py`; the pack entries (pieces, colours, listing copy and the listings sheet's extras) in
 `loads2.py`, which `packs.PACKS` merges in; zip names in `loadnames.py`, which `assembly.ZIPNAME`
 reads. What they added to the rules:
 
 - Print a stack upside down when its top is the big flat face: lumber and wrapped bundles, piggyback
   trailers (roof on the plate, running gear growing up from the floor), double tees (flange down),
-  the truck chassis (on its frame rails). The base colour is then the load and the change colour what
-  sits on top (stickers, dunnage, black running gear). `flatloads2.flip` turns a display pose over.
-- Split a piece rather than overhang it. The tank's gun plugs into the mantlet and rests on the
-  travel lock; the excavator's front prints as two halves on their cut faces; the dozer's blade
-  rides beside it (as real big dozers ship); cable drum flanges print flat and the cable barrel
-  upright; the truss sides and blade fixtures print flat and stand on edge; the wind blade prints
-  in three pegged sections (peg and socket on the flat side, the socket open to the plate). A truck
-  is a black chassis and an olive body, one colour each, glued on the frame rails.
-- Crawler tracks (`track_unit`) rise from the ground at 45 degrees into the sprocket and idler. The
-  body above sits on the track tops, and the colour changes there: tracks and running gear steel
-  grey, the machine above. A body that hangs past the track's end (a counterweight) takes a 45
-  degree underside.
+  The base colour is then the load and the change colour what sits on top (stickers, dunnage, black
+  running gear). `flatloads2.flip` turns a display pose over.
+- Split a piece rather than overhang it. Cable drum flanges print flat and the cable barrel upright;
+  the truss sides and blade fixtures print flat and stand on edge; the wind blade prints in three
+  pegged sections (peg and socket on the flat side, the socket open to the plate).
 - Round things standing on edge (tires, wheels, wheelsets, mine-car and tractor wheels) stand on
   45 degree keels in their own colour; a keel under a tire reads as its chock. A tire that prints
   upside down hangs on `_wheel_keel` up to the plane above it, out of sight under the body.
@@ -683,9 +679,14 @@ reads. What they added to the rules:
 - Stack bigger under smaller (crushed cars), so nothing overhangs the piece below by more than a
   ledge; upper pieces stack on the one below at most 0.3 mm off.
 - Every piece that touches the plate with less than about a third of its footprint gets the bed
-  sheet; the tracked vehicles, crates and tie rows came out at 9 to 29 % without it.
+  sheet; the crates and tie rows came out at 9 to 29 % without it.
 - Stencils on a face overlap it by 0.05 mm (a stencil only touching the face is a separate part).
   Crate stencils get a plain panel above a mid batten, clear of the diagonal brace.
+- Cradles cover the whole body, heads and doors included, and anything hung on its side (a water
+  column) comes down into the shell on a 45 degree gusset. A hollow end (a column's skirt) is a
+  recess a couple of millimetres deep, not a tunnel; a 27 mm round tunnel has no support at its top.
+- Features under 0.8 mm across (lifting loops, lugs, a steering-wheel rim) are dropped by the slicer,
+  which leaves what sits on them in the air ("Empty layer" in its warnings). Make them 0.8 to 1 mm.
 - Check with `lint.overhangs` on every piece: the big spots should all be bridges under 30 mm
   (bundle bottoms between dunnage, bellies between tracks, a culvert's roof), and anything else is
   a fix.

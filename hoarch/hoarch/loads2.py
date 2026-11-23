@@ -161,73 +161,9 @@ PACKS2 = dict([
           "19.99", "HO Scale Cable Reels 3 pc | Steel HV Cable Drums Flatcar Load, Wind Farm Substation | Printed | 1:87",
           ["cable reels", "cable spools", "wire spools", "power cable", "substation", "wind farm", "utility load",
            "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Steel Cable Reel Flatcar Load 3 Drums HV Cable Wind Farm Substation 1:87",
+          dict(ebay="HO Scale Steel Cable Reel Flatcar Load 3 Drums HV Cable Wind Farm Substation",
                car="a 53 ft flatcar (three drums)", era="Transition / Modern (1960s-present)",
                colors="Blue, Black, Tan, Brown", ship=6.5, pack=1.50)),
-    _load("tank", "Main Battle Tank Load", 2,
-          "A main battle tank as the Army ships it by rail: turret turned to the rear and the gun on its travel lock over the "
-          "engine deck. Seven road wheels a side behind side skirts, the long shallow glacis, a low wedge turret with its "
-          "bustle stowage, cupola, hatches, sights and smoke dischargers, grilles on the engine deck. Steel-grey tracks and "
-          "running gear, olive drab hull; the gun is a separate piece that plugs into the mantlet. Generic, not any one "
-          "army's tank. 12 ft wide, it rides as a dimensional load.",
-          [_p("Tank", G.tank, "Iron Gray Metallic", 1, (G.TANK_TRACK, "Bronze")), _p("Tank-gun", G.tank_barrel, "Bronze", 1)],
-          "17.99", "HO Scale Main Battle Tank Flatcar Load | Military Train | Olive Drab, Printed in Color | 1:87",
-          ["military tank", "ho military", "army train", "tank flatcar", "military load", "battle tank", "armored vehicle",
-           "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Military Main Battle Tank Flatcar Load Olive Drab 1:87 Army Train",
-               car="a 50-60 ft flatcar (one tank) or an 89 ft flat (two)", era="Modern (1980s-present)",
-               colors="Olive Drab, Steel Gray", ship=5.5, pack=1.25)),
-    _load("apc", "Armored Personnel Carrier Load", 2,
-          "Two tracked armoured personnel carriers for a 53 ft flatcar: plain aluminium boxes on five road wheels a side, the "
-          "trim vane folded on the glacis, headlights in guards, the driver's hatch and the commander's cupola with its "
-          "machine gun stowed, the big cargo hatch, the rear ramp with its door and hinges, the exhaust on the right "
-          "front. Steel-grey tracks, olive drab hulls. Generic.",
-          [_p("APC", G.apc, "Iron Gray Metallic", 2, (G.APC_TRACK, "Bronze"))],
-          "17.99", "HO Scale Armored Personnel Carriers 2 pc | Military Flatcar Load | Olive Drab, Printed | 1:87",
-          ["military apc", "ho military", "army train", "armored vehicle", "military load", "personnel carrier",
-           "military flatcar", "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Military Armored Personnel Carriers 2 pc Flatcar Load Olive Drab 1:87",
-               car="a 50-53 ft flatcar (two)", era="Transition / Modern (1960s-present)",
-               colors="Olive Drab, Steel Gray", ship=5.5, pack=1.25)),
-    _load("excavator", "Crawler Excavator Load", 2,
-          "A 20 tonne class crawler excavator in transport position for a 53 ft flatcar: long-frame tracks with rollers and "
-          "carriers, the cab on the left with its glass, engine hood and grilles, exhaust, the rounded counterweight and "
-          "handrails; the boom folded down, the arm tucked back under it and the bucket curled onto its timber. The front "
-          "prints as two halves that glue face to face and slide into the boom-foot bracket. Generic.",
-          [_p("Excavator", G.excavator, "Iron Gray Metallic", 1, (G.EXC_TRACK, "Sunflower Yellow")),
-           _p("Excavator-front-L", lambda: G.excavator_front(1), "Sunflower Yellow", 1),
-           _p("Excavator-front-R", lambda: G.excavator_front(-1), "Sunflower Yellow", 1),
-           _p("Bucket-timber", G.excavator_block, "Cocoa Brown", 1)],
-          "19.99", "HO Scale Crawler Excavator Flatcar Load | Construction Equipment, Transport Position | Printed | 1:87",
-          ["ho excavator", "excavator load", "construction", "heavy equipment", "trackhoe", "construction site",
-           "equipment load", "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Crawler Excavator Flatcar Load Construction Equipment 1:87 Printed Yellow",
-               car="a 53 ft flatcar", era="Modern (1980s-present)", colors="Yellow, Steel Gray", ship=5.5, pack=1.25)),
-    _load("dozer", "Crawler Dozer Load", 2,
-          "A mid-size crawler dozer shipped with its blade off, the blade riding beside it on timber skids, for a 53 ft "
-          "flatcar: oval tracks on six rollers, the push-arm trunnions on the track frames, the long engine hood with its "
-          "radiator guard, louvres, exhaust stack and precleaner, the ROPS cab with its glass, the fuel tank and a single-"
-          "shank ripper lowered onto a steel block. The blade stands on its cutting edge: semi-U moldboard, end bits, ribs "
-          "and brackets on the back. Generic.",
-          [_p("Dozer", G.dozer, "Iron Gray Metallic", 1, (G.DOZER_TRACK, "Sunflower Yellow")),
-           _p("Dozer-blade", G.dozer_blade, "Cocoa Brown", 1, (G.BLADE_SKID, "Sunflower Yellow"))],
-          "18.99", "HO Scale Crawler Dozer and Blade Flatcar Load | Bulldozer Construction Equipment | Printed | 1:87",
-          ["ho bulldozer", "dozer load", "bulldozer", "construction", "heavy equipment", "crawler dozer",
-           "equipment load", "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Crawler Dozer with Blade Flatcar Load Bulldozer Construction 1:87",
-               car="a 53 ft flatcar", era="Modern (1970s-present)", colors="Yellow, Steel Gray, Brown", ship=5.5, pack=1.25)),
-    _load("crawler", "Vintage Crawler Tractor Load", 2,
-          "Two 1940s crawler tractors for a 40 ft flatcar, as they left the factory: oval tracks on five rollers, the "
-          "radiator with its cast top tank and vertical grille, a narrow hood with the exhaust and air-cleaner stacks, the "
-          "fuel tank, the open seat with its back and steering levers, fenders over the tracks and the drawbar plate. "
-          "Generic.",
-          [_p("Crawler-tractor", G.crawler_tractor, "Iron Gray Metallic", 2, (G.CRAWLER_TRACK, "Sunflower Yellow"))],
-          "16.99", "HO Scale Vintage Crawler Tractors 2 pc | 1940s Flatcar Load | Printed in Color | 1:87",
-          ["crawler tractor", "vintage tractor", "steam era", "farm machinery", "construction", "heavy equipment",
-           "transition era", "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Vintage 1940s Crawler Tractors 2 pc Flatcar Load 1:87 Printed Yellow",
-               car="a 40 ft flatcar (two)", era="Steam / Transition (1930s-1960s)", colors="Yellow, Steel Gray",
-               ship=5.5, pack=1.25)),
     _load("trailers", "Piggyback Trailer Load", 1,
           "Two 40 ft van trailers of the 1960s for an 85-89 ft piggyback flat, one silver and one white: exterior posts "
           "every two feet, top and bottom rails, rear doors with hinges, lock rods and handles, the ICC bar, rounded front "
@@ -288,18 +224,6 @@ PACKS2 = dict([
           dict(ebay="HO Scale 1000 Gallon Propane Tanks 6 pc Bulkhead Flatcar Load 1:87 Printed",
                car="a 53 ft bulkhead flatcar (six), or a fuel dealer's yard", era="Transition / Modern (1950s-present)",
                colors="White, Brown", ship=5.5, pack=1.25)),
-    _load("miltrucks", "Military Cargo Truck Load", 2,
-          "Two 6x6 military cargo trucks for a 53 ft flatcar: hood with grille, headlights and brush guard, flat fenders, "
-          "a hard cab with its windshield and doors, the cargo bed with a canvas cover over its bows and rope tie-downs, "
-          "the exhaust stack. The black chassis (frame, bumper and winch, springs, axles and differentials, six lugged "
-          "tires, tanks) and the olive body print separately and glue on the frame rails. Generic.",
-          [_p("Truck-chassis", G.mt_chassis, "Black", 2), _p("Truck-body", G.mt_body, "Bronze", 2)],
-          "17.99", "HO Scale Military 6x6 Cargo Trucks 2 pc | Army Flatcar Load | Olive Drab, Printed | 1:87",
-          ["military truck", "army truck", "ho military", "6x6 truck", "military load", "army train", "cargo truck",
-           "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Military 6x6 Cargo Trucks 2 pc Army Flatcar Load Olive Drab 1:87",
-               car="a 53 ft flatcar (two)", era="Transition / Modern (1950s-present)", colors="Olive Drab, Black",
-               ship=5.5, pack=1.25)),
     _load("culverts", "Precast Box Culvert Load", 2,
           "Four 8 x 6 ft precast concrete box culvert sections for a 40 ft flatcar, each on two timbers: 8 in walls with "
           "haunched corners, the tongue at one end and the groove's lip at the other, lifting inserts on top and the size "
@@ -308,7 +232,7 @@ PACKS2 = dict([
           "16.99", "HO Scale Precast Box Culverts 4 pc | Concrete Flatcar Load, Highway Construction | Printed | 1:87",
           ["box culvert", "precast concrete", "concrete load", "road construction", "highway project", "culvert",
            "construction load", "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Precast Concrete Box Culverts 4 pc Flatcar Load Highway Construction 1:87",
+          dict(ebay="HO Scale Precast Concrete Box Culverts 4 pc Flatcar Load Road Construction 1:87",
                car="a 40 ft flatcar (four)", era="Transition / Modern (1950s-present)", colors="Light Gray, Brown", ship=5.5, pack=1.25)),
     _load("conpipe", "Concrete Pipe Load", 2,
           "Nine 48 in reinforced concrete pipes for a 40 ft flatcar, lying across the car three to a row with their bells at "
@@ -452,7 +376,7 @@ PACKS2 = dict([
           "24.99", "HO Scale Generator Stator Load | Depressed Center Flatcar Heavy Load, Power Plant | Printed | 1:87",
           ["generator stator", "power plant", "heavy load", "depressed flatcar", "dimensional load", "electric utility",
            "power station", "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Generator Stator Heavy Load for Depressed Center Flatcar Power Plant 1:87",
+          dict(ebay="HO Scale Generator Stator Load for Depressed Center Flatcar Power Plant 1:87",
                car="a depressed-centre flatcar (it sits in the well)", era="Transition / Modern (1950s-present)",
                colors="Gray, Black", ship=8.0, pack=2.50)),
     _load("tubebundle", "Heat Exchanger Tube Bundle Load", 2,
@@ -547,7 +471,7 @@ PACKS2 = dict([
           "29.99", "HO Scale Wind Turbine Blade 2-Car Flatcar Load | 37 m Blade with Fixtures | Printed | 1:87",
           ["wind turbine blade", "wind blade load", "wind turbine", "wind farm", "dimensional load", "89 ft flatcar",
            "modern railroad", "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Wind Turbine Blade Load 37 m Blade with Root Fixture and Tip Cradle 1:87",
+          dict(ebay="HO Scale Wind Turbine Blade Load 37 m Blade Root Fixture and Tip Cradle 1:87",
                car="an 89 ft flatcar and a 60 ft flat (or an idler)", era="Modern (2000-present)",
                colors="White, Blue", ship=8.0, pack=2.50)),
     _load("minecars", "Mine Car Load", 2,
@@ -596,4 +520,73 @@ PACKS2 = dict([
            "agriculture", "flatcar load", "ho scale load"] + _TAIL,
           dict(ebay="HO Scale 1920s Steel Wheel Farm Tractors 4 pc Flatcar Load Steam Era 1:87",
                car="a 40 ft flatcar (four in line)", era="Steam (1915-1940)", colors="Gray, Green, Brown", ship=5.5, pack=1.25)),
+    _load("buckets", "Excavator Bucket Load", 2,
+          "Four excavator buckets for a 40 ft flatcar, the way dealers ship attachments: a large and a medium digging bucket "
+          "with teeth on their adapters, a wide ditch-cleaning bucket with a bolt-on edge, and a rock bucket with wear strips "
+          "on its back. Each has its side cutters, top plate and two ears with pin bosses, and stands on its wear plate. "
+          "Yellow buckets, the wear plate, edges and teeth in steel grey.",
+          [_p("Bucket-" + k, (lambda k: (lambda: G.bucket(k)))(k), "Iron Gray Metallic", 1, (G.BKT_EDGE, "Sunflower Yellow")) for k in G.BUCKETS],
+          "15.99", "HO Scale Excavator Buckets 4 pc | Construction Attachments Flatcar Load | Printed in Color | 1:87",
+          ["excavator bucket", "construction", "heavy equipment", "equipment dealer", "attachments", "construction site",
+           "equipment load", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Excavator Buckets 4 pc Construction Attachment Flatcar Load 1:87",
+               car="a 40 ft flatcar, or a dealer's yard or job site", era="Modern (1970s-present)",
+               colors="Yellow, Steel Gray", ship=5.5, pack=1.25)),
+    _load("primemover", "Locomotive Diesel Engine Load", 2,
+          "A V16 locomotive diesel engine on its shipping skid for a 40 ft flatcar, going to or from the overhaul shop: oil pan "
+          "and crankcase with eight inspection doors a side, two banks at 45 degrees with sixteen cylinder heads and rocker "
+          "covers, the exhaust manifold down the V to the turbocharger, the accessory end with its pumps and governor, "
+          "lifting eyes. Generic.",
+          [_p("Diesel-engine", G.prime_mover, "Black", 1, (G.PM_SKID, "Gray"))],
+          "18.99", "HO Scale Locomotive Diesel Engine on Skid | V16 Prime Mover Flatcar Load | Printed | 1:87",
+          ["diesel engine", "locomotive engine", "prime mover", "engine house", "railroad shop", "diesel shop",
+           "locomotive parts", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale V16 Locomotive Diesel Engine Prime Mover on Skid Flatcar Load 1:87",
+               car="a 40 ft flatcar, or a diesel shop scene", era="Transition / Modern (1950s-present)",
+               colors="Gray, Black", ship=5.5, pack=1.25)),
+    _load("radiators", "Transformer Radiator Load", 2,
+          "Six banks of power transformer radiators for a 40 ft flatcar, shipped off the tank and racked: eighteen pressed "
+          "panels to a bank with their top and bottom headers and end flanges, lifting lugs on top, on rack timbers. They "
+          "ride with our power transformer load.",
+          [_p("Radiator-bank", G.radiator_bank, "Cocoa Brown", 6, (G.RAD_RACK, "Light Gray"))],
+          "15.99", "HO Scale Transformer Radiator Banks 6 pc | Substation Flatcar Load | Printed in Color | 1:87",
+          ["transformer parts", "substation", "power plant", "electric utility", "radiator banks", "industrial load",
+           "heavy load", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Power Transformer Radiator Banks 6 pc Substation Flatcar Load 1:87",
+               car="a 40 ft flatcar", era="Transition / Modern (1950s-present)", colors="Light Gray, Brown", ship=5.5, pack=1.25)),
+    _load("anchor", "Ship Anchor and Chain Load", 1,
+          "A pair of stockless ship's anchors and their stud-link chain for a 53 ft flatcar, bound for a shipyard: each anchor "
+          "lying flat on timbers with its D-shackle, crown and tripping palms and the flukes thinning to their tips, and the "
+          "chain flaked four runs to a pallet, flat links lying and upright links standing through them, every link with "
+          "its stud.",
+          [_p("Anchor", G.ship_anchor, "Cocoa Brown", 2, (G.ANCHOR_TIMBER, "Black")),
+           _p("Anchor-chain", G.anchor_chain, "Cocoa Brown", 2, (G.ANCHOR_TIMBER, "Black"))],
+          "17.99", "HO Scale Ship Anchors and Chain Flatcar Load | Shipyard Harbor Port Load | Printed | 1:87",
+          ["ship anchor", "anchor chain", "shipyard", "harbor diorama", "port scene", "marine load", "waterfront",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Ship Anchors and Stud Link Chain Flatcar Load Shipyard Port 1:87",
+               car="a 53 ft flatcar, or a shipyard or dock", era="Any (steam to modern)", colors="Black, Brown",
+               ship=5.5, pack=1.25)),
+    _load("hydraulics", "Hydraulic Cylinder Load", 2,
+          "Three big hydraulic cylinders for a mining shovel or a dam gate, retracted for shipping on timber cradles, for a 40 "
+          "ft flatcar: each barrel with its cap-end clevis, gland nut and rod eye, ports with flanged fittings and a "
+          "nameplate. One large and two medium.",
+          [_p("Cylinder-large", G.hydraulic_cylinder, "Cocoa Brown", 1, (G.hyd_change(4.5), "Sunflower Yellow")),
+           _p("Cylinder-medium", lambda: G.hydraulic_cylinder(3.5, 45.0), "Cocoa Brown", 2, (G.hyd_change(3.5), "Sunflower Yellow"))],
+          "15.99", "HO Scale Hydraulic Cylinders 3 pc | Mining Industrial Flatcar Load on Cradles | Printed | 1:87",
+          ["hydraulic cylinder", "mining load", "industrial load", "heavy equipment", "mine diorama", "factory load",
+           "machinery load", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Large Hydraulic Cylinders 3 pc Mining Industrial Flatcar Load 1:87",
+               car="a 40 ft flatcar", era="Transition / Modern (1950s-present)", colors="Yellow, Brown", ship=5.5, pack=1.25)),
+    _load("turnout", "Turnout Frog and Switch Point Load", 2,
+          "Turnout material for the rail gang on a 53 ft flatcar: two No. 10 rail-bound manganese frogs, 16 ft, their "
+          "flangeways closing to the throat and opening along the point, bolt rows on the wing rails; a pair of 26 ft "
+          "switch point rails planed to their points; and a banded stack of slide plates, all on dunnage.",
+          [_p("Frog", G.turnout_frog, "Cocoa Brown", 2, (G.TO_DUN, "Iron Gray Metallic")),
+           _p("Switch-points", G.switch_points, "Cocoa Brown", 1, (G.TO_DUN, "Iron Gray Metallic"))],
+          "15.99", "HO Scale Turnout Frogs and Switch Points | MOW Track Material Flatcar Load | Printed | 1:87",
+          ["turnout frog", "switch points", "mow train", "maintenance of way", "track material", "rail gang",
+           "work train", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Turnout Frogs and Switch Points MOW Track Material Flatcar Load 1:87",
+               car="a 53 ft flatcar or a gondola", era="Any (steam to modern)", colors="Steel Gray, Brown", ship=5.5, pack=1.25)),
 ])
