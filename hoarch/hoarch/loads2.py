@@ -495,4 +495,70 @@ PACKS2 = dict([
            "modern industry", "flatcar load", "ho scale load"] + _TAIL,
           dict(ebay="HO Scale 40 ft Enclosed Diesel Generator Set Flatcar Load Power Module 1:87",
                car="a 53 ft flatcar", era="Modern (1980s-present)", colors="White, Black", ship=6.5, pack=1.50)),
+    _load("boiler", "Package Boiler Load", 2,
+          "A firetube package boiler, 8 ft by 22 ft, for a 40 ft flatcar: the jacketed shell with its bands, the front door "
+          "with the burner housing and blower, the rear door and sight port, the flue outlet, steam nozzle and safety "
+          "valves on top, the water column with its gauge glass, lifting lugs, on its saddles and base.",
+          [_p("Package-boiler", G.package_boiler, "Black", 1, (G.BOIL_CHANGE, "Mistletoe Green"))],
+          "17.99", "HO Scale Industrial Package Boiler Flatcar Load | Factory Power House | Printed in Color | 1:87",
+          ["boiler load", "industrial boiler", "power house", "factory load", "steam plant", "industrial load",
+           "heavy load", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Industrial Firetube Package Boiler Flatcar Load Factory 1:87 Printed",
+               car="a 40 ft flatcar", era="Transition / Modern (1950s-present)", colors="Green, Black", ship=5.5, pack=1.25)),
+    _load("locoboiler", "Locomotive Boiler Load", 1,
+          "A steam locomotive's boiler out of its frames on its way to the shop or a museum, for a 42 ft flatcar: the wide "
+          "radial-stay firebox with staybolt heads over its sides and crown, the mud ring and washout plugs, the backhead "
+          "and firedoor; the tapered barrel with course seams, steam dome and check-valve bosses; the smokebox with its "
+          "stack base and hinged front door. On timber blocking and a cradle.",
+          [_p("Locomotive-boiler", G.loco_boiler, "Cocoa Brown", 1, (G.LB_BLOCK, "Iron Gray Metallic"))],
+          "21.99", "HO Scale Steam Locomotive Boiler Flatcar Load | Restoration Shop Move | Printed in Color | 1:87",
+          ["locomotive boiler", "steam locomotive", "steam era", "restoration", "railroad shop", "railroad museum",
+           "heavy load", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Steam Locomotive Boiler Flatcar Load Restoration Shop Move 1:87",
+               car="a 42 ft flatcar", era="Any (steam to museum days)", colors="Iron Gray, Brown", ship=6.5, pack=1.50)),
+    _load("wheelsets", "Freight Car Wheelset Load", 2,
+          "Twelve freight-car wheelsets for a 40 ft flatcar, four to a row standing on timber rails: 36 in wheels with their "
+          "flanges and dished plates, hubs, axles, roller-bearing caps on the journals with a block under each. In "
+          "rust, for the shop track or the wheel shop.",
+          [_p("Wheelset-row", G.wheelset_row, "Cocoa Brown", 3, (G.WS_TIMBER, "Copper Brown Metallic"))],
+          "15.99", "HO Scale Freight Car Wheelsets 12 pc on Timber Rails | Flatcar MOW Shop Load | Printed | 1:87",
+          ["wheelsets", "wheel load", "railroad shop", "mow train", "car shop", "freight car parts", "rail yard",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Freight Car Wheelsets 12 pc Flatcar Load Shop MOW 1:87 Printed",
+               car="a 40 ft flatcar or a gondola", era="Transition / Modern (1950s-present)", colors="Rust, Brown", ship=5.5, pack=1.25)),
+    _load("girderspan", "Plate Girder Span Load", 2,
+          "A 50 ft riveted deck plate girder railroad span, assembled, on blocking on a 53 ft flatcar: two 5 ft girders "
+          "with flange angles and cover plates, stiffeners every 5 ft and doubled at the bearings, five diaphragms and the "
+          "top lateral bracing. Set it on your abutments and it is a bridge.",
+          [_p("Plate-girder-span", G.plate_girder_span, "Cocoa Brown", 1, (G.PGS_BLOCK, "Black"))],
+          "18.99", "HO Scale 50 ft Plate Girder Bridge Span Flatcar Load | Also a Bridge | Printed in Color | 1:87",
+          ["plate girder", "ho bridge", "railroad bridge", "girder bridge", "bridge span", "bridge kit", "steel load",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale 50 ft Deck Plate Girder Bridge Span Flatcar Load Railroad Bridge 1:87",
+               car="a 53 ft flatcar", era="Any (steam to modern)", colors="Black, Brown", ship=6.5, pack=1.50)),
+    _load("windblade", "Wind Turbine Blade Load", 1,
+          "A 37 m wind turbine blade on two flatcars, the way blades ride: the root bolted to its steel root fixture on an 89 "
+          "ft flat and the outboard part in a tip cradle on the next car. The round root with its bolt circle swells into "
+          "the airfoil at its widest chord and tapers to the tip. The blade prints in three sections that key together "
+          "with pegs on the flat side. Matches our wind tower section and nacelle loads.",
+          [_p("Blade-root", lambda: G.blade_section(0), "White", 1), _p("Blade-middle", lambda: G.blade_section(1), "White", 1),
+           _p("Blade-tip", lambda: G.blade_section(2), "White", 1), _p("Root-fixture", G.blade_root_fixture, "Cobalt Blue", 1),
+           _p("Tip-cradle", G.blade_tip_cradle, "Cobalt Blue", 1)],
+          "29.99", "HO Scale Wind Turbine Blade 2-Car Flatcar Load | 37 m Blade with Fixtures | Printed | 1:87",
+          ["wind turbine blade", "wind blade load", "wind turbine", "wind farm", "dimensional load", "89 ft flatcar",
+           "modern railroad", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Wind Turbine Blade Load 37 m Blade with Root Fixture and Tip Cradle 1:87",
+               car="an 89 ft flatcar and a 60 ft flat (or an idler)", era="Modern (2000-present)",
+               colors="White, Blue", ship=8.0, pack=2.50)),
+    _load("minecars", "Mine Car Load", 2,
+          "Eight 36 in gauge V-dump ore cars for a 40 ft flatcar, new from the builder or moving between mines: each V body "
+          "open at the top with its rim angle and ribs, rocking on two curved cradles, end sills with link-and-pin pockets, "
+          "four 14 in wheels, on two timbers.",
+          [_p("Mine-car", G.mine_car, "Cocoa Brown", 8, (G.MINE_TIMBER, "Red"))],
+          "15.99", "HO Scale Narrow Gauge Mine Cars 8 pc | V-Dump Ore Cars Flatcar Load | Printed in Color | 1:87",
+          ["mine cars", "ore cars", "narrow gauge", "mining railroad", "gold mine", "mining load", "steam era",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Narrow Gauge V-Dump Mine Cars 8 pc Flatcar Load Mining 1:87",
+               car="a 40 ft flatcar (eight), or a mine scene", era="Steam / Transition (1880s-1960s)",
+               colors="Red, Brown", ship=5.5, pack=1.25)),
 ])

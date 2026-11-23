@@ -43,4 +43,10 @@ ZIPNAMES = {
     "column": "Distillation_Column_Load",
     "gear": "Girth_Gear_Load",
     "genset": "Diesel_Genset_Load",
+    "boiler": "Package_Boiler_Load",
+    "locoboiler": "Locomotive_Boiler_Load",
+    "wheelsets": "Freight_Car_Wheelset_Load",
+    "girderspan": "Plate_Girder_Span_Load",
+    "windblade": "Wind_Turbine_Blade_Load",
+    "minecars": "Mine_Car_Load",
 }

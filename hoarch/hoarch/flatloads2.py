@@ -2288,6 +2288,322 @@ def genset():
     return union([body] + det + base)
 
 
+# ================================================================== 43. firetube package boiler
+BOIL_SKID = 1.6
+BOIL_R = ft(8.0) / 2
+BOIL_ZC = BOIL_SKID + 3.6 + BOIL_R
+BOIL_CHANGE = math.floor((BOIL_ZC - BOIL_R - 0.5) / 0.2) * 0.2
+
+
+@solid
+def package_boiler():
+    """A firetube package boiler, 8 ft by 22 ft, on its base: the jacketed shell with its bands, the
+    front door with the burner housing and blower, the rear door with its sight port, the flue
+    outlet on top at the front, the steam nozzle and two safety valves, the water column with its
+    gauge glass, lifting lugs; on saddles and a cradle."""
+    r = BOIL_R
+    zc, z0 = BOIL_ZC, BOIL_SKID
+    L = ft(22.0)
+    x0 = 6.0
+    ax = lambda m: m.rotate([0, 90, 0])
+    parts = [ax(M.cylinder(L, r, r, 96)).translate([x0, 0, zc])]
+    for x in np.linspace(x0 + 6.0, x0 + L - 6.0, 4):                                       # jacket bands, upper half
+        band = ax(M.cylinder(0.6, r + 0.2, r + 0.2, 96)).translate([x - 0.3, 0, zc])
+        parts.append(band ^ box([x - 1, -r - 1, zc - r * 0.6], [x + 1, r + 1, zc + r + 1]))
+    parts.append(ax(M.cylinder(1.4, r + 0.3, r + 0.3, 96)).translate([x0 - 1.4, 0, zc]))    # front door
+    parts.append(box([x0 - 6.0, -4.5, zc - 5.0], [x0 - 1.39, 4.5, zc + 4.0]))               # burner housing
+    parts.append(M.cylinder(3.4, 2.2, 2.2, 32).translate([x0 - 3.7, 0, zc + 3.99]))       # blower motor on the housing
+    parts.append(ax(M.cylinder(1.2, r + 0.2, r + 0.2, 96)).translate([x0 + L, 0, zc]))     # rear door
+    parts.append(ax(M.cylinder(0.6, 1.0, 1.0, 20)).translate([x0 + L + 1.19, 0, zc + 2.0]))
+    flue = box([x0 + 1.5, -3.5, zc + r - 1.0], [x0 + 8.5, 3.5, zc + r + 3.0])
+    parts += [flue, box([x0 + 1.0, -4.0, zc + r + 2.6], [x0 + 9.0, 4.0, zc + r + 3.4])]
+    for x, rn, hn in ((x0 + L * 0.5, 1.6, 3.0), (x0 + L * 0.7, 0.9, 2.6), (x0 + L * 0.76, 0.9, 2.6)):
+        parts += [M.cylinder(hn + 0.6, rn, rn, 24).translate([x, 0, zc + r - 0.6]), M.cylinder(0.6, rn + 0.7, rn + 0.7, 24).translate([x, 0, zc + r + hn])]
+    wy = -(r + 1.6)                                                                         # water column
+    parts += [M.cylinder(8.0, 0.9, 0.9, 20).translate([x0 + 6.0, wy, zc - 2.0]),
+              box([x0 + 5.4, wy - 0.4, zc - 1.0], [x0 + 6.6, -r + 0.6, zc - 0.2]), box([x0 + 5.4, wy - 0.4, zc + 4.4], [x0 + 6.6, -r + 0.6, zc + 5.2]),
+              box([x0 + 6.7, wy - 0.6, zc - 0.5], [x0 + 7.6, wy + 0.6, zc + 4.0])]                # gauge glass on the column
+    for x in (x0 + L * 0.25, x0 + L * 0.85):
+        lug = M.hull(box([x - 1.4, -0.3, zc + r - 0.8], [x + 1.4, 0.3, zc + r + 0.4]) + M.cylinder(0.6, 0.9, 0.9, 16).rotate([90, 0, 0]).translate([x, 0.3, zc + r + 1.2]))
+        parts.append(lug - M.cylinder(2, 0.4, 0.4, 12).rotate([90, 0, 0]).translate([x, 1.0, zc + r + 1.2]))
+    body = union(parts)
+    web = _cradle(body, x0 + 1.0, x0 + L - 1.0, zc, r, z0, 12.0)
+    skid = _skid_frame(x0 - 7.0, x0 + L + 2.0, 12.5, z0)
+    return F._sheeted(lambda: union([body, web, skid]))()
+
+
+# ================================================================== 44. steam locomotive boiler
+LB_BLOCK = 1.6            # timber blocking, then the boiler
+
+
+@solid
+def loco_boiler():
+    """A steam locomotive's boiler out of its frames, on its way to the shop: the wide radial-stay
+    firebox with staybolt heads over its sides and crown, the mud ring and washout plugs, the
+    backhead with its firedoor; the tapered barrel with its course seams, steam dome and check-valve
+    bosses; the smokebox with its stack base and hinged front door. On timber blocking and a cradle
+    under the barrel."""
+    z0 = LB_BLOCK
+    rb0, rb1 = 11.0, 9.6
+    zc = z0 + 14.0
+    xf, xb, xs = 35.0, 112.0, 140.0                                         # firebox front, barrel end, smokebox front
+    ax = lambda m: m.rotate([0, 90, 0])
+    hw = 13.0
+    fb_cs = cs_union([poly([(-hw, z0), (hw, z0), (hw, zc), (-hw, zc)]), circle((0.0, zc), hw, 64)])
+    firebox = along_x(fb_cs, 0.0, xf)
+    barrel = M.hull(ax(M.cylinder(0.01, rb0, rb0, 72)).translate([xf - 0.01, 0, zc]) + ax(M.cylinder(0.01, rb1, rb1, 72)).translate([xb, 0, zc]))
+    smokebox = ax(M.cylinder(xs - xb, rb1 + 0.4, rb1 + 0.4, 72)).translate([xb, 0, zc])
+    parts = [firebox, barrel, smokebox]
+    parts.append(along_x(cs_union([poly([(-hw - 0.5, z0), (hw + 0.5, z0), (hw + 0.5, z0 + 1.6), (-hw - 0.5, z0 + 1.6)])]), -0.5, xf + 0.5))   # mud ring
+    for x in np.linspace(4.0, xf - 4.0, 5):                                 # washout plugs
+        for sgn in (-1, 1):
+            parts.append(box([x - 0.5, sgn * hw - 0.01 if sgn > 0 else -hw - 0.4, z0 + 2.4], [x + 0.5, hw + 0.4 if sgn > 0 else -hw + 0.01, z0 + 3.4]))
+    stays = []
+    for x in np.arange(2.0, xf - 1.5, 1.3):                                 # staybolt heads: sides
+        for z in np.arange(z0 + 4.0, zc, 1.3):
+            for sgn in (-1, 1):
+                ya, yb2 = sorted((sgn * (hw - 0.01), sgn * (hw + 0.25)))
+                stays.append(box([x - 0.2, ya, z - 0.2], [x + 0.2, yb2, z + 0.2]))
+        for a in np.arange(8.0, 173.0, 7.0):                                # and crown
+            ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+            stays.append(box([x - 0.2, -0.2, hw - 0.01], [x + 0.2, 0.2, hw + 0.25]).rotate([a - 90.0, 0, 0]).translate([0, 0, zc]))
+    parts += stays
+    parts.append(box([-0.4, -4.0, z0 + 5.0], [0.01, 4.0, z0 + 10.0]))         # firedoor frame on the backhead
+    for x in (xf + 22.0, xf + 46.0):                                        # course seams, upper half
+        f = (x - xf) / (xb - xf)
+        rr = rb0 + (rb1 - rb0) * f + 0.15
+        ring = ax(M.cylinder(0.5, rr, rr, 72)).translate([x - 0.25, 0, zc])
+        parts.append(ring ^ box([x - 1, -rr - 1, zc - rr * 0.6], [x + 1, rr + 1, zc + rr + 1]))
+    xd = xf + 36.0                                                          # steam dome
+    parts += [M.cylinder(5.0, 4.0, 4.0, 40).translate([xd, 0, zc + 8.0]),
+              (M.sphere(4.0, 40) ^ box([-5, -5, 0], [5, 5, 5])).scale([1, 1, 0.45]).translate([xd, 0, zc + 12.99])]
+    xcv = xf + 60.0
+    rcv = rb0 + (rb1 - rb0) * (xcv - xf) / (xb - xf)                        # the barrel's radius there
+    for sgn in (-1, 1):                                                     # check-valve bosses 50 degrees up the barrel
+        boss = M.cylinder(2.2, 1.2, 1.2, 20).translate([0, 0, rcv - 0.8]).rotate([sgn * 50.0, 0, 0])
+        parts.append(boss.translate([xcv, 0, zc]))
+    for y in (-2.2, 2.2):                                                   # safety-valve bosses on the crown
+        parts.append(M.cylinder(2.0, 1.1, 1.1, 20).translate([xf - 4.0, y, zc + hw - 0.5]))
+    parts.append(M.cylinder(3.0, 3.0, 3.0, 40).translate([xs - 10.0, 0, zc + rb1]))      # stack base
+    door = ax(M.cylinder(0.8, rb1 - 1.8, rb1 - 1.8, 64)).translate([xs - 0.01, 0, zc])
+    hinges = [box([xs + 0.5, -rb1 + 1.0, zc + z - 0.35], [xs + 1.1, rb1 - 3.0, zc + z + 0.35]) for z in (-3.5, 3.5)]
+    parts += [door] + hinges + [ax(M.cylinder(1.0, 1.0, 1.0, 16)).translate([xs + 0.79, 0, zc])]
+    body = union(parts)
+    web = _cradle(body, xf + 6.0, xs - 3.0, zc, rb1, z0, 9.0)
+    blocks = [box([x - 1.6, -hw - 1.6, 0.0], [x + 1.6, hw + 1.6, z0 + 0.01]) for x in (2.0, xf / 2, xf - 2.0)]
+    skid = _skid_frame(xf + 4.0, xs - 1.0, 9.5, z0)
+    return F._sheeted(lambda: union([body, web, skid] + blocks))()
+
+
+# ================================================================== 45. freight car wheelsets
+WS_TIMBER = 1.6           # timber rails, then the wheelsets
+
+
+@solid
+def wheelset_row(n=4):
+    """Four freight-car wheelsets standing on two timber rails, blocked: 36 in wheels with their
+    flanges and dished plates, hubs, the axle between, roller-bearing caps on the journals with a
+    block under each. Keels under the treads carry the wheels at 45 degrees."""
+    z0 = WS_TIMBER
+    r, rfl = inch(18), inch(19)
+    yi, yo = 15.5 / 2, 15.5 / 2 + 1.6
+    zc = z0 + 0.25 + rfl
+    parts = []
+    for k in range(n):
+        x = 6.0 + 12.0 * k
+        for sgn in (-1, 1):
+            ya, yb = sorted((sgn * yi, sgn * yo))
+            wheel = M.cylinder(yb - ya, r, r, 48).rotate([-90, 0, 0]).translate([x, ya, zc])
+            fy0 = ya if sgn > 0 else yb - 0.32                              # the flange on the gauge side
+            flange = M.cylinder(0.32, rfl, rfl, 48).rotate([-90, 0, 0]).translate([x, fy0, zc])
+            dish_y = yb - 0.4 if sgn > 0 else ya - 0.01
+            dish = M.cylinder(0.41, r - 1.2, r - 1.2, 40).rotate([-90, 0, 0]).translate([x, dish_y, zc])
+            hub_y = yb - 0.41 if sgn > 0 else ya - 0.5
+            hub = M.cylinder(0.91, 1.6, 1.6, 24).rotate([-90, 0, 0]).translate([x, hub_y, zc])
+            jy = yb if sgn > 0 else ya - 1.5
+            journal = M.cylinder(1.5, 0.8, 0.8, 20).rotate([-90, 0, 0]).translate([x, jy - 0.01 if sgn > 0 else jy + 0.01, zc])
+            cy = sgn * (yo + 0.7)
+            cap = M.cylinder(0.8, 1.15, 1.15, 24).rotate([-90, 0, 0]).translate([x, cy - 0.4, zc])
+            parts += [wheel - dish, flange, hub, journal, cap]
+            parts.append(along_y(keel(x, zc, rfl, z0), ya + 0.05, yb - 0.3) if sgn > 0 else along_y(keel(x, zc, rfl, z0), ya + 0.3, yb - 0.05))
+            parts.append(box([x - 0.9, cy - 0.4, z0 - 0.01], [x + 0.9, cy + 0.4, zc - 1.0]))   # block under the bearing cap
+        parts.append(M.cylinder(2 * yi + 0.02, 0.95, 0.95, 24).rotate([-90, 0, 0]).translate([x, -yi - 0.01, zc]))
+    Lx = 12.0 * n
+    timbers = [box([0.0, sgn * 9.2 - 2.0, 0.0], [Lx, sgn * 9.2 + 2.0, z0 + 0.01]) for sgn in (-1, 1)]
+    return F._sheeted(lambda: union(parts + timbers))()
+
+
+# ================================================================== 46. deck plate girder span
+PGS_BLOCK = 1.2
+
+
+@solid
+def plate_girder_span():
+    """A 50 ft riveted deck plate girder railroad span, assembled, on blocking: two 5 ft girders with
+    flange angles, a cover plate over the middle of each top flange, stiffeners every 5 ft and
+    doubled at the bearings, five diaphragms between the girders and the top lateral bracing. Set
+    it on your abutments and it is a bridge."""
+    L, D = ft(50.0), ft(5.0)
+    z0 = PGS_BLOCK
+    yc = ft(6.5) / 2
+    parts = []
+    for sgn in (-1, 1):
+        y = sgn * yc
+        parts += [box([0, y - 1.3, z0], [L, y + 1.3, z0 + 0.8]),
+                  box([0, y - 0.3, z0 + 0.79], [L, y + 0.3, z0 + D - 0.79]),
+                  box([0, y - 1.3, z0 + D - 0.8], [L, y + 1.3, z0 + D]),
+                  box([L * 0.2, y - 1.2, z0 + D - 0.01], [L * 0.8, y + 1.2, z0 + D + 0.3])]
+        xs = list(np.arange(ft(5.0), L - 2.0, ft(5.0))) + [1.5, 3.0, L - 1.5, L - 3.0]
+        for x in xs:
+            for side in (-1, 1):
+                ya, yb = sorted((y + side * 0.29, y + side * 1.25))
+                parts.append(box([x - 0.3, ya, z0 + 0.79], [x + 0.3, yb, z0 + D - 0.79]))
+    for x in (2.2, L / 4, L / 2, 3 * L / 4, L - 2.2):                       # diaphragms with a gable-topped opening
+        d = box([x - 0.3, -yc + 0.29, z0 + 2.0], [x + 0.3, yc - 0.29, z0 + D - 1.0])
+        w = 9.0
+        hole = M.hull_points([(xx, y, z) for xx in (x - 1, x + 1) for (y, z) in
+                              ((-w / 2, z0 + 4.5), (w / 2, z0 + 4.5), (-w / 2, z0 + 9.0), (w / 2, z0 + 9.0), (0.0, z0 + 9.0 + w / 2))])
+        parts.append(d - hole)
+    panel = ft(5.0)
+    for x0 in np.arange(0.0, L - 0.1, panel):                               # top laterals, an X in every panel
+        x1 = min(x0 + panel, L)
+        for (ya, xa), (yb, xb2) in (((-yc, x0), (yc, x1)), ((-yc, x1), (yc, x0))):
+            seg = F._seg((xa, ya), (xb2, yb), 0.7)
+            parts.append(M.extrude(seg, 0.6).translate([0, 0, z0 + D - 0.6]))
+    blocks = [box([x - 1.2, -yc - 2.6, 0.0], [x + 1.2, yc + 2.6, z0 + 0.01]) for x in np.linspace(1.6, L - 1.6, 7)]
+    return F._sheeted(lambda: union(parts + blocks))()
+
+
+# ================================================================== 47. wind turbine blade
+BLADE_L = ft(121.4)                     # a 37 m blade
+BLADE_ROOT_R = 11.5                     # 2.0 m root
+BLADE_CUTS = (1.0 / 3.0, 2.0 / 3.0)     # printed in three sections, pegged together
+BLADE_UP = 6.0                          # the blade's flat side rides this far above the deck
+
+
+def _blade_section(s):
+    """The blade's section at s (0 root, 1 tip) as (y, z) points, flat on z = 0: a circle cut flat
+    at 0.3 r at the root, blending into a flat-bottomed airfoil (30 % chord ahead of the pitch axis)
+    by s = 0.22, then tapering to the tip."""
+    r = BLADE_ROOT_R
+    c = float(np.interp(s, [0.04, 0.22, 0.5, 0.8, 1.0], [2 * r, 34.4, 23.0, 15.5, 6.9]))
+    t = float(np.interp(s, [0.22, 0.5, 0.8, 1.0], [13.8, 4.8, 2.8, 1.2]))
+    w = min(1.0, max(0.0, (s - 0.04) / 0.18))
+    w = w * w * (3 - 2 * w)
+    p0, p1 = math.pi + math.asin(0.7), -math.asin(0.7)
+    pts = []
+    for u in np.linspace(0.0, 1.0, 21):
+        ph = p0 - u * (p0 - p1)
+        yc_, zc_ = r * math.cos(ph), 0.7 * r + r * math.sin(ph)
+        ya_, za_ = -0.3 * c + u * c, t * math.sin(math.pi * u ** 0.7) ** 0.8
+        pts.append(((1 - w) * yc_ + w * ya_, (1 - w) * zc_ + w * za_))
+    return pts + [(pts[-1][0], 0.0), (pts[0][0], 0.0)]
+
+
+def _blade_stations():
+    ss = sorted(set([round(v, 5) for v in list(np.linspace(0.0, 0.3, 16)) + list(np.linspace(0.3, 1.0, 22)) + list(BLADE_CUTS)]))
+    return ss
+
+
+@solid
+def blade_section(k=0):
+    """Section k (0 root, 1 middle, 2 tip) of a 37 m wind turbine blade, printed lying on its flat
+    pressure side: the round root with its bolt circle and flattened bottom, the airfoil swelling
+    to its maximum chord and tapering to the tip; a peg on its outboard end and a socket in its
+    inboard end, both on the flat side, so the sections key together."""
+    lo, hi = ([0.0] + list(BLADE_CUTS))[k], (list(BLADE_CUTS) + [1.0])[k]
+    ss = [lo] + [v for v in _blade_stations() if lo + 1e-4 < v < hi - 1e-4] + [hi]       # the cuts exactly, so the ends meet
+    secs = [[(v * BLADE_L, y, z) for y, z in _blade_section(v)] for v in ss]
+    m = union([M.hull_points(a + b) for a, b in zip(secs[:-1], secs[1:])])
+    if k == 0:                                                              # root bolt circle on the end face
+        r = BLADE_ROOT_R
+        holes = [M.cylinder(1.0, 0.45, 0.45, 10).rotate([0, 90, 0]).translate([-0.5, (r - 1.6) * math.cos(a), 0.7 * r + (r - 1.6) * math.sin(a)])
+                 for a in np.linspace(0, 2 * math.pi, 28, endpoint=False) if 0.7 * r + (r - 1.6) * math.sin(a) > 1.2]
+        m = m - union(holes)
+    if k < 2:
+        xj = hi * BLADE_L
+        m = m + box([xj - 0.01, -0.8, 0.0], [xj + 3.0, 0.8, 1.6])
+    if k > 0:
+        xj = lo * BLADE_L
+        m = m - box([xj - 0.01, -0.95, -1.0], [xj + 3.2, 0.95, 1.75])
+    return m.translate([-lo * BLADE_L, 0, 0])
+
+
+@solid
+def blade_root_fixture():
+    """The steel root fixture the blade's root bolts to, printed flat: a ring over the root's face on
+    an A-frame of legs and a foot."""
+    r = BLADE_ROOT_R
+    zc = BLADE_UP + 0.7 * r
+    ring = circle((0.0, zc), r + 1.6, 64) - circle((0.0, zc), r - 2.4, 64)
+    legs = [F._seg((sgn * (r - 1.0), zc - 6.0), (sgn * (r + 4.5), 0.8), 1.8) for sgn in (-1, 1)]
+    braces = [F._seg((sgn * (r + 3.0), 4.0), (0.0, 4.0), 1.2) for sgn in (-1, 1)]
+    foot = poly([(-r - 6.0, 0.0), (r + 6.0, 0.0), (r + 6.0, 1.6), (-r - 6.0, 1.6)])
+    return M.extrude(cs_union([ring, foot] + legs + braces), 2.0)
+
+
+@solid
+def blade_tip_cradle():
+    """The cradle the blade's outboard part rides in, printed flat: a saddle at the blade's flat side
+    with guards up its leading and trailing edges, on two legs and a foot."""
+    s = 0.75
+    pts = _blade_section(s)
+    yl, yt = min(p[0] for p in pts), max(p[0] for p in pts)
+    z = BLADE_UP
+    saddle = poly([(yl - 2.0, z - 1.2), (yt + 2.0, z - 1.2), (yt + 2.0, z + 3.0), (yt + 0.3, z + 3.0), (yt + 0.3, z), (yl - 0.3, z),
+                   (yl - 0.3, z + 4.0), (yl - 2.0, z + 4.0)])
+    legs = [F._seg((y, z - 1.0), (y + (-2.0 if y < 0 else 2.0), 0.8), 1.6) for y in (yl, yt)]
+    foot = poly([(yl - 4.0, 0.0), (yt + 4.0, 0.0), (yt + 4.0, 1.6), (yl - 4.0, 1.6)])
+    return M.extrude(cs_union([saddle, foot] + legs), 2.0)
+
+
+# ================================================================== 48. narrow-gauge mine cars
+MINE_TIMBER = 1.2
+
+
+@solid
+def mine_car():
+    """A 36 in gauge V-dump ore car on two timbers: the V body open at the top with its rim angle and
+    ribs, triangular ends and a dump latch, rocking on two curved cradles on the frame, the end
+    sills with their link-and-pin pockets, four 14 in wheels on their axles."""
+    z0 = MINE_TIMBER
+    rw = inch(7)
+    yi, yo = 5.25, 6.15
+    zc = z0 + 0.2 + rw
+    parts = []
+    for x in (-5.25, 5.25):
+        for sgn in (-1, 1):
+            ya, yb = sorted((sgn * yi, sgn * yo))
+            parts.append(M.cylinder(yb - ya, rw, rw, 28).rotate([-90, 0, 0]).translate([x, ya, zc]))
+            parts.append(M.cylinder(0.25, rw - 0.5, rw - 0.6, 20).rotate([-90 * sgn, 0, 0]).translate([x, sgn * yo, zc]))
+            parts.append(along_y(keel(x, zc, rw, z0), ya + 0.15, yb - 0.15))
+        parts.append(M.cylinder(2 * yi + 0.02, 0.6, 0.6, 16).rotate([-90, 0, 0]).translate([x, -yi - 0.01, zc]))
+    zf = zc + 0.2
+    parts += [box([-9.5, ya, zf - 0.8], [9.5, yb, zf + 0.6]) for ya, yb in ((-4.6, -3.6), (3.6, 4.6))]      # side sills
+    for xe in (-10.0, 10.0):                                               # end sills with coupler pockets
+        sill = box([xe - 0.8, -5.0, zf - 1.4], [xe + 0.8, 5.0, zf + 0.8])
+        pocket = box([xe - (1.0 if xe < 0 else 0.4), -0.7, zf - 0.8], [xe + (0.4 if xe < 0 else 1.0), 0.7, zf + 0.2])
+        parts.append(sill - pocket)
+    zv = zf + 1.6                                                           # the V's apex
+    ang = math.radians(50.0)
+    hv = 8.2
+    half = hv / math.tan(ang)
+    outer = poly([(0.0, zv), (half, zv + hv), (-half, zv + hv)])
+    inner = poly([(0.0, zv + 0.8), (half - 0.65, zv + hv + 0.01), (-half + 0.65, zv + hv + 0.01)])
+    bl = 9.0
+    body = along_x(outer, -bl, bl) - along_x(inner, -bl + 0.6, bl - 0.6)
+    rim = along_x((offset(outer, 0.3) - outer) ^ CS.square((40, 1.0)).translate((-20, zv + hv - 1.0)), -bl - 0.3, bl + 0.3)
+    ribs = []
+    for x in (-5.0, 0.0, 5.0):
+        for sgn in (-1, 1):
+            ribs.append(along_x((offset(outer, 0.3) - outer) ^ poly([(0, zv), (sgn * 20, zv + 20 * math.tan(ang)), (sgn * 20, zv - 5), (0, zv - 5)]), x - 0.3, x + 0.3))
+    cradle = poly([(-4.6, zf - 0.01), (4.6, zf - 0.01), (4.6, zf + 0.6), (0.6, zv + 0.4), (-0.6, zv + 0.4), (-4.6, zf + 0.6)])
+    cradles = [along_x(cradle, x - 0.4, x + 0.4) for x in (-5.0, 5.0)]
+    latch = box([bl - 0.01, 2.0, zv + hv - 4.0], [bl + 0.5, 3.0, zv + hv - 0.5])
+    timbers = [box([-11.0, sgn * 5.7 - 1.3, 0.0], [11.0, sgn * 5.7 + 1.3, z0 + 0.01]) for sgn in (-1, 1)]
+    return F._sheeted(lambda: union(parts + [body, rim, latch] + ribs + cradles + timbers))()
+
+
 # ================================================================== scenes (renders only)
 def _place(s, m, base, change, x, z, y=0.0, upside=False, rz=0.0):
     """Set a piece (in its print pose) on the car: split at its colour change, turned over if it
@@ -2729,7 +3045,68 @@ def scene_genset():
     return s
 
 
-SCENES = {"rotor": scene_rotor, "stator": scene_stator, "tubebundle": scene_tubebundle, "column": scene_column, "gear": scene_gear,
+def scene_boiler():
+    L = ft(40.0)
+    s = F._car(L, "car_black")
+    _place(s, package_boiler(), "Black", (BOIL_CHANGE, "Mistletoe Green"), L / 2, F.deck())
+    return s
+
+
+def scene_locoboiler():
+    L = ft(42.0)
+    s = F._car(L, "car_oxide")
+    _place(s, loco_boiler(), "Cocoa Brown", (LB_BLOCK, "Iron Gray Metallic"), L / 2, F.deck())
+    return s
+
+
+def scene_wheelsets():
+    L = ft(40.0)
+    s = F._car(L, "car_mineral")
+    zd = F.deck()
+    for x in np.linspace(L / 2 - 46.0, L / 2 + 46.0, 3):
+        _place(s, wheelset_row(), "Cocoa Brown", (WS_TIMBER, "Copper Brown Metallic"), x, zd)
+    return s
+
+
+def scene_girderspan():
+    L = ft(53.5)
+    s = F._car(L, "car_oxide")
+    _place(s, plate_girder_span(), "Cocoa Brown", (PGS_BLOCK, "Black"), L / 2, F.deck())
+    return s
+
+
+def scene_windblade():
+    L1, L2 = ft(89.3), ft(60.0)
+    s = F._car(L1, "ttx_yellow", kind="fishbelly", W=ft(9.8))
+    s2 = F._car(L2, "ttx_yellow")
+    gap = 5.2
+    for k, v in s2.items():
+        s.setdefault(k, []).extend([m.translate([L1 + gap, 0, 0]) for m in v])
+    zd = F.deck()
+    x0 = 14.0
+    zb = zd + BLADE_UP
+    for k, lo in enumerate([0.0] + list(BLADE_CUTS)):
+        F._put(s, "White", blade_section(k).translate([x0 + lo * BLADE_L, 0, zb]))
+    rf = blade_root_fixture()
+    F._put(s, "Cobalt Blue", rf.rotate([90, 0, 0]).rotate([0, 0, 90]).translate([x0 - 0.01, 0, zd]))
+    tc = blade_tip_cradle()
+    F._put(s, "Cobalt Blue", tc.rotate([90, 0, 0]).rotate([0, 0, 90]).translate([x0 + 0.75 * BLADE_L + 1.0, 0, zd]))
+    return s
+
+
+def scene_minecars():
+    L = ft(40.0)
+    s = F._car(L, "car_black")
+    zd = F.deck()
+    for x in np.linspace(14.0, L - 14.0, 5)[:4]:
+        for y in (-7.6, 7.6):
+            _place(s, mine_car(), "Cocoa Brown", (MINE_TIMBER, "Red"), x + 6.0, zd, y)
+    return s
+
+
+SCENES = {"boiler": scene_boiler, "locoboiler": scene_locoboiler, "wheelsets": scene_wheelsets, "girderspan": scene_girderspan,
+          "windblade": scene_windblade, "minecars": scene_minecars,
+"rotor": scene_rotor, "stator": scene_stator, "tubebundle": scene_tubebundle, "column": scene_column, "gear": scene_gear,
           "genset": scene_genset,
 "sheetpile": scene_sheetpile, "poles": scene_poles, "crushed": scene_crushed, "giantlog": scene_giantlog,
           "pulpwood": scene_pulpwood, "truss": scene_truss,
