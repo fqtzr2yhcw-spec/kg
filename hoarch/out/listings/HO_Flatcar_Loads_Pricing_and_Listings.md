@@ -18,20 +18,20 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Concrete Bridge Girder Load | $18.99 | $11.73 | $12.78 | 44 m | 34 g | 2 |
 | Lumber Load | $19.99 | $13.35 | $14.35 | 2 h 18 m | 74 g | 2 |
 | Wrapped Lumber Load | $19.99 | $13.36 | $14.35 | 2 h 7 m | 74 g | 2 |
-| Mining Truck Tire Load | $21.99 | $15.22 | $16.30 | 2 h 16 m | 54 g | 2 |
-| Sawlog Load | $15.99 | $10.61 | $11.44 | 1 h 19 m | 39 g | 3 |
+| Mining Truck Tire Load | $21.99 | $15.22 | $16.30 | 2 h 14 m | 54 g | 2 |
+| Sawlog Load | $15.99 | $10.62 | $11.45 | 1 h 18 m | 39 g | 3 |
 | Track Panel Load | $21.99 | $15.44 | $16.56 | 1 h 3 m | 38 g | 1 |
 | Concrete Crosstie Load | $21.99 | $14.71 | $15.83 | 2 h 12 m | 73 g | 2 |
 | Wood Crosstie Bundle Load | $19.99 | $13.08 | $14.12 | 2 h 13 m | 68 g | 2 |
 | Granite Block Load | $16.99 | $11.86 | $12.73 | 36 m | 21 g | 3 |
-| Brick Cube Load | $17.99 | $12.22 | $13.13 | 2 h 28 m | 44 g | 2 |
+| Brick Cube Load | $17.99 | $12.22 | $13.14 | 2 h 24 m | 44 g | 2 |
 | Ingot Mold Load | $15.99 | $11.14 | $11.98 | 43 m | 13 g | 2 |
 | HV Cable Reel Load | $19.99 | $13.50 | $14.53 | 1 h 31 m | 48 g | 2 |
 | Piggyback Trailer Load | $19.99 | $12.37 | $13.40 | 3 h 23 m | 103 g | 1 |
 | ISO Container Load | $15.99 | $9.53 | $10.36 | 3 h 55 m | 90 g | 2 |
 | Machinery Crate Load | $14.99 | $9.79 | $10.58 | 1 h 10 m | 37 g | 2 |
 | Air-Cooled Chiller Load | $21.99 | $14.88 | $16.00 | 2 h 47 m | 64 g | 1 |
-| Propane Tank Load | $16.99 | $11.73 | $12.60 | 47 m | 27 g | 2 |
+| Propane Tank Load | $16.99 | $11.69 | $12.57 | 51 m | 29 g | 2 |
 | Precast Box Culvert Load | $16.99 | $11.63 | $12.51 | 50 m | 32 g | 2 |
 | Concrete Pipe Load | $16.99 | $11.61 | $12.48 | 56 m | 33 g | 2 |
 | Jersey Barrier Load | $14.99 | $10.50 | $11.25 | 32 m | 21 g | 2 |
@@ -43,10 +43,10 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Giant Log Load | $18.99 | $13.33 | $14.28 | 1 h 1 m | 33 g | 3 |
 | Pulpwood Load | $16.99 | $11.36 | $12.23 | 2 h 2 m | 44 g | 2 |
 | Pony Truss Bridge Load | $19.99 | $14.27 | $15.31 | 19 m | 10 g | 2 |
-| Generator Rotor Load | $17.99 | $12.83 | $13.75 | 27 m | 15 g | 2 |
+| Generator Rotor Load | $17.99 | $12.83 | $13.74 | 27 m | 15 g | 2 |
 | Generator Stator Load | $24.99 | $16.47 | $17.77 | 1 h 43 m | 55 g | 1 |
-| Heat Exchanger Tube Bundle Load | $16.99 | $12.04 | $12.91 | 24 m | 12 g | 2 |
-| Distillation Column Load | $24.99 | $16.38 | $17.68 | 1 h 41 m | 60 g | 1 |
+| Heat Exchanger Tube Bundle Load | $16.99 | $12.04 | $12.91 | 25 m | 12 g | 2 |
+| Distillation Column Load | $24.99 | $16.37 | $17.68 | 1 h 41 m | 60 g | 1 |
 | Girth Gear Load | $17.99 | $12.67 | $13.58 | 48 m | 23 g | 2 |
 | Diesel Genset Load | $18.99 | $12.61 | $13.61 | 1 h 29 m | 49 g | 2 |
 | Package Boiler Load | $17.99 | $12.61 | $13.53 | 45 m | 26 g | 2 |
@@ -56,13 +56,13 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Wind Turbine Blade Load | $29.99 | $21.18 | $22.69 | 1 h 1 m | 36 g | 1 |
 | Mine Car Load | $15.99 | $11.24 | $12.07 | 25 m | 9 g | 2 |
 | Steel Joist Load | $15.99 | $10.73 | $11.56 | 1 h 10 m | 33 g | 2 |
-| Copper Cathode Load | $15.99 | $10.84 | $11.67 | 1 h 9 m | 28 g | 1 |
-| Steel-Wheel Tractor Load | $16.99 | $12.01 | $12.88 | 38 m | 13 g | 2 |
+| Copper Cathode Load | $15.99 | $10.83 | $11.66 | 1 h 18 m | 28 g | 1 |
+| Steel-Wheel Tractor Load | $16.99 | $12.00 | $12.88 | 38 m | 13 g | 2 |
 | Excavator Bucket Load | $15.99 | $11.32 | $12.15 | 11 m | 5 g | 2 |
 | Locomotive Diesel Engine Load | $18.99 | $13.77 | $14.73 | 25 m | 11 g | 2 |
-| Transformer Radiator Load | $15.99 | $11.08 | $11.91 | 1 h 4 m | 16 g | 2 |
+| Transformer Radiator Load | $15.99 | $11.08 | $11.91 | 1 h 3 m | 16 g | 2 |
 | Ship Anchor and Chain Load | $17.99 | $12.98 | $13.89 | 20 m | 8 g | 1 |
-| Hydraulic Cylinder Load | $15.99 | $11.20 | $12.03 | 19 m | 11 g | 2 |
+| Hydraulic Cylinder Load | $15.99 | $11.19 | $12.02 | 20 m | 11 g | 2 |
 | Turnout Frog and Switch Point Load | $15.99 | $11.31 | $12.14 | 10 m | 5 g | 2 |
 
 - **Every load prints in its colours, with no painting and no assembly.** Say "printed in color" and "ready to place" in every listing; most HO loads on eBay are kits or need paint.
@@ -87,20 +87,20 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Concrete Bridge Girder Load | 34 g, $0.68 | 44 m | 2 | $3.19 | Girder x4 247 x 18 x 8 mm; Girder bolster x4 32 x 6 x 4 mm |
 | Lumber Load | 74 g, $1.48 | 2 h 18 m | 1 | $2.77 | Bundle 2x4 x10 57 x 14 x 10 mm; Bundle 2x6 x10 57 x 14 x 10 mm; Bundle 2x10 x8 57 x 14 x 10 mm; Bundle 2x12 x8 57 x 14 x 10 mm |
 | Wrapped Lumber Load | 74 g, $1.47 | 2 h 7 m | 1 | $2.76 | Wrapped bundle x36 57 x 14 x 10 mm |
-| Mining Truck Tire Load | 54 g, $1.09 | 2 h 16 m | 1 | $2.63 | Mining tire x12 45 x 45 x 16 mm |
-| Sawlog Load | 39 g, $0.78 | 1 h 19 m | 1 | $2.06 | Log pile A x3 58 x 37 x 29 mm; Log pile B x3 58 x 37 x 29 mm |
+| Mining Truck Tire Load | 54 g, $1.09 | 2 h 14 m | 1 | $2.63 | Mining tire x12 45 x 45 x 16 mm |
+| Sawlog Load | 39 g, $0.77 | 1 h 18 m | 1 | $2.05 | Log pile A x3 58 x 37 x 29 mm; Log pile B x3 58 x 37 x 29 mm |
 | Track Panel Load | 38 g, $0.75 | 1 h 3 m | 1 | $2.27 | Track panel x6 136 x 31 x 4 mm |
 | Concrete Crosstie Load | 73 g, $1.46 | 2 h 12 m | 3 | $3.00 | Tie layer x30 54 x 30 x 4 mm; Tie dunnage x12 53 x 1 x 1 mm |
 | Wood Crosstie Bundle Load | 68 g, $1.36 | 2 h 13 m | 1 | $2.91 | Tie bundle row x6 56 x 31 x 12 mm; Tie bundle row B x6 56 x 31 x 12 mm |
 | Granite Block Load | 21 g, $0.41 | 36 m | 2 | $1.68 | Granite block B 17 x3 35 x 20 x 19 mm; Granite block B 21 x3 32 x 20 x 17 mm; Granite block C 4 x3 28 x 21 x 19 mm; Granite block A 30 x3 39 x 19 x 18 mm |
-| Brick Cube Load | 44 g, $0.87 | 2 h 28 m | 3 | $2.17 | Brick cube red x24 14 x 12 x 10 mm; Brick cube buff x24 14 x 12 x 10 mm; Brick cube brown x24 14 x 12 x 10 mm |
+| Brick Cube Load | 44 g, $0.87 | 2 h 24 m | 3 | $2.17 | Brick cube red x24 14 x 12 x 10 mm; Brick cube buff x24 14 x 12 x 10 mm; Brick cube brown x24 14 x 12 x 10 mm |
 | Ingot Mold Load | 13 g, $0.26 | 43 m | 1 | $1.52 | Ingot mold x8 30 x 18 x 11 mm |
 | HV Cable Reel Load | 48 g, $0.96 | 1 h 31 m | 4 | $2.49 | Reel flange x12 40 x 40 x 3 mm; Reel cable x4 37 x 36 x 24 mm; Reel lagged x2 36 x 36 x 24 mm; Reel chock x24 7 x 3 x 3 mm |
 | Piggyback Trailer Load | 103 g, $2.05 | 3 h 23 m | 2 | $3.62 | Trailer silver 141 x 47 x 29 mm; Trailer white 141 x 47 x 29 mm |
 | ISO Container Load | 90 g, $1.81 | 3 h 55 m | 4 | $3.13 | Container red x2 71 x 30 x 28 mm; Container blue x2 71 x 30 x 28 mm; Container green x2 71 x 30 x 28 mm; Container grey x2 71 x 30 x 28 mm |
 | Machinery Crate Load | 37 g, $0.74 | 1 h 10 m | 3 | $2.01 | Crate 12 6 6 x2 43 x 23 x 22 mm; Crate 8 5 7 x2 29 x 26 x 18 mm; Crate 10 4 4 x2 36 x 16 x 16 mm; Crate 6 4 5 x2 22 x 19 x 15 mm; Crate 5 5 4 x2 18 x 18 x 16 mm; Crate 14 6 5 x2 50 x 22 x 19 mm |
 | Air-Cooled Chiller Load | 64 g, $1.28 | 2 h 47 m | 1 | $2.84 | Chiller x2 106 x 31 x 27 mm |
-| Propane Tank Load | 27 g, $0.54 | 47 m | 1 | $1.80 | Propane pair x6 56 x 29 x 17 mm |
+| Propane Tank Load | 29 g, $0.57 | 51 m | 1 | $1.84 | Propane pair x6 56 x 29 x 17 mm |
 | Precast Box Culvert Load | 32 g, $0.63 | 50 m | 1 | $1.90 | Box culvert x8 34 x 27 x 23 mm |
 | Concrete Pipe Load | 33 g, $0.65 | 56 m | 1 | $1.92 | Concrete pipe row x6 62 x 28 x 21 mm |
 | Jersey Barrier Load | 21 g, $0.42 | 32 m | 1 | $1.43 | Jersey barrier x24 43 x 9 x 7 mm |
@@ -112,10 +112,10 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Giant Log Load | 33 g, $0.66 | 1 h 1 m | 1 | $1.93 | Giant log x3 117 x 32 x 32 mm |
 | Pulpwood Load | 44 g, $0.88 | 2 h 2 m | 1 | $2.17 | Pulpwood section x4 41 x 30 x 29 mm; Pulpwood section B x2 41 x 30 x 29 mm |
 | Pony Truss Bridge Load | 10 g, $0.21 | 19 m | 3 | $1.71 | Truss side x4 179 x 28 x 2 mm; Floor beams x2 56 x 19 x 10 mm; Truss blocking x6 32 x 3 x 2 mm |
-| Generator Rotor Load | 15 g, $0.30 | 27 m | 1 | $1.56 | Generator rotor x2 98 x 21 x 19 mm |
+| Generator Rotor Load | 15 g, $0.31 | 27 m | 1 | $1.57 | Generator rotor x2 99 x 21 x 19 mm |
 | Generator Stator Load | 55 g, $1.10 | 1 h 43 m | 1 | $3.64 | Generator stator 102 x 55 x 43 mm |
-| Heat Exchanger Tube Bundle Load | 12 g, $0.24 | 24 m | 1 | $1.50 | Tube bundle x2 76 x 24 x 18 mm |
-| Distillation Column Load | 60 g, $1.19 | 1 h 41 m | 1 | $3.73 | Column 204 x 37 x 30 mm |
+| Heat Exchanger Tube Bundle Load | 12 g, $0.24 | 25 m | 1 | $1.50 | Tube bundle x2 76 x 24 x 18 mm |
+| Distillation Column Load | 60 g, $1.20 | 1 h 41 m | 1 | $3.73 | Column 204 x 37 x 30 mm |
 | Girth Gear Load | 23 g, $0.46 | 48 m | 1 | $1.73 | Girth gear half x4 70 x 35 x 10 mm |
 | Diesel Genset Load | 49 g, $0.98 | 1 h 29 m | 1 | $2.51 | Genset x2 141 x 43 x 29 mm |
 | Package Boiler Load | 26 g, $0.52 | 45 m | 1 | $1.78 | Package boiler x2 86 x 37 x 31 mm |
@@ -125,13 +125,13 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Wind Turbine Blade Load | 36 g, $0.72 | 1 h 1 m | 2 | $3.24 | Blade root 145 x 36 x 20 mm; Blade middle 145 x 30 x 10 mm; Blade tip 142 x 19 x 4 mm; Root fixture 35 x 27 x 2 mm; Tip cradle 25 x 10 x 2 mm |
 | Mine Car Load | 9 g, $0.17 | 25 m | 1 | $1.43 | Mine car x16 22 x 15 x 14 mm |
 | Steel Joist Load | 33 g, $0.66 | 1 h 10 m | 1 | $1.93 | Joist tier x4 140 x 31 x 9 mm |
-| Copper Cathode Load | 28 g, $0.55 | 1 h 9 m | 1 | $1.83 | Cathode bundle x24 12 x 12 x 5 mm; Cathode bundle B x24 12 x 12 x 5 mm |
-| Steel-Wheel Tractor Load | 13 g, $0.26 | 38 m | 2 | $1.52 | Tractor grey x4 33 x 21 x 20 mm; Tractor green x4 33 x 21 x 20 mm |
+| Copper Cathode Load | 28 g, $0.56 | 1 h 18 m | 1 | $1.84 | Cathode bundle x24 12 x 12 x 5 mm; Cathode bundle B x24 12 x 12 x 5 mm |
+| Steel-Wheel Tractor Load | 13 g, $0.26 | 38 m | 2 | $1.53 | Tractor grey x4 33 x 21 x 20 mm; Tractor green x4 33 x 21 x 20 mm |
 | Excavator Bucket Load | 5 g, $0.10 | 11 m | 1 | $1.35 | Bucket digging large x2 22 x 22 x 19 mm; Bucket digging medium x2 18 x 16 x 15 mm; Bucket ditching x2 26 x 16 x 13 mm; Bucket rock x2 21 x 18 x 18 mm |
 | Locomotive Diesel Engine Load | 11 g, $0.23 | 25 m | 1 | $1.49 | Diesel engine x2 70 x 23 x 18 mm |
-| Transformer Radiator Load | 16 g, $0.31 | 1 h 4 m | 1 | $1.59 | Radiator bank x12 31 x 26 x 10 mm |
+| Transformer Radiator Load | 16 g, $0.31 | 1 h 3 m | 1 | $1.59 | Radiator bank x12 31 x 25 x 10 mm |
 | Ship Anchor and Chain Load | 8 g, $0.16 | 20 m | 1 | $1.42 | Anchor x2 49 x 31 x 5 mm; Anchor chain x2 44 x 16 x 4 mm |
-| Hydraulic Cylinder Load | 11 g, $0.21 | 19 m | 1 | $1.47 | Cylinder large x2 80 x 15 x 10 mm; Cylinder medium x4 62 x 13 x 8 mm |
+| Hydraulic Cylinder Load | 11 g, $0.22 | 20 m | 1 | $1.47 | Cylinder large x2 80 x 15 x 10 mm; Cylinder medium x4 62 x 13 x 8 mm |
 | Turnout Frog and Switch Point Load | 5 g, $0.10 | 10 m | 1 | $1.35 | Frog x4 56 x 13 x 3 mm; Switch points x2 91 x 15 x 3 mm |
 
 Filament at $20/kg, power about $0.02 a print hour, packing $1.25 a load ($2.50 for the wind tower's long box). eBay: 13.6% of item + shipping, plus $0.40 an order. Etsy: 6.5% transaction and 3% + $0.25 payment processing on item + shipping, plus the $0.20 listing fee. Shipping charged at cost (about $5.50 USPS Ground Advantage for a small box, $8 for the wind tower).
@@ -1200,7 +1200,7 @@ Not a toy: small parts, for ages 14+.
 ```
 PROPANE TANK LOAD - HO SCALE (1:87) FLATCAR LOAD
 
-Six new 1,000 gallon propane tanks for a 53 ft bulkhead flat, in pairs on dunnage: 2:1 heads, saddle legs, the valve dome with its hinged lid, a lifting lug and a nameplate on each. Each shell rides on a cradle web pierced with openings.
+Six new 1,000 gallon propane tanks for a 53 ft bulkhead flat, in pairs on dunnage: 2:1 heads, saddle legs, the valve dome with its hinged lid, a lifting lug and a nameplate on each. Each shell rides on a cradle web on a timber runner, pierced with openings between the timbers.
 
 What's in the pack:
   - 3 x Propane pair
@@ -1688,7 +1688,7 @@ Load only: the flatcar shown is not included. The load stands on its own blockin
 Printed in colour: every piece comes off the printer in its finished colours, so it is ready to place. No painting, no assembly.
 
 SIZE
-- Generator rotor (x2): 3.9 x 0.8 x 0.7 in (98 x 21 x 19 mm)
+- Generator rotor (x2): 3.9 x 0.8 x 0.7 in (99 x 21 x 19 mm)
 
 HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.
 Not a toy: small parts, for ages 14+.
@@ -2352,7 +2352,7 @@ Load only: the flatcar shown is not included. The load stands on its own blockin
 Printed in colour: every piece comes off the printer in its finished colours, so it is ready to place. No painting, no assembly.
 
 SIZE
-- Radiator bank (x12): 1.2 x 1.0 x 0.4 in (31 x 26 x 10 mm)
+- Radiator bank (x12): 1.2 x 1.0 x 0.4 in (31 x 25 x 10 mm)
 
 HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.
 Not a toy: small parts, for ages 14+.
