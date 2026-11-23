@@ -2059,6 +2059,8 @@ ZIPNAME.update({"pallets": "Loaded_Pallets_Pack", "drums": "Oil_Drums_and_Barrel
 ZIPNAME.update({"windtower": "Wind_Tower_Section_Load", "nacelle": "Wind_Nacelle_and_Hub_Load", "transformer": "Power_Transformer_Load",
                 "linepipe": "Coated_Line_Pipe_Load", "tarps": "Tarped_Flatcar_Loads", "steel": "Steel_Mill_Loads",
                 "vessel": "Pressure_Vessel_Load", "propeller": "Ship_Propeller_Load"})
+from .loadnames import ZIPNAMES as _LOADS2       # the second series (hoarch.flatloads2)
+ZIPNAME.update(_LOADS2)
 
 
 NOTES = {k: (v[0], _rewrap(v[1])) + tuple(v[2:]) for k, v in NOTES.items()}

@@ -338,6 +338,9 @@ PACKS = {
                            "train layout", "3d printed load"])),
 }
 
+from .loads2 import PACKS2 as _PACKS2      # the second series of flatcar loads (hoarch.flatloads2)
+PACKS.update(_PACKS2)
+
 
 def zipnames():
     return {k: p["zipname"] for k, p in PACKS.items()}
