@@ -484,7 +484,7 @@ def wood_tie_row(seed=2, bundles=4):
                          box([x0 + 0.01, yb_ - 1, z0 - 1], [x0 + Wb - 0.01, yb_ + 1, z0 + 5 * th - 0.01]))
     Lx = bundles * (Wb + 1.0) - 1.0
     dun = [box([-0.4, y - 0.7, 0.0], [Lx + 0.4, y + 0.7, z0 + 0.01]) for y in (-tl / 2 + 2.0, tl / 2 - 2.0)]
-    return union(parts + dun) - union(cuts)
+    return F._sheeted(lambda: union(parts + dun) - union(cuts))()
 
 
 # ================================================================== 9. granite blocks
@@ -814,7 +814,7 @@ def tank():
         lock.append(_side([(2.4, zd), (3.8, zd), (3.5, zg - 1.9), (2.7, zg - 1.9)], sgn * 1.6 - 0.4, sgn * 1.6 + 0.4))
     sad = box([2.2, -2.0, zg - 2.1], [4.0, 2.0, zg - 1.0]) - M.cylinder(3, 1.3, 1.3, 24).rotate([0, 90, 0]).translate([1.5, 0, zg])
     lock.append(sad)
-    return union([hull, turret] + det + tdet + lock) - union(cuts + [gun])
+    return F._sheeted(lambda: union([hull, turret] + det + tdet + lock) - union(cuts + [gun]))()
 
 
 @solid
@@ -877,7 +877,7 @@ def apc():
             box([-1, 1.5, zt + 3.6], [0.12, 1.74, zr - 2.4]), box([-1, 6.76, zt + 3.6], [0.12, 7.0, zr - 2.4]),
             box([-1, 1.5, zr - 2.64], [0.12, 7.0, zr - 2.4])]                                    # door in the ramp
     cuts += [box([4.2, y - 0.12, zr + 0.13], [20.8, y + 0.12, zr + 1]) for y in (0.0,)]
-    return union([body] + det) - union(cuts)
+    return F._sheeted(lambda: union([body] + det) - union(cuts))()
 
 
 # ================================================================== 15. crawler excavator
@@ -932,7 +932,7 @@ def excavator():
     for sgn in (-1, 1):
         det.append(box([xs + 13.5, sgn * 3.6 - 0.4, deck_top - 0.01], [xs + 19.0, sgn * 3.6 + 0.4, zb + 10.5]))
     cuts = _grille(xs - 10.5, xs - 2.0, -14.0, -8.0, zb + 13.0, 7) + _grille(xs - 10.5, xs - 2.0, 7.0, 13.0, zb + 13.0, 7)
-    return union([trk, carbody, ring, upper] + det + panes + [front]) - union(cuts)
+    return F._sheeted(lambda: union([trk, carbody, ring, upper] + det + panes + [front]) - union(cuts))()
 
 
 EXC_FOOT = (EXC_SWING + 16.5, EXC_TRACK + 6.0 + 2.0)     # the boom foot pin (x, z), between the bracket's plates
@@ -1035,7 +1035,7 @@ def dozer():
     rip += [_side(shank, y - 0.8, y + 0.8) for y in (-5.0, 0.0, 5.0)]
     link = [(2.05, 6.6), (2.05, 7.8), (-4.01, 13.86), (-4.01, 12.66)]
     rip += [_side(link, y - 0.4, y + 0.4) for y in (-3.5, 3.5)]
-    return union([trk, frame, fenders, hood, grille, cab, roof, tank_] + det + rip) - union(cuts + panes)
+    return F._sheeted(lambda: union([trk, frame, fenders, hood, grille, cab, roof, tank_] + det + rip) - union(cuts + panes))()
 
 
 @solid
@@ -1093,7 +1093,7 @@ def crawler_tractor():
     det = [box([-0.4, -2.0, 2.0], [1.01, 2.0, 6.0])]
     cuts = [box([37.0, y - 0.18, zt + 1.2], [38.0, y + 0.18, zt + 8.8]) for y in np.arange(-4.6, 4.7, 0.8)]
     cuts += [box([x, sgn * 4.4 - 0.3, zt + 2.0], [x + 0.35, sgn * 4.4 + 0.3, zt + 6.5]) for x in np.arange(16.0, 31.5, 1.1) for sgn in (-1, 1)]
-    return union([trk, frame, fenders, hood, rad, tank_] + seat + levers + stacks + det) - union(cuts)
+    return F._sheeted(lambda: union([trk, frame, fenders, hood, rad, tank_] + seat + levers + stacks + det) - union(cuts))()
 
 
 # ================================================================== wheels (batch 4)
@@ -1293,7 +1293,7 @@ def crate(i=0):
         if cs.bounds()[2] - cs.bounds()[0] < L - 2 * b - 1.0:
             zl = zs + H * 0.42 + b / 2 + (H * 0.58 - 1.5 * b - 2.4) / 2       # centred in the panel above the mid batten
             out = out + M.extrude(cs, 0.35).rotate([90, 0, 0]).translate([L / 2, -W / 2 + 0.05, zl])
-    return out
+    return F._sheeted(lambda: out)()
 
 
 # ================================================================== 22. air-cooled chillers
@@ -1439,8 +1439,9 @@ def _mt_chassis_display():
 
 @solid
 def mt_chassis():
-    """The truck's chassis in its print pose: upside down on its frame rails."""
-    return flip(_mt_chassis_display())
+    """The truck's chassis in its print pose: upside down on its frame rails, on a bed sheet (it ends up
+    hidden under the body)."""
+    return F._sheeted(lambda: flip(_mt_chassis_display()))()
 
 
 @solid
