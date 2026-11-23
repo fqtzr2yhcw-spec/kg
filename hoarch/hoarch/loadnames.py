@@ -49,4 +49,7 @@ ZIPNAMES = {
     "girderspan": "Plate_Girder_Span_Load",
     "windblade": "Wind_Turbine_Blade_Load",
     "minecars": "Mine_Car_Load",
+    "joists": "Steel_Joist_Load",
+    "copper": "Copper_Cathode_Load",
+    "farmtractors": "Steel_Wheel_Tractor_Load",
 }

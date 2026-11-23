@@ -2604,6 +2604,143 @@ def mine_car():
     return F._sheeted(lambda: union(parts + [body, rim, latch] + ribs + cradles + timbers))()
 
 
+# ================================================================== 49. open-web steel joists
+JOIST_DUN = 1.2
+
+
+def _joist_cs(L, D):
+    """One open-web steel joist laid flat (x along it, y across its depth): the top and bottom chords,
+    the round-bar web zigzagging between them, the bearing seats where the top chord runs past the
+    bottom one."""
+    seat = 2.6
+    parts = [poly([(0.0, D - 0.9), (L, D - 0.9), (L, D), (0.0, D)]),                    # top chord
+             poly([(seat, 0.0), (L - seat, 0.0), (L - seat, 0.8), (seat, 0.8)])]          # bottom chord
+    pw = ft(2.0)
+    xs = list(np.arange(seat, L - seat + 0.01, pw / 2))
+    for i, (a, b) in enumerate(zip(xs[:-1], xs[1:])):
+        ya, yb = (0.4, D - 0.45) if i % 2 == 0 else (D - 0.45, 0.4)
+        parts.append(F._seg((a, ya), (b, yb), 0.5))
+    parts.append(F._seg((seat, 0.4), (0.6, D - 0.45), 0.6))                              # end diagonals up to the seats
+    parts.append(F._seg((L - seat, 0.4), (L - 0.6, D - 0.45), 0.6))
+    return cs_union(parts)
+
+
+@solid
+def joist_bundles(n=4, layers=8):
+    """Four bundles of 40 ft open-web steel joists, eight to a bundle laid on their sides, banded
+    twice, on dunnage: from above, every joist's zigzag web and bearing seats show. Each layer's web
+    bridges between its own chords."""
+    L, D = ft(40.0), inch(24)
+    z0 = JOIST_DUN
+    cs = _joist_cs(L, D)
+    chords = cs ^ (poly([(0, 0), (L, 0), (L, 0.8), (0, 0.8)]) + poly([(0, D - 0.9), (L, D - 0.9), (L, D), (0, D)]))
+    web = cs - chords
+    parts = []
+    for b in range(n):
+        y0 = (b - (n - 1) / 2) * (D + 0.6) - D / 2
+        for k in range(layers):
+            zk = z0 + k * 1.0
+            parts.append(M.extrude(chords.translate((0.0, y0)), 1.0).translate([0, 0, zk]))
+            parts.append(M.extrude(web.translate((0.0, y0)), 0.6).translate([0, 0, zk + 0.2]))
+        zt = z0 + layers * 1.0
+        for x in (L * 0.25, L * 0.75):
+            parts.append(box([x - 0.3, y0 - 0.2, z0], [x + 0.3, y0 + 0.01, zt + 0.2]))
+            parts.append(box([x - 0.3, y0 + D - 0.01, z0], [x + 0.3, y0 + D + 0.2, zt + 0.2]))
+            parts.append(box([x - 0.3, y0 - 0.2, zt - 0.01], [x + 0.3, y0 + D + 0.2, zt + 0.2]))
+    W = n * (D + 0.6)
+    dun = [box([x - 1.0, -W / 2 - 0.4, 0.0], [x + 1.0, W / 2 + 0.4, z0 + 0.01]) for x in np.linspace(3.5, L - 3.5, 6)]
+    return F._sheeted(lambda: union(parts + dun))()
+
+
+# ================================================================== 50. copper cathode bundles
+CU_SKID = 1.2
+
+
+@solid
+def cathode_bundle(seed=1):
+    """A bundle of copper cathode sheets from the refinery, about a metre square: eight sheets each a
+    little out of line with the next, the top sheet's nodular face, banded twice each way on two
+    skids."""
+    rng = np.random.default_rng(seed)
+    S = ft(3.3)
+    z0 = CU_SKID
+    t = 0.4
+    parts = []
+    for k in range(8):
+        dx, dy = rng.uniform(-0.2, 0.2, 2)
+        parts.append(box([dx, dy, z0 + k * t], [S + dx, S + dy, z0 + (k + 1) * t + 0.01]))
+    zt = z0 + 8 * t
+    for _ in range(40):                                                     # the top sheet's nodules
+        x, y = rng.uniform(1.0, S - 1.0, 2)
+        parts.append(M.cylinder(0.25, rng.uniform(0.3, 0.5), 0.2, 8).translate([x, y, zt - 0.01]))
+    for u in (S * 0.28, S * 0.72):
+        parts.append(box([u - 0.25, -0.45, z0], [u + 0.25, S + 0.45, zt + 0.2]) - box([u - 1, -0.2, z0 - 1], [u + 1, S + 0.2, zt]))
+        parts.append(box([-0.45, u - 0.25, z0], [S + 0.45, u + 0.25, zt + 0.2]) - box([-0.2, u - 1, z0 - 1], [S + 0.2, u + 1, zt]))
+    skids = [box([0.0, y - 0.6, 0.0], [S, y + 0.6, z0 + 0.01]) for y in (1.4, S - 1.4)]
+    return F._sheeted(lambda: union(parts + skids))()
+
+
+# ================================================================== 51. steel-wheel farm tractors
+FT_TIMBER = 1.2
+
+
+def _spoked_wheel(x, zc, r, ya, yb, n_spokes, cleats):
+    """A steel wheel, axis along y between ya and yb: the rim, flat spokes from the hub, the hub, and
+    (``cleats``) spade lugs across the tread."""
+    w = yb - ya
+    rim = M.cylinder(w, r, r, 48) - M.cylinder(w + 2, r - 0.9, r - 0.9, 48).translate([0, 0, -1])
+    spokes = [box([0.0, -0.4, w / 2 - 0.3], [r - 0.5, 0.4, w / 2 + 0.3]).rotate([0, 0, 360.0 * k / n_spokes]) for k in range(n_spokes)]
+    hub = M.cylinder(w + 0.4, 1.1, 1.1, 20).translate([0, 0, -0.2])
+    lugs = []
+    if cleats:
+        for k in range(cleats):
+            lugs.append(box([r - 0.05, -0.25, 0.1], [r + 0.5, 0.25, w - 0.1]).rotate([0, 0, 360.0 * k / cleats + 8.0]))
+    wheel = union([rim, hub] + spokes + lugs)
+    return wheel.rotate([-90, 0, 0]).translate([x, ya, zc])
+
+
+@solid
+def farm_tractor():
+    """A 1920s steel-wheel farm tractor as it left the factory, on two timbers: big rear wheels with
+    spade lugs and flat spokes, spoked front wheels on a swinging axle, the radiator with its tubes
+    and cap, the engine with exhaust and air stack, the fuel tank, the gearcase and axle housings,
+    the steering column and wheel, the pan seat on its spring bar. Generic."""
+    z0 = FT_TIMBER
+    rr, rf = inch(21), inch(14)
+    zr, zf = z0 + 0.2 + rr + 0.5, z0 + 0.2 + rf
+    parts = []
+    for sgn in (-1, 1):
+        ya, yb = sorted((sgn * 6.15, sgn * 9.65))
+        parts.append(_spoked_wheel(6.0, zr, rr, ya, yb, 10, 16))
+        parts.append(along_y(keel(6.0, zr, rr + 0.5, z0), ya + 0.3, yb - 0.3))
+        fa, fb = sorted((sgn * 5.7, sgn * 7.3))
+        parts.append(_spoked_wheel(27.0, zf, rf, fa, fb, 8, 0))
+        parts.append(along_y(keel(27.0, zf, rf, z0), fa + 0.2, fb - 0.2))
+    parts.append(M.cylinder(12.4, 1.0, 1.0, 20).rotate([-90, 0, 0]).translate([6.0, -6.2, zr]))         # rear axle housings
+    parts.append(box([26.5, -6.0, zf - 0.5], [27.5, 6.0, zf + 0.5]))                                    # front axle
+    parts.append(box([26.4, -1.0, zf - 0.5], [27.6, 1.0, z0 + 7.0]))                                    # its pivot
+    parts += [box([2.5, -4.0, zr - 3.5], [10.0, 4.0, zr + 3.0]),                                         # gearcase
+              box([10.0, -3.4, z0 + 5.0], [25.5, 3.4, z0 + 11.0]),                                       # engine
+              box([25.4, -4.2, z0 + 4.0], [28.4, 4.2, z0 + 13.5]),                                       # radiator
+              M.cylinder(1.0, 0.8, 0.8, 16).translate([27.0, 0.0, z0 + 13.49])]                          # radiator cap
+    tank = along_x(cs_union([poly([(-3.0, z0 + 11.0), (3.0, z0 + 11.0), (3.0, z0 + 12.5), (-3.0, z0 + 12.5)]), circle((0.0, z0 + 12.5), 3.0, 32)]) ^
+                   CS.square((8, 6)).translate((-4.0, z0 + 10.99)), 11.0, 24.0)
+    parts.append(tank)
+    parts += [M.cylinder(6.0, 0.5, 0.5, 12).translate([22.0, 2.2, z0 + 10.99]),                           # exhaust
+              M.cylinder(4.5, 0.8, 0.8, 16).translate([19.0, -2.4, z0 + 10.99])]                          # air stack
+    col = F._seg((11.0, z0 + 13.0), (6.5, z0 + 17.5), 0.6)
+    parts.append(along_y(col, -0.3, 0.3))
+    sw = (M.cylinder(0.5, 2.6, 2.6, 32) - M.cylinder(2, 2.0, 2.0, 32).translate([0, 0, -1])) + box([-2.3, -0.3, 0.0], [2.3, 0.3, 0.5])
+    parts.append(sw.rotate([0, -45, 0]).translate([6.3, 0.0, z0 + 17.4]))                               # steering wheel, tilted
+    bar = F._seg((3.0, zr + 2.5), (0.0, zr + 6.5), 0.8)
+    parts.append(along_y(bar, -0.5, 0.5))
+    parts.append(box([-1.6, -1.6, zr + 6.2], [1.4, 1.6, zr + 6.8]))                                       # pan seat
+    for z in np.arange(z0 + 5.0, z0 + 13.0, 0.9):                                                         # radiator tubes
+        parts.append(box([28.39, -3.6, z], [28.7, 3.6, z + 0.45]))
+    timbers = [box([0.0, sgn * 7.6 - 2.2, 0.0], [31.0, sgn * 7.6 + 2.2, z0 + 0.01]) for sgn in (-1, 1)]
+    return F._sheeted(lambda: union(parts + timbers))()
+
+
 # ================================================================== scenes (renders only)
 def _place(s, m, base, change, x, z, y=0.0, upside=False, rz=0.0):
     """Set a piece (in its print pose) on the car: split at its colour change, turned over if it
@@ -3104,7 +3241,39 @@ def scene_minecars():
     return s
 
 
-SCENES = {"boiler": scene_boiler, "locoboiler": scene_locoboiler, "wheelsets": scene_wheelsets, "girderspan": scene_girderspan,
+def scene_joists():
+    L = ft(42.0)
+    s = F._car(L, "car_black")
+    zd = F.deck()
+    for t in range(2):
+        _place(s, joist_bundles(), "Cocoa Brown", (JOIST_DUN, "Gray"), L / 2, zd + t * (JOIST_DUN + 8.0 + 0.2))
+    return s
+
+
+def scene_copper():
+    L = ft(40.0)
+    s = F._car(L, "car_oxide")
+    zd = F.deck()
+    k = 0
+    for x in np.linspace(20.0, L - 20.0, 4):
+        for y in (-7.0, 7.0):
+            for t in range(2):
+                _place(s, cathode_bundle(seed=k), "Cocoa Brown", (CU_SKID, "Copper Brown Metallic"), x, zd + t * (CU_SKID + 3.2 + 0.2), y)
+                k += 1
+    return s
+
+
+def scene_farmtractors():
+    L = ft(40.0)
+    s = F._car(L, "car_mineral")
+    zd = F.deck()
+    for i, x in enumerate(np.linspace(19.0, L - 19.0, 4)):
+        _place(s, farm_tractor(), "Cocoa Brown", (FT_TIMBER, "Gray" if i % 2 == 0 else "Mistletoe Green"), x, zd)
+    return s
+
+
+SCENES = {"joists": scene_joists, "copper": scene_copper, "farmtractors": scene_farmtractors,
+"boiler": scene_boiler, "locoboiler": scene_locoboiler, "wheelsets": scene_wheelsets, "girderspan": scene_girderspan,
           "windblade": scene_windblade, "minecars": scene_minecars,
 "rotor": scene_rotor, "stator": scene_stator, "tubebundle": scene_tubebundle, "column": scene_column, "gear": scene_gear,
           "genset": scene_genset,

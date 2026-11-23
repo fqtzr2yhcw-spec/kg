@@ -561,4 +561,39 @@ PACKS2 = dict([
           dict(ebay="HO Scale Narrow Gauge V-Dump Mine Cars 8 pc Flatcar Load Mining 1:87",
                car="a 40 ft flatcar (eight), or a mine scene", era="Steam / Transition (1880s-1960s)",
                colors="Red, Brown", ship=5.5, pack=1.25)),
+    _load("joists", "Steel Joist Load", 2,
+          "Two tiers of 40 ft open-web steel joists for a 42 ft flatcar, four bundles to a tier, eight joists to a bundle "
+          "laid on their sides and banded: from above every joist's zigzag web and bearing seats show. In shop primer "
+          "grey on dunnage.",
+          [_p("Joist-tier", G.joist_bundles, "Cocoa Brown", 2, (G.JOIST_DUN, "Gray"))],
+          "15.99", "HO Scale Open Web Steel Joists Bundles | Bar Joist Flatcar Load, Construction | Printed | 1:87",
+          ["steel joists", "bar joists", "steel load", "construction", "building steel", "warehouse build",
+           "steel bundles", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Open Web Steel Bar Joist Bundles Flatcar Load Construction 1:87",
+               car="a 42 ft flatcar (two tiers)", era="Transition / Modern (1950s-present)", colors="Gray, Brown",
+               ship=5.5, pack=1.25)),
+    _load("copper", "Copper Cathode Load", 2,
+          "Sixteen bundles of copper cathode sheets from the refinery for a 40 ft flatcar or a gondola, stacked two high: "
+          "each about a metre square, eight sheets a little out of line, the top sheet's nodular face, banded twice each "
+          "way on two skids. Printed in metallic copper.",
+          [_p("Cathode-bundle", G.cathode_bundle, "Cocoa Brown", 8, (G.CU_SKID, "Copper Brown Metallic")),
+           _p("Cathode-bundle-B", lambda: G.cathode_bundle(seed=2), "Cocoa Brown", 8, (G.CU_SKID, "Copper Brown Metallic"))],
+          "15.99", "HO Scale Copper Cathode Bundles 16 pc | Refinery Smelter Flatcar Gondola Load | Printed | 1:87",
+          ["copper cathodes", "copper load", "copper refinery", "smelter", "mining load", "metal load", "gondola load",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Copper Cathode Bundles 16 pc Refinery Smelter Flatcar Gondola Load 1:87",
+               car="a 40 ft flatcar or a gondola", era="Transition / Modern (1950s-present)", colors="Copper, Brown",
+               ship=5.5, pack=1.25)),
+    _load("farmtractors", "Steel-Wheel Tractor Load", 2,
+          "Four 1920s steel-wheel farm tractors for a 40 ft flatcar, as they left the factory, two grey and two green: big "
+          "rear wheels with spade lugs and flat spokes, spoked front wheels on a swinging axle, the radiator with its tubes "
+          "and cap, engine, exhaust and air stack, fuel tank, gearcase, the steering column and wheel and the pan seat on "
+          "its spring bar, each on two timbers. Generic.",
+          [_p("Tractor-grey", G.farm_tractor, "Cocoa Brown", 2, (G.FT_TIMBER, "Gray")),
+           _p("Tractor-green", G.farm_tractor, "Cocoa Brown", 2, (G.FT_TIMBER, "Mistletoe Green"))],
+          "16.99", "HO Scale 1920s Steel Wheel Farm Tractors 4 pc | Flatcar Load, Steam Era | Printed in Color | 1:87",
+          ["farm tractor", "vintage tractor", "steam era", "farm machinery", "antique tractor", "farm scene",
+           "agriculture", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale 1920s Steel Wheel Farm Tractors 4 pc Flatcar Load Steam Era 1:87",
+               car="a 40 ft flatcar (four in line)", era="Steam (1915-1940)", colors="Gray, Green, Brown", ship=5.5, pack=1.25)),
 ])
