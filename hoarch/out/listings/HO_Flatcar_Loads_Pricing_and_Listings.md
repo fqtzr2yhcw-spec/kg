@@ -56,7 +56,7 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Wind Turbine Blade Load | $29.99 | $21.18 | $22.69 | 1 h 1 m | 36 g | 1 |
 | Mine Car Load | $15.99 | $11.24 | $12.07 | 25 m | 9 g | 2 |
 | Steel Joist Load | $15.99 | $10.73 | $11.56 | 1 h 10 m | 33 g | 2 |
-| Copper Cathode Load | $15.99 | $11.22 | $12.06 | 23 m | 9 g | 2 |
+| Copper Cathode Load | $15.99 | $10.84 | $11.67 | 1 h 9 m | 28 g | 1 |
 | Steel-Wheel Tractor Load | $16.99 | $12.01 | $12.88 | 38 m | 13 g | 2 |
 | Excavator Bucket Load | $15.99 | $11.32 | $12.15 | 11 m | 5 g | 2 |
 | Locomotive Diesel Engine Load | $18.99 | $13.77 | $14.73 | 25 m | 11 g | 2 |
@@ -125,7 +125,7 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Wind Turbine Blade Load | 36 g, $0.72 | 1 h 1 m | 2 | $3.24 | Blade root 145 x 36 x 20 mm; Blade middle 145 x 30 x 10 mm; Blade tip 142 x 19 x 4 mm; Root fixture 35 x 27 x 2 mm; Tip cradle 25 x 10 x 2 mm |
 | Mine Car Load | 9 g, $0.17 | 25 m | 1 | $1.43 | Mine car x16 22 x 15 x 14 mm |
 | Steel Joist Load | 33 g, $0.66 | 1 h 10 m | 1 | $1.93 | Joist tier x4 140 x 31 x 9 mm |
-| Copper Cathode Load | 9 g, $0.19 | 23 m | 1 | $1.44 | Cathode bundle x16 12 x 12 x 5 mm; Cathode bundle B x16 12 x 12 x 5 mm |
+| Copper Cathode Load | 28 g, $0.55 | 1 h 9 m | 1 | $1.83 | Cathode bundle x24 12 x 12 x 5 mm; Cathode bundle B x24 12 x 12 x 5 mm |
 | Steel-Wheel Tractor Load | 13 g, $0.26 | 38 m | 2 | $1.52 | Tractor grey x4 33 x 21 x 20 mm; Tractor green x4 33 x 21 x 20 mm |
 | Excavator Bucket Load | 5 g, $0.10 | 11 m | 1 | $1.35 | Bucket digging large x2 22 x 22 x 19 mm; Bucket digging medium x2 18 x 16 x 15 mm; Bucket ditching x2 26 x 16 x 13 mm; Bucket rock x2 21 x 18 x 18 mm |
 | Locomotive Diesel Engine Load | 11 g, $0.23 | 25 m | 1 | $1.49 | Diesel engine x2 70 x 23 x 18 mm |
@@ -2162,16 +2162,16 @@ Not a toy: small parts, for ages 14+.
 
 ## Copper Cathode Load
 
-**Price:** $15.99. **Suits:** a 40 ft flatcar or a gondola.
+**Price:** $15.99. **Suits:** three 40 ft flatcars or gondolas (16 bundles each, two high).
 
 ### eBay
 
-- **Title** (80/80): `HO Scale Copper Cathode Bundles 16 pc Refinery Smelter Flatcar Gondola Load 1:87`
-- **Item specifics for this load:** Era: Transition / Modern (1950s-present). Color: Copper, Brown. Number of Pieces: 16. Item size: see SIZE below.
+- **Title** (77/80): `HO Scale Copper Cathode Bundles 48 pc 3 Carloads Smelter Flatcar Gondola 1:87`
+- **Item specifics for this load:** Era: Transition / Modern (1950s-present). Color: Copper, Brown. Number of Pieces: 48. Item size: see SIZE below.
 
 ### Etsy
 
-- **Title** (94/140): `HO Scale Copper Cathode Bundles 16 pc | Refinery Smelter Flatcar Gondola Load | Printed | 1:87`
+- **Title** (106/140): `HO Scale Copper Cathode Bundles 48 pc | 3 Carloads, Refinery Smelter Flatcar Gondola Load | Printed | 1:87`
 - **Tags (13):** `copper cathodes, copper load, copper refinery, smelter, mining load, metal load, gondola load, flatcar load, ho scale load, ho flatcar load, model railroad load, 1:87 scale, gift for railfan`
 - **Colours:** Copper, Brown
 
@@ -2180,19 +2180,19 @@ Not a toy: small parts, for ages 14+.
 ```
 COPPER CATHODE LOAD - HO SCALE (1:87) FLATCAR LOAD
 
-Sixteen bundles of copper cathode sheets from the refinery for a 40 ft flatcar or a gondola, stacked two high: each about a metre square, eight sheets a little out of line, the top sheet's nodular face, banded twice each way on two skids. Printed in metallic copper.
+Forty-eight bundles of copper cathode sheets from the refinery, enough for three 40 ft flatcars or gondolas (sixteen to a car, stacked two high): each about a metre square, eight sheets a little out of line, the top sheet's nodular face, banded twice each way on two skids. Printed in metallic copper.
 
 What's in the pack:
-  - 8 x Cathode bundle
-  - 8 x Cathode bundle B
+  - 24 x Cathode bundle
+  - 24 x Cathode bundle B
 
-Load only: the flatcar shown is not included. The load stands on its own blocking, so it sits on any deck. It suits a 40 ft flatcar or a gondola.
+Load only: the flatcar shown is not included. The load stands on its own blocking, so it sits on any deck. It suits three 40 ft flatcars or gondolas (16 bundles each, two high).
 
 Printed in colour: every piece comes off the printer in its finished colours, so it is ready to place. No painting, no assembly.
 
 SIZE
-- Cathode bundle (x16): 0.5 x 0.5 x 0.2 in (12 x 12 x 5 mm)
-- Cathode bundle B (x16): 0.5 x 0.5 x 0.2 in (12 x 12 x 5 mm)
+- Cathode bundle (x24): 0.5 x 0.5 x 0.2 in (12 x 12 x 5 mm)
+- Cathode bundle B (x24): 0.5 x 0.5 x 0.2 in (12 x 12 x 5 mm)
 
 HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.
 Not a toy: small parts, for ages 14+.

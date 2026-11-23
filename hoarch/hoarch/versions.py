@@ -177,6 +177,7 @@ HISTORY = {
     "marchand": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.8-7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
     "rochambeau": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.4-7.2 mm tall, about twice before. The portico's balcony railing is drawn the same way and stays 6.4 mm tall. Reprint the iron cresting strips (the Iron plates).")],
     "beauvais": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "copper": [("1.1", "2026-11-23", "Pack size: 48 bundles, three carloads (was 16, one car). One run of the plates now prints one pack of 48. The bundle itself is unchanged.")],
 }
 
 

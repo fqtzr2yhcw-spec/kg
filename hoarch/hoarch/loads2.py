@@ -496,18 +496,18 @@ PACKS2 = dict([
           dict(ebay="HO Scale Open Web Steel Bar Joist Bundles Flatcar Load Construction 1:87",
                car="a 42 ft flatcar (two tiers)", era="Transition / Modern (1950s-present)", colors="Gray, Brown",
                ship=5.5, pack=1.25)),
-    _load("copper", "Copper Cathode Load", 2,
-          "Sixteen bundles of copper cathode sheets from the refinery for a 40 ft flatcar or a gondola, stacked two high: "
-          "each about a metre square, eight sheets a little out of line, the top sheet's nodular face, banded twice each "
-          "way on two skids. Printed in metallic copper.",
-          [_p("Cathode-bundle", G.cathode_bundle, "Cocoa Brown", 8, (G.CU_SKID, "Copper Brown Metallic")),
-           _p("Cathode-bundle-B", lambda: G.cathode_bundle(seed=2), "Cocoa Brown", 8, (G.CU_SKID, "Copper Brown Metallic"))],
-          "15.99", "HO Scale Copper Cathode Bundles 16 pc | Refinery Smelter Flatcar Gondola Load | Printed | 1:87",
+    _load("copper", "Copper Cathode Load", 1,
+          "Forty-eight bundles of copper cathode sheets from the refinery, enough for three 40 ft flatcars or gondolas "
+          "(sixteen to a car, stacked two high): each about a metre square, eight sheets a little out of line, the top "
+          "sheet's nodular face, banded twice each way on two skids. Printed in metallic copper.",
+          [_p("Cathode-bundle", G.cathode_bundle, "Cocoa Brown", 24, (G.CU_SKID, "Copper Brown Metallic")),
+           _p("Cathode-bundle-B", lambda: G.cathode_bundle(seed=2), "Cocoa Brown", 24, (G.CU_SKID, "Copper Brown Metallic"))],
+          "15.99", "HO Scale Copper Cathode Bundles 48 pc | 3 Carloads, Refinery Smelter Flatcar Gondola Load | Printed | 1:87",
           ["copper cathodes", "copper load", "copper refinery", "smelter", "mining load", "metal load", "gondola load",
            "flatcar load", "ho scale load"] + _TAIL,
-          dict(ebay="HO Scale Copper Cathode Bundles 16 pc Refinery Smelter Flatcar Gondola Load 1:87",
-               car="a 40 ft flatcar or a gondola", era="Transition / Modern (1950s-present)", colors="Copper, Brown",
-               ship=5.5, pack=1.25)),
+          dict(ebay="HO Scale Copper Cathode Bundles 48 pc 3 Carloads Smelter Flatcar Gondola 1:87",
+               car="three 40 ft flatcars or gondolas (16 bundles each, two high)", era="Transition / Modern (1950s-present)",
+               colors="Copper, Brown", ship=5.5, pack=1.25)),
     _load("farmtractors", "Steel-Wheel Tractor Load", 2,
           "Four 1920s steel-wheel farm tractors for a 40 ft flatcar, as they left the factory, two grey and two green: big "
           "rear wheels with spade lugs and flat spokes, spoked front wheels on a swinging axle, the radiator with its tubes "
