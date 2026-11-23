@@ -365,4 +365,73 @@ PACKS2 = dict([
            "flatcar load", "ho scale load"] + _TAIL,
           dict(ebay="HO Scale Rebar Bundle Load 2 Lifts Steel Reinforcing Bar Flatcar Gondola 1:87",
                car="a 53 ft flatcar or a gondola", era="Any (steam to modern)", colors="Rust, Brown", ship=5.5, pack=1.25)),
+    _load("sheetpile", "Steel Sheet Piling Load", 2,
+          "Two tiers of 40 ft steel Z-pile sheet piling for a 42 ft flatcar, three bundles to a tier: each bundle eight "
+          "piles nested deep, the trapezoid wave showing at the ends with every pile's end its own, banded twice on dunnage.",
+          [_p("Sheet-pile-tier", G.sheet_pile_tier, "Cocoa Brown", 1, (G.SP_DUN, "Iron Gray Metallic")),
+           _p("Sheet-pile-tier-B", lambda: G.sheet_pile_tier(seed=3), "Cocoa Brown", 1, (G.SP_DUN, "Iron Gray Metallic"))],
+          "15.99", "HO Scale Steel Sheet Piling Bundles | Z-Pile Flatcar Load, Construction | Printed in Color | 1:87",
+          ["sheet piling", "steel piling", "steel load", "construction", "bridge project", "marine construction",
+           "steel bundles", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Steel Sheet Piling Z-Pile Bundles Flatcar Load Construction 1:87",
+               car="a 42 ft flatcar (two tiers) or a gondola", era="Transition / Modern (1950s-present)",
+               colors="Dark Gray, Brown", ship=5.5, pack=1.25)),
+    _load("poles", "Utility Pole Load", 2,
+          "Twenty-six treated wood utility poles, 45 ft, for a 50 ft flatcar: piled eight, seven, six and five on six bunks "
+          "with stakes, butts at alternate ends, each pole tapered from a 12 in butt to a 7 in top with its roof cut and a "
+          "brand plate near the butt, wire-rope wrappers over the end bunks.",
+          [_p("Pole-pile", G.pole_pile, "Caramel", 1, (G.POLE_BUNK, "Black Walnut"))],
+          "17.99", "HO Scale Utility Pole Load | 45 ft Treated Wood Poles on Bunks with Stakes | Printed | 1:87",
+          ["utility poles", "telephone poles", "power poles", "wood poles", "pole load", "utility load", "treated wood",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Treated Wood Utility Pole Flatcar Load 45 ft Poles on Bunks 1:87",
+               car="a 50 ft flatcar", era="Any (steam to modern)", colors="Dark Brown, Tan", ship=6.5, pack=1.50)),
+    _load("crushed", "Crushed Car Scrap Load", 2,
+          "Three stacks of crushed cars on their way to the shredder, six to a stack, for a 53 ft flatcar or a gondola: each "
+          "body flattened into a crumpled slab with its window openings, wheel wells, bumpers and seams, each car a "
+          "little askew on the one below. Every stack prints in two colours, three cars of each.",
+          [_p("Crushed-stack-red-grey", lambda: G.crushed_stack(1), "Red", 1, (G.CRUSH_CHANGE, "Light Gray")),
+           _p("Crushed-stack-blue-rust", lambda: G.crushed_stack(2), "Cobalt Blue", 1, (G.CRUSH_CHANGE, "Copper Brown Metallic")),
+           _p("Crushed-stack-green-black", lambda: G.crushed_stack(3), "Mistletoe Green", 1, (G.CRUSH_CHANGE, "Black"))],
+          "16.99", "HO Scale Crushed Car Scrap Load 3 Stacks | Scrapyard Flatcar Gondola Load | Printed in Color | 1:87",
+          ["crushed cars", "scrap load", "scrap metal", "junkyard", "scrapyard", "auto salvage", "gondola load",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Crushed Car Scrap Load 3 Stacks 18 Cars Flatcar Gondola Scrapyard 1:87",
+               car="a 53 ft flatcar or a gondola", era="Transition / Modern (1960s-present)",
+               colors="Red, Blue, Green, Gray, Rust, Black", ship=5.5, pack=1.25)),
+    _load("giantlog", "Giant Log Load", 3,
+          "One log of an old-growth fir, 9 ft through and 32 ft long, like the famous one-log loads of the logging days: "
+          "deep bark furrows, two springboard notches near the butt, the saw cut on both ends with its rings and checks, "
+          "two binder chains, riding on timber sills with a chock at each end. For a 40 ft flatcar.",
+          [_p("Giant-log", G.giant_log, "Cocoa Brown", 1, (G.GLOG_SILL, "Dark Brown"))],
+          "18.99", "HO Scale Giant Old-Growth Log | One Log Flatcar Load, Logging History | Printed in Color | 1:87",
+          ["giant log", "logging railroad", "old growth log", "redwood log", "one log load", "logging camp", "steam era",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Giant Old Growth Log One Log Flatcar Load Logging Railroad 1:87",
+               car="a 40 ft flatcar", era="Steam (1890s-1940s)", colors="Dark Brown, Brown", ship=5.5, pack=1.25)),
+    _load("pulpwood", "Pulpwood Load", 2,
+          "Three sections of 8 ft pulpwood piled crosswise for a 40 ft pulpwood car, 9 ft high: both sides a mosaic of cut "
+          "ends, each stick its own size and standing a little proud or short, with its bark ring, and the top course in "
+          "bark. Cut ends in fresh wood, the top course in bark brown.",
+          [_p("Pulpwood-section", G.pulpwood_rack, "Latte Brown", 2, (G.PULP_H_CHANGE, "Dark Brown")),
+           _p("Pulpwood-section-B", lambda: G.pulpwood_rack(seed=4), "Latte Brown", 1, (G.PULP_H_CHANGE, "Dark Brown"))],
+          "16.99", "HO Scale Pulpwood Load 3 Sections | 8 ft Pulpwood for Pulpwood Car | Printed in Color | 1:87",
+          ["pulpwood load", "pulpwood car", "paper mill", "logging railroad", "cordwood", "pulp mill", "wood load",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Pulpwood Load 3 Sections 8 ft Sticks for Pulpwood Car Paper Mill 1:87",
+               car="a 40 ft pulpwood car or a flat with end racks", era="Steam / Transition (1920s-1990s)",
+               colors="Tan, Dark Brown", ship=5.5, pack=1.25)),
+    _load("truss", "Pony Truss Bridge Load", 2,
+          "The steel of a 50 ft riveted Warren pony truss on its way to the job, for a 53 ft flatcar: two truss sides "
+          "standing on notched blocking (top chords laced, inclined end posts, diagonals and verticals, gusset plates at "
+          "every joint, bearing shoes) and the bundle of six 16 ft floor beams. The sides print flat; set them on your "
+          "piers with the floor beams and it is a bridge.",
+          [_p("Truss-side", G.truss_side, "Black", 2), _p("Floor-beams", G.floor_beam_bundle, "Cocoa Brown", 1, (1.2, "Black")),
+           _p("Truss-blocking", G.truss_blocking, "Cocoa Brown", 3)],
+          "19.99", "HO Scale Pony Truss Bridge Steel Flatcar Load | 50 ft Warren Truss, Also a Bridge | Printed | 1:87",
+          ["pony truss", "truss bridge", "ho bridge", "bridge steel", "railroad bridge", "steel load", "bridge kit",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale 50 ft Pony Truss Bridge Steel Flatcar Load Warren Truss Bridge 1:87",
+               car="a 53 ft flatcar (the beams ride on a second flat or a gondola)", era="Steam / Transition (1900s-1960s)",
+               colors="Black, Brown", ship=6.5, pack=1.50)),
 ])

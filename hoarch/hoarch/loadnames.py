@@ -31,4 +31,10 @@ ZIPNAMES = {
     "manholes": "Precast_Manhole_Load",
     "doubletees": "Precast_Double_Tee_Load",
     "rebar": "Rebar_Bundle_Load",
+    "sheetpile": "Steel_Sheet_Piling_Load",
+    "poles": "Utility_Pole_Load",
+    "crushed": "Crushed_Car_Scrap_Load",
+    "giantlog": "Giant_Log_Load",
+    "pulpwood": "Pulpwood_Load",
+    "truss": "Pony_Truss_Bridge_Load",
 }

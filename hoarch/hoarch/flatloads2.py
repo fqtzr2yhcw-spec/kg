@@ -358,7 +358,7 @@ def log_stack(seed=3):
         keels.append(along_x(cs, x0 + 0.4, x1 - 0.4))
     ext = max(abs(y) + r * 1.04 for (y, z), r in logs)
     hull = cs_union(hull_cs).hull()
-    wrap_cs = (offset(hull, 0.35) - offset(hull, -0.05)) ^ CS.square((60.0, 60.0)).translate((-30.0, b))
+    wrap_cs = (offset(hull, 0.35) - offset(hull, -0.05)) ^ CS.square((60.0, 60.0)).translate((-30.0, b - 0.01))
     bunks, stakes, wraps = [], [], []
     for xb in LOG_BUNKS:
         bunks.append(box([xb - 1.5, -ext - 2.4, 0.0], [xb + 1.5, ext + 2.4, b]))
@@ -1681,6 +1681,316 @@ def rebar_lift(n=7, seed=5):
     return F._sheeted(lambda: union(parts + dun) - union(cuts))()
 
 
+# ================================================================== 31. steel sheet piling
+SP_DUN = 1.2
+
+
+@solid
+def sheet_pile_tier(n=3, layers=8, seed=2):
+    """Three bundles of 40 ft steel Z-pile, nested eight deep, side by side on dunnage: the trapezoid
+    wave of each bundle (52 degree webs; the flanges' undersides bridge between them), every pile's
+    end a little proud or short of its neighbours so the nesting shows, two bands round each."""
+    rng = np.random.default_rng(seed)
+    L = ft(40.0)
+    z0 = SP_DUN
+    P, fl, run, dep, t = 10.5, 2.5, 2.75, 3.5, 0.5
+    parts = []
+    for b in range(n):
+        y0 = (b - (n - 1) / 2) * (P + 0.8) - P / 2
+        wave = [(y0, 0.0), (y0 + fl, 0.0), (y0 + fl + run, dep), (y0 + 2 * fl + run, dep), (y0 + P, 0.0)]
+        for k in range(layers):
+            zk = z0 + k * t
+            top = [(y, z + zk + t) for y, z in wave]
+            bot = [(y, z + zk) for y, z in wave][::-1]
+            sec = poly(top + bot)
+            parts.append(along_x(sec, rng.uniform(-0.3, 0.1), L + rng.uniform(-0.1, 0.3)))
+        zt = z0 + layers * t
+        for x in (L * 0.2, L * 0.8):                                      # bands over the top flanges and down the sides
+            parts.append(box([x - 0.3, y0 - 0.25, z0], [x + 0.3, y0 + 0.01, zt + 0.25]))
+            parts.append(box([x - 0.3, y0 + P - 0.01, z0], [x + 0.3, y0 + P + 0.25, zt + 0.25]))
+            parts.append(box([x - 0.3, y0 - 0.25, zt + dep - 0.01], [x + 0.3, y0 + P + 0.25, zt + dep + 0.25]))
+            parts.append(box([x - 0.3, y0 - 0.25, zt - 0.01], [x + 0.3, y0 + fl, zt + dep + 0.25]))
+            parts.append(box([x - 0.3, y0 + P - fl, zt - 0.01], [x + 0.3, y0 + P + 0.25, zt + dep + 0.25]))
+    W = n * (P + 0.8)
+    dun = [box([x - 1.0, -W / 2 - 0.6, 0.0], [x + 1.0, W / 2 + 0.6, z0 + 0.01]) for x in np.linspace(2.0, L - 2.0, 6)]
+    return F._sheeted(lambda: union(parts + dun))()
+
+
+# ================================================================== 32. utility poles
+POLE_BUNK = 1.6
+
+
+@solid
+def pole_pile(seed=4):
+    """Treated wood utility poles, 45 ft, piled eight, seven, six and five on six bunks with stakes,
+    their butts at alternate ends: each pole tapered from a 12 in butt to a 7 in top, the top cut
+    to a roof, a brand plate near the butt, a wire-rope wrapper over the end bunks. Keels and valley
+    webs hidden in the pile carry the round poles."""
+    rng = np.random.default_rng(seed)
+    L = ft(45.0)
+    b = POLE_BUNK
+    rm = inch(9.5) / 2
+    rows = [8, 7, 6, 5]
+    parts, keels, hull_cs = [], [], []
+    centres = []
+    for j, n in enumerate(rows):
+        for i in range(n):
+            y = (i - (n - 1) / 2) * 2 * rm
+            z = b + rm + j * rm * math.sqrt(3)
+            centres.append((y, z, j))
+    for k, (y, z, j) in enumerate(centres):
+        butt_left = (k % 2 == 0)
+        rb, rt = inch(12) / 2, inch(7) / 2
+        ra, rz = (rb, rt) if butt_left else (rt, rb)
+        x0, x1 = rng.uniform(-0.8, 0.2), L + rng.uniform(-0.2, 0.8)
+        pole = M.hull_points([(x0, y + ra * math.cos(t), z + ra * math.sin(t) - (rm - ra) * 0) for t in np.linspace(0, 2 * math.pi, 24, endpoint=False)] +
+                             [(x1, y + rz * math.cos(t), z + rz * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 24, endpoint=False)])
+        xt = x1 if butt_left else x0                                       # roof cut on the top end
+        sgn = 1 if butt_left else -1
+        roof = box([-3, -3, 0], [3, 3, 6]).rotate([0, -30 * sgn, 0]).translate([xt + sgn * 0.2, y, z + 0.4])
+        pole = pole - roof
+        xb = x0 + 6.0 if butt_left else x1 - 6.0
+        plate = box([xb - 0.5, y - 0.4, z + ra * 0.9 - 0.2 if butt_left else z + rz * 0.9 - 0.2], [xb + 0.5, y + 0.4, z + (ra if butt_left else rz) + 0.15])
+        parts += [pole, plate]
+        hull_cs.append(circle((y, z), rm, 24))
+        rk = min(ra, rz) * 0.97
+        if j == 0:
+            keels.append(along_x(keel(y, z, rk, b), x0 + 0.4, x1 - 0.4))
+        else:
+            keels.append(along_x(poly([(y - S2 * rk, z - S2 * rk), (y + S2 * rk, z - S2 * rk), (y, z - rm * math.sqrt(3))]), x0 + 0.4, x1 - 0.4))
+    ext = rows[0] * rm + 0.1
+    hull = cs_union(hull_cs).hull()
+    wrap_cs = (offset(hull, 0.75) - offset(hull, -0.1)) ^ CS.square((60.0, 60.0)).translate((-30.0, b - 0.01))
+    bunks, stakes, wraps = [], [], []
+    for xb in np.linspace(1.6, L - 1.6, 6):
+        bunks.append(box([xb - 1.4, -ext - 2.4, 0.0], [xb + 1.4, ext + 2.4, b]))
+        for sgn in (-1, 1):
+            y0 = sgn * (ext - 0.15)
+            stakes.append(box([xb - 0.2, min(y0, y0 + sgn * 1.4), b - 0.01], [xb + 1.2, max(y0, y0 + sgn * 1.4), b + 9.5]))
+        if xb < 3 or xb > L - 3:
+            wraps.append(along_x(wrap_cs, xb - 1.3, xb - 0.7))
+    return F._sheeted(lambda: union(parts + keels + bunks + stakes + wraps))()
+
+
+# ================================================================== 33. crushed car scrap
+CAR_SLAB = ft(1.5)
+CRUSH_CHANGE = 3 * 1.6    # three crushed cars in the bottom colour, the rest in the top colour
+
+
+@solid
+def crushed_stack(seed=1, n=6):
+    """A stack of six cars flattened at the scrapyard, as they ride to the shredder: each body
+    crumpled into a slab, its roof pillars folded down with the window openings still showing,
+    wheel wells, bumpers, hood and trunk seams, each car a little askew on the one below."""
+    rng = np.random.default_rng(seed)
+    parts = []
+    z = 0.0
+    h = 1.6
+    for k in range(n):
+        L, W = ft(rng.uniform(14.0, 16.5)), ft(rng.uniform(5.6, 6.2))
+        dx, dy, a = rng.uniform(-0.6, 0.6), rng.uniform(-0.5, 0.5), rng.uniform(-2.5, 2.5)
+        pts = []
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                pts += [(sx * L / 2 + rng.uniform(-0.6, 0.0) * sx, sy * W / 2 + rng.uniform(-0.4, 0.0) * sy, z),
+                        (sx * (L / 2 - rng.uniform(0.6, 1.6)), sy * (W / 2 - rng.uniform(0.2, 0.6)), z + h)]
+        slab = M.hull_points(pts)
+        cuts = []
+        for sx in (-1, 1):                                                 # wheel wells, gable-topped
+            for sy in (-1, 1):
+                xw = sx * L * 0.3
+                cuts.append(M.hull_points([(xw + ddx, sy * W / 2 + ddy, zz) for ddx in (-2.0, 2.0) for ddy in (-1.0, 1.0) for zz in (z - 0.1, z + 0.5)] +
+                                          [(xw, sy * W / 2 + ddy, z + 1.1) for ddy in (-1.0, 1.0)]))
+        for sy in (-1, 1):                                                 # window openings of the folded greenhouse
+            for xc in (-L * 0.08, L * 0.1):
+                cuts.append(box([xc - 1.6, sy * W / 2 - 1.2, z + 0.6], [xc + 1.6, sy * W / 2 + 1.2, z + 1.15]))
+        for xs in (-L * 0.28, L * 0.25) if k == n - 1 else ():            # hood and trunk seams (the top car's; the rest are covered)
+            cuts.append(box([xs - 0.1, -W / 2 + 1.5, z + h - 0.2], [xs + 0.1, W / 2 - 1.5, z + h + 1]))
+        for _ in range(3 if k == n - 1 else 0):                            # dents
+            cuts.append(box([-6, -6, 0], [6, 6, 3]).rotate([rng.uniform(-6, 6), rng.uniform(-6, 6), 0]).translate(
+                [rng.uniform(-L / 3, L / 3), rng.uniform(-W / 3, W / 3), z + h - rng.uniform(0.1, 0.35)]))
+        slab = slab - union(cuts)
+        bumpers = [box([L / 2 - 2.0, -W / 2 + 0.6, z + 0.3], [L / 2 + 0.3, W / 2 - 0.6, z + 0.9]),          # front, 0.3 proud
+                   box([-L / 2 - 0.3, -W / 2 + 0.6, z + 0.3], [-L / 2 + 2.0, W / 2 - 0.6, z + 0.9])]       # rear
+        parts.append(union([slab] + bumpers).rotate([0, 0, a]).translate([dx, dy, 0]))
+        z += h
+    return union(parts)
+
+
+# ================================================================== 34. giant old-growth log
+GLOG_SILL = 4.8           # sills and the bed between them, then the log
+
+
+@solid
+def giant_log():
+    """One log of an old-growth fir, 9 ft through and 32 ft long, the way they were photographed on
+    a single flatcar: deep bark furrows, two springboard notches near the butt, the saw cut on both
+    ends with its rings and checks, two binder chains over it, riding on two timber sills with a
+    chock at each end. The log's underside is buried in the bed between the sills, out of sight."""
+    rng = np.random.default_rng(9)
+    L = ft(32.0)
+    r0, r1 = ft(9.0) / 2, ft(8.2) / 2
+    zc = 0.6 + r0
+    log = M.hull_points([(0.0, r0 * math.cos(t), zc + r0 * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 96, endpoint=False)] +
+                        [(L, r1 * math.cos(t), zc - (r0 - r1) + r1 * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 96, endpoint=False)])
+    cuts = []
+    for _ in range(46):                                                    # bark furrows
+        th = math.radians(rng.uniform(-30.0, 210.0))
+        xa = rng.uniform(-1.0, L * 0.4)
+        xb = rng.uniform(xa + L * 0.35, L + 1.0)
+        g = CS.square((2.2, rng.uniform(0.5, 0.8)), True).translate((r0 + 0.45, 0.0)).rotate(math.degrees(th))
+        cuts.append(along_x(g.translate((0.0, zc)), xa, xb))
+    for xe, re in ((0.0, r0), (L, r1)):                                    # rings and checks on the cut ends
+        zce = zc if xe == 0.0 else zc - (r0 - r1)
+        rings = [circle((0.0, zce), re * f + 0.12, 64) - circle((0.0, zce), re * f - 0.12, 64) for f in np.linspace(0.12, 0.9, 11)]
+        checks = [CS.square((re * 0.7, 0.3)).rotate(a).translate((0.0, zce)) for a in (25, 160, 250)]
+        cs = cs_union(rings + checks)
+        cuts.append(along_x(cs, -0.4, 0.3) if xe == 0.0 else along_x(cs, L - 0.3, L + 0.4))
+    for sgn in (-1, 1):                                                    # springboard notches, their tops at 45 degrees
+        xn = 9.0 + (3.0 if sgn > 0 else 0.0)
+        yo = sgn * (r0 + 1.0)
+        cuts.append(along_x(poly([(yo, zc + 1.0), (sgn * (r0 - 2.2), zc + 1.0), (sgn * (r0 - 2.2), zc + 2.0), (yo, zc + 2.0 + abs(yo - sgn * (r0 - 2.2)))]), xn, xn + 3.0))
+    log = log - union(cuts)
+    ys = r0 * 0.68
+    sills = [box([-1.0, sgn * ys - 1.5, 0.0], [L + 1.0, sgn * ys + 1.5, GLOG_SILL / 2]) for sgn in (-1, 1)]          # two timbers each
+    sills += [box([-0.6, sgn * ys - 1.5, GLOG_SILL / 2 - 0.01], [L + 0.6, sgn * ys + 1.5, GLOG_SILL]) for sgn in (-1, 1)]
+    bed = box([0.6, -ys + 1.5, 0.0], [L - 0.6, ys - 1.5, GLOG_SILL])
+    chocks = [along_y(poly([(xe, 0.0), (xe + sgn * 3.2, 0.0), (xe, GLOG_SILL)]), -ys + 1.5, ys - 1.5) for xe, sgn in ((0.6, -1), (L - 0.6, 1))]
+    chains = []
+    for x in (L * 0.22, L * 0.78):                                         # each over the log's section where it lies
+        f = x / L
+        hull = circle((0.0, zc - (r0 - r1) * f), r0 - (r0 - r1) * f, 96)
+        band = (offset(hull, 0.45) - offset(hull, -0.8)) ^ CS.square((80, 80)).translate((-40.0, GLOG_SILL - 0.01))
+        band = band ^ CS.square((2 * ys + 3.0, 80)).translate((-ys - 1.5, 0.0))
+        chains.append(along_x(band, x - 0.35, x + 0.35))
+    return F._sheeted(lambda: union([log] + sills + [bed] + chocks + chains))()
+
+
+# ================================================================== 35. pulpwood
+PULP_H_CHANGE = round((ft(9.0) - 2.4) / 0.2) * 0.2     # the cut ends below, the top course's bark above
+
+
+@solid
+def pulpwood_rack(seed=3):
+    """A section of 8 ft pulpwood sticks piled crosswise between the racks of a pulpwood car, 9 ft
+    high: both sides a mosaic of cut ends, each its own size and standing a little proud or short,
+    with its bark ring; the top course in bark. Cut ends below PULP_H_CHANGE, bark above."""
+    rng = np.random.default_rng(seed)
+    L, W, H = 40.0, ft(8.0), ft(9.0)
+    zc = PULP_H_CHANGE
+    core = box([0, -W / 2 + 0.6, 0.0], [L, W / 2 - 0.6, zc])
+    ends = []
+    pts = []
+    tries = 0
+    while tries < 4000:                                                    # random packing of end circles on the side face
+        tries += 1
+        r = rng.uniform(0.85, 1.7)
+        x, z = rng.uniform(r, L - r), rng.uniform(r, zc - r * 0.3)
+        if all(math.hypot(x - px, z - pz) > r + pr + 0.05 for px, pz, pr in pts):
+            pts.append((x, z, r))
+    for x, z, r in pts:
+        for sgn in (-1, 1):
+            e = rng.uniform(0.0, 0.7)
+            y0 = sgn * (W / 2 - 0.6)
+            ya, yb = sorted((y0 - sgn * 0.3, y0 + sgn * (0.6 + e)))
+            stick = M.cylinder(yb - ya, r, r, 20).rotate([-90, 0, 0]).translate([x, ya, z])
+            ye = yb if sgn > 0 else ya                                       # the cut end: a groove just inside the bark
+            groove = M.cylinder(0.4, r - 0.2, r - 0.2, 20) - M.cylinder(1, r - 0.45, r - 0.45, 20).translate([0, 0, -0.3])
+            groove = groove.rotate([-90, 0, 0]).translate([x, ye - 0.2, z])
+            if z - r < 0.0:
+                stick = stick ^ box([-100, -100, 0.0], [100, 100, 100])
+            ends.append(stick - groove)
+    top = []
+    x = 1.2
+    while x < L - 1.0:                                                     # the top course, in bark
+        r = rng.uniform(1.0, 1.6)
+        top.append(M.cylinder(W, r, r, 20).rotate([-90, 0, 0]).translate([x, -W / 2 + rng.uniform(-0.3, 0.3), zc - 0.3]) ^ box([-100, -100, zc - 0.01], [100, 100, 100]))
+        x += 2 * r - 0.2
+    face = []
+    for xs in (0.0, L):                                                    # the sticks' sides on the section's faces
+        for zz in np.arange(1.0, zc - 0.5, 1.9):
+            sg = -1 if xs == 0.0 else 1
+            face.append(along_y(poly([(xs, zz - 0.8), (xs + sg * 0.5, zz), (xs, zz + 0.8)]), -W / 2 + 0.6, W / 2 - 0.6))
+    return union([core] + ends + top + face)
+
+
+# ================================================================== 36. pony truss bridge steel
+TRUSS_L = ft(50.0)
+TRUSS_H = ft(8.0)
+
+
+@solid
+def truss_side():
+    """One side of a 50 ft riveted Warren pony truss, printed flat: top chord laced on its face,
+    bottom chord, inclined end posts, diagonals and verticals, gusset plates with rivet rows at every
+    joint, the bearing shoes. It stands on edge on the car (and on your bridge piers)."""
+    L, H = TRUSS_L, TRUSS_H
+    n = 5
+    pw = L / n
+    t = 1.6
+    m = []
+
+    def bar(a, b, w):
+        return along_z_cs(F._seg(a, b, w), 0.0, t)
+    m.append(bar((pw * 0.5, H - 1.0), (L - pw * 0.5, H - 1.0), 2.0))           # top chord
+    m.append(bar((0.0, 0.9), (L, 0.9), 1.8))                                   # bottom chord
+    m.append(bar((0.0, 0.9), (pw * 0.5, H - 1.0), 2.0))                        # end posts
+    m.append(bar((L, 0.9), (L - pw * 0.5, H - 1.0), 2.0))
+    for k in range(n):                                                      # Warren diagonals and a vertical in each panel
+        x0, xm = k * pw, k * pw + pw * 0.5
+        m.append(bar((xm, H - 1.0), (x0 + pw, 0.9), 1.2))
+        if k > 0:                                                           # (the first panel's is the end post)
+            m.append(bar((xm, H - 1.0), (x0, 0.9), 1.2))
+        m.append(bar((xm, H - 1.0), (xm, 0.9), 0.9))
+    gus = []
+    for k in range(n + 1):
+        gus.append(box([k * pw - 1.8, 0.0, t - 0.01], [k * pw + 1.8, 3.0, t + 0.25]))
+    for k in range(n):
+        gus.append(box([k * pw + pw * 0.5 - 1.8, H - 3.2, t - 0.01], [k * pw + pw * 0.5 + 1.8, H, t + 0.25]))
+    lace = []
+    for x in np.arange(pw * 0.5 + 1.0, L - pw * 0.5 - 1.0, 1.6):
+        lace.append(along_z_cs(F._seg((x, H - 1.8), (x + 1.4, H - 0.2), 0.45), t - 0.01, t + 0.2))
+    shoes = [box([x - 2.0, 0.0, 0.0], [x + 2.0, 0.5, t + 0.6]) for x in (1.0, L - 1.0)]
+    return union(m + gus + lace + shoes)
+
+
+def along_z_cs(cs, z0, z1):
+    return M.extrude(cs, z1 - z0).translate([0, 0, z0])
+
+
+@solid
+def floor_beam_bundle(n=6):
+    """The span's floor beams, six 16 ft I-beams with their end connection angles, two layers of
+    three on dunnage (brown to 1.2 mm, the steel above)."""
+    Lb = ft(16.0)
+    d, bf, tf, tw = inch(30), inch(10), 0.6, 0.6
+    parts = []
+    for j in range(2):                                                      # the top layer sits on the bottom one's flanges
+        for i in range(n // 2):
+            y = (i - (n // 2 - 1) / 2) * (bf + 0.6)
+            z0 = 1.2 + j * (d - 0.01)
+            parts += [box([0, y - bf / 2, z0], [Lb, y + bf / 2, z0 + tf]),
+                      box([0, y - tw / 2, z0 + tf - 0.01], [Lb, y + tw / 2, z0 + d - tf + 0.01]),
+                      box([0, y - bf / 2, z0 + d - tf], [Lb, y + bf / 2, z0 + d])]
+            for xe in (0.6, Lb - 0.6):
+                parts.append(box([xe - 0.6, y - 1.6, z0 + tf], [xe + 0.6, y + 1.6, z0 + d - tf]))
+    W = (n // 2) * (bf + 0.6)
+    for x in (2.0, Lb / 2, Lb - 2.0):                                       # dunnage under the bottom layer
+        parts.append(box([x - 1.0, -W / 2, 0.0], [x + 1.0, W / 2, 1.21]))
+    return F._sheeted(lambda: union(parts))()
+
+
+@solid
+def truss_blocking():
+    """A timber the two truss sides stand on, notched for their bottom chords, with a spacer block
+    between them."""
+    Lb = ft(9.0)
+    blk = box([-1.6, -Lb / 2, 0.0], [1.6, Lb / 2, 2.4])
+    for y in (-8.0, 8.0):
+        blk = blk - box([-2, y - 1.0, 1.6], [2, y + 1.0, 3])
+    return blk
+
+
 # ================================================================== scenes (renders only)
 def _place(s, m, base, change, x, z, y=0.0, upside=False, rz=0.0):
     """Set a piece (in its print pose) on the car: split at its colour change, turned over if it
@@ -2016,7 +2326,66 @@ def scene_rebar():
     return s
 
 
-SCENES = {"culverts": scene_culverts, "conpipe": scene_conpipe, "barriers": scene_barriers, "manholes": scene_manholes,
+def scene_sheetpile():
+    L = ft(42.0)
+    s = F._car(L, "car_oxide")
+    zd = F.deck()
+    for t in range(2):
+        _place(s, sheet_pile_tier(seed=2 + t), "Cocoa Brown", (SP_DUN, "Iron Gray Metallic"), L / 2, zd + t * (SP_DUN + 8 * 0.5 + 3.5))
+    return s
+
+
+def scene_poles():
+    L = ft(50.0)
+    s = F._car(L, "car_black")
+    zd = F.deck()
+    _place(s, pole_pile(), "Caramel", (POLE_BUNK, "Black Walnut"), L / 2, zd)
+    return s
+
+
+def scene_crushed():
+    L = ft(53.5)
+    s = F._car(L, "car_oxide")
+    zd = F.deck()
+    pairs = [("Red", "Light Gray"), ("Cobalt Blue", "Copper Brown Metallic"), ("Mistletoe Green", "Black")]
+    for i, x in enumerate(np.linspace(L / 2 - 58.0, L / 2 + 58.0, 3)):
+        _place(s, crushed_stack(seed=i + 1), pairs[i][0], (CRUSH_CHANGE, pairs[i][1]), x, zd)
+    return s
+
+
+def scene_giantlog():
+    L = ft(40.0)
+    s = F._car(L, "car_black")
+    zd = F.deck()
+    _place(s, giant_log(), "Cocoa Brown", (GLOG_SILL, "Dark Brown"), L / 2, zd)
+    return s
+
+
+def scene_pulpwood():
+    L = ft(40.0)
+    s = F._car(L, "car_oxide", bulkhead=ft(10.0))
+    zd = F.deck()
+    for k, x in enumerate(np.linspace(1.6 + 22.0, L - 1.6 - 22.0, 3)):
+        _place(s, pulpwood_rack(seed=3 + k), "Latte Brown", (PULP_H_CHANGE, "Dark Brown"), x, zd)
+    return s
+
+
+def scene_truss():
+    L = ft(53.5)
+    s = F._car(L, "car_mineral")
+    zd = F.deck()
+    side = truss_side()
+    x0 = (L - TRUSS_L) / 2
+    for xb in (x0 + 12.0, L / 2, x0 + TRUSS_L - 12.0):
+        F._put(s, "Cocoa Brown", truss_blocking().translate([xb, 0, zd]))
+    for y in (-8.0, 8.0):
+        F._put(s, "Black", side.rotate([90, 0, 0]).translate([x0, y + 0.8, zd + 1.6]))
+    return s
+
+
+SCENES = {"sheetpile": scene_sheetpile, "poles": scene_poles, "crushed": scene_crushed, "giantlog": scene_giantlog,
+          "pulpwood": scene_pulpwood, "truss": scene_truss,
+"culverts": scene_culverts, "conpipe": scene_conpipe, "barriers": scene_barriers, "manholes": scene_manholes,
           "doubletees": scene_doubletees, "rebar": scene_rebar,
 "trailers": scene_trailers, "containers": scene_containers, "crates": scene_crates, "chillers": scene_chillers,
           "propane": scene_propane, "miltrucks": scene_miltrucks,
