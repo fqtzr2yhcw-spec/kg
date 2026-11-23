@@ -14,6 +14,7 @@ from _common import OUT
 from hoarch.packs import PACKS
 
 LOADS = ["windtower", "nacelle", "transformer", "linepipe", "tarps", "steel", "vessel", "propeller"]
+LOADS += [k for k, pk in PACKS.items() if pk.get("extra")]          # the second series (hoarch/loads2.py) carries its own
 
 # costs (the houses' sheets' assumptions, scaled to a small parcel)
 FIL = 20.0            # $ per kg
@@ -90,7 +91,8 @@ def hm(minutes):
 
 
 def data(key):
-    pk, ex = PACKS[key], EXTRA[key]
+    pk = PACKS[key]
+    ex = EXTRA.get(key) or dict(pk["extra"], tags=pk["listing"]["tags"])
     man = json.load(open(os.path.join(OUT, key, "kit", "manifest.json")))
     runs = max(pk["per_run"], 1)
     grams = sum((p.get("slice") or {}).get("grams") or 0.0 for p in man["plates"]) / runs

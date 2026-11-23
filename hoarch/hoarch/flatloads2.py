@@ -892,8 +892,8 @@ def excavator():
     its cab on the left, engine hood and grilles, exhaust, fuel and tool boxes on the right, the
     rounded counterweight, handrails, and the boom-foot bracket the boom slides into."""
     zc = EXC_TRACK
-    trk = tracks(0.0, 51.0, 4.0, 3.7, 10.2, 13.7, 6.9, 7, 1.4, rollers=2)
-    carbody = _side([(14.0, 3.2), (38.0, 3.2), (42.0, 7.2), (42.0, 10.21), (10.0, 10.21), (10.0, 7.2)], -10.3, 10.3)
+    trk = tracks(0.0, 51.0, 4.0, 3.7, zc, 13.7, 6.9, 7, 1.4, rollers=2)              # the upper sits on the track tops
+    carbody = _side([(14.0, 3.2), (38.0, 3.2), (42.0, 7.2), (42.0, zc + 0.01), (10.0, zc + 0.01), (10.0, 7.2)], -10.3, 10.3)
     ring = M.cylinder(zc - 9.6, 9.0, 9.0, 48).translate([EXC_SWING, 0, 9.6])
     xs = EXC_SWING
     R = 30.0
@@ -997,25 +997,26 @@ def dozer():
     """A mid-size crawler dozer shipped with its blade off (the blade rides beside it): oval tracks
     on six rollers a side, the mainframe between them with the push-arm trunnions, the long engine
     hood with its radiator guard, side louvres, exhaust stack and precleaner, the ROPS cab with its
-    glass and overhung roof on a 45 degree soffit, fenders, the fuel tank and a single-shank ripper
+    glass and overhung roof on a 45 degree soffit, fenders, the fuel tank and a three-shank ripper
     lowered onto a steel block. Generic."""
     zt = DOZER_TRACK
     trk = tracks(0.0, 48.0, 3.6, 3.6, zt, 11.4, 6.4, 6, 1.6, rollers=1)
-    frame = _side([(6.0, 2.6), (42.0, 2.6), (46.0, 6.6), (46.0, zt + 0.01), (2.0, zt + 0.01), (2.0, 6.6)], -8.25, 8.25)
-    fenders = box([0.0, -14.8, zt - 0.01], [26.0, 14.8, zt + 0.5])
-    hood = M.hull_points([(x, y, zt + 0.49) for x in (24.0, 50.0) for y in (-8.8, 8.8)] + [(x, y, zt + 12.4) for x in (24.0, 49.0) for y in (-8.0, 8.0)])
-    grille = box([49.0, -7.6, zt + 1.0], [50.6, 7.6, zt + 11.6])
+    frame = _side([(6.0, 2.6), (44.0, 2.6), (48.0, 6.6), (48.0, zt + 0.01), (2.0, zt + 0.01), (2.0, 6.6)], -8.25, 8.25)
+    fenders = box([2.0, -14.8, zt - 0.01], [26.0, 14.8, zt + 0.5])              # from the frame's end, not over the sprockets' curve
+    hood = M.hull_points([(x, y, zt - 0.01) for x in (24.0, 48.0) for y in (-8.8, 8.8)] + [(x, y, zt + 12.4) for x in (24.0, 47.6) for y in (-8.0, 8.0)])
+    grille = box([47.5, -7.6, zt - 0.01], [48.9, 7.6, zt + 11.6])            # the radiator guard, a 0.9 mm ledge over the frame's end
     cab = M.hull_points([(x, y, zt + 0.49) for x in (8.0, 24.5) for y in (-9.5, 9.5)] + [(x, y, zt + 24.0) for x in (8.6, 23.6) for y in (-8.9, 8.9)])
     roof = M.hull_points([(x, y, zt + 23.4) for x in (8.4, 23.8) for y in (-9.1, 9.1)] + [(x, y, zt + 24.4) for x in (7.6, 24.6) for y in (-9.9, 9.9)] +
                          [(x, y, zt + 25.2) for x in (7.6, 24.6) for y in (-9.9, 9.9)])
-    tank_ = box([0.6, -8.0, zt + 0.49], [8.2, 8.0, zt + 8.0])
+    tank_ = box([2.0, -8.0, zt + 0.49], [8.2, 8.0, zt + 8.0])
     det = [M.cylinder(6.0, 0.75, 0.75, 16).translate([40.0, 4.5, zt + 12.39]),
            M.cylinder(3.5, 1.1, 1.1, 20).translate([33.0, -4.5, zt + 12.39]),
            M.cylinder(0.9, 1.1, 1.8, 20).translate([33.0, -4.5, zt + 15.88]),
            M.cylinder(0.5, 1.8, 1.8, 20).translate([33.0, -4.5, zt + 16.77])]
     for sgn in (-1, 1):                                          # push-arm trunnions on the track frames
         det.append(M.cylinder(1.8, 1.5, 1.5, 20).rotate([-90 * sgn, 0, 0]).translate([24.0, sgn * 14.0, 4.6]))
-        det.append(box([46.0, sgn * 7.0 - 1.0, zt + 4.0], [49.0, sgn * 7.0 + 1.0, zt + 7.5]))     # lift cylinder brackets
+        ya, yb = sorted((sgn * 8.0, sgn * 9.4))                                  # lift cylinder brackets, set into the hood's side
+        det.append(box([45.5, ya, zt + 4.0], [48.5, yb, zt + 7.5]))
     panes = []
     for x0, x1 in ((9.5, 15.6), (16.6, 22.6)):
         for sgn in (-1, 1):
@@ -1024,16 +1025,16 @@ def dozer():
         panes.append(box([8.0 - 0.6 if sgn < 0 else 23.4, -7.6, zt + 6.0], [8.6 if sgn < 0 else 24.6, 7.6, zt + 22.0]))
     cuts = []
     for z in np.arange(zt + 2.0, zt + 11.0, 1.1):                 # radiator guard bars
-        cuts.append(box([50.2, -7.0, z], [51.0, 7.0, z + 0.45]))
+        cuts.append(box([48.5, -7.0, z], [49.5, 7.0, z + 0.45]))
     for x in np.arange(27.0, 46.0, 1.2):                          # hood side louvres
         for sgn in (-1, 1):
             cuts.append(box([x, sgn * 8.6 - 0.3, zt + 3.0], [x + 0.4, sgn * 8.6 + 0.3, zt + 9.0]))
-    # ripper: a beam on two 45 degree links, the shank down onto a steel block
-    rip = [_side([(0.5, 2.4), (1.8, 2.4), (-4.2, 8.4), (-5.5, 8.4)], -6.0, -4.6), _side([(0.5, 2.4), (1.8, 2.4), (-4.2, 8.4), (-5.5, 8.4)], 4.6, 6.0),
-           box([-7.0, -6.5, 8.2], [-4.0, 6.5, 12.0]),
-           _side([(-6.2, 0.99), (-4.8, 0.99), (-4.8, 8.3), (-6.4, 8.3), (-7.4, 3.0)], -0.8, 0.8),
-           box([-8.4, -2.0, 0.0], [-3.6, 2.0, 1.0]),
-           _side([(0.0, zt + 2.0), (0.6, zt + 2.0), (-5.0, 11.8), (-5.6, 11.8)], -3.2, -2.2), _side([(0.0, zt + 2.0), (0.6, zt + 2.0), (-5.0, 11.8), (-5.6, 11.8)], 2.2, 3.2)]
+    # ripper: three shanks down onto one steel block carry the beam; two 45 degree links tie it to the frame
+    shank = [(-6.2, 0.99), (-4.8, 0.99), (-4.8, 9.1), (-6.4, 9.1), (-7.2, 3.0)]
+    rip = [box([-7.0, -6.5, 9.0], [-4.0, 6.5, 13.0]), box([-8.4, -6.5, 0.0], [-3.6, 6.5, 1.0])]
+    rip += [_side(shank, y - 0.8, y + 0.8) for y in (-5.0, 0.0, 5.0)]
+    link = [(2.05, 6.6), (2.05, 7.8), (-4.01, 13.86), (-4.01, 12.66)]
+    rip += [_side(link, y - 0.4, y + 0.4) for y in (-3.5, 3.5)]
     return union([trk, frame, fenders, hood, grille, cab, roof, tank_] + det + rip) - union(cuts + panes)
 
 
@@ -1327,9 +1328,9 @@ def chiller():
         yo = sgn * W / 2
         for x0 in np.arange(29.0, L - 1.0, 12.5):
             x1 = min(x0 + 11.5, L - 1.0)
-            for x in np.arange(x0 + 0.4, x1 - 0.2, 0.55):
-                fins.append(box([x - 0.12, yo - 0.52 * sgn if sgn > 0 else yo + 0.1, zb + 1.0], [x + 0.12, yo - 0.1 if sgn > 0 else yo + 0.52, zt - 1.6])
-                            if sgn > 0 else box([x - 0.12, yo, zb + 1.0], [x + 0.12, yo + 0.4, zt - 1.6]))
+            for x in np.arange(x0 + 0.5, x1 - 0.3, 0.9):                     # fins a nozzle wide
+                ya, yb = sorted((yo - sgn * 0.52, yo - sgn * 0.1))
+                fins.append(box([x - 0.2, ya, zb + 1.0], [x + 0.2, yb, zt - 1.6]))
     det = []
     for x in (2.5, 7.5):                                          # door handles on the control end's face
         det.append(box([x - 0.3, -W / 2 - 0.4, zb + H * 0.5], [x + 0.3, -W / 2 + 0.01, zb + H * 0.5 + 1.4]))
@@ -1339,12 +1340,11 @@ def chiller():
             rf = 5.6
             sh = M.cylinder(1.0, rf + 0.5, rf + 0.5, 48).translate([x, y, zt - 0.01]) - M.cylinder(3, rf, rf, 48).translate([x, y, zt - 1])
             det.append(sh)
-            det.append(M.cylinder(0.6, rf, rf, 48).translate([x, y, zt - 0.01]) - M.cylinder(3, rf - 0.01, rf - 0.01, 48).translate([x, y, zt + 0.2]))
-            for rr in (1.6, 3.2, 4.6):
-                det.append(M.cylinder(0.4, rr + 0.2, rr + 0.2, 40).translate([x, y, zt + 0.59]) - M.cylinder(1, rr - 0.2, rr - 0.2, 40).translate([x, y, zt]))
+            for rr in (1.6, 3.2, 4.6):                                       # guard rings and spokes, raised from the roof
+                det.append(M.cylinder(0.41, rr + 0.22, rr + 0.22, 40).translate([x, y, zt - 0.01]) - M.cylinder(1, rr - 0.22, rr - 0.22, 40).translate([x, y, zt - 0.3]))
             for a in range(0, 180, 45):
-                det.append(box([-rf, -0.18, 0.0], [rf, 0.18, 0.4]).rotate([0, 0, a]).translate([x, y, zt + 0.59]))
-            det.append(M.cylinder(0.6, 0.9, 0.9, 16).translate([x, y, zt + 0.59]))
+                det.append(box([-rf, -0.22, 0.0], [rf, 0.22, 0.4]).rotate([0, 0, a]).translate([x, y, zt - 0.01]))
+            det.append(M.cylinder(0.6, 0.9, 0.9, 16).translate([x, y, zt - 0.01]))
     rails = [box([-0.4, y - 1.0, 0.0], [L + 0.4, y + 1.0, zb + 0.01]) for y in (-W / 2 + 1.0, W / 2 - 1.0)]
     rails += [box([x - 0.8, -W / 2 + 0.5, 0.0], [x + 0.8, W / 2 - 0.5, zb + 0.01]) for x in np.linspace(0.8, L - 0.8, 5)]
     for x in (1.0, L - 1.0):                                       # lifting lugs on the rails' ends
@@ -1521,7 +1521,8 @@ RCP_DUN = 1.2
 def rcp_row(n=3):
     """Three 48 in reinforced concrete pipes, 8 ft lengths, lying side by side across the car with
     their bells at alternate ends, on two dunnage strips under the ends. Each bore is round at both
-    faces and 45 degree pointed behind them; keels hidden under the barrels and bells carry them."""
+    faces; behind them its top rises at 45 degrees to a flat 4 mm bridge 0.6 mm under the outside
+    (the wall is too thin for a full point). Keels hidden under the barrels and bells carry them."""
     ro, ri, rb = inch(29), inch(24), inch(34)
     L, Lb = ft(8.0), inch(6.5)
     z0 = RCP_DUN
@@ -1543,7 +1544,9 @@ def rcp_row(n=3):
         yba, ybb = (yb0 + 0.4, y1 - 0.4) if sgn > 0 else (y0 + 0.4, y0 + Lb - 0.4)
         parts.append(along_y(keel(x, zc, rb, z0), yba, ybb))
         cuts.append(M.cylinder(L + 2, ri, ri, 64).rotate([-90, 0, 0]).translate([x, y0 - 1, zc]))
-        tear = poly([(x - ri * S2, zc + ri * S2 - 0.3), (x + ri * S2, zc + ri * S2 - 0.3), (x + ri * S2, zc + ri * S2), (x, zc + ri * math.sqrt(2)),
+        zt = zc + ro - 0.6                                       # the wall is too thin for a full point: cut it flat 0.6 under the outside
+        hw = ri * math.sqrt(2) - (zt - zc)                         # (a bridge about 4 mm wide)
+        tear = poly([(x - ri * S2, zc + ri * S2 - 0.3), (x + ri * S2, zc + ri * S2 - 0.3), (x + ri * S2, zc + ri * S2), (x + hw, zt), (x - hw, zt),
                      (x - ri * S2, zc + ri * S2)])
         cuts.append(along_y(tear, y0 + 0.6, y1 - 0.6))
         for yy in (-L / 4, L / 4):                               # lifting holes
@@ -1639,7 +1642,8 @@ def double_tee():
     for x in np.arange(ft(5.0), L - 2.0, ft(5.0)):                                          # weld plates in the edges
         for sgn in (-1, 1):
             cuts.append(box([x - 0.8, sgn * W / 2 - 0.2, D - tf + 0.3], [x + 0.8, sgn * W / 2 + 0.2, D - 0.3]))
-    dun = [box([x - 1.2, -W / 2 + 1.5, -1.2], [x + 1.2, W / 2 - 1.5, 0.01]) for x in (3.0, L / 2, L - 3.0)]
+    sw = ft(2.0) + inch(5.75) / 2 + 0.1                                     # the dunnage spans the stems, no further (printed on top)
+    dun = [box([x - 1.2, -sw, -1.2], [x + 1.2, sw, 0.01]) for x in (3.0, L / 2, L - 3.0)]
     return flip(union([flange] + stems + dun) - union(cuts))
 
 
@@ -1670,9 +1674,9 @@ def rebar_lift(n=7, seed=5):
             for xe, sgn in ((x0, -1), (x1, 1)):
                 e = rng.uniform(0.2, 1.0)
                 parts.append(box([min(xe - sgn * 0.3, xe + sgn * e), yy - 0.2, zz - 0.2], [max(xe - sgn * 0.3, xe + sgn * e), yy + 0.2, zz + 0.2]))
-        for yy in np.arange(yc - bw / 2 + 0.5, yc + bw / 2 - 0.3, 0.55):     # bar lines along the top
+        for yy in np.arange(yc - bw / 2 + 0.6, yc + bw / 2 - 0.4, 0.75):     # bar lines along the top
             top = z0 + bh * 0.55 + bh * 0.45 * math.sqrt(max(0.0, 1 - ((yy - yc) / (bw / 2)) ** 2))
-            cuts.append(box([x0 + 0.5, yy - 0.08, top - 0.2], [x1 - 0.5, yy + 0.08, top + 1]))
+            cuts.append(box([x0 + 0.5, yy - 0.15, top - 0.2], [x1 - 0.5, yy + 0.15, top + 1]))
         for x in np.arange(ft(4.0), L - 2.0, ft(8.0)):                        # wire ties
             ring = (offset(sec, 0.2) - offset(sec, -0.05)) ^ CS.square((bw + 2, bh + 2)).translate((yc - bw / 2 - 1, z0 + 0.3))
             parts.append(along_x(ring, x - 0.25, x + 0.25))
@@ -1786,14 +1790,16 @@ def crushed_stack(seed=1, n=6):
     parts = []
     z = 0.0
     h = 1.6
+    Ls = sorted(ft(rng.uniform(14.0, 16.5, n)), reverse=True)              # the bigger cars at the bottom, so no car
+    Ws = sorted(ft(rng.uniform(5.6, 6.2, n)), reverse=True)                # overhangs the one under it by more than a ledge
     for k in range(n):
-        L, W = ft(rng.uniform(14.0, 16.5)), ft(rng.uniform(5.6, 6.2))
-        dx, dy, a = rng.uniform(-0.6, 0.6), rng.uniform(-0.5, 0.5), rng.uniform(-2.5, 2.5)
+        L, W = Ls[k], Ws[k]
+        dx, dy, a = rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3), rng.uniform(-1.0, 1.0)
         pts = []
         for sx in (-1, 1):
             for sy in (-1, 1):
-                pts += [(sx * L / 2 + rng.uniform(-0.6, 0.0) * sx, sy * W / 2 + rng.uniform(-0.4, 0.0) * sy, z),
-                        (sx * (L / 2 - rng.uniform(0.6, 1.6)), sy * (W / 2 - rng.uniform(0.2, 0.6)), z + h)]
+                pts += [(sx * (L / 2 - rng.uniform(0.0, 0.3)), sy * (W / 2 - rng.uniform(0.0, 0.2)), z),
+                        (sx * (L / 2 - rng.uniform(0.2, 0.6)), sy * (W / 2 - rng.uniform(0.1, 0.3)), z + h)]
         slab = M.hull_points(pts)
         cuts = []
         for sx in (-1, 1):                                                 # wheel wells, gable-topped
@@ -2170,7 +2176,7 @@ COL_CHANGE = math.floor((COL_ZC - COL_R - 0.5) / 0.2) * 0.2
 def column():
     """A refinery distillation column, 56 ft, shipped lying: the shell with its girth seams, a 2:1
     top head, the skirt with its access opening and base ring, nozzles and manways along it, the
-    ladder clipped along the top and rings of platform brackets, on three cradles."""
+    ladder clipped along the top and rings of platform brackets, on a long pierced cradle."""
     r = COL_R
     zc, z0 = COL_ZC, COL_SKID
     Ls = 175.0
@@ -2203,9 +2209,9 @@ def column():
             g = along_y(poly([(x - 0.4, r - 0.2), (x + 0.4, r - 0.2), (x + 0.4, r + 2.4), (x - 0.4, r + 2.4)]), -0.3, 0.3)
             parts.append(g.rotate([a, 0, 0]).translate([0, 0, zc]))
     body = union(parts + rails)
-    webs = [_cradle(body, xa, xa + 22.0, zc, r, z0, 12.0, holes=1) for xa in (6.0, 85.0, 160.0)]
-    skid = [_skid_frame(xa - 2.0, xa + 24.0, 12.5, z0) for xa in (6.0, 85.0, 160.0)]
-    return F._sheeted(lambda: union([body] + webs + skid))()
+    web = _cradle(body, 4.0, xk + Ls - 2.0, zc, r, z0, 12.0, holes=7)     # one cradle the whole length: the shell never spans
+    skid = _skid_frame(2.0, xk + Ls, 12.5, z0)
+    return F._sheeted(lambda: union([body, web, skid]))()
 
 
 # ================================================================== 41. girth gear
@@ -2236,7 +2242,7 @@ def girth_gear_half(teeth=70):
             for zb in (H * 0.25, H * 0.75):
                 ends.append(M.cylinder(0.4, 0.5, 0.5, 10).rotate([90, 0, 0]).translate([sgn * xbolt, 0.01, zb]))
     gear = (union([rim, web, flange] + teeth_ + ribs + ends) ^ keep).translate([0, 0, z0])
-    timbers = [box([-Ro + 4.0, y - 1.2, 0.0], [Ro - 4.0, y + 1.2, z0 + 0.01]) for y in (3.0, Ri - 2.0)]
+    timbers = [box([-Ro + 2.0, y - 1.2, 0.0], [Ro - 2.0, y + 1.2, z0 + 0.01]) for y in (3.0, 16.0, Ri - 2.0)]   # rim spans under 20 mm
     return F._sheeted(lambda: union([gear] + timbers))()
 
 
@@ -2581,7 +2587,7 @@ def mine_car():
     zf = zc + 0.2
     parts += [box([-9.5, ya, zf - 0.8], [9.5, yb, zf + 0.6]) for ya, yb in ((-4.6, -3.6), (3.6, 4.6))]      # side sills
     for xe in (-10.0, 10.0):                                               # end sills with coupler pockets
-        sill = box([xe - 0.8, -5.0, zf - 1.4], [xe + 0.8, 5.0, zf + 0.8])
+        sill = box([xe - 0.8, -5.0, z0 - 0.01], [xe + 0.8, 5.0, zf + 0.8])      # blocked on the timbers at both ends
         pocket = box([xe - (1.0 if xe < 0 else 0.4), -0.7, zf - 0.8], [xe + (0.4 if xe < 0 else 1.0), 0.7, zf + 0.2])
         parts.append(sill - pocket)
     zv = zf + 1.6                                                           # the V's apex
@@ -2601,6 +2607,7 @@ def mine_car():
     cradles = [along_x(cradle, x - 0.4, x + 0.4) for x in (-5.0, 5.0)]
     latch = box([bl - 0.01, 2.0, zv + hv - 4.0], [bl + 0.5, 3.0, zv + hv - 0.5])
     timbers = [box([-11.0, sgn * 5.7 - 1.3, 0.0], [11.0, sgn * 5.7 + 1.3, z0 + 0.01]) for sgn in (-1, 1)]
+    timbers += [box([xe - 1.0, -5.0, 0.0], [xe + 1.0, 5.0, z0 + 0.01]) for xe in (-10.0, 10.0)]
     return F._sheeted(lambda: union(parts + [body, rim, latch] + ribs + cradles + timbers))()
 
 
@@ -2737,7 +2744,12 @@ def farm_tractor():
     parts.append(box([-1.6, -1.6, zr + 6.2], [1.4, 1.6, zr + 6.8]))                                       # pan seat
     for z in np.arange(z0 + 5.0, z0 + 13.0, 0.9):                                                         # radiator tubes
         parts.append(box([28.39, -3.6, z], [28.7, 3.6, z + 0.45]))
+    for (xa, xb2, hw, zb) in ((10.0, 25.5, 3.4, z0 + 5.0), (2.5, 10.0, 4.0, zr - 3.5)):   # the sump and gearcase bottoms, at 45
+        d = min(hw - 0.6, zb - z0)                                           # degrees down onto a block on the centre timber
+        parts.append(along_x(poly([(-hw, zb + 0.01), (hw, zb + 0.01), (hw - d, zb - d), (-hw + d, zb - d)]), xa, xb2))
+        parts.append(box([xa, -0.6, z0 - 0.01], [xb2, 0.6, zb - d + 0.01]))
     timbers = [box([0.0, sgn * 7.6 - 2.2, 0.0], [31.0, sgn * 7.6 + 2.2, z0 + 0.01]) for sgn in (-1, 1)]
+    timbers.append(box([2.0, -1.6, 0.0], [26.0, 1.6, z0 + 0.01]))         # centre timber
     return F._sheeted(lambda: union(parts + timbers))()
 
 
