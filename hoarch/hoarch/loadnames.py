@@ -37,4 +37,10 @@ ZIPNAMES = {
     "giantlog": "Giant_Log_Load",
     "pulpwood": "Pulpwood_Load",
     "truss": "Pony_Truss_Bridge_Load",
+    "rotor": "Generator_Rotor_Load",
+    "stator": "Generator_Stator_Load",
+    "tubebundle": "Heat_Exchanger_Tube_Bundle_Load",
+    "column": "Distillation_Column_Load",
+    "gear": "Girth_Gear_Load",
+    "genset": "Diesel_Genset_Load",
 }

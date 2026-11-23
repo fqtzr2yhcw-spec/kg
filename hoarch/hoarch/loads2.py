@@ -434,4 +434,65 @@ PACKS2 = dict([
           dict(ebay="HO Scale 50 ft Pony Truss Bridge Steel Flatcar Load Warren Truss Bridge 1:87",
                car="a 53 ft flatcar (the beams ride on a second flat or a gondola)", era="Steam / Transition (1900s-1960s)",
                colors="Black, Brown", ship=6.5, pack=1.50)),
+    _load("rotor", "Generator Rotor Load", 2,
+          "A turbine-generator's rotor on its shipping skid for a 53 ft flatcar: the forged body with its winding slots and "
+          "two pole faces, a retaining ring and fan at each end, journals on saddles, the coupling flange with its bolt "
+          "circle and the collector rings, carried on a pierced cradle. Rotor in steel silver, skid and cradle black.",
+          [_p("Generator-rotor", G.generator_rotor, "Black", 1, (G.ROTOR_CHANGE, "Silver"))],
+          "17.99", "HO Scale Generator Rotor Flatcar Load | Power Plant Heavy Load on Skid | Printed in Color | 1:87",
+          ["generator rotor", "power plant", "turbine load", "heavy load", "industrial load", "electric utility",
+           "power station", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Turbine Generator Rotor Flatcar Load Power Plant 1:87 Printed",
+               car="a 53 ft flatcar", era="Transition / Modern (1950s-present)", colors="Silver, Black", ship=5.5, pack=1.25)),
+    _load("stator", "Generator Stator Load", 1,
+          "A generator stator 12 ft through and 28 ft long for a depressed-centre flatcar, riding as a dimensional load: the "
+          "welded frame with ring stiffeners and longitudinal bars, bolted end covers, the terminal box on top with six "
+          "bushings, four lifting trunnions and the nameplate, on its cradle and skid.",
+          [_p("Generator-stator", G.generator_stator, "Black", 1, (G.STATOR_CHANGE, "Gray"))],
+          "24.99", "HO Scale Generator Stator Load | Depressed Center Flatcar Heavy Load, Power Plant | Printed | 1:87",
+          ["generator stator", "power plant", "heavy load", "depressed flatcar", "dimensional load", "electric utility",
+           "power station", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Generator Stator Heavy Load for Depressed Center Flatcar Power Plant 1:87",
+               car="a depressed-centre flatcar (it sits in the well)", era="Transition / Modern (1950s-present)",
+               colors="Gray, Black", ship=8.0, pack=2.50)),
+    _load("tubebundle", "Heat Exchanger Tube Bundle Load", 2,
+          "A shell-and-tube heat exchanger's tube bundle, out of its shell, for a 42 ft flatcar: the tubesheet with its bolt "
+          "ring, tube-end pattern and lifting lugs, every tube's line along the bundle, segmental baffles every 2 ft with "
+          "their cuts alternating, and the floating head with its domed cover. Copper tubes, black cradle and skid.",
+          [_p("Tube-bundle", G.tube_bundle, "Black", 1, (G.TB_CHANGE, "Copper Brown Metallic"))],
+          "16.99", "HO Scale Heat Exchanger Tube Bundle Flatcar Load | Refinery Chemical Plant | Printed | 1:87",
+          ["heat exchanger", "tube bundle", "refinery load", "chemical plant", "industrial load", "oil refinery",
+           "petrochemical", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Heat Exchanger Tube Bundle Flatcar Load Refinery Chemical Plant 1:87",
+               car="a 42 ft flatcar", era="Transition / Modern (1950s-present)", colors="Copper, Black", ship=5.5, pack=1.25)),
+    _load("column", "Distillation Column Load", 1,
+          "A refinery distillation column, 56 ft, shipped lying on three cradles for a 60 ft flatcar: the shell with girth "
+          "seams, the 2:1 top head, the skirt with its access opening and base ring, nozzles and manways, the ladder "
+          "clipped along the top and rings of platform brackets.",
+          [_p("Column", G.column, "Black", 1, (G.COL_CHANGE, "Light Gray"))],
+          "24.99", "HO Scale Refinery Distillation Column Flatcar Load | 56 ft Tower on Cradles | Printed | 1:87",
+          ["refinery load", "distillation tower", "oil refinery", "chemical plant", "pressure vessel", "heavy load",
+           "petrochemical", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Refinery Distillation Column 56 ft Flatcar Load on Cradles 1:87",
+               car="a 60 ft flatcar", era="Transition / Modern (1950s-present)", colors="Light Gray, Black", ship=8.0, pack=2.50)),
+    _load("gear", "Girth Gear Load", 2,
+          "The two halves of a 20 ft girth gear for a cement kiln or a grinding mill, lying face down on timbers on a 40 ft "
+          "flatcar: the toothed rim, the web with its radial ribs, the inner flange and the split flanges with their bolt "
+          "heads.",
+          [_p("Girth-gear-half", G.girth_gear_half, "Cocoa Brown", 2, (G.GEAR_SKID, "Gray"))],
+          "17.99", "HO Scale Girth Gear Halves 2 pc | Cement Kiln Mill Gear Flatcar Load | Printed in Color | 1:87",
+          ["girth gear", "ring gear", "cement plant", "mining load", "heavy load", "industrial load", "big gear",
+           "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Girth Gear Halves Cement Kiln Mill Gear Flatcar Load 1:87 Printed",
+               car="a 40 ft flatcar (both halves)", era="Any (steam to modern)", colors="Gray, Brown", ship=5.5, pack=1.25)),
+    _load("genset", "Diesel Genset Load", 2,
+          "A 40 ft enclosed diesel generator set for a 53 ft flatcar: the sound-attenuated housing with four pairs of doors a "
+          "side, handles and louvres, the radiator end's louvre wall, two silencers with rain caps and the radiator's "
+          "discharge hood on the roof, corner castings, on its fuel-tank base.",
+          [_p("Genset", G.genset, "Black", 1, (G.GENSET_BASE, "Bone White"))],
+          "18.99", "HO Scale Enclosed Diesel Generator Set Flatcar Load | Power Module | Printed in Color | 1:87",
+          ["generator load", "diesel genset", "power module", "industrial load", "data center", "electric utility",
+           "modern industry", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale 40 ft Enclosed Diesel Generator Set Flatcar Load Power Module 1:87",
+               car="a 53 ft flatcar", era="Modern (1980s-present)", colors="White, Black", ship=6.5, pack=1.50)),
 ])
