@@ -57,10 +57,11 @@ def unmid(m, layer=0.2, tol=0.012, shift=0.06):
     kw = {}
     mf, mt = np.asarray(mesh.merge_from_vert), np.asarray(mesh.merge_to_vert)
     if len(mf):
-        kw = dict(merge_from_vert=np.ascontiguousarray(mf, dtype=np.uint32),
-                  merge_to_vert=np.ascontiguousarray(mt, dtype=np.uint32))
-    out = M(Mesh(vert_properties=np.ascontiguousarray(v, dtype=np.float32),
-                 tri_verts=np.ascontiguousarray(mesh.tri_verts, dtype=np.uint32), **kw))
+        kw = dict(merge_from_vert=np.array(mf, dtype=np.uint32, order="C"),
+                  merge_to_vert=np.array(mt, dtype=np.uint32, order="C"))
+    # fresh writable copies: manifold3d 3.5 refuses the read-only arrays to_mesh() hands out
+    out = M(Mesh(vert_properties=np.array(v, dtype=np.float32, order="C"),
+                 tri_verts=np.array(mesh.tri_verts, dtype=np.uint32, order="C"), **kw))
     return out if not out.is_empty() else m
 
 

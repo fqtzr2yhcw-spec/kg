@@ -363,7 +363,7 @@ def _bands(v, t, zs):
     """A piece's mesh cut at the heights zs (rising): its parts from the bed up, None where a band
     holds nothing of it; None if the mesh can't be read as a solid."""
     import manifold3d as m3
-    man = m3.Manifold(m3.Mesh(vert_properties=np.asarray(v, np.float32), tri_verts=np.asarray(t, np.uint32)))
+    man = m3.Manifold(m3.Mesh(vert_properties=np.array(v, np.float32, order="C"), tri_verts=np.array(t, np.uint32, order="C")))
     if man.is_empty() or man.status() != m3.Error.NoError:
         return None
     out, rest = [], man
