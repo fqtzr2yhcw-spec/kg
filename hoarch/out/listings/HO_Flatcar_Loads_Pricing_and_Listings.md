@@ -42,7 +42,7 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Crushed Car Scrap Load | $16.99 | $11.90 | $12.77 | 37 m | 19 g | 2 |
 | Giant Log Load | $18.99 | $13.33 | $14.28 | 1 h 1 m | 33 g | 3 |
 | Pulpwood Load | $16.99 | $11.36 | $12.23 | 2 h 2 m | 44 g | 2 |
-| Pony Truss Bridge Load | $19.99 | $14.27 | $15.31 | 19 m | 10 g | 2 |
+| Pony Truss Bridge Load | $19.99 | $14.22 | $15.25 | 22 m | 13 g | 2 |
 | Generator Rotor Load | $17.99 | $12.83 | $13.74 | 27 m | 15 g | 2 |
 | Generator Stator Load | $24.99 | $16.47 | $17.77 | 1 h 43 m | 55 g | 1 |
 | Heat Exchanger Tube Bundle Load | $16.99 | $12.04 | $12.91 | 25 m | 12 g | 2 |
@@ -111,7 +111,7 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Crushed Car Scrap Load | 19 g, $0.37 | 37 m | 3 | $1.64 | Crushed stack red grey x2 58 x 22 x 10 mm; Crushed stack blue rust x2 57 x 21 x 10 mm; Crushed stack green black x2 57 x 22 x 10 mm |
 | Giant Log Load | 33 g, $0.66 | 1 h 1 m | 1 | $1.93 | Giant log x3 117 x 32 x 32 mm |
 | Pulpwood Load | 44 g, $0.88 | 2 h 2 m | 1 | $2.17 | Pulpwood section x4 41 x 30 x 29 mm; Pulpwood section B x2 41 x 30 x 29 mm |
-| Pony Truss Bridge Load | 10 g, $0.21 | 19 m | 3 | $1.71 | Truss side x4 179 x 28 x 2 mm; Floor beams x2 56 x 19 x 10 mm; Truss blocking x6 32 x 3 x 2 mm |
+| Pony Truss Bridge Load | 13 g, $0.26 | 22 m | 3 | $1.77 | Truss side x4 179 x 28 x 2 mm; Floor beams x2 56 x 24 x 10 mm; Truss blocking x6 32 x 3 x 2 mm |
 | Generator Rotor Load | 15 g, $0.31 | 27 m | 1 | $1.57 | Generator rotor x2 99 x 21 x 19 mm |
 | Generator Stator Load | 55 g, $1.10 | 1 h 43 m | 1 | $3.64 | Generator stator 102 x 55 x 43 mm |
 | Heat Exchanger Tube Bundle Load | 12 g, $0.24 | 25 m | 1 | $1.50 | Tube bundle x2 76 x 24 x 18 mm |
@@ -1649,7 +1649,7 @@ Printed in colour: every piece comes off the printer in its finished colours, so
 
 SIZE
 - Truss side (x4): 7.0 x 1.1 x 0.1 in (179 x 28 x 2 mm)
-- Floor beams (x2): 2.2 x 0.7 x 0.4 in (56 x 19 x 10 mm)
+- Floor beams (x2): 2.2 x 0.9 x 0.4 in (56 x 24 x 10 mm)
 - Truss blocking (x6): 1.2 x 0.1 x 0.1 in (32 x 3 x 2 mm)
 
 HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.

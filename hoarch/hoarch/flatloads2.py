@@ -1497,23 +1497,25 @@ def along_z_cs(cs, z0, z1):
 
 @solid
 def floor_beam_bundle(n=6):
-    """The span's floor beams, six 16 ft I-beams with their end connection angles, two layers of
-    three on dunnage (brown to 1.2 mm, the steel above)."""
+    """The span's floor beams, six 16 ft I-beams with their end connection angles, side by side in one
+    layer on four timbers (brown to 1.2 mm, the steel above). One layer, not two of three: the two-high
+    bundle stood 19 mm tall on a 10.5 mm footprint and three 2 mm timbers, and its ends lifted off the
+    plate as it cooled, brim or not. Webs 1.0 mm and flanges 0.8 mm, so the slicer draws them solid
+    (at 0.6 mm the webs wobbled)."""
     Lb = ft(16.0)
-    d, bf, tf, tw = inch(30), inch(10), 0.6, 0.6
+    d, bf, tf, tw = inch(30), inch(10), 0.8, 1.0
+    z0 = 1.2
     parts = []
-    for j in range(2):                                                      # the top layer sits on the bottom one's flanges
-        for i in range(n // 2):
-            y = (i - (n // 2 - 1) / 2) * (bf + 0.6)
-            z0 = 1.2 + j * (d - 0.01)
-            parts += [box([0, y - bf / 2, z0], [Lb, y + bf / 2, z0 + tf]),
-                      box([0, y - tw / 2, z0 + tf - 0.01], [Lb, y + tw / 2, z0 + d - tf + 0.01]),
-                      box([0, y - bf / 2, z0 + d - tf], [Lb, y + bf / 2, z0 + d])]
-            for xe in (0.6, Lb - 0.6):
-                parts.append(box([xe - 0.6, y - 1.6, z0 + tf], [xe + 0.6, y + 1.6, z0 + d - tf]))
-    W = (n // 2) * (bf + 0.6)
-    for x in (2.0, Lb / 2, Lb - 2.0):                                       # dunnage under the bottom layer
-        parts.append(box([x - 1.0, -W / 2, 0.0], [x + 1.0, W / 2, 1.21]))
+    for i in range(n):
+        y = (i - (n - 1) / 2) * (bf + 0.8)             # 0.8 mm between flanges: an open slot, not a fused one
+        parts += [box([0, y - bf / 2, z0 - 0.01], [Lb, y + bf / 2, z0 + tf]),
+                  box([0, y - tw / 2, z0 + tf - 0.01], [Lb, y + tw / 2, z0 + d - tf + 0.01]),
+                  box([0, y - bf / 2, z0 + d - tf], [Lb, y + bf / 2, z0 + d])]
+        for xe in (0.6, Lb - 0.6):
+            parts.append(box([xe - 0.6, y - 1.6, z0 + tf - 0.01], [xe + 0.6, y + 1.6, z0 + d - tf + 0.01]))
+    W = n * (bf + 0.8)
+    for x in np.linspace(1.6, Lb - 1.6, 4):                                 # four timbers, a little past the sides
+        parts.append(box([x - 1.2, -W / 2 - 0.8, 0.0], [x + 1.2, W / 2 + 0.8, z0]))
     return F._sheeted(lambda: union(parts))()
 
 

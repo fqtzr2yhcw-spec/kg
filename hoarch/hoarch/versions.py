@@ -189,6 +189,7 @@ HISTORY = {
     "farmtractors": [("1.1", "2026-11-23", "The rear wheels' spade lugs taper from a 2 mm root (the lugs low on the wheel started in mid-air). Checked for floating regions, which Bambu Studio warns about: none now.")],
     "minecars": [("1.1", "2026-11-23", "The middle rib on each side stops at the V's apex (its tip hung below it). Checked for floating regions, which Bambu Studio warns about: none now.")],
     "bricks": [("1.1", "2026-11-23", "The bands' straps reach into the mortar joints (their ends started in mid-air over the fork voids). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "truss": [("1.1", "2026-11-24", "Floor-beam bundle: the six beams lie side by side in one layer on four full-width timbers, 10 mm tall and 24 mm wide (it stood two layers high, 19 mm tall on a 10.5 mm footprint and three small timbers, and its ends lifted off the plate as it cooled, brim or not); webs 1.0 mm and flanges 0.8 mm (0.6 mm webs wobbled), with 0.8 mm between the flanges. Reprint the Floor-beams part; the truss sides and blocking are unchanged.")],
 }
 
 

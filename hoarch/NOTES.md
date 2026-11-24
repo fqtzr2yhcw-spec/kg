@@ -706,3 +706,8 @@ reads. What they added to the rules:
   - band straps beside a stack or over a void: run them into the stack or the joint.
   `keel()` puts a 1.6 mm stem where its two tangents cross (a small body high up); the bowtie it
   made pinched to a point, and the slicer drops a neck that thin.
+- Keep a piece lower than it is wide, on timbers that run the full width. The pony truss's floor-beam
+  bundle stood two layers high (19 mm tall, 10.5 mm wide, 56 mm long) on three 2 mm timbers, 162 mm2
+  on the plate, and its ends lifted off the plate as it cooled, brim or not (the owner's photos,
+  November 2026). One layer of six beams on four full-width timbers: 10 mm tall, 24 mm wide,
+  1,165 mm2 on the plate. Stiff, long stacks (beams, plate) pull hardest.
