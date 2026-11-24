@@ -301,7 +301,7 @@ PACKS2 = dict([
                car="a 42 ft flatcar (two tiers) or a gondola", era="Transition / Modern (1950s-present)",
                colors="Dark Gray, Brown", ship=5.5, pack=1.25)),
     _load("poles", "Utility Pole Load", 2,
-          "Twenty-six treated wood utility poles, 45 ft, for a 50 ft flatcar: piled eight, seven, six and five on six bunks "
+          "Twenty-six treated wood utility poles, 45 ft, for a 50 ft flatcar: piled eight, seven, six and five on eight bunks "
           "with stakes, butts at alternate ends, each pole tapered from a 12 in butt to a 7 in top with its roof cut and a "
           "brand plate near the butt, wire-rope wrappers over the end bunks.",
           [_p("Pole-pile", G.pole_pile, "Caramel", 1, (G.POLE_BUNK, "Black Walnut"))],

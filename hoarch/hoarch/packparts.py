@@ -91,22 +91,32 @@ def tire_stack(n=5, seed=41):
     t = M.revolve(poly([(r, z) for r, z in prof]), 40)
     tread = union([box([R - 0.25, -0.12, 0.6], [R + 0.1, 0.12, w - 0.6]).rotate([0, 0, 360.0 * k / 36]) for k in range(36)])
     tire = t - tread
-    return union([tire.translate([rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3), k * (w - 0.05)]) for k in range(n)])
+    offs = [(rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3)) for _ in range(n)]
+    floor = M.cylinder(0.4, ri + 0.35, ri + 0.35, 40).translate([offs[0][0], offs[0][1], 0.0])   # the ground in the
+    return union([tire.translate([dx, dy, k * (w - 0.05)]) for k, (dx, dy) in enumerate(offs)] + [floor])   # bottom tyre
 
 
 def pipe_stack(L=35.0, r=inch(6.4), bore=0.72, rows=(4, 3, 2), seed=43):
     """Steel pipe stacked in a pyramid, the bottom row flattened where it meets the ground (no
     overhang past 45 degrees), with wedge chocks at the outer pipes. Prints as one piece."""
-    out = []
+    out, centres = [], []
+    rb = min(r * bore, r - 0.8)                   # walls at least 0.8 mm, so the slicer draws them solid
     z0 = r * 0.7                                  # bottom row's centre: 0.3 r cut off below
     for k, n in enumerate(rows):
         zc = z0 + k * r * math.sqrt(3) * 0.995
-        for i in range(n):
-            y = (i - (n - 1) / 2) * 2 * r * 0.995
+        centres.append([((i - (n - 1) / 2) * 2 * r * 0.995, zc) for i in range(n)])
+        for y, _ in centres[-1]:
             p = M.cylinder(L, r, r, 36).rotate([0, 90, 0]).translate([0, y, zc])
-            hole = M.cylinder(L + 2, r * bore, r * bore, 28).rotate([0, 90, 0]).translate([-1, y, zc])
+            hole = M.cylinder(L + 2, rb, rb, 28).rotate([0, 90, 0]).translate([-1, y, zc])
             out.append((p, hole))
     pipes = union([p for p, _ in out]) - union([h for _, h in out])
+    fill = []                                     # each upper pipe's valley filled down to where the two under it
+    for lower, upper in zip(centres[:-1], centres[1:]):   # meet: its underside started in the air over the gap
+        for (y, z) in upper:
+            a, b = sorted(lower, key=lambda c: abs(c[0] - y))[:2]
+            pts = [((y + a[0]) / 2, (z + a[1]) / 2), ((y + b[0]) / 2, (z + b[1]) / 2), ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)]
+            fill.append(M.extrude(poly(pts), L - 1.2).transform(np.array([[0, 0, 1, 0.6], [1, 0, 0, 0], [0, 1, 0, 0]], float)))
+    pipes = pipes + union(fill)
     pipes = pipes ^ box([-1, -50, 0.0], [L + 1, 50, 50])
     n0 = rows[0]
     yo = (n0 - 1) / 2 * 2 * r * 0.995 + r
@@ -246,9 +256,13 @@ def rail_rack(L=40.0, n=5):
     RACK_TOP, the rails above in steel colour (the bridges between timbers print unsupported)."""
     span = n * 2.6 + 1.0
     posts, timbers = [], []
+    for x in (6.0, L - 6.0):                     # a sill frame on the ground under the posts: the rack stood on four
+        timbers.append(box([x - 1.0, -span / 2 - 0.6, 0.0], [x + 1.0, span / 2 + 0.6, 0.8]))   # 1.6 mm posts (10 mm2)
+    for y in (-span / 2, span / 2 - 1.6):
+        timbers.append(box([5.0, y, 0.0], [L - 5.0, y + 1.6, 0.8]))
     for x in (6.0, L - 6.0):
-        for y in (-span / 2, span / 2 - 1.6):
-            posts.append(box([x - 0.8, y, 0.0], [x + 0.8, y + 1.6, RACK_TOP - 1.4]))
+        # a solid pier of stacked ties under each timber: four 1.6 mm posts carried the rack (3 % of the layer above)
+        posts.append(box([x - 1.2, -span / 2, 0.0], [x + 1.2, span / 2, RACK_TOP - 1.4]))   # a tie is 9 in wide
         timbers.append(_rbox(x - 0.9, -span / 2 - 0.4, RACK_TOP - 1.41, x + 0.9, span / 2 + 0.4, RACK_TOP, 0.12))
     rails = []
     for k in range(n):
@@ -394,7 +408,8 @@ def headstone(kind="round", w=5.0, h=8.0, t=1.6, lean=0.0):
     if lean:
         s = s.rotate([lean, 0, 0])
         s = s ^ box([-20, -20, 0.6], [20, 20, 40])
-    return base + s
+    foot = _rbox(-w / 2 - 2.0, -t / 2 - 2.0, 0.0, w / 2 + 2.0, t / 2 + 2.0, 0.4, 0.2)   # a footing slab: the stone stood
+    return foot + (base + s).translate([0, 0, 0.39])                                    # on 19 mm2
 
 
 def obelisk(h=16.0):
@@ -404,7 +419,8 @@ def obelisk(h=16.0):
     die = _rbox(-1.8, -1.8, 2.19, 1.8, 1.8, 5.2, 0.15)
     shaft = M.hull_points([(x, y, 5.19) for x in (-1.2, 1.2) for y in (-1.2, 1.2)] + [(x, y, h - 1.4) for x in (-0.75, 0.75) for y in (-0.75, 0.75)])
     tip = M.hull_points([(x, y, h - 1.41) for x in (-0.75, 0.75) for y in (-0.75, 0.75)] + [(0.0, 0.0, h)])
-    return p1 + p2 + die + shaft + tip
+    foot = _rbox(-4.2, -4.2, 0.0, 4.2, 4.2, 0.4, 0.2)             # a footing slab under the plinth, for the plate
+    return foot + (p1 + p2 + die + shaft + tip).translate([0, 0, 0.39])
 
 
 def mausoleum():
@@ -429,9 +445,11 @@ def mausoleum():
     return steps + (cella - door) + door_panels.translate([0, 0.0, 0]) + antae + cols + ent + ped + wreath
 
 
-def cemetery_fence(L=40.0, pitch=2.2):
+def cemetery_fence(L=40.0, pitch=2.2, posts=(False, True)):
     """A cemetery railing on a granite curb printed upright: lancet-headed pickets, a quatrefoil
-    band under the top rail, two rails. Curb to FENCE_CURB, iron above."""
+    band between rails under the top rail. Curb to FENCE_CURB, iron above. ``posts`` (left, right):
+    a cemetery_post built on at that end, one piece with the railing (a loose post stood on 9 mm2),
+    the rails running into it."""
     w = 2.0
     curb = M.hull_points([(x, y, z) for x in (0.0, L) for y in (-w / 2, w / 2) for z in (0.0, FENCE_CURB - 0.35)] +
                          [(x, y, FENCE_CURB) for x in (0.0, L) for y in (-w / 2 + 0.35, w / 2 - 0.35)])
@@ -440,18 +458,21 @@ def cemetery_fence(L=40.0, pitch=2.2):
     xs = [x0 + k * pitch for k in range(n + 1)]
     iron = []
     for x in xs:
-        s = poly([(x - 0.35, FENCE_CURB - 0.01), (x + 0.35, FENCE_CURB - 0.01), (x + 0.35, 10.8), (x + 0.6, 11.2), (x + 0.3, 11.9),
-                  (x, 12.6), (x - 0.3, 11.9), (x - 0.6, 11.2), (x - 0.35, 10.8)])
-        iron.append(ext(s, -0.35, 0.35).rotate([90, 0, 0]))
-    iron += [box([-0.3, -0.4, 4.0], [L + 0.3, 0.4, 4.6]), box([-0.3, -0.4, 9.6], [L + 0.3, 0.4, 10.2])]
+        s = poly([(x - 0.4, FENCE_CURB - 0.01), (x + 0.4, FENCE_CURB - 0.01), (x + 0.4, 10.8), (x + 0.6, 11.2), (x + 0.3, 11.9),
+                  (x, 12.6), (x - 0.3, 11.9), (x - 0.6, 11.2), (x - 0.4, 10.8)])          # pickets 0.8 mm
+        iron.append(ext(s, -0.4, 0.4).rotate([90, 0, 0]))
+    xa, xb = (-1.5 if posts[0] else -0.3), (L + 1.5 if posts[1] else L + 0.3)
+    # rails, and one under the quatrefoils (their lower lobes hung in the air between the pickets)
+    iron += [box([xa, -0.4, z0], [xb, 0.4, z1]) for z0, z1 in ((4.0, 4.6), (7.25, 7.75), (9.6, 10.2))]
     for a, b in zip(xs[:-1], xs[1:]):
         c = (a + b) / 2
         r = (b - a) / 2 - 0.35
         q = cs_union([poly([(c + r * 0.55 * math.cos(t) + dx, 8.4 + r * 0.55 * math.sin(t) + dz) for t in np.linspace(0, 2 * math.pi, 14, endpoint=False)])
                       for dx, dz in ((r * 0.55, 0), (-r * 0.55, 0), (0, r * 0.45), (0, -r * 0.45))])
         hole = poly([(c + r * 0.3 * math.cos(t), 8.4 + r * 0.3 * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 12, endpoint=False)])
-        iron.append(ext(q - hole, -0.3, 0.3).rotate([90, 0, 0]))
-    return curb + union(iron)
+        iron.append(ext(q - hole, -0.4, 0.4).rotate([90, 0, 0]))                     # 0.8 mm
+    ends = [cemetery_post().translate([x, 0, 0]) for x, on in ((-1.5, posts[0]), (L + 1.5, posts[1])) if on]
+    return curb + union(iron + ends)
 
 
 def cemetery_post():
@@ -475,7 +496,7 @@ def dead_tree(h=26.0, seed=81):
         x += rng.uniform(-0.7, 0.7)
         y += rng.uniform(-0.7, 0.7)
         trunk_pts.append((x, y, h * 0.62 * k / 6))
-    parts = [_chain(trunk_pts, 1.6, 0.8), M.cylinder(0.8, 3.2, 1.6, 24)]
+    parts = [_chain(trunk_pts, 1.6, 0.8), M.cylinder(0.8, 3.2, 1.6, 24), M.cylinder(0.5, 4.6, 4.0, 32)]   # root mound
     for k in range(5):
         z0 = h * (0.3 + 0.07 * k)
         a = rng.uniform(0, 2 * math.pi)
@@ -496,16 +517,21 @@ def xmas_tree(h=21.0, seed=91):
     """A cut fir in a wooden cross stand: the stand to TREE_STAND, then the tree in tiers that
     flare out at 45 degrees and slope back up, each hem notched into boughs."""
     rng = np.random.default_rng(seed)
-    stand = box([-2.4, -0.45, 0.0], [2.4, 0.45, TREE_STAND]) + box([-0.45, -2.4, 0.0], [0.45, 2.4, TREE_STAND])
-    trunk = M.cylinder(2.0, 0.55, 0.5, 16).translate([0, 0, TREE_STAND - 0.01])
+    # the stand: a cross on a board (the tree stood on two 0.9 mm bars, 8 mm2), and a 2.4 mm trunk (at 1.1 mm the
+    # trunk carried the whole tree on 1 mm2 and snapped)
+    stand = (box([-3.7, -3.7, 0.0], [3.7, 3.7, 0.4]) + box([-3.5, -0.7, 0.39], [3.5, 0.7, TREE_STAND]) +
+             box([-0.7, -3.5, 0.39], [0.7, 3.5, TREE_STAND]))
+    rt = 1.2
+    trunk = M.cylinder(2.0, rt, rt - 0.1, 16).translate([0, 0, TREE_STAND - 0.01])
     tiers = []
-    z = TREE_STAND + 1.2
-    n = 5
+    z = TREE_STAND - 0.01                      # the lowest boughs come down onto the stand at 45 degrees (a bare trunk
+    n = 5                                      # carried the whole tree: 1 to 8 % of the layer above)
     R0 = h * 0.24
     for k in range(n):
         R = R0 * (1 - k / (n + 0.6))
         th = (h - (z - TREE_STAND)) / (n - k) * 1.35
-        prof = [(0.0, z), (0.55, z), (R, z + R - 0.55), (R * 0.25, z + max(th, R - 0.3)), (0.0, z + max(th, R - 0.3))]
+        r0 = 3.0 if k == 0 else rt
+        prof = [(0.0, z), (r0, z), (R, z + R - r0), (R * 0.25, z + max(th, R - 0.3)), (0.0, z + max(th, R - 0.3))]
         tier = M.revolve(poly([(r, zz) for r, zz in prof]), 24)
         notch = union([box([R * 0.55, -0.22, z - 1], [R + 1, 0.22, z + R * 0.62]).rotate([0, 0, 360 * j / 9 + rng.uniform(-8, 8)]) for j in range(9)])
         tiers.append(tier - notch)
@@ -538,8 +564,9 @@ def lot_shack():
 def lot_fence(L=36.0):
     """Split-rail lot fence: posts every 9 mm with two rails mortised through them."""
     posts = [box([x - 0.6, -0.6, 0.0], [x + 0.6, 0.6, 9.0]) for x in np.arange(0.6, L, 9.0)]
-    rails = [box([0.0, -0.4, z], [L + 1.2, 0.4, z + 0.9]) for z in (3.4, 7.0)]
-    return union(posts + rails)
+    rails = [box([0.0, -0.2, z], [L + 1.2, 0.6, z + 0.9]) for z in (3.4, 7.0)]      # flush with the posts' front
+    # printed lying on its front (it stood on five 1.2 mm posts, 6 mm2); shown standing
+    return union(posts + rails).rotate([-90, 0, 0]).translate([0, 0, 0.6])
 
 
 # ================================================================== telephone poles

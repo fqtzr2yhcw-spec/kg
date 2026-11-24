@@ -348,7 +348,7 @@ def pipe_load(r=ft(1.5), L=ft(40.0), rows=(3, 2)):
     band_cs = offset(hull, 0.4) - offset(hull, -0.05)
     xs = [1.2, L * 0.21, L * 0.4, L * 0.6, L * 0.79, L - 1.2]     # end strips carry the pipe ends; spans under 30 mm
     bands = [along_x(band_cs, x - 0.3, x + 0.3) - box([x - 1, -5, -5], [x + 1, 6 * r + 5, PIPE_DUN]) for x in xs[::5] + xs[2:4]]
-    dun = [box([x - 0.7, -1.4, 0.0], [x + 0.7, 2 * r * rows[0] + 1.4, PIPE_DUN]) for x in xs]
+    dun = [box([x - 1.8, -1.4, 0.0], [x + 1.8, 2 * r * rows[0] + 1.4, PIPE_DUN]) for x in xs]   # 3.6 mm: a wider join
     return union([pipes] + caps + bands + dun)
 
 
@@ -522,15 +522,16 @@ def plate_bundle(L=ft(20.0), W=ft(8.0), n=8, t=0.6):
         outer = box([x - 0.3, -0.45, STEEL_DUN], [x + 0.3, W + 0.45, z + 0.25])
         inner = box([x - 1, 0.3, STEEL_DUN - 1], [x + 1, W - 0.3, z])
         bands.append(outer - inner)
-    dun = [box([x - 0.7, -1.2, 0.0], [x + 0.7, W + 1.2, STEEL_DUN]) for x in (1.2, L * 0.2, L * 0.5, L * 0.8, L - 1.2)]
+    dun = [box([x - 1.2, -1.2, 0.0], [x + 1.2, W + 1.2, STEEL_DUN]) for x in (1.2, L * 0.2, L * 0.5, L * 0.8, L - 1.2)]
     return union([stack] + bands + dun)
 
 
 @_sheeted
-def beam_bundle(L=ft(40.0), n=5, tiers=2, d=6.0, bf=3.0, tf=0.6, tw=0.45):
+def beam_bundle(L=ft(40.0), n=5, tiers=2, d=6.0, bf=3.0, tf=0.8, tw=1.0):
     """A bundle of wide-flange beams standing on their bottom flanges on dunnage, two tiers,
     banded. Inner flanges meet their neighbours' (the gap under them is a bridge); the outer
-    flange tips reach 0.9 mm, a ledge."""
+    flange tips reach 0.9 mm, a ledge. Webs 1.0 mm and flanges 0.8 mm: at 0.45 mm the webs were one
+    wobbly line (the pony truss's floor beams, built the same way, failed)."""
     parts = []
     z = STEEL_DUN
     for t in range(tiers):
@@ -549,7 +550,7 @@ def beam_bundle(L=ft(40.0), n=5, tiers=2, d=6.0, bf=3.0, tf=0.6, tw=0.45):
         outer = box([x - 0.3, e - 0.4, STEEL_DUN], [x + 0.3, W - e + 0.4, z + 0.3])
         inner = box([x - 1, e + 0.05, STEEL_DUN - 1], [x + 1, W - e - 0.05, z])
         bands.append(outer - inner)
-    dun = [box([x - 0.7, -1.2, 0.0], [x + 0.7, W + 1.2, STEEL_DUN]) for x in (1.2, L / 6, L / 3, L / 2, 2 * L / 3, 5 * L / 6, L - 1.2)]
+    dun = [box([x - 1.4, -1.2, 0.0], [x + 1.4, W + 1.2, STEEL_DUN]) for x in (1.4, L / 6, L / 3, L / 2, 2 * L / 3, 5 * L / 6, L - 1.4)]
     return union(parts + bands + dun)
 
 

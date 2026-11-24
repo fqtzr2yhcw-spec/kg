@@ -469,7 +469,7 @@ WTIE_DUN = 1.2            # new-lumber dunnage strips, then the creosoted ties
 @solid
 def wood_tie_row(seed=2, bundles=4):
     """Four bundles of new creosoted crossties, 25 to a bundle (five by five, 7 x 9 in by 8 ft 6 in),
-    banded twice, on two dunnage strips near the tie ends. Each tie's length a little different;
+    banded twice, on three dunnage strips (near the ends and in the middle). Each tie's length a little different;
     anti-split plates and checks on the ends."""
     rng = np.random.default_rng(seed)
     tw, th, tl = inch(9), inch(7), ft(8.5)
@@ -493,7 +493,7 @@ def wood_tie_row(seed=2, bundles=4):
             parts.append(box([x0 - 0.2, yb_ - 0.25, z0], [x0 + Wb + 0.2, yb_ + 0.25, z0 + 5 * th + 0.2]) -
                          box([x0 + 0.01, yb_ - 1, z0 - 1], [x0 + Wb - 0.01, yb_ + 1, z0 + 5 * th - 0.01]))
     Lx = bundles * (Wb + 1.0) - 1.0
-    dun = [box([-0.4, y - 0.7, 0.0], [Lx + 0.4, y + 0.7, z0 + 0.01]) for y in (-tl / 2 + 2.0, tl / 2 - 2.0)]
+    dun = [box([-0.4, y - 1.2, 0.0], [Lx + 0.4, y + 1.2, z0 + 0.01]) for y in (-tl / 2 + 2.4, 0.0, tl / 2 - 2.4)]   # three, 2.4 mm
     return F._sheeted(lambda: union(parts + dun) - union(cuts))()
 
 
@@ -1212,7 +1212,7 @@ def rebar_lift(n=7, seed=5):
             ring = (offset(sec, 0.2) - offset(sec, -0.05)) ^ CS.square((bw + 2, bh + 2)).translate((yc - bw / 2 - 1, z0 + 0.3))
             parts.append(along_x(ring, x - 0.25, x + 0.25))
     W = n * (bw + 0.15)
-    dun = [box([x - 1.0, -W / 2 - 0.8, 0.0], [x + 1.0, W / 2 + 0.8, z0 + 0.01]) for x in np.linspace(2.0, L - 2.0, 6)]
+    dun = [box([x - 1.4, -W / 2 - 0.8, 0.0], [x + 1.4, W / 2 + 0.8, z0 + 0.01]) for x in np.linspace(2.0, L - 2.0, 8)]
     return F._sheeted(lambda: union(parts + dun) - union(cuts))()
 
 
@@ -1247,7 +1247,7 @@ def sheet_pile_tier(n=3, layers=8, seed=2):
             parts.append(box([x - 0.3, y0 - 0.25, zt - 0.01], [x + 0.3, y0 + fl, zt + dep + 0.25]))
             parts.append(box([x - 0.3, y0 + P - fl, zt - 0.01], [x + 0.3, y0 + P + 0.25, zt + dep + 0.25]))
     W = n * (P + 0.8)
-    dun = [box([x - 1.0, -W / 2 - 0.6, 0.0], [x + 1.0, W / 2 + 0.6, z0 + 0.01]) for x in np.linspace(2.0, L - 2.0, 6)]
+    dun = [box([x - 1.4, -W / 2 - 0.6, 0.0], [x + 1.4, W / 2 + 0.6, z0 + 0.01]) for x in np.linspace(2.0, L - 2.0, 8)]
     return F._sheeted(lambda: union(parts + dun))()
 
 
@@ -1257,7 +1257,7 @@ POLE_BUNK = 1.6
 
 @solid
 def pole_pile(seed=4):
-    """Treated wood utility poles, 45 ft, piled eight, seven, six and five on six bunks with stakes,
+    """Treated wood utility poles, 45 ft, piled eight, seven, six and five on eight bunks with stakes,
     their butts at alternate ends: each pole tapered from a 12 in butt to a 7 in top, the top cut
     to a roof, a brand plate near the butt, a wire-rope wrapper over the end bunks. Keels and valley
     webs hidden in the pile carry the round poles."""
@@ -1297,7 +1297,7 @@ def pole_pile(seed=4):
     hull = cs_union(hull_cs).hull()
     wrap_cs = (offset(hull, 0.75) - offset(hull, -0.1)) ^ CS.square((60.0, 60.0)).translate((-30.0, b - 0.01))
     bunks, stakes, wraps = [], [], []
-    for xb in np.linspace(1.6, L - 1.6, 6):
+    for xb in np.linspace(1.6, L - 1.6, 8):              # eight bunks (six left the pile joined by 13 % of a layer)
         bunks.append(box([xb - 1.4, -ext - 2.4, 0.0], [xb + 1.4, ext + 2.4, b]))
         for sgn in (-1, 1):
             y0 = sgn * (ext - 0.15)

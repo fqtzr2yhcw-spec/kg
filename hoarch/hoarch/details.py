@@ -32,10 +32,10 @@ def pallet():
     seven top boards. 14.0 x 11.7 x 1.6 mm."""
     L, W = ft(4.0), ft(40 / 12.0)
     parts = []
-    for x in (0.0, 5.0, 6.5, 8.0, L - 1.0):                  # bottom deck: clear of the fork notches,
-        parts.append(box([x, 0.0, 0.0], [x + 1.0, W, 0.4]))  # so no board hangs loose under one
-    for y in (0.0, (W - 0.9) / 2, W - 0.9):                  # stringers with fork notches
-        s = box([0.0, y, 0.39], [L, y + 0.9, 1.21])
+    for x, bw in ((0.0, 1.45), (4.9, 1.2), (6.4, 1.2), (7.9, 1.2), (L - 1.45, 1.45)):   # bottom deck: clear of the fork
+        parts.append(box([x, 0.0, 0.0], [x + bw, W, 0.4]))  # notches; lead boards 5 in, as real ones (more on the plate)
+    for y in (0.0, (W - 1.2) / 2, W - 1.2):                  # stringers with fork notches, 1.2 mm so the load has a
+        s = box([0.0, y, 0.39], [L, y + 1.2, 1.21])          # good join to the boards
         for xn in (L * 0.22, L * 0.78):
             s = s - box([xn - 1.6, y - 1, 0.38], [xn + 1.6, y + 2, 0.75])
         parts.append(s)
@@ -177,7 +177,9 @@ def _bag(cx, cy, z0, ang, l=6.6, w=3.5, h=1.55):
             for sy in (-1, 1):
                 pts.append((sx * (l / 2 - ins - 0.35), sy * (w / 2 - ins - pinch * 0.6), zz))
                 pts.append((sx * (l / 2 - ins), sy * (w / 2 - ins - 0.45 - pinch), zz))
-    tie = M.cylinder(0.5, 0.45, 0.3, 10).rotate([0, 90, 0]).translate([l / 2 - 0.05, 0, z0 + h * 0.45])
+    zm = z0 + h * 0.45                  # the tied end: a tuft whose underside rises at 45 degrees from the bag (a level
+    tie = M.hull_points([(l / 2 - 0.3, y, z) for y in (-0.35, 0.35) for z in (zm - 0.3, zm + 0.35)] +   # tie started in
+                        [(l / 2 + 0.4, y, z) for y in (-0.25, 0.25) for z in (zm + 0.25, zm + 0.5)])    # the air)
     return (M.hull_points(pts) + tie).rotate([0, 0, ang]).translate([cx, cy, 0])
 
 
@@ -206,15 +208,17 @@ def _wall_path(path, courses=6, seed=3, closed=False):
         if c % 2 == 0:                                   # stretchers: two rows along
             pitch = 6.5
             n = max(1, int(total / pitch))
+            if (c // 2) % 2:                             # the staggered courses: half bags at the ends, as real walls
+                spots = [((i + 1) * total / n, 6.6) for i in range(n - 1)] + [(1.75, 3.3), (total - 1.75, 3.3)]
+            else:                                        # are laid (the gap left the header above in the air)
+                spots = [((i + 0.5) * total / n, 6.6) for i in range(n)]
             for row in (-1, 1):
-                for i in range(n):
-                    s = (i + 0.5 + (0.5 if (c // 2) % 2 else 0.0)) * total / n
-                    s = min(s, total - 0.01)
+                for s, lb in spots:
                     p, d = at(s)
                     nrm = np.array([-d[1], d[0]])
                     q = p + nrm * row * (1.8 - bat * (row > 0))
                     a = math.degrees(math.atan2(d[1], d[0])) + rng.uniform(-5, 5) + (180 if row > 0 else 0)
-                    bags.append(_bag(q[0] + rng.uniform(-0.1, 0.1), q[1] + rng.uniform(-0.1, 0.1), z0, a))
+                    bags.append(_bag(q[0] + rng.uniform(-0.1, 0.1), q[1] + rng.uniform(-0.1, 0.1), z0, a, l=lb))
         else:                                            # headers: across the line
             pitch = 3.6
             n = max(1, int(total / pitch))
@@ -402,7 +406,10 @@ def culvert_headwall(W=30.0, H=14.0, d=ft(3.0)):
         wings.append(M.hull_points([(q[0], q[1], 0.0) for q in quad] +
                                    [(q[0], q[1], H) for q in quad[:2]] + [(q[0], q[1], 2.0) for q in quad[2:]]))
     out = wall + cope + collar + union(wings) + pipe
-    return out - hole + (M.cylinder(0.4, r + 0.2, r + 0.2, 48).rotate([90, 0, 0]).translate([0, t + 10.0, zc]) - hole)
+    out = out - hole + (M.cylinder(0.4, r + 0.2, r + 0.2, 48).rotate([90, 0, 0]).translate([0, t + 10.0, zc]) - hole)
+    # cut flat at the base: the collar dipped 0.1 mm below it, so the plate got only that sliver and the walls
+    # started in the air
+    return out ^ box([-100.0, -100.0, 0.0], [100.0, 100.0, 100.0])
 
 
 # ================================================================== railroad

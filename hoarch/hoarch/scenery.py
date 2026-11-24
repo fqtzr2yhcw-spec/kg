@@ -18,6 +18,7 @@ from .porchwork import _revolve
 from .storefront import text_cs
 
 ZG = 36.0                 # lamps: iron below, globe above
+LAMP_PAD = lambda: M.cylinder(0.4, 4.2, 4.2, 40)   # a round footing pad under each lamp: they stood 40 mm tall on 20 mm2
 ZC = 3.0                  # fence: stone curb below, iron above
 ZS = 1.2                  # signs: board below, letters above
 LETTER = 0.4              # raised letters, 2 layers
@@ -61,7 +62,7 @@ def lamp_acorn():
     """A park lamp with an acorn globe: an octagonal plinth, a bell base with eight raised ribs
     and a bead, a slim round shaft with two collars, a flared cup, and the acorn globe (with a
     knob) above ZG. About 42 mm tall."""
-    plinth = M.cylinder(0.8, 2.6, 2.6, 8).rotate([0, 0, 22.5])
+    plinth = M.cylinder(0.41, 2.6, 2.6, 8).rotate([0, 0, 22.5]).translate([0, 0, 0.39]) + LAMP_PAD()
     bell = [(0.0, 0.79), (2.05, 0.79), (2.05, 1.2), (1.8, 1.5), (1.45, 2.4), (1.2, 3.6), (1.05, 4.8), (1.05, 5.1),
             (1.35, 5.4), (1.35, 5.8), (0.95, 6.2)]
     base = _revolve(bell, 40) + _ribs(bell, 8, z0=1.5, z1=4.8)
@@ -80,7 +81,7 @@ def lamp_boulevard():
     beads, two arms rising at 50 degrees to cups, and an iron spire between them that stops
     below ZG. About 40 mm tall."""
     base = _revolve([(0.0, 0.0), (2.5, 0.0), (2.5, 0.7), (2.1, 0.7), (2.1, 1.3), (1.75, 1.3), (1.75, 2.0), (1.3, 2.4),
-                     (1.1, 3.4), (1.1, 3.8), (0.92, 4.1)], 40)
+                     (1.1, 3.4), (1.1, 3.8), (0.92, 4.1)], 40) + LAMP_PAD()
     zc = 29.6                                     # the collar the arms spring from
     shaft = _revolve([(0.0, 4.0), (0.92, 4.0), (0.78, zc), (1.25, zc + 0.4), (1.25, zc + 1.0), (0.6, zc + 1.6),
                       (0.45, ZG - 1.4), (0.0, ZG - 0.25)], 28)
@@ -105,7 +106,7 @@ def lamp_platform():
     """A square platform lamp: a chamfered plinth, a tapering square post with a sunk panel on
     each face, a moulded cap, a square-to-round holder and a large ball globe. About 41 mm."""
     plinth = M.hull_points([(x, y, z) for x in (-2.3, 2.3) for y in (-2.3, 2.3) for z in (0.0, 0.7)] +
-                           [(x, y, 1.15) for x in (-1.85, 1.85) for y in (-1.85, 1.85)])
+                           [(x, y, 1.15) for x in (-1.85, 1.85) for y in (-1.85, 1.85)]) + LAMP_PAD()
     post = M.hull_points([(x, y, 1.1) for x in (-1.15, 1.15) for y in (-1.15, 1.15)] +
                          [(x, y, 30.0) for x in (-0.82, 0.82) for y in (-0.82, 0.82)])
     panels = []
@@ -154,25 +155,28 @@ def _xz(cs, d):
     return ext(cs, -d / 2, d / 2).rotate([90, 0, 0])
 
 
-def fence_section(L=48.0, pitch=2.6):
+def fence_section(L=48.0, pitch=2.6, posts=(False, True)):
     """A straight run of wrought-iron fence on a stone curb, ``L`` long, printed upright: spear
     bars every ``pitch`` to 12.6 mm, short dog bars between them at the foot, two rails, and an
     arcade band under the top rail. Butts against a fence_post at each end; the rails run 0.3
-    past the curb to meet the post's iron."""
+    past the curb to meet the post's iron. ``posts`` (left, right): a fence_post built on at that end, one
+    piece with the run (a loose post stood on 6 mm2), the rails running into it."""
     curb = _curb(0.0, L)
     n = int((L - 1.2) / pitch)
     x0 = (L - n * pitch) / 2
     xs = [x0 + pitch * k for k in range(n + 1)]
     bars = [_spear(x, ZC - 0.01, 12.6) for x in xs]
     dogs = [_spear((a + b) / 2, ZC - 0.01, 6.2, b=0.7, d=0.7, tip=1.1) for a, b in zip(xs[:-1], xs[1:])]
-    rails = [box([-0.3, -0.45, 4.1], [L + 0.3, 0.45, 4.8]), box([-0.3, -0.45, 10.6], [L + 0.3, 0.45, 11.4])]
+    xa, xb = (-1.2 if posts[0] else -0.3), (L + 1.2 if posts[1] else L + 0.3)
+    rails = [box([xa, -0.45, 4.1], [xb, 0.45, 4.8]), box([xa, -0.45, 10.6], [xb, 0.45, 11.4])]
     band = rect(xs[0], 9.0, xs[-1], 10.61)
     holes = []
     for a, b in zip(xs[:-1], xs[1:]):
         r = (b - a - 0.8) / 2
         holes.append(cs_union([rect(a + 0.4, 8.9, b - 0.4, 9.6), _arch(a + 0.4, b - 0.4, 9.6, r)]))
-    arcade = _xz(band - cs_union(holes), 0.6)
-    return union([curb] + bars + dogs + rails + [arcade])
+    arcade = _xz(band - cs_union(holes), 0.8)                    # 0.8 mm, drawn solid
+    ends = [fence_post().translate([x, 0, 0]) for x, on in ((-1.2, posts[0]), (L + 1.2, posts[1])) if on]
+    return union([curb] + bars + dogs + rails + [arcade] + ends)
 
 
 def _arch(u0, u1, spring, r, seg=16):
@@ -218,11 +222,12 @@ def fence_gate(W=22.0, pitch=2.4):
     toprail = _xz(poly(arc + [(x, z + 0.8) for x, z in arc[::-1]]), 0.9)
     rails = [box([0.0, -0.45, 4.0], [W, 0.45, 4.8]), box([0.0, -0.45, 6.4], [W, 0.45, 7.0])]
     kick = box([0.0, -0.3, ZC - 0.01], [W, 0.3, 4.05])
+    gate_posts = [fence_post(True).translate([x, 0, 0]) for x in (-1.4, W + 1.4)]     # one piece with its posts
     cx, cz, R = W / 2, 9.0, 2.2
     lozenge = poly([(cx, cz - R), (cx + R, cz), (cx, cz + R), (cx - R, cz)])
     inner = poly([(cx, cz - R + 0.9), (cx + R - 0.9, cz), (cx, cz + R - 0.9), (cx - R + 0.9, cz)])
     medal = _xz(lozenge - inner, 0.8) + _xz(poly([(cx, cz - 0.5), (cx + 0.5, cz), (cx, cz + 0.5), (cx - 0.5, cz)]), 0.9)
-    return union([sill] + bars + stiles + [toprail] + rails + [kick, medal])
+    return union([sill] + bars + stiles + [toprail] + rails + [kick, medal] + gate_posts)
 
 
 # ================================================================== signs
