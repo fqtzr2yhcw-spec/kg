@@ -9,20 +9,20 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Wind Tower Section Load | $27.99 | $19.00 | $20.43 | 1 h 57 m | 58 g | 1 |
 | Wind Turbine Nacelle and Hub Loads | $29.99 | $22.15 | $23.56 | 2 h 5 m | 66 g | 1 |
 | Power Transformer Load | $22.99 | $16.79 | $17.91 | 1 h 5 m | 33 g | 2 |
-| Coated Line Pipe Load | $14.99 | $9.78 | $10.57 | 58 m | 38 g | 2 |
-| Tarped Flatcar Loads | $14.99 | $9.71 | $10.50 | 1 h 19 m | 41 g | 2 |
-| Steel Mill Loads | $15.99 | $10.72 | $11.55 | 59 m | 34 g | 2 |
+| Coated Line Pipe Load | $14.99 | $9.76 | $10.55 | 1 h 0 m | 39 g | 2 |
+| Tarped Flatcar Loads | $14.99 | $9.71 | $10.50 | 1 h 20 m | 41 g | 2 |
+| Steel Mill Loads | $15.99 | $10.58 | $11.41 | 1 h 4 m | 41 g | 2 |
 | Pressure Vessel Load | $21.99 | $15.78 | $16.86 | 1 h 10 m | 40 g | 1 |
 | Ship Propeller Load | $16.99 | $12.18 | $13.05 | 11 m | 5 g | 2 |
-| Utility Pole Load | $17.99 | $12.03 | $12.99 | 57 m | 35 g | 2 |
+| Utility Pole Load | $17.99 | $12.00 | $12.96 | 1 h 0 m | 37 g | 2 |
 | Concrete Bridge Girder Load | $18.99 | $11.73 | $12.78 | 44 m | 34 g | 2 |
 | Lumber Load | $19.99 | $13.35 | $14.35 | 2 h 18 m | 74 g | 2 |
 | Wrapped Lumber Load | $19.99 | $13.36 | $14.35 | 2 h 7 m | 74 g | 2 |
 | Mining Truck Tire Load | $21.99 | $15.22 | $16.30 | 2 h 14 m | 54 g | 2 |
 | Sawlog Load | $15.99 | $10.62 | $11.45 | 1 h 18 m | 39 g | 3 |
 | Track Panel Load | $21.99 | $15.44 | $16.56 | 1 h 3 m | 38 g | 1 |
-| Concrete Crosstie Load | $21.99 | $14.71 | $15.83 | 2 h 12 m | 73 g | 2 |
-| Wood Crosstie Bundle Load | $19.99 | $13.08 | $14.12 | 2 h 13 m | 68 g | 2 |
+| Concrete Crosstie Load | $21.99 | $14.71 | $15.83 | 2 h 11 m | 73 g | 2 |
+| Wood Crosstie Bundle Load | $19.99 | $13.04 | $14.07 | 2 h 17 m | 70 g | 2 |
 | Granite Block Load | $16.99 | $11.86 | $12.73 | 36 m | 21 g | 3 |
 | Brick Cube Load | $17.99 | $12.22 | $13.14 | 2 h 24 m | 44 g | 2 |
 | Ingot Mold Load | $15.99 | $11.14 | $11.98 | 43 m | 13 g | 2 |
@@ -37,8 +37,8 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Jersey Barrier Load | $14.99 | $10.50 | $11.25 | 32 m | 21 g | 2 |
 | Precast Manhole Load | $15.99 | $11.14 | $11.97 | 25 m | 13 g | 2 |
 | Precast Double Tee Load | $17.99 | $12.08 | $13.03 | 39 m | 34 g | 2 |
-| Rebar Bundle Load | $14.99 | $9.89 | $10.68 | 45 m | 33 g | 2 |
-| Steel Sheet Piling Load | $15.99 | $10.47 | $11.30 | 1 h 1 m | 46 g | 2 |
+| Rebar Bundle Load | $14.99 | $9.85 | $10.64 | 50 m | 35 g | 2 |
+| Steel Sheet Piling Load | $15.99 | $10.43 | $11.26 | 1 h 5 m | 48 g | 2 |
 | Crushed Car Scrap Load | $16.99 | $11.90 | $12.77 | 37 m | 19 g | 2 |
 | Giant Log Load | $18.99 | $13.33 | $14.28 | 1 h 1 m | 33 g | 3 |
 | Pulpwood Load | $16.99 | $11.36 | $12.23 | 2 h 2 m | 44 g | 2 |
@@ -78,20 +78,20 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Wind Tower Section Load | 58 g, $1.15 | 1 h 57 m | 2 | $3.69 | Tower section 245 x 46 x 46 mm; Frame big end 50 x 47 x 5 mm; Frame small end 48 x 42 x 5 mm |
 | Wind Turbine Nacelle and Hub Loads | 66 g, $1.32 | 2 h 5 m | 1 | $2.61 | Nacelle 110 x 46 x 39 mm; Rotor hub 42 x 38 x 38 mm |
 | Power Transformer Load | 33 g, $0.65 | 1 h 5 m | 1 | $1.93 | Transformer x2 83 x 40 x 34 mm |
-| Coated Line Pipe Load | 38 g, $0.76 | 58 m | 1 | $2.03 | Pipe load x2 141 x 34 x 21 mm |
-| Tarped Flatcar Loads | 41 g, $0.81 | 1 h 19 m | 3 | $2.09 | Tarp machine x2 57 x 29 x 23 mm; Tarp tall x2 33 x 29 x 29 mm; Tarp long x2 131 x 27 x 14 mm |
-| Steel Mill Loads | 34 g, $0.68 | 59 m | 3 | $1.95 | Steel coil x6 23 x 23 x 19 mm; Plate bundle x2 70 x 30 x 6 mm; Beam bundle x2 140 x 17 x 14 mm |
+| Coated Line Pipe Load | 39 g, $0.78 | 1 h 0 m | 1 | $2.05 | Pipe load x2 141 x 34 x 21 mm |
+| Tarped Flatcar Loads | 41 g, $0.81 | 1 h 20 m | 3 | $2.09 | Tarp machine x2 57 x 29 x 23 mm; Tarp tall x2 33 x 29 x 29 mm; Tarp long x2 131 x 27 x 14 mm |
+| Steel Mill Loads | 41 g, $0.82 | 1 h 4 m | 3 | $2.09 | Steel coil x6 23 x 23 x 19 mm; Plate bundle x2 70 x 30 x 6 mm; Beam bundle x2 140 x 17 x 14 mm |
 | Pressure Vessel Load | 40 g, $0.80 | 1 h 10 m | 1 | $2.07 | Pressure vessel 132 x 45 x 27 mm |
 | Ship Propeller Load | 5 g, $0.10 | 11 m | 1 | $1.35 | Propeller x2 40 x 40 x 12 mm |
-| Utility Pole Load | 35 g, $0.71 | 57 m | 1 | $2.23 | Pole pile x2 159 x 27 x 12 mm |
+| Utility Pole Load | 37 g, $0.74 | 1 h 0 m | 1 | $2.26 | Pole pile x2 159 x 27 x 12 mm |
 | Concrete Bridge Girder Load | 34 g, $0.68 | 44 m | 2 | $3.19 | Girder x4 247 x 18 x 8 mm; Girder bolster x4 32 x 6 x 4 mm |
 | Lumber Load | 74 g, $1.48 | 2 h 18 m | 1 | $2.77 | Bundle 2x4 x10 57 x 14 x 10 mm; Bundle 2x6 x10 57 x 14 x 10 mm; Bundle 2x10 x8 57 x 14 x 10 mm; Bundle 2x12 x8 57 x 14 x 10 mm |
 | Wrapped Lumber Load | 74 g, $1.47 | 2 h 7 m | 1 | $2.76 | Wrapped bundle x36 57 x 14 x 10 mm |
 | Mining Truck Tire Load | 54 g, $1.09 | 2 h 14 m | 1 | $2.63 | Mining tire x12 45 x 45 x 16 mm |
 | Sawlog Load | 39 g, $0.77 | 1 h 18 m | 1 | $2.05 | Log pile A x3 58 x 37 x 29 mm; Log pile B x3 58 x 37 x 29 mm |
 | Track Panel Load | 38 g, $0.75 | 1 h 3 m | 1 | $2.27 | Track panel x6 136 x 31 x 4 mm |
-| Concrete Crosstie Load | 73 g, $1.46 | 2 h 12 m | 3 | $3.00 | Tie layer x30 54 x 30 x 4 mm; Tie dunnage x12 53 x 1 x 1 mm |
-| Wood Crosstie Bundle Load | 68 g, $1.36 | 2 h 13 m | 1 | $2.91 | Tie bundle row x6 56 x 31 x 12 mm; Tie bundle row B x6 56 x 31 x 12 mm |
+| Concrete Crosstie Load | 73 g, $1.46 | 2 h 11 m | 3 | $3.00 | Tie layer x30 54 x 30 x 4 mm; Tie dunnage x12 53 x 1 x 1 mm |
+| Wood Crosstie Bundle Load | 70 g, $1.40 | 2 h 17 m | 1 | $2.95 | Tie bundle row x6 56 x 31 x 12 mm; Tie bundle row B x6 56 x 31 x 12 mm |
 | Granite Block Load | 21 g, $0.41 | 36 m | 2 | $1.68 | Granite block B 17 x3 35 x 20 x 19 mm; Granite block B 21 x3 32 x 20 x 17 mm; Granite block C 4 x3 28 x 21 x 19 mm; Granite block A 30 x3 39 x 19 x 18 mm |
 | Brick Cube Load | 44 g, $0.87 | 2 h 24 m | 3 | $2.17 | Brick cube red x24 14 x 12 x 10 mm; Brick cube buff x24 14 x 12 x 10 mm; Brick cube brown x24 14 x 12 x 10 mm |
 | Ingot Mold Load | 13 g, $0.26 | 43 m | 1 | $1.52 | Ingot mold x8 30 x 18 x 11 mm |
@@ -106,8 +106,8 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Jersey Barrier Load | 21 g, $0.42 | 32 m | 1 | $1.43 | Jersey barrier x24 43 x 9 x 7 mm |
 | Precast Manhole Load | 13 g, $0.27 | 25 m | 1 | $1.53 | Manhole base x4 19 x 19 x 16 mm; Manhole riser 4ft x2 19 x 19 x 16 mm; Manhole riser 3ft x4 19 x 19 x 12 mm; Manhole riser 2ft x2 19 x 19 x 9 mm; Manhole cone x4 19 x 19 x 16 mm |
 | Precast Double Tee Load | 34 g, $0.67 | 39 m | 1 | $2.18 | Double tee x6 140 x 28 x 9 mm |
-| Rebar Bundle Load | 33 g, $0.65 | 45 m | 1 | $1.92 | Rebar lift x2 143 x 32 x 4 mm; Rebar lift B x2 142 x 32 x 4 mm |
-| Steel Sheet Piling Load | 46 g, $0.93 | 1 h 1 m | 1 | $2.20 | Sheet pile tier x2 140 x 35 x 9 mm; Sheet pile tier B x2 141 x 35 x 9 mm |
+| Rebar Bundle Load | 35 g, $0.69 | 50 m | 1 | $1.96 | Rebar lift x2 143 x 32 x 4 mm; Rebar lift B x2 142 x 32 x 4 mm |
+| Steel Sheet Piling Load | 48 g, $0.97 | 1 h 5 m | 1 | $2.24 | Sheet pile tier x2 140 x 35 x 9 mm; Sheet pile tier B x2 141 x 35 x 9 mm |
 | Crushed Car Scrap Load | 19 g, $0.37 | 37 m | 3 | $1.64 | Crushed stack red grey x2 58 x 22 x 10 mm; Crushed stack blue rust x2 57 x 21 x 10 mm; Crushed stack green black x2 57 x 22 x 10 mm |
 | Giant Log Load | 33 g, $0.66 | 1 h 1 m | 1 | $1.93 | Giant log x3 117 x 32 x 32 mm |
 | Pulpwood Load | 44 g, $0.88 | 2 h 2 m | 1 | $2.17 | Pulpwood section x4 41 x 30 x 29 mm; Pulpwood section B x2 41 x 30 x 29 mm |
@@ -506,7 +506,7 @@ Not a toy: small parts, for ages 14+.
 ```
 UTILITY POLE LOAD - HO SCALE (1:87) FLATCAR LOAD
 
-Twenty-six treated wood utility poles, 45 ft, for a 50 ft flatcar: piled eight, seven, six and five on six bunks with stakes, butts at alternate ends, each pole tapered from a 12 in butt to a 7 in top with its roof cut and a brand plate near the butt, wire-rope wrappers over the end bunks.
+Twenty-six treated wood utility poles, 45 ft, for a 50 ft flatcar: piled eight, seven, six and five on eight bunks with stakes, butts at alternate ends, each pole tapered from a 12 in butt to a 7 in top with its roof cut and a brand plate near the butt, wire-rope wrappers over the end bunks.
 
 What's in the pack:
   - 1 x Pole pile
