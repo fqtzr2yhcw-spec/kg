@@ -711,3 +711,19 @@ reads. What they added to the rules:
   on the plate, and its ends lifted off the plate as it cooled, brim or not (the owner's photos,
   November 2026). One layer of six beams on four full-width timbers: 10 mm tall, 24 mm wide,
   1,165 mm2 on the plate. Stiff, long stacks (beams, plate) pull hardest.
+- No weak connections, anywhere (the owner, November 2026: "fix everything that has weak connection").
+  `python3 tools/strength_audit.py [pack]` checks every piece in its print orientation and flags:
+  taller than its base is wide (over 1.2) with under half its shadow on the plate; under 40 mm2 on
+  the plate for a slender piece (or one touching with under 70 % of its base); a neck under 15 % of
+  the layer above it in the bottom 4 mm (the join to the base, dunnage or stand); floating regions.
+  What fixed the first audit (46 pieces flagged, none now):
+  - posts are built onto their fence runs or railings, and gate posts onto the gate, so no post
+    stands alone on 6 to 9 mm2 (as the porch posts are one piece with the porch top);
+  - slender uprights stand on a thin footing (0.4 mm): lamps, headstones, obelisks, a root mound
+    under the dead trees, a board under the Christmas tree stands;
+  - a tree's lowest boughs come down to its stand at 45 degrees, not on a bare trunk;
+  - a fence with no colour change prints lying on its face;
+  - racks stand on sill frames and solid piers, not four thin posts;
+  - dunnage 2.4 mm wide or more, spaced under about 25 mm; webs and flanges 0.8 mm or more;
+  - nothing below the base plane (the culvert headwall's collar dipped 0.1 mm under it, so the plate
+    got only that sliver).

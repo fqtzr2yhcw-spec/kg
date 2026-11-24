@@ -101,6 +101,13 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
   is fine. The Camellia's pierced 0.8 mm ring brackets printed as strings.
 - Flatcar loads: no whole vehicles (tanks, military trucks, excavators, dozers, crawler tractors);
   they don't look good. Parts loads are good (buckets, engines, cylinders, wheelsets and so on).
+- No weak connections in any model (November 2026). The pony truss's floor-beam bundle, two layers
+  high on three small timbers, lifted off the plate even with a brim:
+  - keep pieces lower than they are wide, on full-width timbers;
+  - no post or slender piece standing alone on a tiny base;
+  - no thin join at the dunnage or stand;
+  - no floating regions (Bambu Studio's warning).
+  Check with `tools/strength_audit.py` and `tools/floatcheck.py` before every release.
 - Zips are versioned (`<Name>_Print_Files_v1.1.zip`). Every update adds a line to
   `hoarch/hoarch/versions.py` and bumps the version.
 
