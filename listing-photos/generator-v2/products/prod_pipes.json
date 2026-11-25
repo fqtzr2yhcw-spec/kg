@@ -1,0 +1,23 @@
+{
+ "photo": "pipes.png",
+ "mask": "pipes_mask.png",
+ "shadow": "pipes_shadow.png",
+ "fit": "pipes_fit.json",
+ "rcfg": "rcfg_pipes.json",
+ "shadow_k": 0.75,
+ "contrast": 1.04,
+ "dof": {
+  "focus": [
+   4,
+   1,
+   0
+  ],
+  "pt": [
+   15.5,
+   0,
+   0
+  ],
+  "px": 3.0,
+  "max": 7
+ }
+}

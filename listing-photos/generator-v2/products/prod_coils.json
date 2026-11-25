@@ -1,0 +1,23 @@
+{
+ "photo": "coils.png",
+ "mask": "coils_mask.png",
+ "shadow": "coils_shadow.png",
+ "fit": "coils_fit.json",
+ "rcfg": "rcfg_coils.json",
+ "shadow_k": 0.7,
+ "contrast": 1.05,
+ "dof": {
+  "focus": [
+   0,
+   0.42034152100617517,
+   0.3
+  ],
+  "pt": [
+   0,
+   0,
+   -2.0
+  ],
+  "px": 1.5,
+  "max": 4
+ }
+}
