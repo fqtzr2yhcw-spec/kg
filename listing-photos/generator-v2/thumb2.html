@@ -1,0 +1,83 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts/local.css">
+<style>
+  :root{ --ink:#1c2024; --ink2:#3b4148; --orange:#e4570f; --orange2:#c2440a; --steel:#2b3138; --paper:#f6f4f0; --W:2000px; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:var(--W);height:2000px;overflow:hidden;background:var(--paper)}
+  .stage{position:relative;width:var(--W);height:2000px;overflow:hidden;
+    background:radial-gradient(ellipse 1450px 1050px at 52% 58%, #fbfaf7 0%, #efece6 55%, #dcd7cf 100%);}
+  .hero{position:absolute;left:0;top:0;width:100%;height:100%;transform:translateY(var(--hy,0px))}
+  .clean .txt{display:none !important}
+  .safe{position:absolute;top:0;left:calc((var(--W) - 2000px)/2);width:2000px;height:2000px}
+
+  .head{position:absolute;left:84px;top:62px;width:1430px}
+  .kicker{font-family:'Oswald';font-weight:600;font-size:62px;letter-spacing:6px;color:var(--orange);line-height:1;white-space:nowrap}
+  .kicker .dot{color:var(--ink2);padding:0 12px}
+  .title{font-family:'Anton';font-size:184px;line-height:1.02;color:var(--ink);letter-spacing:1px;margin-top:10px;white-space:nowrap;display:inline-block}
+  .sub{font-family:'Barlow Condensed';font-weight:700;font-size:66px;color:var(--ink);letter-spacing:1px;margin-top:4px;white-space:nowrap}
+
+  .sticker{position:absolute;right:58px;top:58px;width:380px;height:380px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #f4782f 0%, var(--orange) 45%, var(--orange2) 100%);
+    box-shadow:0 18px 40px rgba(60,25,5,.35), inset 0 0 0 12px rgba(255,255,255,.92), inset 0 0 0 20px var(--orange2);
+    transform:rotate(9deg);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center}
+  .sticker .s1{font-family:'Oswald';font-weight:700;font-size:58px;letter-spacing:5px;line-height:1;margin-top:4px}
+  .sticker .s2{font-family:'Anton';font-size:176px;line-height:.98;text-shadow:0 5px 0 rgba(0,0,0,.18)}
+  .sticker .s3{font-family:'Oswald';font-weight:700;font-size:54px;letter-spacing:4px;line-height:1;margin-top:-4px}
+  .sticker.flagst .s2{font-size:150px}
+
+  .pill{display:flex;align-items:center;gap:20px;background:rgba(255,255,255,.88);border:3px solid rgba(28,32,36,.10);
+    border-radius:18px;padding:16px 30px 16px 20px;box-shadow:0 8px 22px rgba(30,30,30,.12)}
+  .pill .ico{width:74px;height:74px;border-radius:50%;background:var(--steel);display:flex;align-items:center;justify-content:center;flex:none}
+  .pill .lbl{font-family:'Oswald';font-weight:600;font-size:56px;letter-spacing:2px;color:var(--ink);line-height:1;white-space:nowrap}
+  .pill .flag{width:124px;height:66px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.25);flex:none}
+
+  /* layout: row (features along the bottom) */
+  .row .feats{position:absolute;left:0;right:0;bottom:var(--fb,168px);display:flex;justify-content:center;gap:30px}
+  /* layout: col (features in a column on one side) */
+  .col .feats{position:absolute;top:var(--ft,520px);display:flex;flex-direction:column;gap:26px}
+  .col.right .feats{right:70px;align-items:flex-end}
+  .col.left .feats{left:78px;align-items:flex-start}
+
+  .band{position:absolute;left:0;right:0;bottom:0;height:128px;background:var(--steel);display:flex;align-items:center;justify-content:center;gap:28px;border-top:8px solid var(--orange)}
+  .band .t{font-family:'Barlow Condensed';font-weight:700;font-size:56px;letter-spacing:3px;color:#fff;white-space:nowrap}
+  .band .t em{font-style:normal;color:#ffb68a}
+  .band .sep{width:12px;height:12px;border-radius:50%;background:var(--orange)}
+</style></head>
+<body>
+<div class="stage" id="stage">
+  <img class="hero" id="hero">
+  <div class="safe" id="safe">
+    <div class="txt head"><div class="kicker" id="kicker"></div><div class="title" id="title"></div><div class="sub" id="sub"></div></div>
+    <div class="txt sticker" id="sticker"></div>
+    <div class="txt feats" id="feats"></div>
+  </div>
+  <div class="txt band"><span class="t">LOADS ONLY</span><span class="sep"></span><span class="t"><em>FLAT CAR &amp; TRACK NOT INCLUDED</em></span></div>
+</div>
+<script>
+const FLAG = `<svg class="flag" viewBox="0 0 190 100" preserveAspectRatio="none"><rect width="190" height="100" fill="#fff"/><g fill="#b22234">${[0,1,2,3,4,5,6].map(i=>`<rect y="${i*15.385}" width="190" height="7.69"/>`).join('')}</g><rect width="76" height="53.85" fill="#3c3b6e"/><g fill="#fff">${(()=>{let s='';for(let r=0;r<9;r++){const n=r%2?5:6;for(let c=0;c<n;c++){const x=(r%2?12.7+c*12.7:6.33+c*12.7),y=5.4+r*5.4;s+=`<circle cx="${x}" cy="${y}" r="1.9"/>`}}return s})()}</g></svg>`;
+const CHECK = `<div class="ico"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>`;
+const q = new URLSearchParams(location.search);
+const t = JSON.parse(q.get('t'));
+const root = document.documentElement, stage = document.getElementById('stage');
+if (q.get('W')) root.style.setProperty('--W', q.get('W') + 'px');
+if (q.get('clean')) stage.classList.add('clean');
+document.getElementById('hero').src = q.get('hero');
+if (t.hy) stage.style.setProperty('--hy', t.hy + 'px');
+document.getElementById('kicker').innerHTML = t.kicker.replace(/•/g, '<span class="dot">•</span>');
+document.getElementById('title').textContent = t.title;
+document.getElementById('sub').textContent = t.sub;
+const st = document.getElementById('sticker');
+if (t.sticker) { st.innerHTML = t.sticker.map((s, i) => `<div class="s${i + 1}">${s}</div>`).join(''); } else st.remove();
+const safe = document.getElementById('safe');
+safe.classList.add(...(t.layout || 'row').split(' '));
+if (t.fb) safe.style.setProperty('--fb', t.fb + 'px');
+if (t.ft) safe.style.setProperty('--ft', t.ft + 'px');
+document.getElementById('feats').innerHTML = t.pills.map(p => `<div class="pill">${p.flag ? FLAG : CHECK}<div class="lbl">${p.text}</div></div>`).join('');
+document.fonts.ready.then(() => {
+  const ti = document.getElementById('title'); let fs = 184;
+  while (ti.getBoundingClientRect().width > (t.titleMax || 1430) && fs > 100) { fs -= 4; ti.style.fontSize = fs + 'px'; }
+  window.__ready = true;
+});
+</script>
+</body></html>

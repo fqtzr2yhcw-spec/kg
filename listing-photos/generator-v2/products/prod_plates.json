@@ -1,0 +1,24 @@
+{
+ "photo": "plates.png",
+ "mask": "plates_mask.png",
+ "shadow": "plates_shadow.png",
+ "fit": "plates_fit.json",
+ "rcfg": "rcfg_plates.json",
+ "shadow_k": 0.6,
+ "contrast": 1.08,
+ "lift": 0.02,
+ "dof": {
+  "focus": [
+   1.5069519602864203,
+   0.17401180629642654,
+   0
+  ],
+  "pt": [
+   5.805577029389773,
+   0,
+   -0.5
+  ],
+  "px": 3.0,
+  "max": 7
+ }
+}

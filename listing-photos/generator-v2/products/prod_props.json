@@ -1,0 +1,10 @@
+{
+ "photo": "props.png",
+ "mask": "props_mask.png",
+ "shadow": "props_shadow.png",
+ "fit": "props_fit.json",
+ "rcfg": "rcfg_props.json",
+ "shadow_k": 0.7,
+ "contrast": 1.05,
+ "feather": 0.6
+}
