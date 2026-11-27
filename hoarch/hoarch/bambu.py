@@ -38,6 +38,7 @@ from . import versions as V
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 PROFILES = os.path.join(ROOT, "bambu", "p2s_profiles.json")
+PROFILES_02 = os.path.join(ROOT, "bambu", "p2s_profiles_0.2.json")   # the fine-nozzle loads (loadnames.NOZZLE)
 LIBRARY = os.path.join(ROOT, "bambu", "filament_library.json")
 CATALOGUE = os.path.join(ROOT, "bambu", "bambu_pla_colours.json")   # Bambu's plain-finish PLA colours
 OUT = os.path.join(ROOT, "out")
@@ -292,7 +293,7 @@ def project_config(slots, nplates, P):
         cfg[k] = vals
     n = len(slots)
     cfg["filament_colour"] = [s["hex"] for s in slots]
-    cfg["filament_settings_id"] = [s["preset"] for s in slots]
+    cfg["filament_settings_id"] = [P.get("preset_names", {}).get(s["preset"], s["preset"]) for s in slots]
     cfg["filament_ids"] = [P["filament_ids"][s["preset"]] for s in slots]
     cfg["filament_self_index"] = [str(i + 1) for i, f in enumerate(presets)
                                   for _ in f["filament_extruder_variant"]]
@@ -388,8 +389,22 @@ def _esc(s):
     return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;"))
 
 
-def write_project(key, path=None, verbose=True):
+def profiles(key):
+    """The P2S presets a project is written with: the 0.2 mm nozzle's for the loads made for it
+    (loadnames.NOZZLE), the 0.4's otherwise. The 0.2 snapshot is from a newer Bambu Studio; the
+    project keeps the 0.4 snapshot's version so the owner's Bambu Studio opens it without a warning."""
+    from .loadnames import NOZZLE
     P = json.load(open(PROFILES))
+    if NOZZLE.get(key) == 0.2:
+        ver = P["bambu_studio_version"]
+        P = json.load(open(PROFILES_02))
+        P["bambu_studio_version"] = ver
+    return P
+
+
+def write_project(key, path=None, verbose=True):
+    P = profiles(key)
+    layer = float(P["process"]["layer_height"])
     man, plates = _plan(key)
     spools = library()
     chosen = match(plates, spools)
@@ -487,7 +502,7 @@ def write_project(key, path=None, verbose=True):
             pname += f' + {s1["name"]} above {z:.1f} mm'
         if whole:
             gcodes.append(f'<plate>\n<plate_info id="{i + 1}"/>\n' + "".join(
-                f'<layer top_z="{z + LAYER:.2f}" type="2" extruder="{sid(h)}" color="{chosen[h]["spool"]["hex"]}" '
+                f'<layer top_z="{z + layer:.2f}" type="2" extruder="{sid(h)}" color="{chosen[h]["spool"]["hex"]}" '
                 'extra="" gcode="tool_change"/>\n' for z, h, _ in bands[1:]) + '<mode value="MultiAsSingle"/>\n</plate>')
         thumb = f"Metadata/plate_{i + 1}.png"
         if os.path.exists(p["preview"]):

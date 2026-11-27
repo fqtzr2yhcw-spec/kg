@@ -25,6 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(ROOT, "out")
 INI = os.path.join(ROOT, "slicer", "bambu_like.ini")
+INI_02 = os.path.join(ROOT, "slicer", "bambu_like_0.2.ini")      # the loads made for the 0.2 mm nozzle
 
 # the owner's spools (bambu/filament_library.json): name -> hex
 SPOOL = {"Caramel": "#AE835B", "Latte Brown": "#D3B7A7", "Bone White": "#E6DFCB", "Cobalt Blue": "#0056B8",
@@ -503,14 +504,23 @@ def readme(key, man):
               "COLOURS (the spools in the Bambu project)", ""]
     for n, h in cols.items():
         lines.append(f"  {n.replace('_', ' ')}  {h}")
-    lines += ["", "PRINTING", "",
-              "  0.20 mm layers, no supports. Two-colour plates change filament once, at the height above; the Bambu",
-              "  project does it on its own. Single-colour plates print on any printer, the P1S included.",
-              "  Tall, slim pieces (poles, lamps) stand better with a brim.", ""]
+    from .loadnames import NOZZLE
+    if NOZZLE.get(key) == 0.2:
+        lines += ["", "PRINTING", "",
+                  "  Made for the 0.2 mm NOZZLE at 0.10 mm layers: the detail goes down to 0.4 mm, finer than a 0.4 nozzle",
+                  "  draws. Fit the 0.2 nozzle and pick it in Bambu Studio (the project is set for it). No supports. Two-colour",
+                  "  plates change filament once, at the height above; the Bambu project does it on its own.", ""]
+    else:
+        lines += ["", "PRINTING", "",
+                  "  0.20 mm layers, no supports. Two-colour plates change filament once, at the height above; the Bambu",
+                  "  project does it on its own. Single-colour plates print on any printer, the P1S included.",
+                  "  Tall, slim pieces (poles, lamps) stand better with a brim.", ""]
     if pk.get("kind") == "flatcar load":
         lines += ["  The project is set for the Textured PEI plate. On a smooth (cool) plate, pick that plate in Bambu Studio",
                   "  so the bed runs at its temperature, wash a new plate with dish soap first, and use a glue stick for the",
-                  "  long loads. Each load stands on a 0.6 mm sheet that fills its footprint, so its ends stay down.", ""]
+                  "  long loads. " + pk.get("base_note", "Each load stands on a 0.6 mm sheet that fills its footprint, so its ends stay down."), ""]
+    if pk.get("assembly"):
+        lines += ["ASSEMBLY", ""] + [f"  {i}. {t}" for i, t in enumerate(pk["assembly"], start=1)] + [""]
     return "\n".join(lines)
 
 
@@ -537,9 +547,11 @@ def export(key):
     kitdir = os.path.join(out, "kit")
     if os.path.isdir(kitdir):
         shutil.rmtree(kitdir)
+    from .loadnames import NOZZLE, LAYER
+    lay = LAYER.get(key, 0.2)
     kit = build(key)
-    man = kit.export(kitdir, layer=0.2)
-    man = slice_check(kitdir, INI, layer=0.2, manifest=man)
+    man = kit.export(kitdir, layer=lay)
+    man = slice_check(kitdir, INI_02 if NOZZLE.get(key) == 0.2 else INI, layer=lay, manifest=man)
     stem = PACKS[key]["zipname"] + "_Print_Files"
     top = PACKS[key]["zipname"]
     zpath = os.path.join(OUT, stem + ".zip")

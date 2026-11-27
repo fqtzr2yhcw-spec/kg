@@ -40,12 +40,13 @@ def rows(xr, yr, zr):
     return out
 
 
-def unmid(m, layer=0.2, tol=0.012, shift=0.06):
+def unmid(m, layer=0.2, tol=0.012, shift=None):
     """Nudge every vertex lying on a slicing plane (a layer centre, 0.1 + 0.2 k above the bed
     at 0.2 mm layers) ``shift`` up, so no flat face sits exactly where the slicer cuts (which
     gives zero-thickness slivers and "negative spacing" failures). ``m`` is in print pose with
     its bottom at z = 0. Ornament on upright parts (cornice friezes and courses) meets the
     grid wherever its curves happen to fall; this settles all of it at export."""
+    shift = 0.3 * layer if shift is None else shift      # 0.06 mm at 0.2 mm layers, 0.03 at 0.1
     mesh = m.to_mesh()
     v = np.asarray(mesh.vert_properties, dtype=np.float64).copy()
     ph = (v[:, 2] - layer / 2) / layer
@@ -90,12 +91,12 @@ class Part:
         self.render = render          # [(colour, solid)] colour zones of a one-piece part, for renders
         self.change = change          # (height in print pose, colour): one filament change, or None
 
-    def printed(self):
+    def printed(self, layer=0.2):
         s = self.solid.transform(self.P)
         b = s.bounding_box()
         s = s.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -b[2]])
         # (a two-colour part keeps its pose: its change height is measured from its bottom)
-        return unmid(s if self.change else ground(s))
+        return unmid(s if self.change else ground(s), layer=layer)
 
 
 class Kit:
@@ -238,10 +239,10 @@ class Kit:
         np.savez_compressed(path, **data)
 
     # -------------------------------------------------------------- export
-    def unique(self):
+    def unique(self, layer=0.2):
         groups = OrderedDict()
         for p in self.parts:
-            pm = p.printed()
+            pm = p.printed(layer)
             b = np.array(pm.bounding_box())
             sig = (p.key, round(pm.volume(), 1), tuple(np.round(b[3:] - b[:3], 1)), p.change)
             groups.setdefault(sig, []).append((p, pm))
@@ -257,7 +258,7 @@ class Kit:
     def export(self, outdir, layer=0.12):
         for sub in ("plates", "parts", "previews"):
             os.makedirs(os.path.join(outdir, sub), exist_ok=True)
-        uniq = self.unique()
+        uniq = self.unique(layer)
         man = {"name": self.name, "scale": "HO 1:87.1", "bed_mm": BED, "parts": [], "plates": []}
         fname_of = {}
         for fname, members in uniq:

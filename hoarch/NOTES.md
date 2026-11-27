@@ -727,3 +727,35 @@ reads. What they added to the rules:
   - dunnage 2.4 mm wide or more, spaced under about 25 mm; webs and flanges 0.8 mm or more;
   - nothing below the base plane (the culvert headwall's collar dipped 0.1 mm under it, so the plate
     got only that sliver).
+
+## Fine-nozzle loads: the locomotive engine (`locoengine.py`, November 2026)
+The owner asked for a "very detailed, very realistic" locomotive engine load and accepted a finer
+print for it. It is made for the **0.2 mm nozzle at 0.10 mm layers**: detail down to 0.4 mm
+(two 0.22 mm lines), bolt heads 0.4 mm across, pipes 1.4 mm and up.
+- Register such a load in `loadnames.NOZZLE` and `loadnames.LAYER`. Then `packs.export` slices it
+  with `slicer/bambu_like_0.2.ini` and exports at its layer (`kit.unmid` nudges faces off the
+  0.05 + 0.1 k slicing planes, 0.03 mm), `bambu.write_project` uses `bambu/p2s_profiles_0.2.json`
+  (Bambu Studio's "Bambu Lab P2S 0.2 nozzle", "0.10mm Standard @BBL P2S 0.2 nozzle" and each
+  filament's "0.2 nozzle" preset; `python3 bambu/snapshot.py <BambuStudio checkout> 0.2`; PLA Wood
+  has no 0.2 preset and falls back to Generic PLA), and the audits use its layer and a 0.4 mm thin
+  limit. Colour changes still sit on the 0.2 grid (the kit asserts it), so they suit both.
+- Prototype: the 16-cylinder two-stroke of the 3,000 hp 1970s road diesels and its main generator, on
+  a steel skid over timber blocking. Generic, no maker's name. Four pieces, four colours: skid
+  (Cocoa Brown, Black above the timbers), engine (Gray), turbocharger (Iron Gray Metallic), generator
+  (Black). They peg together: four pegs on the skid beams into the engine's mounting flange, a
+  teardrop spigot on the flywheel housing into the generator's flange, two pegs on the turbo platform.
+- What makes it read: the repetition done right (16 crankcase doors with dog bars, 16 air box
+  covers, 16 top-deck covers with raised panels, hinges and pulls, 16 exhaust elbows, a collar at
+  every cylinder on both water manifolds), the exhaust manifold standing proud down the V in
+  flanged sections with heat-shield plates, and a busy accessory end (pumps with bolt rings and
+  risers, lube pump, governor, strainer) under the turbo on its 45 degree support.
+- Print poses: engine upright on its full-length mounting flange (no oil pan hanging below the
+  mounting face: anything under the beams' line would be a cantilever); generator standing on its
+  engine flange (every round part a circle in the layer; feet run the full length from the flange,
+  and every boss on its side has a 45 degree engine-side face); turbo upright on a pedestal with
+  45 degree keels under its housings; skid flat. Horizontal pipes are teardrops, and a pipe on a
+  ledge is filled to the wall (a pocket under it sealed into a void).
+- Things that went wrong on the way: the turbo's ducts to the aftercoolers floated when the turbo
+  printed alone (they are now saddles on the engine, cut to the compressor's shape); timber grain
+  grooves under the cross members sealed into voids; the closed-up bed sheet left scalloped edges
+  between the timbers (two straight runners under the beams instead).

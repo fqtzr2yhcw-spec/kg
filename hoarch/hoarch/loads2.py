@@ -3,6 +3,7 @@ schema of hoarch.packs.PACKS, which merges them in. ``extra`` holds what the loa
 (tools/loads_listings.py) needs beyond the pack: eBay title, the car it suits, era, colours,
 shipping and packing costs, Etsy tags."""
 from . import flatloads2 as G
+from . import locoengine as E
 from .loadnames import ZIPNAMES
 
 
@@ -10,11 +11,12 @@ def _p(name, fn, colour, qty=1, change=None, note=""):
     return {"name": name, "fn": fn, "colour": colour, "qty": qty, "change": change, "show": None, "note": note}
 
 
-def _load(key, title, per_run, blurb, pieces, price, title_listing, tags, extra):
+def _load(key, title, per_run, blurb, pieces, price, title_listing, tags, extra, scene=None, **more):
     assert len(tags) == 13 and all(len(t) <= 20 for t in tags), (key, [t for t in tags if len(t) > 20])
+    assert len(extra["ebay"]) <= 80, (key, len(extra["ebay"]))
     return key, dict(title=title, zipname=ZIPNAMES[key], per_run=per_run, kind="flatcar load",
-                     scene=G.SCENES[key], blurb=blurb, pieces=pieces,
-                     listing=dict(price=price, title=title_listing, tags=tags), extra=extra)
+                     scene=scene or G.SCENES[key], blurb=blurb, pieces=pieces,
+                     listing=dict(price=price, title=title_listing, tags=tags), extra=extra, **more)
 
 
 _TAIL = ["ho flatcar load", "model railroad load", "1:87 scale", "gift for railfan"]
@@ -589,4 +591,35 @@ PACKS2 = dict([
            "work train", "flatcar load", "ho scale load"] + _TAIL,
           dict(ebay="HO Scale Turnout Frogs and Switch Points MOW Track Material Flatcar Load 1:87",
                car="a 53 ft flatcar or a gondola", era="Any (steam to modern)", colors="Steel Gray, Brown", ship=5.5, pack=1.25)),
+    _load("locoengine", "Locomotive Engine and Main Generator Load", 2,
+          "A 16-cylinder two-stroke locomotive engine and its main generator, on their way to or from the rebuild shop on "
+          "a steel shipping skid over timber blocking, for a 40 ft flatcar. After the 3,000 hp road diesels of the 1970s, "
+          "and made for the 0.2 mm nozzle, so the detail goes down to 0.4 mm: sixteen crankcase doors with their dog "
+          "handles, sixteen air box covers, two banks of eight top-deck covers with hinges and pulls, the exhaust manifold "
+          "down the V in flanged sections with sixteen exhaust elbows, water manifolds with a collar at every cylinder, "
+          "the accessory end with its water pumps, lube oil pump, governor and oil strainer, two aftercoolers, the "
+          "turbocharger with its covered inlet and exhaust stack, and the main generator with its companion alternator, "
+          "covered air inlet, terminal box, vents and lifting lugs. Four pieces in four colours that peg together. "
+          "Generic: no maker's name or plates.",
+          [_p("Skid", E.skid, "Cocoa Brown", 1, (E.SKID_T, "Black"), "timber blocking, then the steel skid"),
+           _p("Engine", E.engine, "Gray", 1, None, "pegs onto the skid beams"),
+           _p("Turbocharger", E.turbo, "Iron Gray Metallic", 1, None, "pegs onto the engine's turbo platform"),
+           _p("Main-generator", E.generator, "Black", 1, None, "spigots into the flywheel housing, rails on the skid")],
+          "34.99", "HO Scale Locomotive Engine and Main Generator Load | V16 Diesel on Shipping Skid | Flatcar Load | "
+          "Printed in Color | 1:87",
+          ["locomotive engine", "diesel engine", "prime mover", "main generator", "diesel shop", "engine rebuild",
+           "locomotive parts", "flatcar load", "ho scale load"] + _TAIL,
+          dict(ebay="HO Scale Locomotive V16 Diesel Engine and Main Generator on Skid Flatcar Load",
+               car="a 40 ft flatcar, or a diesel shop scene", era="Transition / Modern (1960s-present)",
+               colors="Gray, Black, Iron Gray, Brown", ship=6.0, pack=1.50),
+          scene=E.scene,
+          base_note="The skid stands on its seven timbers and two runners under the beams; the engine on its full-length "
+                    "mounting flange; the generator on its engine flange.",
+          assembly=["Skid: glue it to the car deck, or leave it loose.",
+                    "Engine: its four sockets go over the pegs on the skid beams; glue the mounting flange to the beams.",
+                    "Main generator: its spigot socket goes over the spigot on the engine's flywheel housing, its rails on the "
+                    "beams. Glue the flange face and the rails.",
+                    "Turbocharger: its two sockets go over the pegs on the turbo platform between the aftercoolers, the "
+                    "turbine inlet against the end of the exhaust manifold. Glue the pedestal.",
+                    "Thin super glue on the big faces only; the pegs locate everything."]),
 ])

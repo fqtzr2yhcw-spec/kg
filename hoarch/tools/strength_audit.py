@@ -8,7 +8,8 @@
   neck      the smallest layer, as a share of the biggest layer above it, where at least NECK_H mm
             of the piece stands on it: a big part on a small join (the beams on three timber tops,
             13 %). Low shares are where a print snaps or peels at a colour change.
-  thin      material narrower than 0.8 mm (an opening of each layer by 0.4 mm), mm3: the slicer
+  thin      material narrower than two lines of the nozzle (0.8 mm for the 0.4 nozzle, 0.4 mm for the
+            loads made for the 0.2: an opening of each layer by one nozzle width), mm3: the slicer
             drops it or draws one wobbly line, and whatever stands on it hangs in the air.
   floating  patches of a layer with nothing under them (Bambu Studio's "floating regions").
 
@@ -29,6 +30,7 @@ import _common  # noqa: F401  (puts the project on the path)
 from manifold3d import JoinType
 from hoarch.lint import floating
 from hoarch.packs import PACKS
+from hoarch.loadnames import NOZZLE, LAYER as LAYERS
 
 LAYER = 0.2
 NECK_H = 3.0
@@ -52,7 +54,7 @@ def min_width(cs):
     return best
 
 
-def audit(m):
+def audit(m, layer=LAYER, nozzle=0.4):
     b = m.bounding_box()
     m = m.translate([0, 0, -b[2]])
     H = b[5] - b[2]
@@ -60,7 +62,7 @@ def audit(m):
     contact = foot.area()
     shadow = m.project().area()
     tall = H / max(min_width(foot), 1e-6)
-    zs = np.arange(LAYER / 2, H, LAYER)
+    zs = np.arange(layer / 2, H, layer)
     areas = np.array([m.slice(float(z)).area() for z in zs])
     neck, neck_z, low_neck = 1.0, None, 1.0
     for k in range(len(zs)):
@@ -76,9 +78,9 @@ def audit(m):
     thin = 0.0
     for z, a in zip(zs, areas):
         cs = m.slice(float(z))
-        opened = cs.offset(-0.4, JoinType.Miter).offset(0.4, JoinType.Miter)
-        thin += (a - opened.area()) * LAYER
-    fl = floating(m)
+        opened = cs.offset(-nozzle, JoinType.Miter).offset(nozzle, JoinType.Miter)
+        thin += (a - opened.area()) * layer
+    fl = floating(m, layer)
     return dict(H=H, contact=contact, frac=contact / max(shadow, 1e-6), tall=tall, neck=neck, neck_z=neck_z, low_neck=low_neck,
                 thin=thin, floating=len(fl))
 
@@ -100,7 +102,7 @@ def main(keys):
     nflag = 0
     for k in keys:
         for pc in PACKS[k]["pieces"]:
-            a = audit(pc["fn"]())
+            a = audit(pc["fn"](), LAYERS.get(k, LAYER), NOZZLE.get(k, 0.4))
             why = flagged(a)
             nflag += bool(why)
             print(f"{'!!' if why else '  '} {k:13s} {pc['name']:26s} H {a['H']:5.1f}  contact {a['contact']:7.1f} mm2 "

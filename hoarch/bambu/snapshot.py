@@ -6,7 +6,13 @@ Bambu Studio saved itself (one of its calibration projects), which stands in for
 built-in defaults where no profile sets a key, and Bambu Studio's lists of which settings belong
 to the printer, the process and the filaments.
 
-    python3 bambu/snapshot.py /path/to/bambustudio   (a checkout of github.com/bambulab/BambuStudio)
+    python3 bambu/snapshot.py /path/to/bambustudio [0.2]   (a checkout of github.com/bambulab/BambuStudio)
+
+With 0.2 it snapshots the P2S's 0.2 mm nozzle presets (0.10mm Standard and each filament's
+"0.2 nozzle" preset) into p2s_profiles_0.2.json, for the loads printed with the fine nozzle. A
+filament with no 0.2 preset (PLA Wood: wood fill clogs a 0.2 nozzle) falls back to Generic PLA's.
+The filaments stay keyed by their 0.4 names, so hoarch.bambu picks spools the same way; their real
+preset names are in "preset_names".
 """
 
 import glob
@@ -62,14 +68,21 @@ def resolve(name, files, seen=()):
     return cfg, fid
 
 
-def main(root):
+NOZZLES = {"0.4": (PRINTER, PROCESS, "", "p2s_profiles.json"),
+           "0.2": ("Bambu Lab P2S 0.2 nozzle", "0.10mm Standard @BBL P2S 0.2 nozzle", " 0.2 nozzle", "p2s_profiles_0.2.json")}
+
+
+def main(root, nozzle="0.4"):
+    printer_name, process_name, suffix, fname = NOZZLES[nozzle]
     prof = os.path.join(root, "resources", "profiles", "BBL")
     machines, processes, filaments = (_index(os.path.join(prof, d)) for d in ("machine", "process", "filament"))
-    printer, _ = resolve(PRINTER, machines)
-    process, _ = resolve(PROCESS, processes)
-    fil, ids = {}, {}
+    printer, _ = resolve(printer_name, machines)
+    process, _ = resolve(process_name, processes)
+    fil, ids, names = {}, {}, {}
     for n in FILAMENTS:
-        fil[n], ids[n] = resolve(n, filaments)
+        real = n + suffix if n + suffix in filaments else "Generic PLA @BBL P2S" + suffix
+        fil[n], ids[n] = resolve(real, filaments)
+        names[n] = real
     src = open(os.path.join(root, "src", "libslic3r", "Preset.cpp")).read()
     lists = {}
     for nm in ("print", "filament", "machine_limits", "printer"):
@@ -83,14 +96,14 @@ def main(root):
     calib = os.path.join(root, "resources", "calib", "pressure_advance", "auto_pa_line_dual.3mf")
     template = json.loads(zipfile.ZipFile(calib).read("Metadata/project_settings.config"))
     version = re.search(r'SLIC3R_VERSION "([0-9.]+)"', open(os.path.join(root, "version.inc")).read()).group(1)
-    out = {"bambu_studio_version": version, "printer_name": PRINTER, "process_name": PROCESS,
-           "printer": printer, "process": process, "filaments": fil, "filament_ids": ids,
+    out = {"bambu_studio_version": version, "printer_name": printer_name, "process_name": process_name,
+           "printer": printer, "process": process, "filaments": fil, "filament_ids": ids, "preset_names": names,
            "option_lists": lists, "template": template}
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "p2s_profiles.json")
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)
     json.dump(out, open(path, "w"), indent=0, sort_keys=True)
     print(path, os.path.getsize(path) // 1024, "KB;", "printer", len(printer), "process", len(process),
           {n: len(c) for n, c in fil.items()}, ids)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], *sys.argv[2:3])

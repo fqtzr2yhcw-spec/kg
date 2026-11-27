@@ -64,6 +64,7 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Ship Anchor and Chain Load | $17.99 | $12.98 | $13.89 | 20 m | 8 g | 1 |
 | Hydraulic Cylinder Load | $15.99 | $11.19 | $12.02 | 20 m | 11 g | 2 |
 | Turnout Frog and Switch Point Load | $15.99 | $11.31 | $12.14 | 10 m | 5 g | 2 |
+| Locomotive Engine and Main Generator Load | $34.99 | $27.02 | $28.66 | 3 h 24 m | 21 g | 2 |
 
 - **Every load prints in its colours, with no painting and no assembly.** Say "printed in color" and "ready to place" in every listing; most HO loads on eBay are kits or need paint.
 - **List first:** the coated line pipe (the steady Etsy seller), the wind tower section and the nacelle (no HO wind tower load is on the market; list the two together and offer both at a discount), and the transformer (big castings and transformers fetch the higher prices).
@@ -133,6 +134,7 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Ship Anchor and Chain Load | 8 g, $0.16 | 20 m | 1 | $1.42 | Anchor x2 49 x 31 x 5 mm; Anchor chain x2 44 x 16 x 4 mm |
 | Hydraulic Cylinder Load | 11 g, $0.22 | 20 m | 1 | $1.47 | Cylinder large x2 80 x 15 x 10 mm; Cylinder medium x4 62 x 13 x 8 mm |
 | Turnout Frog and Switch Point Load | 5 g, $0.10 | 10 m | 1 | $1.35 | Frog x4 56 x 13 x 3 mm; Switch points x2 91 x 15 x 3 mm |
+| Locomotive Engine and Main Generator Load | 21 g, $0.42 | 3 h 24 m | 4 | $1.99 | Skid x2 92 x 30 x 10 mm; Engine x2 66 x 22 x 22 mm; Turbocharger x2 12 x 11 x 9 mm; Main generator x2 23 x 19 x 18 mm |
 
 Filament at $20/kg, power about $0.02 a print hour, packing $1.25 a load ($2.50 for the wind tower's long box). eBay: 13.6% of item + shipping, plus $0.40 an order. Etsy: 6.5% transaction and 3% + $0.25 payment processing on item + shipping, plus the $0.20 listing fee. Shipping charged at cost (about $5.50 USPS Ground Advantage for a small box, $8 for the wind tower).
 
@@ -2473,6 +2475,50 @@ Printed in colour: every piece comes off the printer in its finished colours, so
 SIZE
 - Frog (x4): 2.2 x 0.5 x 0.1 in (56 x 13 x 3 mm)
 - Switch points (x2): 3.6 x 0.6 x 0.1 in (91 x 15 x 3 mm)
+
+HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.
+Not a toy: small parts, for ages 14+.
+```
+
+---
+
+## Locomotive Engine and Main Generator Load
+
+**Price:** $34.99. **Suits:** a 40 ft flatcar, or a diesel shop scene.
+
+### eBay
+
+- **Title** (77/80): `HO Scale Locomotive V16 Diesel Engine and Main Generator on Skid Flatcar Load`
+- **Item specifics for this load:** Era: Transition / Modern (1960s-present). Color: Gray, Black, Iron Gray, Brown. Number of Pieces: 4. Item size: see SIZE below.
+
+### Etsy
+
+- **Title** (121/140): `HO Scale Locomotive Engine and Main Generator Load | V16 Diesel on Shipping Skid | Flatcar Load | Printed in Color | 1:87`
+- **Tags (13):** `locomotive engine, diesel engine, prime mover, main generator, diesel shop, engine rebuild, locomotive parts, flatcar load, ho scale load, ho flatcar load, model railroad load, 1:87 scale, gift for railfan`
+- **Colours:** Gray, Black, Iron Gray, Brown
+
+### Description (paste on both)
+
+```
+LOCOMOTIVE ENGINE AND MAIN GENERATOR LOAD - HO SCALE (1:87) FLATCAR LOAD
+
+A 16-cylinder two-stroke locomotive engine and its main generator, on their way to or from the rebuild shop on a steel shipping skid over timber blocking, for a 40 ft flatcar. After the 3,000 hp road diesels of the 1970s, and made for the 0.2 mm nozzle, so the detail goes down to 0.4 mm: sixteen crankcase doors with their dog handles, sixteen air box covers, two banks of eight top-deck covers with hinges and pulls, the exhaust manifold down the V in flanged sections with sixteen exhaust elbows, water manifolds with a collar at every cylinder, the accessory end with its water pumps, lube oil pump, governor and oil strainer, two aftercoolers, the turbocharger with its covered inlet and exhaust stack, and the main generator with its companion alternator, covered air inlet, terminal box, vents and lifting lugs. Four pieces in four colours that peg together. Generic: no maker's name or plates.
+
+What's in the pack:
+  - 1 x Skid
+  - 1 x Engine
+  - 1 x Turbocharger
+  - 1 x Main generator
+
+Load only: the flatcar shown is not included. The load stands on its own blocking, so it sits on any deck. It suits a 40 ft flatcar, or a diesel shop scene.
+
+Printed in colour: every piece comes off the printer in its finished colours, so it is ready to place. No painting, no assembly.
+
+SIZE
+- Skid (x2): 3.6 x 1.2 x 0.4 in (92 x 30 x 10 mm)
+- Engine (x2): 2.6 x 0.9 x 0.9 in (66 x 22 x 22 mm)
+- Turbocharger (x2): 0.5 x 0.4 x 0.4 in (12 x 11 x 9 mm)
+- Main generator (x2): 0.9 x 0.7 x 0.7 in (23 x 19 x 18 mm)
 
 HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.
 Not a toy: small parts, for ages 14+.

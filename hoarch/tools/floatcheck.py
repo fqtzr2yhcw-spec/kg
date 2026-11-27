@@ -1,5 +1,5 @@
 """Floating regions (Bambu Studio's "has floating regions") in scenery packs and flatcar loads: every
-piece, in its print orientation, layer by layer at 0.2 mm. A patch of a layer with nothing under it
+piece, in its print orientation, layer by layer at its print layer (0.2 mm, 0.1 for the 0.2 nozzle loads). A patch of a layer with nothing under it
 prints on air; the propane tanks' cradle webs between their openings were the case this was written
 against. Fix every one before releasing.
 
@@ -10,13 +10,14 @@ import sys
 import _common  # noqa: F401  (puts the project on the path)
 from hoarch.lint import floating
 from hoarch.packs import PACKS
+from hoarch.loadnames import LAYER
 
 
 def main(keys):
     bad = 0
     for k in keys:
         for pc in PACKS[k]["pieces"]:
-            f = floating(pc["fn"]())
+            f = floating(pc["fn"](), LAYER.get(k, 0.2))
             if f:
                 bad += 1
                 print(f"{k:14s} {pc['name']:26s} {len(f)} floating: " +

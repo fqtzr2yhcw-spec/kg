@@ -15,6 +15,9 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
 ## Printing
 - Printers: Bambu Lab H2C, P2S and P1S (the P2S and P1S have a 256 x 256 bed), and a
   Snapmaker Artisan. Layers are 0.20 mm preferred, 0.16 mm at the finest.
+- A showpiece where realism matters most may use the 0.2 mm nozzle at 0.10 mm layers (the owner,
+  November 2026, for the locomotive engine load). Register it in `hoarch/hoarch/loadnames.py`
+  (NOZZLE, LAYER) so it is sliced, audited and given a Bambu project for the 0.2 nozzle.
 - A house should fill the P1S/P2S bed. Make buildings big, not skinny.
 - Plates:
   - Single-colour plates, so a part prints on any printer.
