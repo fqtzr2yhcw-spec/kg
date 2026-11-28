@@ -755,6 +755,8 @@ print for it. It is made for the **0.2 mm nozzle at 0.10 mm layers**: detail dow
   and every boss on its side has a 45 degree engine-side face); turbo upright on a pedestal with
   45 degree keels under its housings; skid flat. Horizontal pipes are teardrops, and a pipe on a
   ledge is filled to the wall (a pocket under it sealed into a void).
+- First print (the owner, November 2026): "the motors turned out really good". The 0.2 mm detail
+  holds up; build the next showpiece loads to this standard.
 - Things that went wrong on the way: the turbo's ducts to the aftercoolers floated when the turbo
   printed alone (they are now saddles on the engine, cut to the compressor's shape); timber grain
   grooves under the cross members sealed into voids; the closed-up bed sheet left scalloped edges
