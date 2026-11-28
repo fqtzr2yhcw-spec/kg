@@ -65,6 +65,9 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Hydraulic Cylinder Load | $15.99 | $11.19 | $12.02 | 20 m | 11 g | 2 |
 | Turnout Frog and Switch Point Load | $15.99 | $11.31 | $12.14 | 10 m | 5 g | 2 |
 | Locomotive Engine and Main Generator Load | $34.99 | $27.02 | $28.66 | 3 h 24 m | 21 g | 2 |
+| Steam Locomotive Driver Load | $29.99 | $22.99 | $24.41 | 1 h 25 m | 9 g | 2 |
+| Truck Side Frame and Bolster Load | $24.99 | $18.91 | $20.11 | 2 h 23 m | 12 g | 1 |
+| Blowout Preventer Load | $34.99 | $27.50 | $29.11 | 2 h 1 m | 15 g | 1 |
 
 - **Every load prints in its colours, with no painting and no assembly.** Say "printed in color" and "ready to place" in every listing; most HO loads on eBay are kits or need paint.
 - **List first:** the coated line pipe (the steady Etsy seller), the wind tower section and the nacelle (no HO wind tower load is on the market; list the two together and offer both at a discount), and the transformer (big castings and transformers fetch the higher prices).
@@ -135,6 +138,9 @@ _The eight flatcar loads. Prepared November 2026. Prices are the ones in each lo
 | Hydraulic Cylinder Load | 11 g, $0.22 | 20 m | 1 | $1.47 | Cylinder large x2 80 x 15 x 10 mm; Cylinder medium x4 62 x 13 x 8 mm |
 | Turnout Frog and Switch Point Load | 5 g, $0.10 | 10 m | 1 | $1.35 | Frog x4 56 x 13 x 3 mm; Switch points x2 91 x 15 x 3 mm |
 | Locomotive Engine and Main Generator Load | 21 g, $0.42 | 3 h 24 m | 4 | $1.99 | Skid x2 92 x 30 x 10 mm; Engine x2 66 x 22 x 22 mm; Turbocharger x2 12 x 11 x 9 mm; Main generator x2 23 x 19 x 18 mm |
+| Steam Locomotive Driver Load | 9 g, $0.18 | 1 h 25 m | 4 | $1.71 | Driver x12 19 x 19 x 4 mm; Main driver x4 19 x 19 x 5 mm; Axle x8 19 x 4 x 3 mm; Cradle x2 90 x 14 x 10 mm; Rod pallet x2 47 x 27 x 3 mm |
+| Truck Side Frame and Bolster Load | 12 g, $0.23 | 2 h 23 m | 1 | $1.53 | Side frame stacks x4 27 x 17 x 8 mm; Bolster bundle x2 29 x 15 x 8 mm |
+| Blowout Preventer Load | 15 g, $0.29 | 2 h 1 m | 2 | $1.58 | BOP skid 124 x 26 x 6 mm; Annular 16 x 16 x 15 mm; Double ram 31 x 14 x 13 mm; Drilling spool 30 x 12 x 10 mm; Single ram 31 x 11 x 9 mm |
 
 Filament at $20/kg, power about $0.02 a print hour, packing $1.25 a load ($2.50 for the wind tower's long box). eBay: 13.6% of item + shipping, plus $0.40 an order. Etsy: 6.5% transaction and 3% + $0.25 payment processing on item + shipping, plus the $0.20 listing fee. Shipping charged at cost (about $5.50 USPS Ground Advantage for a small box, $8 for the wind tower).
 
@@ -2519,6 +2525,138 @@ SIZE
 - Engine (x2): 2.6 x 0.9 x 0.9 in (66 x 22 x 22 mm)
 - Turbocharger (x2): 0.5 x 0.4 x 0.4 in (12 x 11 x 9 mm)
 - Main generator (x2): 0.9 x 0.7 x 0.7 in (23 x 19 x 18 mm)
+
+HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.
+Not a toy: small parts, for ages 14+.
+```
+
+---
+
+## Steam Locomotive Driver Load
+
+**Price:** $29.99. **Suits:** a 50 ft flatcar, or a back shop scene.
+
+### eBay
+
+- **Title** (74/80): `HO Scale Steam Locomotive Driver Sets and Rods Flatcar Load 1:87 Back Shop`
+- **Item specifics for this load:** Era: Steam (1900s-1950s). Color: Black, Silver, Steel Gray, Brown. Number of Pieces: 14. Item size: see SIZE below.
+
+### Etsy
+
+- **Title** (97/140): `HO Scale Steam Locomotive Driver Sets and Rods | Back Shop Flatcar Load | Printed in Color | 1:87`
+- **Tags (13):** `steam locomotive, driving wheels, locomotive drivers, back shop, steam era, roundhouse, locomotive parts, flatcar load, ho scale load, ho flatcar load, model railroad load, 1:87 scale, gift for railfan`
+- **Colours:** Black, Silver, Steel Gray, Brown
+
+### Description (paste on both)
+
+```
+STEAM LOCOMOTIVE DRIVER LOAD - HO SCALE (1:87) FLATCAR LOAD
+
+Four 63 in driver sets for a heavy Mikado, on their way to or from the back shop on a 50 ft flatcar: sixteen spokes to a wheel, rounded on their faces, the crescent counterweights with their lead plugs, the crank pins quartered and the main set with its return cranks, tire faces, hubs and crank pins in bright steel; the journals resting on cribbed cradles with wedges; and both sides' main and side rods banded to a pallet, every rod fluted and every eye bushed in brass. Made for the 0.2 mm nozzle.
+
+What's in the pack:
+  - 6 x Driver
+  - 2 x Main driver
+  - 4 x Axle
+  - 1 x Cradle
+  - 1 x Rod pallet
+
+Load only: the flatcar shown is not included. The load stands on its own blocking, so it sits on any deck. It suits a 50 ft flatcar, or a back shop scene.
+
+Printed in colour: every piece comes off the printer in its finished colours, so it is ready to place. No painting, no assembly.
+
+SIZE
+- Driver (x12): 0.8 x 0.8 x 0.2 in (19 x 19 x 4 mm)
+- Main driver (x4): 0.8 x 0.8 x 0.2 in (19 x 19 x 5 mm)
+- Axle (x8): 0.7 x 0.2 x 0.1 in (19 x 4 x 3 mm)
+- Cradle (x2): 3.5 x 0.6 x 0.4 in (90 x 14 x 10 mm)
+- Rod pallet (x2): 1.9 x 1.1 x 0.1 in (47 x 27 x 3 mm)
+
+HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.
+Not a toy: small parts, for ages 14+.
+```
+
+---
+
+## Truck Side Frame and Bolster Load
+
+**Price:** $24.99. **Suits:** a 40 ft flatcar or a gondola.
+
+### eBay
+
+- **Title** (77/80): `HO Scale Freight Car Truck Side Frames and Bolsters Foundry Flatcar Load 1:87`
+- **Item specifics for this load:** Era: Transition / Modern (1950s-present). Color: Black, Brown. Number of Pieces: 6. Item size: see SIZE below.
+
+### Etsy
+
+- **Title** (100/140): `HO Scale Freight Car Truck Side Frames and Bolsters | Foundry Castings Flatcar Load | Printed | 1:87`
+- **Tags (13):** `truck side frames, freight car trucks, bolsters, foundry, castings, car shop, steel castings, flatcar load, ho scale load, ho flatcar load, model railroad load, 1:87 scale, gift for railfan`
+- **Colours:** Black, Brown
+
+### Description (paste on both)
+
+```
+TRUCK SIDE FRAME AND BOLSTER LOAD - HO SCALE (1:87) FLATCAR LOAD
+
+A foundry's shipment of new 70-ton freight car truck castings for a 40 ft flatcar: thirty-two cast side frames in stacks of four, each with its bolster window, lightening openings, pedestal jaws with wear plates, friction-wedge column guides, brake hanger lugs and pattern plate, rimmed all round; and sixteen fish-belly bolsters bundled two layers deep, with centre plates, side bearings, gibs and pockets. All on dunnage. Made for the 0.2 mm nozzle.
+
+What's in the pack:
+  - 4 x Side frame stacks
+  - 2 x Bolster bundle
+
+Load only: the flatcar shown is not included. The load stands on its own blocking, so it sits on any deck. It suits a 40 ft flatcar or a gondola.
+
+Printed in colour: every piece comes off the printer in its finished colours, so it is ready to place. No painting, no assembly.
+
+SIZE
+- Side frame stacks (x4): 1.1 x 0.7 x 0.3 in (27 x 17 x 8 mm)
+- Bolster bundle (x2): 1.1 x 0.6 x 0.3 in (29 x 15 x 8 mm)
+
+HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.
+Not a toy: small parts, for ages 14+.
+```
+
+---
+
+## Blowout Preventer Load
+
+**Price:** $34.99. **Suits:** a 40 ft flatcar, or an oilfield or pipe yard scene.
+
+### eBay
+
+- **Title** (76/80): `HO Scale Blowout Preventer BOP Stack Oilfield Flatcar Load 1:87 Drilling Rig`
+- **Item specifics for this load:** Era: Modern (1970s-present). Color: Red, Black, Brown. Number of Pieces: 5. Item size: see SIZE below.
+
+### Etsy
+
+- **Title** (95/140): `HO Scale Blowout Preventer BOP Stack | Oilfield Drilling Flatcar Load | Printed in Color | 1:87`
+- **Tags (13):** `blowout preventer, oilfield, drilling rig, bop stack, oil and gas, wellhead, fracking, flatcar load, ho scale load, ho flatcar load, model railroad load, 1:87 scale, gift for railfan`
+- **Colours:** Red, Black, Brown
+
+### Description (paste on both)
+
+```
+BLOWOUT PREVENTER LOAD - HO SCALE (1:87) FLATCAR LOAD
+
+A wellhead blowout preventer stack, broken down for shipment on an oilfield skid for a 40 ft flatcar: the annular preventer with its bolted head and domed top on a shipping plate, a double ram preventer with stacked bonnets, operators and lock housings, the drilling spool with its choke and kill lines (a manual gate valve with a dished handwheel and a hydraulic one each side), and a single ram; every flange studded and nutted, twenty studs to a flange. Oilfield red. Made for the 0.2 mm nozzle. Generic: no maker's name.
+
+What's in the pack:
+  - 1 x BOP skid
+  - 1 x Annular
+  - 1 x Double ram
+  - 1 x Drilling spool
+  - 1 x Single ram
+
+Load only: the flatcar shown is not included. The load stands on its own blocking, so it sits on any deck. It suits a 40 ft flatcar, or an oilfield or pipe yard scene.
+
+Printed in colour: every piece comes off the printer in its finished colours, so it is ready to place. No painting, no assembly.
+
+SIZE
+- BOP skid: 4.9 x 1.0 x 0.2 in (124 x 26 x 6 mm)
+- Annular: 0.6 x 0.6 x 0.6 in (16 x 16 x 15 mm)
+- Double ram: 1.2 x 0.6 x 0.5 in (31 x 14 x 13 mm)
+- Drilling spool: 1.2 x 0.5 x 0.4 in (30 x 12 x 10 mm)
+- Single ram: 1.2 x 0.4 x 0.4 in (31 x 11 x 9 mm)
 
 HO scale (1:87). An original design, drawn and 3D printed by us in PLA at 0.2 mm layers. Weather it with chalks or washes if you like.
 Not a toy: small parts, for ages 14+.

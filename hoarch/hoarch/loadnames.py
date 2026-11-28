@@ -53,10 +53,14 @@ ZIPNAMES = {
     "hydraulics": "Hydraulic_Cylinder_Load",
     "turnout": "Turnout_Frog_and_Switch_Point_Load",
     "locoengine": "Locomotive_Engine_and_Generator_Load",
+    "drivers": "Steam_Locomotive_Driver_Load",                 # third series (hoarch.flatloads3), 0.2 mm nozzle
+    "castings": "Truck_Side_Frame_and_Bolster_Load",
+    "bop": "Blowout_Preventer_Load",
 }
 
 # Loads made for the 0.2 mm nozzle (0.10 mm layers): finer detail than a 0.4 nozzle can draw.
 # hoarch.packs slices them with slicer/bambu_like_0.2.ini and hoarch.bambu writes their projects
 # with the P2S 0.2 nozzle presets (bambu/p2s_profiles_0.2.json).
-NOZZLE = {"locoengine": 0.2}
-LAYER = {"locoengine": 0.1}
+FINE = ("locoengine", "drivers", "castings", "bop")
+NOZZLE = {k: 0.2 for k in FINE}
+LAYER = {k: 0.1 for k in FINE}

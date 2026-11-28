@@ -342,6 +342,8 @@ PACKS = {
 
 from .loads2 import PACKS2 as _PACKS2      # the second series of flatcar loads (hoarch.flatloads2)
 PACKS.update(_PACKS2)
+from .loads3 import PACKS3 as _PACKS3      # the third series: fine-nozzle loads (hoarch.flatloads3)
+PACKS.update(_PACKS3)
 
 
 def zipnames():
