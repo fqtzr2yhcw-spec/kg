@@ -18,6 +18,10 @@ uniqueness tables are in `hoarch/COLLECTION.md`.
 - A showpiece where realism matters most may use the 0.2 mm nozzle at 0.10 mm layers (the owner,
   November 2026, for the locomotive engine load). Register it in `hoarch/hoarch/loadnames.py`
   (NOZZLE, LAYER) so it is sliced, audited and given a Bambu project for the 0.2 nozzle.
+- H2C nozzles the owner has: 0.2, 0.4, 0.4 HF, 0.6, 0.6 HF, 0.8, 0.8 HF. The H2C prints several
+  materials in one job. Mixed nozzle diameters in one job (detail on the 0.2, the body on a bigger
+  nozzle) came to Bambu Studio 2.9.2 (24 Nov 2026) for the H2D, H3C and P3C; the H2C was promised
+  but not yet in it (resources/info/multi_nozzle_rules.json). Use it for the fine loads when it lands.
 - A house should fill the P1S/P2S bed. Make buildings big, not skinny.
 - Plates:
   - Single-colour plates, so a part prints on any printer.
