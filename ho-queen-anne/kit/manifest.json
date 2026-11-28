@@ -1,0 +1,1801 @@
+{
+ "scale": "HO 1:87.1",
+ "bed_mm": 250.0,
+ "parts": [
+  {
+   "file": "parts/Fieldstone__FOUNDATION-ring.stl",
+   "colour": "Fieldstone",
+   "hex": "#8d877c",
+   "qty": 1,
+   "group": "foundation",
+   "size_mm": [
+    115.0,
+    165.8,
+    11.5
+   ],
+   "volume_cm3": 27.78,
+   "instances": [
+    "Fieldstone__FOUNDATION-ring"
+   ]
+  },
+  {
+   "file": "parts/Fieldstone__FOUNDATION-base-plate.stl",
+   "colour": "Fieldstone",
+   "hex": "#8d877c",
+   "qty": 1,
+   "group": "foundation",
+   "size_mm": [
+    104.8,
+    155.5,
+    1.2
+   ],
+   "volume_cm3": 16.54,
+   "instances": [
+    "Fieldstone__FOUNDATION-base-plate"
+   ]
+  },
+  {
+   "file": "parts/Cream__TRIM-water-table-ring.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "trim",
+   "size_mm": [
+    115.2,
+    165.9,
+    1.4
+   ],
+   "volume_cm3": 1.01,
+   "instances": [
+    "Cream__TRIM-water-table-ring"
+   ]
+  },
+  {
+   "file": "parts/Brick__CHIMNEY-exterior.stl",
+   "colour": "Brick",
+   "hex": "#8a3b2b",
+   "qty": 1,
+   "group": "chimneys",
+   "size_mm": [
+    17.9,
+    161.2,
+    8.1
+   ],
+   "volume_cm3": 15.22,
+   "instances": [
+    "Brick__CHIMNEY-exterior"
+   ]
+  },
+  {
+   "file": "parts/Cream__TRIM-belt-loop-1.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "trim",
+   "size_mm": [
+    107.3,
+    115.1,
+    4.8
+   ],
+   "volume_cm3": 1.52,
+   "instances": [
+    "Cream__TRIM-belt-loop-1"
+   ]
+  },
+  {
+   "file": "parts/Cream__TRIM-belt-loop-2.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "trim",
+   "size_mm": [
+    73.4,
+    98.8,
+    4.8
+   ],
+   "volume_cm3": 1.13,
+   "instances": [
+    "Cream__TRIM-belt-loop-2"
+   ]
+  },
+  {
+   "file": "parts/Cream__corner-board-lower.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 4,
+   "group": "trim",
+   "size_mm": [
+    35.7,
+    3.4,
+    3.4
+   ],
+   "volume_cm3": 0.16,
+   "instances": [
+    "Cream__TRIM-corner-board-1-lower",
+    "Cream__TRIM-corner-board-2-lower",
+    "Cream__TRIM-corner-board-3-lower",
+    "Cream__TRIM-corner-board-4-lower"
+   ]
+  },
+  {
+   "file": "parts/Cream__corner-board-upper.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 4,
+   "group": "trim",
+   "size_mm": [
+    27.2,
+    3.4,
+    3.4
+   ],
+   "volume_cm3": 0.12,
+   "instances": [
+    "Cream__TRIM-corner-board-1-upper",
+    "Cream__TRIM-corner-board-2-upper",
+    "Cream__TRIM-corner-board-3-upper",
+    "Cream__TRIM-corner-board-4-upper"
+   ]
+  },
+  {
+   "file": "parts/Cream__CORNICE-main-ring.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "cornice",
+   "size_mm": [
+    115.5,
+    162.7,
+    6.1
+   ],
+   "volume_cm3": 4.51,
+   "instances": [
+    "Cream__CORNICE-main-ring"
+   ]
+  },
+  {
+   "file": "parts/Cream__DOOR-W1-lower-casing.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "doors",
+   "size_mm": [
+    20.9,
+    34.1,
+    2.1
+   ],
+   "volume_cm3": 0.29,
+   "instances": [
+    "Cream__DOOR-W1-lower-casing"
+   ]
+  },
+  {
+   "file": "parts/Walnut__DOOR-W1-lower-door.stl",
+   "colour": "Walnut",
+   "hex": "#4a2616",
+   "qty": 1,
+   "group": "doors",
+   "size_mm": [
+    17.0,
+    29.5,
+    1.5
+   ],
+   "volume_cm3": 0.38,
+   "instances": [
+    "Walnut__DOOR-W1-lower-door"
+   ]
+  },
+  {
+   "file": "parts/Sage__WALL-W1-lower.stl",
+   "colour": "Sage",
+   "hex": "#7f8f6a",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    30.0,
+    38.5,
+    2.3
+   ],
+   "volume_cm3": 1.41,
+   "instances": [
+    "Sage__WALL-W1-lower"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-2.6x5.2-cornice.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 9,
+   "group": "windows",
+   "size_mm": [
+    13.6,
+    25.1,
+    2.1
+   ],
+   "volume_cm3": 0.18,
+   "instances": [
+    "Cream__WIN-W1-upper-1-casing",
+    "Cream__WIN-W4-upper-1-casing",
+    "Cream__WIN-W4-upper-2-casing",
+    "Cream__WIN-W4-upper-3-casing",
+    "Cream__WIN-W5-upper-1-casing",
+    "Cream__WIN-W5-upper-3-casing",
+    "Cream__WIN-W6-upper-1-casing",
+    "Cream__WIN-W6-upper-2-casing",
+    "Cream__WIN-W6-upper-3-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.6x5.2-2-over-2.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 9,
+   "group": "windows",
+   "size_mm": [
+    10.7,
+    19.8,
+    1.4
+   ],
+   "volume_cm3": 0.1,
+   "instances": [
+    "Oxblood__WIN-W1-upper-1-sash",
+    "Oxblood__WIN-W4-upper-1-sash",
+    "Oxblood__WIN-W4-upper-2-sash",
+    "Oxblood__WIN-W4-upper-3-sash",
+    "Oxblood__WIN-W5-upper-1-sash",
+    "Oxblood__WIN-W5-upper-3-sash",
+    "Oxblood__WIN-W6-upper-1-sash",
+    "Oxblood__WIN-W6-upper-2-sash",
+    "Oxblood__WIN-W6-upper-3-sash"
+   ]
+  },
+  {
+   "file": "parts/Harvest-Gold__WALL-W1-upper.stl",
+   "colour": "Harvest-Gold",
+   "hex": "#c79a45",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    30.0,
+    36.3,
+    2.4
+   ],
+   "volume_cm3": 1.84,
+   "instances": [
+    "Harvest-Gold__WALL-W1-upper"
+   ]
+  },
+  {
+   "file": "parts/Sage__WALL-W2-lower.stl",
+   "colour": "Sage",
+   "hex": "#7f8f6a",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    19.0,
+    38.5,
+    2.3
+   ],
+   "volume_cm3": 1.58,
+   "instances": [
+    "Sage__WALL-W2-lower"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-2.4x5.2-cornice.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 7,
+   "group": "windows",
+   "size_mm": [
+    12.9,
+    25.1,
+    2.1
+   ],
+   "volume_cm3": 0.18,
+   "instances": [
+    "Cream__WIN-W2-upper-1-casing",
+    "Cream__WIN-W3-upper-1-casing",
+    "Cream__WIN-W3-upper-2-casing",
+    "Cream__WIN-tower-upper-f0-1-casing",
+    "Cream__WIN-tower-upper-f1-1-casing",
+    "Cream__WIN-tower-upper-f6-1-casing",
+    "Cream__WIN-tower-upper-f7-1-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.4x5.2-2-over-2.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 5,
+   "group": "windows",
+   "size_mm": [
+    10.0,
+    19.8,
+    1.4
+   ],
+   "volume_cm3": 0.1,
+   "instances": [
+    "Oxblood__WIN-W2-upper-1-sash",
+    "Oxblood__WIN-tower-upper-f0-1-sash",
+    "Oxblood__WIN-tower-upper-f1-1-sash",
+    "Oxblood__WIN-tower-upper-f6-1-sash",
+    "Oxblood__WIN-tower-upper-f7-1-sash"
+   ]
+  },
+  {
+   "file": "parts/Harvest-Gold__WALL-W2-upper.stl",
+   "colour": "Harvest-Gold",
+   "hex": "#c79a45",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    19.0,
+    36.3,
+    2.4
+   ],
+   "volume_cm3": 1.02,
+   "instances": [
+    "Harvest-Gold__WALL-W2-upper"
+   ]
+  },
+  {
+   "file": "parts/Sage__WALL-W3-lower.stl",
+   "colour": "Sage",
+   "hex": "#7f8f6a",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    43.5,
+    38.5,
+    2.3
+   ],
+   "volume_cm3": 3.62,
+   "instances": [
+    "Sage__WALL-W3-lower"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.4x5.2-qa.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 2,
+   "group": "windows",
+   "size_mm": [
+    10.0,
+    19.8,
+    1.4
+   ],
+   "volume_cm3": 0.1,
+   "instances": [
+    "Oxblood__WIN-W3-upper-1-sash",
+    "Oxblood__WIN-W3-upper-2-sash"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-2.0x2.6-plain.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    10.9,
+    12.4,
+    2.1
+   ],
+   "volume_cm3": 0.08,
+   "instances": [
+    "Cream__WIN-W3-upper-3-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.0x2.6-2-over-2.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    8.6,
+    10.7,
+    1.4
+   ],
+   "volume_cm3": 0.05,
+   "instances": [
+    "Oxblood__WIN-W3-upper-3-sash"
+   ]
+  },
+  {
+   "file": "parts/Harvest-Gold__WALL-W3-upper.stl",
+   "colour": "Harvest-Gold",
+   "hex": "#c79a45",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    43.5,
+    65.0,
+    2.4
+   ],
+   "volume_cm3": 4.0,
+   "instances": [
+    "Harvest-Gold__WALL-W3-upper"
+   ]
+  },
+  {
+   "file": "parts/Cream__TRIM-gable-band.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "trim",
+   "size_mm": [
+    43.3,
+    2.0,
+    1.6
+   ],
+   "volume_cm3": 0.11,
+   "instances": [
+    "Cream__TRIM-gable-band"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-2.8x6.2-cornice.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 8,
+   "group": "windows",
+   "size_mm": [
+    14.3,
+    28.6,
+    2.1
+   ],
+   "volume_cm3": 0.2,
+   "instances": [
+    "Cream__WIN-W4-lower-1-casing",
+    "Cream__WIN-W4-lower-2-casing",
+    "Cream__WIN-W4-lower-3-casing",
+    "Cream__WIN-W5-lower-1-casing",
+    "Cream__WIN-W5-lower-2-casing",
+    "Cream__WIN-W6-lower-1-casing",
+    "Cream__WIN-W6-lower-2-casing",
+    "Cream__WIN-W6-lower-3-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.8x6.2-2-over-2.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 7,
+   "group": "windows",
+   "size_mm": [
+    11.4,
+    23.3,
+    1.4
+   ],
+   "volume_cm3": 0.13,
+   "instances": [
+    "Oxblood__WIN-W4-lower-1-sash",
+    "Oxblood__WIN-W4-lower-2-sash",
+    "Oxblood__WIN-W4-lower-3-sash",
+    "Oxblood__WIN-W5-lower-1-sash",
+    "Oxblood__WIN-W5-lower-2-sash",
+    "Oxblood__WIN-W6-lower-1-sash",
+    "Oxblood__WIN-W6-lower-3-sash"
+   ]
+  },
+  {
+   "file": "parts/Sage__WALL-W4-lower.stl",
+   "colour": "Sage",
+   "hex": "#7f8f6a",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    152.0,
+    38.5,
+    2.3
+   ],
+   "volume_cm3": 10.68,
+   "instances": [
+    "Sage__WALL-W4-lower"
+   ]
+  },
+  {
+   "file": "parts/Harvest-Gold__WALL-W4-upper.stl",
+   "colour": "Harvest-Gold",
+   "hex": "#c79a45",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    152.0,
+    36.3,
+    2.4
+   ],
+   "volume_cm3": 10.18,
+   "instances": [
+    "Harvest-Gold__WALL-W4-upper"
+   ]
+  },
+  {
+   "file": "parts/Cream__DOOR-W5-lower-casing.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "doors",
+   "size_mm": [
+    16.7,
+    33.0,
+    2.1
+   ],
+   "volume_cm3": 0.28,
+   "instances": [
+    "Cream__DOOR-W5-lower-casing"
+   ]
+  },
+  {
+   "file": "parts/Walnut__DOOR-W5-lower-door.stl",
+   "colour": "Walnut",
+   "hex": "#4a2616",
+   "qty": 1,
+   "group": "doors",
+   "size_mm": [
+    12.8,
+    28.8,
+    1.6
+   ],
+   "volume_cm3": 0.28,
+   "instances": [
+    "Walnut__DOOR-W5-lower-door"
+   ]
+  },
+  {
+   "file": "parts/Sage__WALL-W5-lower.stl",
+   "colour": "Sage",
+   "hex": "#7f8f6a",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    103.0,
+    38.5,
+    2.3
+   ],
+   "volume_cm3": 6.63,
+   "instances": [
+    "Sage__WALL-W5-lower"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-2.4x4.4-cornice.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    12.9,
+    22.3,
+    2.1
+   ],
+   "volume_cm3": 0.17,
+   "instances": [
+    "Cream__WIN-W5-upper-2-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.4x4.4-2-over-2.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    10.0,
+    17.0,
+    1.4
+   ],
+   "volume_cm3": 0.09,
+   "instances": [
+    "Oxblood__WIN-W5-upper-2-sash"
+   ]
+  },
+  {
+   "file": "parts/Harvest-Gold__WALL-W5-upper.stl",
+   "colour": "Harvest-Gold",
+   "hex": "#c79a45",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    103.0,
+    36.3,
+    2.4
+   ],
+   "volume_cm3": 6.65,
+   "instances": [
+    "Harvest-Gold__WALL-W5-upper"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.8x6.2-qa.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    11.4,
+    23.3,
+    1.4
+   ],
+   "volume_cm3": 0.13,
+   "instances": [
+    "Oxblood__WIN-W6-lower-2-sash"
+   ]
+  },
+  {
+   "file": "parts/Sage__WALL-W6-lower.stl",
+   "colour": "Sage",
+   "hex": "#7f8f6a",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    114.5,
+    38.5,
+    2.3
+   ],
+   "volume_cm3": 7.74,
+   "instances": [
+    "Sage__WALL-W6-lower"
+   ]
+  },
+  {
+   "file": "parts/Harvest-Gold__WALL-W6-upper.stl",
+   "colour": "Harvest-Gold",
+   "hex": "#c79a45",
+   "qty": 1,
+   "group": "walls",
+   "size_mm": [
+    114.5,
+    36.3,
+    2.4
+   ],
+   "volume_cm3": 7.38,
+   "instances": [
+    "Harvest-Gold__WALL-W6-upper"
+   ]
+  },
+  {
+   "file": "parts/Cream__TOWER-belt-ring-z2.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "tower",
+   "size_mm": [
+    40.8,
+    37.0,
+    4.8
+   ],
+   "volume_cm3": 0.32,
+   "instances": [
+    "Cream__TOWER-belt-ring-z2"
+   ]
+  },
+  {
+   "file": "parts/Cream__TOWER-belt-ring-ze.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "tower",
+   "size_mm": [
+    40.8,
+    40.8,
+    4.8
+   ],
+   "volume_cm3": 0.52,
+   "instances": [
+    "Cream__TOWER-belt-ring-ze"
+   ]
+  },
+  {
+   "file": "parts/Cream__TOWER-cornice-ring.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "tower",
+   "size_mm": [
+    47.6,
+    47.6,
+    6.8
+   ],
+   "volume_cm3": 1.43,
+   "instances": [
+    "Cream__TOWER-cornice-ring"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-2.5x6.0-cornice.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 4,
+   "group": "windows",
+   "size_mm": [
+    13.3,
+    27.9,
+    2.1
+   ],
+   "volume_cm3": 0.19,
+   "instances": [
+    "Cream__WIN-tower-lower-f0-1-casing",
+    "Cream__WIN-tower-lower-f1-1-casing",
+    "Cream__WIN-tower-lower-f6-1-casing",
+    "Cream__WIN-tower-lower-f7-1-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.5x6.0-qa.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    10.3,
+    22.6,
+    1.4
+   ],
+   "volume_cm3": 0.12,
+   "instances": [
+    "Oxblood__WIN-tower-lower-f0-1-sash"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.5x6.0-2-over-2.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 3,
+   "group": "windows",
+   "size_mm": [
+    10.3,
+    22.6,
+    1.4
+   ],
+   "volume_cm3": 0.11,
+   "instances": [
+    "Oxblood__WIN-tower-lower-f1-1-sash",
+    "Oxblood__WIN-tower-lower-f6-1-sash",
+    "Oxblood__WIN-tower-lower-f7-1-sash"
+   ]
+  },
+  {
+   "file": "parts/Sage__TOWER-lower.stl",
+   "colour": "Sage",
+   "hex": "#7f8f6a",
+   "qty": 1,
+   "group": "tower",
+   "size_mm": [
+    39.2,
+    39.2,
+    38.5
+   ],
+   "volume_cm3": 8.11,
+   "instances": [
+    "Sage__TOWER-lower"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-2.2x4.0-cornice.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 4,
+   "group": "windows",
+   "size_mm": [
+    12.2,
+    20.9,
+    2.1
+   ],
+   "volume_cm3": 0.15,
+   "instances": [
+    "Cream__WIN-tower-upper-f0-2-casing",
+    "Cream__WIN-tower-upper-f1-2-casing",
+    "Cream__WIN-tower-upper-f6-2-casing",
+    "Cream__WIN-tower-upper-f7-2-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.2x4.0-2-over-2.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 4,
+   "group": "windows",
+   "size_mm": [
+    9.3,
+    15.6,
+    1.4
+   ],
+   "volume_cm3": 0.08,
+   "instances": [
+    "Oxblood__WIN-tower-upper-f0-2-sash",
+    "Oxblood__WIN-tower-upper-f1-2-sash",
+    "Oxblood__WIN-tower-upper-f6-2-sash",
+    "Oxblood__WIN-tower-upper-f7-2-sash"
+   ]
+  },
+  {
+   "file": "parts/Harvest-Gold__TOWER-upper.stl",
+   "colour": "Harvest-Gold",
+   "hex": "#c79a45",
+   "qty": 1,
+   "group": "tower",
+   "size_mm": [
+    39.3,
+    39.3,
+    74.9
+   ],
+   "volume_cm3": 16.74,
+   "instances": [
+    "Harvest-Gold__TOWER-upper"
+   ]
+  },
+  {
+   "file": "parts/Slate__ROOF-tower-spire.stl",
+   "colour": "Slate",
+   "hex": "#43474d",
+   "qty": 1,
+   "group": "roofs",
+   "size_mm": [
+    48.7,
+    48.7,
+    84.2
+   ],
+   "volume_cm3": 4.4,
+   "instances": [
+    "Slate__ROOF-tower-spire"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-2.0x5.6-plain.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 2,
+   "group": "windows",
+   "size_mm": [
+    10.9,
+    22.9,
+    2.1
+   ],
+   "volume_cm3": 0.12,
+   "instances": [
+    "Cream__WIN-bay-1-1-casing",
+    "Cream__WIN-bay-3-1-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.0x5.6-2-over-2.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 2,
+   "group": "windows",
+   "size_mm": [
+    7.8,
+    21.2,
+    1.4
+   ],
+   "volume_cm3": 0.09,
+   "instances": [
+    "Oxblood__WIN-bay-1-1-sash",
+    "Oxblood__WIN-bay-3-1-sash"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-3.2x5.6-plain.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    15.1,
+    22.9,
+    2.1
+   ],
+   "volume_cm3": 0.13,
+   "instances": [
+    "Cream__WIN-bay-2-1-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-3.2x5.6-qa.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    12.8,
+    21.2,
+    1.4
+   ],
+   "volume_cm3": 0.13,
+   "instances": [
+    "Oxblood__WIN-bay-2-1-sash"
+   ]
+  },
+  {
+   "file": "parts/Cream__BAY-cornice-ring.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "bay",
+   "size_mm": [
+    40.5,
+    11.0,
+    6.1
+   ],
+   "volume_cm3": 0.34,
+   "instances": [
+    "Cream__BAY-cornice-ring"
+   ]
+  },
+  {
+   "file": "parts/Sage__BAY-walls.stl",
+   "colour": "Sage",
+   "hex": "#7f8f6a",
+   "qty": 1,
+   "group": "bay",
+   "size_mm": [
+    35.1,
+    8.6,
+    35.0
+   ],
+   "volume_cm3": 1.55,
+   "instances": [
+    "Sage__BAY-walls"
+   ]
+  },
+  {
+   "file": "parts/Slate__ROOF-bay.stl",
+   "colour": "Slate",
+   "hex": "#43474d",
+   "qty": 1,
+   "group": "roofs",
+   "size_mm": [
+    40.7,
+    11.0,
+    7.8
+   ],
+   "volume_cm3": 0.46,
+   "instances": [
+    "Slate__ROOF-bay"
+   ]
+  },
+  {
+   "file": "parts/Slate__ROOF-main.stl",
+   "colour": "Slate",
+   "hex": "#43474d",
+   "qty": 1,
+   "group": "roofs",
+   "size_mm": [
+    116.7,
+    163.3,
+    68.6
+   ],
+   "volume_cm3": 33.37,
+   "instances": [
+    "Slate__ROOF-main"
+   ]
+  },
+  {
+   "file": "parts/Brick__CHIMNEY-interior-stack.stl",
+   "colour": "Brick",
+   "hex": "#8a3b2b",
+   "qty": 1,
+   "group": "chimneys",
+   "size_mm": [
+    13.0,
+    9.5,
+    38.9
+   ],
+   "volume_cm3": 3.36,
+   "instances": [
+    "Brick__CHIMNEY-interior-stack"
+   ]
+  },
+  {
+   "file": "parts/Cream__GABLE-bargeboards-and-sunburst.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "trim",
+   "size_mm": [
+    54.4,
+    29.7,
+    0.8
+   ],
+   "volume_cm3": 0.17,
+   "instances": [
+    "Cream__GABLE-bargeboards-and-sunburst"
+   ]
+  },
+  {
+   "file": "parts/Black-Iron__ROOF-ridge-cresting.stl",
+   "colour": "Black-Iron",
+   "hex": "#2b2b2d",
+   "qty": 1,
+   "group": "roofs",
+   "size_mm": [
+    29.8,
+    8.6,
+    0.7
+   ],
+   "volume_cm3": 0.05,
+   "instances": [
+    "Black-Iron__ROOF-ridge-cresting"
+   ]
+  },
+  {
+   "file": "parts/Cream__casing-2.6x3.6-plain.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    13.0,
+    15.9,
+    2.1
+   ],
+   "volume_cm3": 0.1,
+   "instances": [
+    "Cream__WIN-dormer-1-casing"
+   ]
+  },
+  {
+   "file": "parts/Oxblood__sash-2.6x3.6-qa.stl",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "qty": 1,
+   "group": "windows",
+   "size_mm": [
+    10.7,
+    14.2,
+    1.4
+   ],
+   "volume_cm3": 0.08,
+   "instances": [
+    "Oxblood__WIN-dormer-1-sash"
+   ]
+  },
+  {
+   "file": "parts/Harvest-Gold__DORMER-box.stl",
+   "colour": "Harvest-Gold",
+   "hex": "#c79a45",
+   "qty": 1,
+   "group": "dormer",
+   "size_mm": [
+    21.1,
+    21.0,
+    34.5
+   ],
+   "volume_cm3": 1.67,
+   "instances": [
+    "Harvest-Gold__DORMER-box"
+   ]
+  },
+  {
+   "file": "parts/Slate__ROOF-dormer.stl",
+   "colour": "Slate",
+   "hex": "#43474d",
+   "qty": 1,
+   "group": "roofs",
+   "size_mm": [
+    34.5,
+    26.4,
+    21.8
+   ],
+   "volume_cm3": 1.14,
+   "instances": [
+    "Slate__ROOF-dormer"
+   ]
+  },
+  {
+   "file": "parts/Cream__DORMER-bargeboards.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "dormer",
+   "size_mm": [
+    25.9,
+    18.2,
+    0.8
+   ],
+   "volume_cm3": 0.06,
+   "instances": [
+    "Cream__DORMER-bargeboards"
+   ]
+  },
+  {
+   "file": "parts/Cream__PORCH-base-lattice.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "porch",
+   "size_mm": [
+    87.5,
+    112.0,
+    7.2
+   ],
+   "volume_cm3": 26.98,
+   "instances": [
+    "Cream__PORCH-base-lattice"
+   ]
+  },
+  {
+   "file": "parts/Porch-Gray__PORCH-deck.stl",
+   "colour": "Porch-Gray",
+   "hex": "#6b706f",
+   "qty": 1,
+   "group": "porch",
+   "size_mm": [
+    88.3,
+    112.8,
+    1.2
+   ],
+   "volume_cm3": 4.58,
+   "instances": [
+    "Porch-Gray__PORCH-deck"
+   ]
+  },
+  {
+   "file": "parts/Cream__PORCH-front-left-leg.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "porch",
+   "size_mm": [
+    98.1,
+    33.2,
+    2.2
+   ],
+   "volume_cm3": 1.71,
+   "instances": [
+    "Cream__PORCH-front-left-leg"
+   ]
+  },
+  {
+   "file": "parts/Cream__PORCH-front-corner.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "porch",
+   "size_mm": [
+    19.8,
+    33.2,
+    2.2
+   ],
+   "volume_cm3": 0.4,
+   "instances": [
+    "Cream__PORCH-front-corner"
+   ]
+  },
+  {
+   "file": "parts/Cream__PORCH-front-main.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "porch",
+   "size_mm": [
+    73.6,
+    33.2,
+    2.2
+   ],
+   "volume_cm3": 1.2,
+   "instances": [
+    "Cream__PORCH-front-main"
+   ]
+  },
+  {
+   "file": "parts/Cream__PORCH-end-return.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "porch",
+   "size_mm": [
+    24.3,
+    32.3,
+    2.2
+   ],
+   "volume_cm3": 0.36,
+   "instances": [
+    "Cream__PORCH-end-return"
+   ]
+  },
+  {
+   "file": "parts/Fieldstone__porch-pier.stl",
+   "colour": "Fieldstone",
+   "hex": "#8d877c",
+   "qty": 7,
+   "group": "porch",
+   "size_mm": [
+    3.2,
+    5.8,
+    0.6
+   ],
+   "volume_cm3": 0.01,
+   "instances": [
+    "Fieldstone__PORCH-pier-1-1",
+    "Fieldstone__PORCH-pier-1-2",
+    "Fieldstone__PORCH-pier-1-3",
+    "Fieldstone__PORCH-pier-1-4",
+    "Fieldstone__PORCH-pier-2-1",
+    "Fieldstone__PORCH-pier-2-2",
+    "Fieldstone__PORCH-pier-2-3"
+   ]
+  },
+  {
+   "file": "parts/Porch-Gray__PORCH-front-steps.stl",
+   "colour": "Porch-Gray",
+   "hex": "#6b706f",
+   "qty": 1,
+   "group": "porch",
+   "size_mm": [
+    19.6,
+    13.1,
+    8.2
+   ],
+   "volume_cm3": 1.25,
+   "instances": [
+    "Porch-Gray__PORCH-front-steps"
+   ]
+  },
+  {
+   "file": "parts/Cream__PORCH-step-cheek-L.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "porch",
+   "size_mm": [
+    13.4,
+    12.3,
+    2.4
+   ],
+   "volume_cm3": 0.14,
+   "instances": [
+    "Cream__PORCH-step-cheek-L"
+   ]
+  },
+  {
+   "file": "parts/Cream__PORCH-step-cheek-R.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 1,
+   "group": "porch",
+   "size_mm": [
+    13.4,
+    12.3,
+    2.4
+   ],
+   "volume_cm3": 0.14,
+   "instances": [
+    "Cream__PORCH-step-cheek-R"
+   ]
+  },
+  {
+   "file": "parts/Slate__ROOF-porch.stl",
+   "colour": "Slate",
+   "hex": "#43474d",
+   "qty": 1,
+   "group": "roofs",
+   "size_mm": [
+    89.5,
+    118.3,
+    12.4
+   ],
+   "volume_cm3": 6.09,
+   "instances": [
+    "Slate__ROOF-porch"
+   ]
+  },
+  {
+   "file": "parts/Porch-Gray__BACK-stoop-and-steps.stl",
+   "colour": "Porch-Gray",
+   "hex": "#6b706f",
+   "qty": 1,
+   "group": "back",
+   "size_mm": [
+    22.4,
+    22.5,
+    10.2
+   ],
+   "volume_cm3": 3.64,
+   "instances": [
+    "Porch-Gray__BACK-stoop-and-steps"
+   ]
+  },
+  {
+   "file": "parts/Slate__ROOF-back-door-hood.stl",
+   "colour": "Slate",
+   "hex": "#43474d",
+   "qty": 1,
+   "group": "back",
+   "size_mm": [
+    23.1,
+    11.9,
+    1.2
+   ],
+   "volume_cm3": 0.29,
+   "instances": [
+    "Slate__ROOF-back-door-hood"
+   ]
+  },
+  {
+   "file": "parts/Cream__back-hood-bracket.stl",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "qty": 2,
+   "group": "back",
+   "size_mm": [
+    8.4,
+    8.7,
+    0.8
+   ],
+   "volume_cm3": 0.01,
+   "instances": [
+    "Cream__BACK-hood-bracket-L",
+    "Cream__BACK-hood-bracket-R"
+   ]
+  },
+  {
+   "file": "parts/Black-Iron__downspout.stl",
+   "colour": "Black-Iron",
+   "hex": "#2b2b2d",
+   "qty": 3,
+   "group": "small",
+   "size_mm": [
+    85.2,
+    2.2,
+    1.6
+   ],
+   "volume_cm3": 0.11,
+   "instances": [
+    "Black-Iron__DOWNSPOUT-1",
+    "Black-Iron__DOWNSPOUT-2",
+    "Black-Iron__DOWNSPOUT-3"
+   ]
+  }
+ ],
+ "plates": [
+  {
+   "file": "plates/01_Sage.3mf",
+   "colour": "Sage",
+   "hex": "#7f8f6a",
+   "groups": [
+    "bay",
+    "tower",
+    "walls"
+   ],
+   "objects": 8,
+   "parts": [
+    "Sage__BAY-walls",
+    "Sage__TOWER-lower",
+    "Sage__WALL-W1-lower",
+    "Sage__WALL-W2-lower",
+    "Sage__WALL-W3-lower",
+    "Sage__WALL-W4-lower",
+    "Sage__WALL-W5-lower",
+    "Sage__WALL-W6-lower"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 38.5,
+   "volume_cm3": 41.3,
+   "slice": {
+    "time": "2h 3m 34s",
+    "grams": 41.97,
+    "cost": 0.92,
+    "minutes": 124,
+    "warnings": [
+     "print warning: Detected print stability issues:",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/01_Sage.png"
+  },
+  {
+   "file": "plates/02_Harvest-Gold.3mf",
+   "colour": "Harvest-Gold",
+   "hex": "#c79a45",
+   "groups": [
+    "dormer",
+    "tower",
+    "walls"
+   ],
+   "objects": 8,
+   "parts": [
+    "Harvest-Gold__DORMER-box",
+    "Harvest-Gold__TOWER-upper",
+    "Harvest-Gold__WALL-W1-upper",
+    "Harvest-Gold__WALL-W2-upper",
+    "Harvest-Gold__WALL-W3-upper",
+    "Harvest-Gold__WALL-W4-upper",
+    "Harvest-Gold__WALL-W5-upper",
+    "Harvest-Gold__WALL-W6-upper"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 74.9,
+   "volume_cm3": 49.5,
+   "slice": {
+    "time": "3h 58m 41s",
+    "grams": 54.34,
+    "cost": 1.2,
+    "minutes": 239,
+    "warnings": [
+     "[2026-09-23 00:01:57.626936] [0x00007fc32c794180] [error]   Reversing even wall line causes it to be printed CCW instead of CW!",
+     "print warning: Detected print stability issues:",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/02_Harvest-Gold.png"
+  },
+  {
+   "file": "plates/03_Cream_1of3.3mf",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "groups": [
+    "cornice",
+    "doors",
+    "porch",
+    "tower",
+    "trim",
+    "windows"
+   ],
+   "objects": 15,
+   "parts": [
+    "Cream__CORNICE-main-ring",
+    "Cream__DOOR-W1-lower-casing",
+    "Cream__PORCH-end-return",
+    "Cream__TOWER-belt-ring-ze",
+    "Cream__TOWER-cornice-ring",
+    "Cream__TRIM-water-table-ring",
+    "Cream__casing-2.4x4.4-cornice",
+    "Cream__casing-2.4x5.2-cornice",
+    "Cream__casing-2.5x6.0-cornice",
+    "Cream__casing-2.6x3.6-plain"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 6.8,
+   "volume_cm3": 9.7,
+   "slice": {
+    "time": "41m 5s",
+    "grams": 12.15,
+    "cost": 0.27,
+    "minutes": 41,
+    "warnings": [
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/03_Cream_1of3.png"
+  },
+  {
+   "file": "plates/04_Cream_2of3.3mf",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "groups": [
+    "back",
+    "doors",
+    "dormer",
+    "porch",
+    "tower",
+    "trim",
+    "windows"
+   ],
+   "objects": 28,
+   "parts": [
+    "Cream__DOOR-W5-lower-casing",
+    "Cream__DORMER-bargeboards",
+    "Cream__GABLE-bargeboards-and-sunburst",
+    "Cream__PORCH-base-lattice",
+    "Cream__PORCH-front-corner",
+    "Cream__PORCH-front-left-leg",
+    "Cream__PORCH-front-main",
+    "Cream__PORCH-step-cheek-L",
+    "Cream__PORCH-step-cheek-R",
+    "Cream__TOWER-belt-ring-z2",
+    "Cream__TRIM-belt-loop-1",
+    "Cream__TRIM-belt-loop-2",
+    "Cream__back-hood-bracket",
+    "Cream__casing-2.8x6.2-cornice",
+    "Cream__casing-3.2x5.6-plain",
+    "Cream__corner-board-lower",
+    "Cream__corner-board-upper"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 7.2,
+   "volume_cm3": 36.5,
+   "slice": {
+    "time": "1h 30m 28s",
+    "grams": 24.74,
+    "cost": 0.54,
+    "minutes": 90,
+    "warnings": [
+     "print warning: Detected print stability issues:",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/04_Cream_2of3.png"
+  },
+  {
+   "file": "plates/05_Cream_3of3.3mf",
+   "colour": "Cream",
+   "hex": "#efe7d2",
+   "groups": [
+    "bay",
+    "trim",
+    "windows"
+   ],
+   "objects": 25,
+   "parts": [
+    "Cream__BAY-cornice-ring",
+    "Cream__TRIM-gable-band",
+    "Cream__casing-2.0x2.6-plain",
+    "Cream__casing-2.0x5.6-plain",
+    "Cream__casing-2.2x4.0-cornice",
+    "Cream__casing-2.4x5.2-cornice",
+    "Cream__casing-2.6x5.2-cornice",
+    "Cream__casing-2.8x6.2-cornice",
+    "Cream__corner-board-upper"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 6.1,
+   "volume_cm3": 4.2,
+   "slice": {
+    "time": "22m 39s",
+    "grams": 5.25,
+    "cost": 0.12,
+    "minutes": 23,
+    "warnings": [
+     "print warning: Detected print stability issues:",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/05_Cream_3of3.png"
+  },
+  {
+   "file": "plates/06_Oxblood.3mf",
+   "colour": "Oxblood",
+   "hex": "#6a1f2b",
+   "groups": [
+    "windows"
+   ],
+   "objects": 38,
+   "parts": [
+    "Oxblood__sash-2.0x2.6-2-over-2",
+    "Oxblood__sash-2.0x5.6-2-over-2",
+    "Oxblood__sash-2.2x4.0-2-over-2",
+    "Oxblood__sash-2.4x4.4-2-over-2",
+    "Oxblood__sash-2.4x5.2-2-over-2",
+    "Oxblood__sash-2.4x5.2-qa",
+    "Oxblood__sash-2.5x6.0-2-over-2",
+    "Oxblood__sash-2.5x6.0-qa",
+    "Oxblood__sash-2.6x3.6-qa",
+    "Oxblood__sash-2.6x5.2-2-over-2",
+    "Oxblood__sash-2.8x6.2-2-over-2",
+    "Oxblood__sash-2.8x6.2-qa",
+    "Oxblood__sash-3.2x5.6-qa"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 1.4,
+   "volume_cm3": 4.0,
+   "slice": {
+    "time": "19m 49s",
+    "grams": 4.97,
+    "cost": 0.11,
+    "minutes": 20,
+    "warnings": [
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/06_Oxblood.png"
+  },
+  {
+   "file": "plates/07_Walnut.3mf",
+   "colour": "Walnut",
+   "hex": "#4a2616",
+   "groups": [
+    "doors"
+   ],
+   "objects": 2,
+   "parts": [
+    "Walnut__DOOR-W1-lower-door",
+    "Walnut__DOOR-W5-lower-door"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 1.6,
+   "volume_cm3": 0.7,
+   "slice": {
+    "time": "3m 5s",
+    "grams": 0.84,
+    "cost": 0.02,
+    "minutes": 3,
+    "warnings": [
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/07_Walnut.png"
+  },
+  {
+   "file": "plates/08_Slate.3mf",
+   "colour": "Slate",
+   "hex": "#43474d",
+   "groups": [
+    "back",
+    "roofs"
+   ],
+   "objects": 6,
+   "parts": [
+    "Slate__ROOF-back-door-hood",
+    "Slate__ROOF-bay",
+    "Slate__ROOF-dormer",
+    "Slate__ROOF-main",
+    "Slate__ROOF-porch",
+    "Slate__ROOF-tower-spire"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 84.2,
+   "volume_cm3": 45.7,
+   "slice": {
+    "time": "7h 36m 14s",
+    "grams": 58.68,
+    "cost": 1.29,
+    "minutes": 456,
+    "warnings": [
+     "print warning: Detected print stability issues:",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/08_Slate.png"
+  },
+  {
+   "file": "plates/09_Fieldstone.3mf",
+   "colour": "Fieldstone",
+   "hex": "#8d877c",
+   "groups": [
+    "foundation",
+    "porch"
+   ],
+   "objects": 9,
+   "parts": [
+    "Fieldstone__FOUNDATION-base-plate",
+    "Fieldstone__FOUNDATION-ring",
+    "Fieldstone__porch-pier"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 11.5,
+   "volume_cm3": 44.4,
+   "slice": {
+    "time": "1h 42m 41s",
+    "grams": 38.88,
+    "cost": 0.86,
+    "minutes": 103,
+    "warnings": [
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/09_Fieldstone.png"
+  },
+  {
+   "file": "plates/10_Brick.3mf",
+   "colour": "Brick",
+   "hex": "#8a3b2b",
+   "groups": [
+    "chimneys"
+   ],
+   "objects": 2,
+   "parts": [
+    "Brick__CHIMNEY-exterior",
+    "Brick__CHIMNEY-interior-stack"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 38.9,
+   "volume_cm3": 18.6,
+   "slice": {
+    "time": "1h 11m 57s",
+    "grams": 11.99,
+    "cost": 0.26,
+    "minutes": 72,
+    "warnings": [
+     "print warning: Detected print stability issues:",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/10_Brick.png"
+  },
+  {
+   "file": "plates/11_Porch-Gray.3mf",
+   "colour": "Porch-Gray",
+   "hex": "#6b706f",
+   "groups": [
+    "back",
+    "porch"
+   ],
+   "objects": 3,
+   "parts": [
+    "Porch-Gray__BACK-stoop-and-steps",
+    "Porch-Gray__PORCH-deck",
+    "Porch-Gray__PORCH-front-steps"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 10.2,
+   "volume_cm3": 9.5,
+   "slice": {
+    "time": "20m 58s",
+    "grams": 8.09,
+    "cost": 0.18,
+    "minutes": 21,
+    "warnings": [
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/11_Porch-Gray.png"
+  },
+  {
+   "file": "plates/12_Black-Iron.3mf",
+   "colour": "Black-Iron",
+   "hex": "#2b2b2d",
+   "groups": [
+    "roofs",
+    "small"
+   ],
+   "objects": 4,
+   "parts": [
+    "Black-Iron__ROOF-ridge-cresting",
+    "Black-Iron__downspout"
+   ],
+   "layer_mm": 0.12,
+   "max_height_mm": 1.6,
+   "volume_cm3": 0.4,
+   "slice": {
+    "time": "1m 51s",
+    "grams": 0.52,
+    "cost": 0.01,
+    "minutes": 2,
+    "warnings": [
+     "print warning: Detected print stability issues:",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters",
+     "89 => Calculating overhanging perimeters"
+    ]
+   },
+   "preview": "previews/12_Black-Iron.png"
+  }
+ ],
+ "totals": {
+  "print_minutes": 1194,
+  "filament_g": 262.4
+ }
+}

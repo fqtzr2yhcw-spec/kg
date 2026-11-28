@@ -1,0 +1,400 @@
+"""Release versions of the print-file zips.
+
+Every zip the owner has had carries v1.0; each later update to a building adds a line to
+``HISTORY`` and bumps its minor version (v1.1, v1.2, ...). The packaging pipeline writes
+``<Name>_Print_Files.zip``; ``release`` then adds a VERSION.txt (the building's change history)
+and renames it ``<Name>_Print_Files_v1.1.zip``, removing the older release of that building, so
+out/ holds one current zip per building.
+
+    python3 -m hoarch.versions camellia fowler    # release those buildings
+    python3 -m hoarch.versions --all              # every building (untouched ones as v1.0)
+"""
+
+import glob
+import os
+import re
+import sys
+import zipfile
+
+from . import assembly as AS
+
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out")
+
+BRACKETS_16 = ("Cornice brackets made solid and 1.6 mm thick (were 0.7-0.9 mm); their piercings "
+               "are now sunk 0.3 mm into each face instead of cut through, so they no longer "
+               "print as loose strings. Reprint the cornice parts with brackets (the -upper parts).")
+
+# key -> [(version, date, change), ...], oldest first; v1.0 (the first release) is implied
+INSERTS_DEEP = ("Windows and doors: the glass sits 3 layers deeper in the opening, so every sash bar, rail, "
+                "door leaf and panel stands at least 3 layers thicker over it (at 1-2 layers the glass colour "
+                "showed through); the plug now goes 2.2 mm into the wall. Reprint the WIN- and DOOR- parts.")
+QUOINS = ("Corner quoins: bigger, flat-faced stones 0.9 mm proud with a solid core in the corner, so the "
+          "joints there are shallow notches (the old thin, bevelled blocks with open gaps printed as a ragged "
+          "fringe up the corner). Walls only: reprint the WALLS- parts if your corners came out fringed.")
+
+HISTORY = {
+    "nacelle": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate)."),
+                ("1.2", "2026-10-11", "The hub's blade flanges and the nacelle's shaft flange have their detail cut into the face (bearing seat, bolt-circle groove, bore) instead of 0.6 mm studs and a raised ring, which printed as blobs and a ragged lower edge; the nacelle's frame is solid under the housing, so nothing bridges across it."),
+                ("1.3", "2026-11-17", "README and listing: the hub's blade flanges described as they print since v1.2 (bearing seat, bore and bolt circle cut into each face; the old text still said studs). The print files are unchanged.")],
+    "transformer": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "linepipe": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate)."), ("1.2", "2026-11-24", "Dunnage strips 3.6 mm wide (1.4 mm): the stack's join to them was 6 % of the layer above. Checked for weak connections (tools/strength_audit.py): none now.")],
+    "tarps": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "steel": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate)."), ("1.2", "2026-11-24", "Beam bundle: webs 1.0 mm and flanges 0.8 mm (0.45 mm webs printed as one wobbly line, as the pony truss's floor beams did), and all dunnage 2.4 to 2.8 mm wide (1.4 mm). Checked for weak connections (tools/strength_audit.py): none now.")],
+    "vessel": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "propeller": [("1.1", "2026-10-11", "Bed adhesion: the load now stands on a 0.6 mm sheet that fills its footprint at the plate, in its base colour (it touched the plate with only 6 to 29 % of its footprint, and the nacelle's ends lifted off a cool plate).")],
+    "villa": [("1.1", "2026-09-30", INSERTS_DEEP + " The doors' upper lights now open to their glass, as designed. "
+               "WALLS-1: the front and back doors sit 0.8 mm higher, leaving a 6-layer strip of wall under each "
+               "(at 2 layers the wall could kink at the front door); reprint WALLS-1 only if yours kinked, or glue "
+               "the door in with the wall seated on the foundation lip to hold it straight."),
+              ("1.2", "2026-10-01", QUOINS)],
+    "camellia": [("1.1", "2026-09-27", "Tower, bay and eave cornice ring brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
+    "fowler": [("1.1", "2026-09-27", "Fan brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
+    "marigold": [("1.1", "2026-09-27", "Sawn brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
+    "hollis": [("1.1", "2026-09-27", "Knee brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
+    "carrow": [("1.1", "2026-09-27", "Volute brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
+    "rosecroft": [("1.1", "2026-09-27", "Fret brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
+    "hawthorn": [("1.1", "2026-09-27", "Ladder brackets: " + BRACKETS_16), ("1.2", "2026-09-30", INSERTS_DEEP)],
+    "beaumont": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "harcourt": [("1.1", "2026-09-30", INSERTS_DEEP), ("1.2", "2026-10-01", QUOINS),
+                 ("1.3", "2026-10-04", "Iron cresting redrawn so a 0.4 mm nozzle prints it: the old cresting's "
+                  "bars and rails were 0.4-0.5 mm wide with pointed spears and 0.8 mm balls, and most of it did "
+                  "not print. The new one (barbed spears and balls in turn over a top rail, a ball hanging in "
+                  "each panel) has every member at least 0.9 mm wide, every opening at least 0.8 mm, blunt spear "
+                  "tips and 1.0 mm strips; 5.4 mm tall on the roof and tower, 4.4 mm on the bay. Reprint the "
+                  "CREST, TOWER-crest and BAY-crest strips (the Iron plates).")],
+    "whitby": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "delancey": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "ardmore": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "merritt": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "pemberton": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "barber": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "bank": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "general": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "drugstore": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "hotel": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "The balcony's iron railings redrawn so a 0.4 mm nozzle prints them: 1.0 mm rails, 0.9 mm bars, rings and stems, every opening 0.8 mm or more (the bars were 0.6 mm and the rings 0.5). Reprint RAIL-front and RAIL-end.")],
+    "bakery": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "hardware": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "The iron shutters' rim, straps and rivets are two nozzle lines wide (the 0.5 mm rim printed as a hairline). Reprint the SHUTTER parts.")],
+    "millinery": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "jeweler": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "primrose": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "twins": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "Myrtle's fleur-de-lis cresting made printable with a 0.4 mm nozzle: drawn at half size and doubled, every member 0.9 mm or more (they were 0.4-0.6 mm), 7.2 mm tall (was 3.6). Reprint M-CRESTING.")],
+    "larkspur": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "juniper": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "wisteria": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "magnolia": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "whitmore": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "PORTICO-pilaster: the storey's belt course cut each pilaster in two, leaving its capital loose above the belt; the pilaster now stops under the belt with its capital there. Reprint the pilasters.")],
+    "pennock": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "oakhurst": [("1.1", "2026-09-30", INSERTS_DEEP),
+                 ("1.2", "2026-10-04", "ROOF: a loose wedge no longer floats inside the roof under the cupola "
+                  "(the tip of the support under its pocket, which was cut deeper than the support reached); the "
+                  "cupola's pocket now has a solid floor joined to the roof shell. Reprint ROOF."),
+                 ("1.3", "2026-10-04", "PEDIMENT: the fan in the tympanum printed its rays and hub as loose "
+                  "strands - they started 0.6 mm above the fan's sunk floor, held only at their tips. They now "
+                  "stand on that floor, and the rays taper from 0.9 mm at the hub to 1.5 mm at the ring (they "
+                  "were 0.5 mm, one nozzle line). Reprint PEDIMENT."),
+                 ("1.4", "2026-10-07", "Doors: the leaded lozenge glazing in the front door's sidelights and "
+                  "transom, the back door's transom and the two French doors had 0.5 mm bars 0.8 mm apart and "
+                  "printed as a blur. Each light now holds bold lozenges fitted to it: 0.9 mm bars, openings of "
+                  "0.9 mm or more, one large lozenge in each French door pane; the French doors' rails and "
+                  "stiles are 0.9 mm. Reprint DOOR-18.8x34.0, DOOR-11.0x28.0 (both) and DOOR-11.0x30.0.")],
+    "vantassel": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-05", "DORMER-roof: the shed dormer's shakes floated up to 0.35 mm above the roof slab "
+         "(the slab was laid at a slightly shallower pitch than the shakes), so their first layer printed in "
+         "the air; the slab now follows the dormer's pitch and the shakes sit on it. Reprint DORMER-roof.")],
+    "hathaway": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "chatham": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "winthrop": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "westbrook": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "ROOF: the chimney's pocket now has a solid floor joined to the roof shell; before, only the loose tip of the support under it floated inside the hollow roof. Reprint ROOF.")],
+    "ellsworth": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "PORCH-deck: a loose 1.5 x 3 mm scrap of planking is gone; no need to reprint.")],
+    "fairhaven": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "prescott": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "bellerive": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "pinckney": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "randolph": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "ROOF: the chimney's pocket now has a solid floor joined to the roof shell; before, only the loose tip of the support under it floated inside the hollow roof. Reprint ROOF.")],
+    "stauffer": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "porter": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "pingree": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "PORTICO-top: a 0.15 mm skin cut loose along its back edge (too thin to print) is gone; no need to reprint.")],
+    "alvarado": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "brenton": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "ridgely": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "arroyo": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-05", "PORCH-top: the porch's lap-sided walls had their siding grooves cut right through, "
+         "so each wall printed in two strips joined only at the piers, the upper one starting as a loose strand. "
+         "The grooves are now sunk 0.15 mm into each face of a 1.2 mm wall. Reprint PORCH-top.")],
+    "hollister": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "ROOF: the pier under the chimney now runs up into the roof shell; it stopped just short of it and printed as a loose block. Reprint ROOF.")],
+    "wrightwood": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "ashcombe": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "capistrano": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "kittredge": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "PORCH-top: two loose fascia offcuts at the wall (14 mm strips 0.35 mm off the top) are gone; reprint only if yours came loose.")],
+    "pullman": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "lindenwald": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "ROOF: the chimney's pocket now has a solid floor joined to the roof shell; before, only the loose tip of the support under it floated inside the hollow roof. Reprint ROOF. PORCH-top: a 0.15 mm skin cut loose along its back edge (too thin to print) is gone; no need to reprint.")],
+    "stickley": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "PORCH-top: a 0.15 mm skin cut loose along its back edge (too thin to print) is gone; no need to reprint."),
+        ("1.3", "2026-10-05", "SLEEP-top: the sleeping porch's shingled parapet had its course grooves cut right "
+         "through, so it printed as strips joined only at the posts, each starting as a loose strand. The grooves "
+         "are now sunk 0.15 mm into each face of a 1.2 mm parapet. Reprint SLEEP-top.")],
+    "sandoval": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "millbrook": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "ROOF: the piers under the two stove flues now run up into the roof shell; they stopped just short of it and printed as loose blocks. Reprint ROOF. PLATFORM-top: a loose offcut of its flat top (under the canopy, by the agent's bay) is gone; no need to reprint.")],
+    "brendan": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "harmon": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "engine3": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "lakeshore": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "pleasant": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "thorne": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "mxtower": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "blackwater": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "The hoist's smokestack has a 0.95 mm wall (at 0.7 mm it printed as a single line). Reprint STACK.")],
+    "enginehouse": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "yardoffice": [("1.1", "2026-09-30", INSERTS_DEEP),
+        ("1.2", "2026-10-04", "ROOF: the pier under the chimney now runs up into the roof shell; it stopped just short of it and printed as a loose block. Reprint ROOF.")],
+    "shanty": [("1.1", "2026-09-30", INSERTS_DEEP)],
+    "fontaine": [("1.1", "2026-10-03", "An open terrace (no roof over it) joins the two verandas in front of the "
+                  "tower door: PORCH-deck is now one deck under both verandas and the terrace (it replaces "
+                  "VERANDA-W-deck and VERANDA-E-deck); two TERRACE-rail pieces (tulip balusters between "
+                  "ball-capped newels, printed upright) drop into sockets round its open edges; TERRACE-steps "
+                  "come down at the door in place of STOOP-front, and the verandas' own steps are gone. "
+                  "TOWER-DOME no longer carries the loose square the crest groove cut off its top. Reprint "
+                  "PORCH-deck, TERRACE-rail-0 and -1, TERRACE-steps and TOWER-DOME; the rest is unchanged."),
+        ("1.2", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.8-7.2 mm tall, about twice before. The tridents' prongs are a touch heavier. Reprint the iron cresting strips (the Iron plates).")],
+    "sandhouse": [("1.1", "2026-10-04", "ROOF: the pier under the chimney now runs up into the roof shell; it stopped just short of it and printed as a loose block. Reprint ROOF.")],
+    "montclair": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.4 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "lafayette": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "delacroix": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.8-7.2 mm tall, about twice before. Its small rings, which would have printed shut, are now solid bosses. Reprint the iron cresting strips (the Iron plates).")],
+    "valcour": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.8-7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "chevalier": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 7.2 mm (5.6 on the bays) tall, about twice before. The hearts are a touch heavier, and the bays now carry the house's own cresting instead of a plain spear pattern. Reprint the iron cresting strips (the Iron plates).")],
+    "marchand": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.8-7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "rochambeau": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 6.4-7.2 mm tall, about twice before. The portico's balcony railing is drawn the same way and stays 6.4 mm tall. Reprint the iron cresting strips (the Iron plates).")],
+    "beauvais": [("1.1", "2026-10-04", "Iron cresting made printable with a 0.4 mm nozzle: the same design drawn at half size and doubled, so every bar, rail and ornament is at least 0.9 mm wide (they were 0.4-0.6 mm and did not print) and the openings stay open; it now stands 7.2 mm tall, about twice before. Reprint the iron cresting strips (the Iron plates).")],
+    "copper": [("1.1", "2026-11-23", "Pack size: 48 bundles, three carloads (was 16, one car). One run of the plates now prints one pack of 48. The bundle itself is unchanged."), ("1.2", "2026-11-23", "The bands' side straps reach into the stack (they started in mid-air beside the bottom sheets). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "propane": [("1.1", "2026-11-23", "The tanks sit on the wood: a timber runner under each tank the length of its cradle web, and the web's openings moved into the bays either side of the middle timber, so the web stands on all three timbers (the web between its openings started in mid-air over the bed sheet, and nothing touched the middle timber). The timbers print fully brown. Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "hydraulics": [("1.1", "2026-11-23", "The rod-end eye has a cradle of its own on a cross member at the end of the skid (it hangs below the rod past the barrel and started in mid-air). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "tubebundle": [("1.1", "2026-11-23", "Keels under the tubesheet and the floating head, on the skid's end cross members (both hang below the bundle and started in mid-air). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "rotor": [("1.1", "2026-11-23", "Keels under the coupling flange and the outer collector ring, on cross members (both hang below the journals and started in mid-air); the journal saddles have a 1.6 mm stem where their two halves met at a point. Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "radiators": [("1.1", "2026-11-23", "The header flanges sit against the end panels (they stood 0.8 mm off them, and their lower edges started in mid-air). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "column": [("1.1", "2026-11-23", "A 45 degree collar under each nozzle flange, so the tilted nozzles' flanges grow out of their necks (their lower rims started in mid-air). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "tires": [("1.1", "2026-11-23", "No tread grooves in the bottom third of the tread, where the saddle carries the tire (two lugs just past the saddle started in mid-air). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "logs": [("1.1", "2026-11-23", "The top log's hidden keel reaches down to the log beneath it (its tip hung in the gap between two logs). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "farmtractors": [("1.1", "2026-11-23", "The rear wheels' spade lugs taper from a 2 mm root (the lugs low on the wheel started in mid-air). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "minecars": [("1.1", "2026-11-23", "The middle rib on each side stops at the V's apex (its tip hung below it). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "bricks": [("1.1", "2026-11-23", "The bands' straps reach into the mortar joints (their ends started in mid-air over the fork voids). Checked for floating regions, which Bambu Studio warns about: none now.")],
+    "truss": [("1.1", "2026-11-24", "Floor-beam bundle: the six beams lie side by side in one layer on four full-width timbers, 10 mm tall and 24 mm wide (it stood two layers high, 19 mm tall on a 10.5 mm footprint and three small timbers, and its ends lifted off the plate as it cooled, brim or not); webs 1.0 mm and flanges 0.8 mm (0.6 mm webs wobbled), with 0.8 mm between the flanges. Reprint the Floor-beams part; the truss sides and blocking are unchanged.")],
+    "walls": [("1.1", "2026-11-24", "Culvert headwall cut flat at its base: the pipe collar dipped 0.1 mm below it, so the plate got only that sliver and the walls and wings started in the air (floating regions). Checked for weak connections (tools/strength_audit.py): none now.")],
+    "clutter": [("1.1", "2026-11-24", "Pipe stack: each upper pipe's valley filled down to where the two pipes under it meet (their undersides started in the air), and pipe walls 0.8 mm (0.52 mm printed as one line). Tyre stack: the ground filled inside the bottom tyre, so it stands on its whole base. Checked for weak connections (tools/strength_audit.py): none now.")],
+    "military": [("1.1", "2026-11-24", "Sandbag walls: half bags at the ends of the staggered courses, as real walls are laid (the gap left the header bag above in the air), and each bag's tied end rises at 45 degrees (the level tie started in the air). Checked for weak connections (tools/strength_audit.py): none now.")],
+    "mow": [("1.1", "2026-11-24", "Rail rack: a sill frame on the ground and a solid pier of stacked ties under each timber (it stood on four 1.6 mm posts, 10 mm2 on the plate, and the posts carried the whole rack). Checked for weak connections (tools/strength_audit.py): none now.")],
+    "cemetery": [("1.1", "2026-11-24", "Railings: the posts are built onto the railings (two with a post at one end, two with posts at both ends: the same six posts, none standing alone on 9 mm2), pickets and quatrefoils 0.8 mm, and a rail under the quatrefoils (their lower lobes started in the air). Headstones and obelisks on a 0.4 mm footing slab, the dead trees on a root mound (they stood on 17 to 36 mm2). Checked for weak connections (tools/strength_audit.py): none now.")],
+    "treelot": [("1.1", "2026-11-24", "Trees: the stand is a cross on a board, and the lowest boughs come down onto it at 45 degrees (a 1.1 mm trunk carried the whole tree; the stand was two 0.9 mm bars, 8 mm2). The lot fence prints lying on its face (it stood on five 1.2 mm posts). Checked for weak connections (tools/strength_audit.py): none now.")],
+    "lamps": [("1.1", "2026-11-24", "A round 0.4 mm footing pad under each lamp, 8.4 mm across (they stood 40 mm tall on 20 mm2). Checked for weak connections (tools/strength_audit.py): none now.")],
+    "ironfence": [("1.1", "2026-11-24", "The posts are built onto the runs (three with a post at one end, one with posts at both ends: the same five posts) and the gate onto its two gate posts, so no post stands alone on 6 to 8 mm2; arcade band 0.8 mm. Checked for weak connections (tools/strength_audit.py): none now.")],
+    "pallets": [("1.1", "2026-11-24", "Pallets: wider bottom boards (5 in lead boards, as real ones) and 1.2 mm stringers, so the load has a better join to the boards and the pallet more on the plate. Checked for weak connections (tools/strength_audit.py): none now.")],
+    "woodties": [("1.1", "2026-11-24", "Three dunnage strips 2.4 mm wide (two of 1.4 mm): the ties' join to them was 10 % of the layer above. Checked for weak connections (tools/strength_audit.py): none now.")],
+    "rebar": [("1.1", "2026-11-24", "Eight dunnage strips 2.8 mm wide (six of 2 mm). Checked for weak connections (tools/strength_audit.py): none now.")],
+    "sheetpile": [("1.1", "2026-11-24", "Eight dunnage strips 2.8 mm wide (six of 2 mm). Checked for weak connections (tools/strength_audit.py): none now.")],
+    "poles": [("1.1", "2026-11-24", "Eight bunks (six). Checked for weak connections (tools/strength_audit.py): none now.")],
+}
+
+
+# 2026-10-07: glazing printable with a 0.4 mm nozzle (after the Oakhurst door lattice printed as a blur)
+GLAZE_SCRAPS = ("Windows and doors: the little openings in the glazing narrower than 0.9 mm (corner scraps, "
+                "fanlight tips, small roundels and lozenges) are filled, so a 0.4 mm nozzle no longer blobs them "
+                "the way it did the Oakhurst's door lattice; the larger lights are unchanged. Reprint the WIN- and "
+                "DOOR- parts.")
+GLAZE_LEADED = ("the leaded diamond glazing (0.4-0.5 mm leads 1.6-2.1 mm apart, openings under 0.9 mm) printed as "
+                "a blur. It is redrawn as bold lozenges fitted to each light, 0.9 mm leads and openings of 0.9 mm or "
+                "more, as on the Oakhurst's doors; little scraps elsewhere in the glazing are filled. ")
+_GLAZE = {
+    "brendan": "Lancet windows: " + GLAZE_LEADED + "Reprint every lancet WIN- part.",
+    "bank": "Doors: the iron grille over the leaves' glass (0.5 mm bars 1.6 mm apart) printed as a blur; it is "
+            "redrawn with 0.9 mm bars and openings of 0.9 mm or more, and little scraps in the glazing are "
+            "filled. Reprint the DOOR- parts.",
+    "ellsworth": "Doors: the sidelights' " + GLAZE_LEADED + "Reprint the DOOR- parts (and any WIN- part with "
+                 "a fanlight).",
+    "carrow": "Windows: the upper sashes' " + GLAZE_LEADED + "Reprint the WIN- parts.",
+    "hollis": "Doors: the transoms' " + GLAZE_LEADED + "Reprint the DOOR- parts.",
+    "whitby": "Windows: the diamond-paned lancet's " + GLAZE_LEADED + "Reprint WIN-8.0x21.0 and any other "
+              "WIN- or DOOR- part you printed before.",
+    "ashcombe": "Windows: the stone-mullioned windows' " + GLAZE_LEADED + "Reprint the WIN- parts.",
+    "porter": "WIN-7.0x10.0, the small gable window: its twelve-over-eight panes were too small to print "
+              "(under 0.8 mm); it is now six over six. Little scraps elsewhere in the glazing are filled. "
+              "Reprint WIN-7.0x10.0.",
+}
+for _k in ("pullman", "beaumont", "kittredge", "larkspur", "pingree", "hawthorn", "wrightwood", "pinckney",
+           "magnolia", "fairhaven", "juniper", "jeweler", "camellia", "vantassel", "twins", "winthrop",
+           "montclair", "belcourt", "ridgely", "hardware", "primrose", "valcour", "hollister", "delancey",
+           "hathaway", "hotel", "wisteria", "drugstore", "alvarado"):
+    _GLAZE[_k] = GLAZE_SCRAPS
+for _k, _note in _GLAZE.items():
+    _h = HISTORY.setdefault(_k, [])
+    _maj, _min = (_h[-1][0] if _h else "1.0").split(".")
+    _h.append((f"{_maj}.{int(_min) + 1}", "2026-10-07", _note))
+
+# 2026-10-07, second pass: the owner's test print of the Oakhurst's doors showed openings of about 1 mm
+# printing as rows of little loops, where the sash windows' 2 mm panes print clean
+GLAZE2_SCRAPS = ("Windows and doors: a test print showed glazing openings of about 1 mm print as rows of little "
+                 "loops, where panes of 2 mm print clean. The small lights, corner scraps and fanlight-ray tips under "
+                 "1.6 mm are now filled (square pane corners and long margin lights are kept). Reprint the WIN- and "
+                 "DOOR- parts.")
+GLAZE2_LEADED = ("a test print showed the 1 mm openings between the lozenges print as rows of little loops. The "
+                 "lozenges are larger now, every opening 1.6 mm or more (a light too narrow for that gets square bars), "
+                 "and smaller scraps are filled. ")
+_GLAZE2 = {
+    "oakhurst": "Doors: the lozenge glazing still printed as little loops (openings about 1 mm, the owner's print). "
+                "The sidelights, transoms and French door lights are now divided by square bars into panes of about "
+                "2 x 3 mm, which print as cleanly as the sash windows. Reprint DOOR-18.8x34.0, DOOR-11.0x28.0 (both) "
+                "and DOOR-11.0x30.0. Middle cornice: it stopped 6 mm short of the wing at both inside corners, "
+                "leaving a gap (the owner's print); it now runs up to the wing's cornice, its ends coped to the "
+                "wing cornice's profile. Reprint CORNICE-J-lower and CORNICE-J-crown.",
+    "bank": "Doors: the grille's lozenges are larger (openings 1.6 mm or more) and the transom's ring is an oval light "
+            "tied to the frame at its ends, without the cross bars that cut it into 1 mm pieces; smaller scraps are "
+            "filled. Reprint the DOOR- parts.",
+    "ellsworth": "Doors: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "The oval light is leaded in a "
+                 "simple cross and the fanlight has three rays from a solid hub. Reprint the DOOR- parts.",
+    "brendan": "Lancet windows: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint every lancet WIN- part.",
+    "carrow": "Windows: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint the WIN- parts.",
+    "hollis": "Doors: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint the DOOR- parts.",
+    "whitby": "Windows: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint WIN-8.0x21.0 and any other "
+              "WIN- or DOOR- part you printed before.",
+    "ashcombe": "Windows: " + GLAZE2_LEADED.replace("a test print", "A test print", 1) + "Reprint the WIN- parts.",
+}
+GLAZE2_PANES = ("Windows: the glazing bars of the narrower sashes were laid out over the whole opening, which left "
+                "the outer panes 0.8-1.2 mm wide, too narrow to print clean (a test print showed openings of about "
+                "1 mm print as rows of little loops). The panes are now equal and 1.6 mm or more, two across where "
+                "three would not fit. Reprint the WIN- parts.")
+GLAZE2_BOTH = ("Windows and doors: a test print showed glazing openings of about 1 mm print as rows of little loops, "
+               "where panes of 2 mm print clean. Sashes whose outer panes came out 0.8-1.2 mm wide (bars laid out "
+               "over the whole opening) now have equal panes of 1.6 mm or more, two across where three would not "
+               "fit, and the small lights, corner scraps and ray tips under 1.6 mm are filled. Reprint the WIN- and "
+               "DOOR- parts.")
+GLAZE2_PANES_ADD = (" Sash windows whose outer panes came out under 1.6 mm wide now have equal panes of 1.6 mm or "
+                    "more; reprint those WIN- parts too.")
+_GLAZE2["hollister"] = ("Windows: the Prairie border lights round the big upper lights were 0.65 mm wide, too narrow to "
+                        "print; they are 1.7 mm now. " + GLAZE2_SCRAPS.replace("Windows and doors: a", "A", 1))
+# which second-pass changes each re-exported building took (scan of the plates before and after):
+# S = small openings filled, P = sash panes evened out (the leaded windows redesigned above count as S)
+GLAZE2_OTHERS = {"ashcombe": "S", "bakery": "SP", "bank": "S", "beauvais": "S", "bellerive": "SP",
+                 "brendan": "S", "brenton": "S", "camellia": "SP", "carrow": "P", "chatham": "SP",
+                 "drugstore": "S", "ellsworth": "SP", "enginehouse": "S", "fairhaven": "S", "fowler": "P",
+                 "general": "P", "hardware": "P", "hathaway": "SP", "hawthorn": "S", "hollis": "S",
+                 "hollister": "S", "hotel": "SP", "jeweler": "S", "juniper": "SP", "lafayette": "S",
+                 "larkspur": "SP", "lindenwald": "S", "magnolia": "SP", "marchand": "S", "marigold": "S",
+                 "millinery": "SP", "montclair": "S", "oakhurst": "S", "pemberton": "S", "pennock": "SP",
+                 "pinckney": "S", "pingree": "S", "porter": "SP", "prescott": "SP", "primrose": "S",
+                 "pullman": "S", "randolph": "SP", "ridgely": "S", "rosecroft": "S", "stickley": "SP",
+                 "twins": "S", "vantassel": "SP", "westbrook": "P", "whitby": "S", "whitmore": "SP",
+                 "winthrop": "SP", "wisteria": "SP"}
+for _k, _fl in GLAZE2_OTHERS.items():
+    if _k in _GLAZE2:
+        if "P" in _fl:
+            _GLAZE2[_k] += GLAZE2_PANES_ADD
+    else:
+        _GLAZE2[_k] = GLAZE2_BOTH if _fl == "SP" else GLAZE2_PANES if _fl == "P" else GLAZE2_SCRAPS
+for _k, _note in _GLAZE2.items():
+    _h = HISTORY.setdefault(_k, [])
+    _maj, _min = (_h[-1][0] if _h else "1.0").split(".")
+    _h.append((f"{_maj}.{int(_min) + 1}", "2026-10-07", _note))
+
+# 2026-10-14: the Westbrook's roof showed loose stilts where its chimneys' seats should be; a scan
+# of every part for thin posts in hollows and for prints held off the plate found these
+CHIMNEY_BUCKET = ("Roof: each chimney now drops into a bucket in the hollow roof (walls round the pocket rising "
+                  "from the roof's underside, and a floor carried on a corbel that steps in from them) instead of "
+                  "a floor standing on thin posts in the roof's hollow, which printed as loose stilts. Reprint the ROOF.")
+ROOF_FLAT = ("Roof: the hip caps' ends dipped 0.4 mm below the eaves and held the whole roof up off the plate on "
+             "their tips, so its first layers started in mid air; they now stop at the eaves and the roof sits flat "
+             "on the plate. Reprint the ROOF.")
+_FIX_1014 = {
+    "westbrook": CHIMNEY_BUCKET, "lindenwald": CHIMNEY_BUCKET, "randolph": CHIMNEY_BUCKET,
+    "camellia": ROOF_FLAT, "hawthorn": ROOF_FLAT,
+    "drugstore": ("Turret: the brick-course ends at its two back corners, hidden inside the building, stood as a "
+                  "column one line thick joined to the wall only every other course; they are cut off. Reprint the "
+                  "TURRET."),
+    "rosecroft": ("Tower lantern: the centre bars of its four lights are 0.9 mm wide, two lines of plastic (they were "
+                  "0.6 mm, a single line standing 17 mm tall). Reprint the TOWER-lantern."),
+    "pallets": ("Two of each pallet's five bottom boards sat right under the fork notches and printed loose; the bottom "
+                "boards now stand clear of the notches. The concrete-block courses and the carton tiers stand on each "
+                "other instead of over a hair of air, which could start a course in mid air. Reprint every piece."),
+    "military": ("Ammo boxes: each tier stands on the one below instead of over a 0.02 mm gap, which could start a "
+                 "tier in mid air. Reprint the Ammo-boxes."),
+    "walls": ("Culvert headwall: the tips that held it up off the plate are trimmed, so it sits flat on the plate. "
+              "Reprint the Culvert-headwall."),
+}
+STEPS_STRIP = ("Steps: where the steps key against the house, the key in front of the face set back behind the "
+               "nosing stood 0.05 mm off the steps as a loose 0.3 mm strip, starting in mid air. The steps now run "
+               "on to that face in one piece, so they glue over it. Reprint the {}.")
+_FIX_1014["lindenwald"] += " " + STEPS_STRIP.format("PORCH-steps-0")
+_FIX_1014.update({
+    "greenfield": STEPS_STRIP.format("STEPS-0"), "hollister": STEPS_STRIP.format("PORCH-steps-0"),
+    "marigold": STEPS_STRIP.format("PORCH-steps-0"), "millbrook": STEPS_STRIP.format("PLATFORM-steps-0"),
+    "pinckney": STEPS_STRIP.format("PIAZZA-steps-0"), "porter": STEPS_STRIP.format("PORCH-steps-0"),
+    "sandoval": STEPS_STRIP.format("PORCH-steps-0"), "stickley": STEPS_STRIP.format("PORCH-steps-0 and STOOP-back"),
+})
+for _k, _note in _FIX_1014.items():
+    _h = HISTORY.setdefault(_k, [])
+    _maj, _min = (_h[-1][0] if _h else "1.0").split(".")
+    _h.append((f"{_maj}.{int(_min) + 1}", "2026-10-14", _note))
+
+def version(key):
+    h = HISTORY.get(key)
+    return h[-1][0] if h else "1.0"
+
+
+def _stem(key):
+    return AS.ZIPNAME.get(key, key.capitalize()) + "_Print_Files"
+
+
+def zip_path(key):
+    """The building's current zip: the freshly packaged one if there is one, else its release."""
+    fresh = os.path.join(OUT, _stem(key) + ".zip")
+    return fresh if os.path.exists(fresh) else os.path.join(OUT, f"{_stem(key)}_v{version(key)}.zip")
+
+
+def _version_txt(key):
+    lines = [f"{AS.ZIPNAME.get(key, key.capitalize()).replace('_', ' ')} print files, "
+             f"version {version(key)}", "",
+             "v1.0  the first release"]
+    for v, date, change in HISTORY.get(key, []):
+        lines.append(f"v{v}  {date}  {change}")
+    return "\n".join(lines) + "\n"
+
+
+def release(key):
+    """Rename the building's zip to its versioned name (with VERSION.txt inside); drop older releases."""
+    target = os.path.join(OUT, f"{_stem(key)}_v{version(key)}.zip")
+    fresh = os.path.join(OUT, _stem(key) + ".zip")
+    olds = [p for p in glob.glob(os.path.join(OUT, _stem(key) + "_v*.zip"))
+            if re.fullmatch(re.escape(_stem(key)) + r"_v\d+\.\d+\.zip", os.path.basename(p))]
+    src = fresh if os.path.exists(fresh) else (max(olds, key=os.path.getmtime) if olds else None)
+    if src is None:
+        return None
+    tmp = target + ".tmp"
+    with zipfile.ZipFile(src) as zi, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zo:
+        names = zi.namelist()
+        top = names[0].split("/")[0]
+        for n in names:
+            if not n.endswith("/VERSION.txt"):
+                zo.writestr(zi.getinfo(n), zi.read(n))
+        zo.writestr(f"{top}/VERSION.txt", _version_txt(key))
+    os.replace(tmp, target)
+    for p in olds + [fresh]:
+        if os.path.exists(p) and os.path.abspath(p) != os.path.abspath(target):
+            os.remove(p)
+    return target
+
+
+if __name__ == "__main__":
+    args = sys.argv[1:]
+    from .guide import BUILDINGS
+    keys = [k for k, _ in BUILDINGS] if "--all" in args else [a for a in args if not a.startswith("--")]
+    for k in keys:
+        print(k, release(k))
